@@ -155,6 +155,10 @@ res = ivppmlhdfe(
 )
 ```
 
+## Optional quantile-regression companion: BoundedQR
+
+[BoundedQR](contrib/boundedqr/README.md) adds separately installed clustered wild-gradient quantile regression, a CPU Python API and an R bridge (GPL-3.0-or-later). It complements the mean/IV/PPML estimators with a different estimand. It requires an explicit full-rank design and does not absorb HDFE or justify demeaning quantile regressions. See its guide for runnable examples and numerical limits.
+
 ## Recovering fixed effects as economic objects
 
 Most HDFE regressions treat fixed effects as nuisance parameters. Some research designs do not: AKM-style worker/firm models, origin-destination mobility models, structural gravity, and two-stage models may need the FE coefficients themselves.
@@ -341,4 +345,4 @@ Developer workflow and release gates are documented under `docs/development/`, `
 
 ## License
 
-BSD-licensed. See [`LICENSE`](LICENSE).
+The EconHDFE core is BSD-licensed; see [`LICENSE`](LICENSE). Optional companion projects under `contrib/` retain their own directory-level licenses and are installed separately. They are not included in the core Python wheel.
