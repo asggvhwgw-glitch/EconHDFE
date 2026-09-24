@@ -166,7 +166,7 @@ dependencies:
 {phang2}{cmd:matrix list G}{p_end}
 
 {p 4 4 2}
-See {cmd:package/examples/ivgmmgrid_example.do} for an example that generates
+See {cmd:contrib/ivgmmgrid/examples/ivgmmgrid_example.do} for an example that generates
 its own data, evaluates a grid, applies an explicitly specified demonstration
 tie rule and refits the winner. Its selection rule is illustrative, not a
 replacement for a replication package's rule.
