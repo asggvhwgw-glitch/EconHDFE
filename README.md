@@ -327,6 +327,10 @@ import pyreghdfe
 
 Compatibility does not imply that every Stata syntax construct or every upstream edge case has already completed external certification. Supported behavior is documented and release-tested in the Python package.
 
+## Optional Stata companion: ivgmmgrid
+
+[ivgmmgrid](contrib/ivgmmgrid/README.md) adds a Stata/Mata command for repeated single-FE, single-cluster two-step IV-GMM models (GPL-3.0-only). It reuses moments, checks native results and falls back when needed. Stata and the native ivreghdfe stack are separate requirements; the directory includes setup instructions, a synthetic example and validation checks. It does not change the Python estimators.
+
 ## Contributing
 
 Changes should preserve the package boundaries above. In particular:
@@ -341,4 +345,4 @@ Developer workflow and release gates are documented under `docs/development/`, `
 
 ## License
 
-BSD-licensed. See [`LICENSE`](LICENSE).
+The EconHDFE core is BSD-licensed; see [`LICENSE`](LICENSE). Optional companion projects under `contrib/` retain their own directory-level licenses and are installed separately. They are not included in the core Python wheel.
