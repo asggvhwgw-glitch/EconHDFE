@@ -229,6 +229,10 @@ A representation is used only when it is both valid and expected to help. Memory
 
 A deeper explanation is in [Performance architecture](docs/technical/performance-architecture.md).
 
+## Optional covariance companion: FastSandwich
+
+[FastSandwich](contrib/fastsandwich/README.md) adds separately installable Bartlett HAC and clustered-score kernels, statsmodels examples and an opt-in linearmodels launcher (BSD-3-Clause). It complements long-bandwidth covariance workloads; the core estimator defaults stay the same. Its guide explains bandwidth and normalization differences, installation and checks.
+
 ## Performance evidence
 
 Performance numbers in this repository are **same-host development evidence**, not universal hardware claims and not substitutes for external Stata/R package benchmarking.
@@ -341,4 +345,4 @@ Developer workflow and release gates are documented under `docs/development/`, `
 
 ## License
 
-BSD-licensed. See [`LICENSE`](LICENSE).
+The EconHDFE core is BSD-licensed; see [`LICENSE`](LICENSE). Optional companion projects under `contrib/` retain their own directory-level licenses and are installed separately. They are not included in the core Python wheel.

@@ -1,0 +1,6 @@
+include VALIDATION.md LICENSE README.md THIRD_PARTY_NOTICES.md SOURCE_ORIGIN.json
+graft checks
+graft examples
+graft tools
+graft patches
+global-exclude *.pyc

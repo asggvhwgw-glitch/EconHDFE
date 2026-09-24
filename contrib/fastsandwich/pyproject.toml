@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fastsandwich"
+version = "0.1.0"
+readme = "README.md"
+description = "Exact structured kernels for Bartlett HAC and clustered econometric covariance"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24", "scipy>=1.10"]
+license = "BSD-3-Clause"
+
+[project.optional-dependencies]
+integrations = ["statsmodels>=0.14", "linearmodels==7.0"]
+test = ["pytest>=8", "statsmodels>=0.14", "linearmodels==7.0", "pandas"]
+dev = ["pytest", "matplotlib", "psutil", "threadpoolctl", "pandas"]
+
+[tool.setuptools.packages.find]
+include = ["fastsandwich*"]
+
+[tool.pytest.ini_options]
+testpaths = ["checks"]
+python_files = ["check_*.py"]
+addopts = "-ra"
