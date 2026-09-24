@@ -1,0 +1,24 @@
+{
+  "project": "fastsandwich",
+  "contributor": "So-mysterious",
+  "import_date": "2026-09-25",
+  "description": "Runnable source subset of the contributor-owned research project; pre-import file SHA256, before portable paths and packaging changes. No environments, private data, or performance archives included.",
+  "original_file_sha256": {
+    "LICENSE": "f54228da50d54099877417fd5a9e791a8b96d8a530a01b1d760f9dc635cda6f8",
+    "pyproject.toml": "502167e669952b7644cb1bb43353ff7bec9bbd9faeea1cff8f6a99c08dd103ff",
+    "fastsandwich/cluster.py": "81d0e6d3f7219f43d0a0a2b0803c1e7eb1dfbd1b59c62978ce4e66823747a4c0",
+    "fastsandwich/hac.py": "a2c12f411d91c5e12a5d7845ca21a962ad96ffefe25d180717b74413b11b65de",
+    "fastsandwich/_hac_fft.py": "5bc283dc4160b157d33d800396a056468e54989c21f0d196f394e02141477c1f",
+    "fastsandwich/_hac_prefix.py": "30eec21f56aba7f23561fec1750f049ef22aa01387ad7c1dc67ea37fa288b36b",
+    "fastsandwich/__init__.py": "fcd703e24e5edf95d2dedf1e6fa77f592c59142fa1c04515ab5cea7e46bec43f",
+    "checks/check_cluster.py": "e2b3ec816144c50b6dcf2423806619390342a1dc0b6517fabf461ff783fba4ff",
+    "checks/check_hac_integration.py": "64a8ea13cb9a6cddd4b0d8f96ba3b51c6f4d235580f5684231c4c24944fa959e",
+    "checks/check_independent_oracles.py": "4fca50c5d2d132f71754df0a953abbbe689eb3a36baf45dae4c068c1d186c7f5",
+    "checks/check_panel_integration.py": "f0908604b13340734ae1097a3d3e4bbf425e5b9eda215b62821bf64f569891fa",
+    "tools/run_optimized.py": "73aec3a8f0f0f0e4092f7558ed0c877e0e8de4b70b91542a54c4caf2d1d22e68",
+    "tools/build_upstream_patch.py": "b72a2a10b4091f5f2fa9a210ee583bfed369c766e729a9b3a1c115f23d2d2e21",
+    "examples/hac_policy.py": "ba93f339b26958ff1343dd2a7044a38e098fadeeaa2fecb9a8c908d495688cf7",
+    "examples/panel_policy.py": "5c41f3d9d86a245bd6a1bb799ae28bbf7996bccb5f4d43f125bcde46da689715",
+    "patches/LICENSE-linearmodels.txt": "dac684a8d714a2932b6ca02ee2cd4a2aac7c6678c7efc5824a4da1e2efae861d"
+  }
+}

@@ -1,0 +1,32 @@
+name: Companion fastsandwich
+on:
+  pull_request:
+    paths: ["contrib/fastsandwich/**", ".github/workflows/contrib-fastsandwich.yml", "econhdfe/**", "pyreghdfe/**"]
+  push:
+    branches: [main]
+    paths: ["contrib/fastsandwich/**", ".github/workflows/contrib-fastsandwich.yml", "econhdfe/**", "pyreghdfe/**"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  cpu:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.10", "3.12"]
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      NUMBA_NUM_THREADS: "4"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install . "./contrib/fastsandwich[test]" build
+      - run: python -m pytest -q
+        working-directory: contrib/fastsandwich
+      - run: python -m build
+        working-directory: contrib/fastsandwich
+      - run: python examples/hac_policy.py
+        working-directory: contrib/fastsandwich
