@@ -1,0 +1,10 @@
+{
+  "project": "ivgmmgrid",
+  "contributor": "So-mysterious",
+  "import_date": "2026-09-25",
+  "original_file_sha256": {
+    "stata/ivgmmgrid.ado": "93942fd9cbcff91bc5d14e5d5ed33e3e72d7045b3d54c178914099d406ae905e",
+    "stata/ivgmmgrid.sthlp": "e9642016fcbcb1a28fe398418e39b017a98e6cbd972ddfc1e73ceeab7c380e5d",
+    "stata/water_gmm_moments.mata": "a76cf2f2a34b25c1d873c0f3a24e163dae1fca8af63cc62f411399071a582e05"
+  }
+}
