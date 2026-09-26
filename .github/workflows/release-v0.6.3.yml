@@ -1,0 +1,137 @@
+name: Publish v0.6.3
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/release-v0.6.3.yml
+
+jobs:
+  github-release:
+    if: startsWith(github.event.head_commit.message, 'Run v0.6.3 release publication')
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: v0.6.3
+      FROZEN_SHA: 2782d93f901ec1eed28ac0f963834701e0a44b09
+      SOURCE_RUN: '36264493861'
+    steps:
+      - name: Download frozen release candidate
+        run: gh run download "$SOURCE_RUN" --repo "$GITHUB_REPOSITORY" --name release-candidate --dir release-assets
+
+      - name: Verify frozen artifact hashes
+        shell: bash
+        run: |
+          cd release-assets
+          cat > SHA256SUMS.txt <<'EOF'
+          58c55361fdb2fa77066fb4716e69d017777529e8ead1e3cb3dda44ea664afb67  econhdfe-0.6.3-py3-none-any.whl
+          38979290f9ad94faff2411b6e9026167526e49f3558221e732989faa0e2075cb  econhdfe-0.6.3.tar.gz
+          92fb5053c073f8ec2f8df067daa0547834b76dc7cae9eabf4f17ab18d362bd98  econhdfe-skill-v0.6.3.zip
+          59210d3b845b648ebb9444badedf3cfa96f99ca71ba6bd65ef337e8cd8261910  econhdfe-v0.6.3-release-bundle.zip
+          e6bf82a6d8b6c058f1a59bc809213db5af6d4fa5d1e313e00b56936de958e798  econhdfe-v0.6.3-source.zip
+          EOF
+          sha256sum -c SHA256SUMS.txt
+
+      - name: Create or verify release tag
+        shell: bash
+        run: |
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" > tag.json 2>/dev/null; then
+            actual=$(jq -r '.object.sha' tag.json)
+            test "$actual" = "$FROZEN_SHA" || { echo "tag points to $actual, expected $FROZEN_SHA"; exit 1; }
+          else
+            gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$TAG" -f sha="$FROZEN_SHA"
+          fi
+
+      - name: Write release notes
+        shell: bash
+        run: |
+          cat > release-notes.md <<'EOF'
+          # EconHDFE v0.6.3 — Alpha Research Release
+
+          v0.6.3 is the first release candidate to complete the package's full cross-platform release gate.
+
+          ## Highlights
+
+          - Keeps the shared OLS / linear-IV / PPML / IV-PPML HDFE architecture and public estimator contracts unchanged.
+          - Fixes Python 3.10/3.11 compatibility-gate reflection differences.
+          - Fixes Windows newline-sensitive release checks.
+          - Hardens managed Numba `workqueue` concurrency and bootstrap BLAS thread control.
+          - Uses an isolated sdist-to-wheel build path and verifies clean installations.
+          - Separates original and public-redacted benchmark provenance without weakening hash checks.
+
+          ## Validation
+
+          - Linux / Windows / macOS × Python 3.10–3.13: 12/12 environments passed.
+          - Four feasible minimum-runtime-dependency environments passed.
+          - Each CI environment: 928 passed, 1 skipped, 0 failed.
+          - Local full suite with the optional exact backend: 929 passed.
+          - Frozen wheel numerical recheck: 350 passed.
+          - Final bundle verification and detached formal release gate passed.
+
+          The single CI skip is an optional exact-backend test; it was executed successfully in the local full suite.
+
+          ## Release identity
+
+          This release is built from and tagged at commit:
+
+          `2782d93f901ec1eed28ac0f963834701e0a44b09`
+
+          The uploaded artifacts are the already-validated frozen artifacts; they are not rebuilt after tagging.
+
+          ## Status and external validation boundary
+
+          EconHDFE remains an **alpha research release**. Licensed-Stata/upstream external certification remains a separate boundary. This release does not add a universal performance claim or an independent mathematical-novelty certification.
+
+          See `SHA256SUMS.txt` in the release assets for exact artifact hashes.
+          EOF
+
+      - name: Create GitHub Release
+        shell: bash
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; refusing to overwrite release metadata or assets."
+            exit 1
+          fi
+          gh release create "$TAG" release-assets/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "EconHDFE v0.6.3 — Alpha Research Release" \
+            --notes-file release-notes.md
+
+  pypi-publish:
+    if: startsWith(github.event.head_commit.message, 'Run v0.6.3 release publication')
+    needs: github-release
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SOURCE_RUN: '36264493861'
+      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+    steps:
+      - name: Download the same frozen distributions
+        shell: bash
+        run: |
+          gh run download "$SOURCE_RUN" --repo "$GITHUB_REPOSITORY" --name release-candidate --dir frozen
+          mkdir pypi-dist
+          cp frozen/econhdfe-0.6.3-py3-none-any.whl frozen/econhdfe-0.6.3.tar.gz pypi-dist/
+          echo '58c55361fdb2fa77066fb4716e69d017777529e8ead1e3cb3dda44ea664afb67  pypi-dist/econhdfe-0.6.3-py3-none-any.whl' | sha256sum -c -
+          echo '38979290f9ad94faff2411b6e9026167526e49f3558221e732989faa0e2075cb  pypi-dist/econhdfe-0.6.3.tar.gz' | sha256sum -c -
+
+      - name: Publish to PyPI with repository token
+        if: env.PYPI_API_TOKEN != ''
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          packages-dir: pypi-dist/
+
+      - name: Publish to PyPI with trusted publishing
+        if: env.PYPI_API_TOKEN == ''
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e
+        with:
+          packages-dir: pypi-dist/
