@@ -7,12 +7,22 @@ permissions:
   contents: read
 jobs:
   test:
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python: ['3.10', '3.11', '3.12', '3.13']
+        dependencies: [latest]
+        include:
+          - {os: ubuntu-latest, python: '3.10', dependencies: minimum}
+          - {os: ubuntu-latest, python: '3.11', dependencies: minimum}
+          - {os: ubuntu-latest, python: '3.12', dependencies: minimum}
+          - {os: ubuntu-latest, python: '3.13', dependencies: minimum}
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     env:
       OPENBLAS_NUM_THREADS: '1'
       OMP_NUM_THREADS: '1'
@@ -25,22 +35,52 @@ jobs:
           python-version: ${{ matrix.python }}
           cache: pip
       - run: python -m pip install --upgrade pip
-      - run: python -m pip install -e ".[test]" build
+      - name: Install latest compatible dependencies
+        if: matrix.dependencies == 'latest'
+        run: python -m pip install -e ".[test]" build
+      - name: Install feasible minimum runtime dependencies
+        if: matrix.dependencies == 'minimum'
+        run: python -m pip install -c .github/constraints-min.txt -e ".[test]" build
+      - name: Record source and environment
+        run: |
+          git rev-parse HEAD > source-commit.txt
+          python -VV > python-version.txt
+          python -m pip list --format=json > dependencies.json
+          python scripts/release_acceptance.py fingerprint > code-fingerprint.txt
+          python -m pip check
       - run: python scripts/version.py gate
-      - run: python scripts/run_tests.py -- -q --junitxml=test-results.xml
-      - run: python -m build --outdir dist
-      - run: python scripts/verify_clean_install.py --dist dist
+      - run: python scripts/run_tests.py -- -q --junitxml=test-results.xml 2>&1 | tee tests.log
+      - run: python -m build --outdir dist 2>&1 | tee build.log
+      - name: Clean installation with latest dependencies
+        if: matrix.dependencies == 'latest'
+        run: python scripts/verify_clean_install.py --dist dist 2>&1 | tee clean-install.log
+      - name: Clean installation with minimum dependencies
+        if: matrix.dependencies == 'minimum'
+        env:
+          PIP_CONSTRAINT: ${{ github.workspace }}/.github/constraints-min.txt
+        run: python scripts/verify_clean_install.py --dist dist 2>&1 | tee clean-install.log
+      - name: Mark completed validation
+        run: echo 'tests + sdist-to-wheel + clean install passed' > validation-complete.txt
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: evidence-${{ matrix.os }}-py${{ matrix.python }}
+          name: evidence-${{ matrix.os }}-py${{ matrix.python }}-${{ matrix.dependencies }}
           path: |
+            source-commit.txt
+            python-version.txt
+            dependencies.json
+            code-fingerprint.txt
             test-results.xml
+            tests.log
+            build.log
+            clean-install.log
+            validation-complete.txt
             dist/*
           if-no-files-found: warn
   bundle:
     needs: test
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       OPENBLAS_NUM_THREADS: '1'
       OMP_NUM_THREADS: '1'
@@ -51,10 +91,19 @@ jobs:
         with:
           python-version: '3.13'
       - run: python -m pip install -e ".[test]" build
-      - run: bash scripts/build_release.sh
+      # Never carry successful records from a different runtime fingerprint.
+      # Job evidence is uploaded separately; this remains a candidate, not a release.
+      - run: python scripts/release_acceptance.py reset
+      - run: bash scripts/build_release.sh 2>&1 | tee bundle-validation.log
+        shell: bash
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: release-bundle-log
+          path: bundle-validation.log
       - uses: actions/upload-artifact@v7
         with:
           name: release-candidate
           path: dist/*
-# This workflow validates and uploads CI artifacts; it never publishes a tag,
-# a GitHub Release, or a package to PyPI.
+# No publication. Final authorization needs a detached manifest binding the
+# selected source commit, all 16 job results and the final artifact hashes.

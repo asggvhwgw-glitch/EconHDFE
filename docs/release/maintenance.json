@@ -10,7 +10,7 @@
     },
     "backend_compute": {
       "status": "changed",
-      "evidence": "Only NumPy _weighted_colsum fuses row reduction. QR/SVD, projections, GPU and solver tolerances unchanged; 52 targeted guards pass.",
+      "evidence": "Closeout: guard package-managed workqueue parallel regions; keep OpenMP/TBB concurrent. Hoist bootstrap BLAS scope outside workers. No model formulas or tolerances change.",
       "description": "Solver/compute/cache/backend contracts, numerical defaults and resource controls."
     },
     "errors": {
@@ -20,7 +20,7 @@
     },
     "public_contract": {
       "status": "reviewed",
-      "evidence": "Immutable 0.6.2 baseline retained; 0.6.3 snapshot and automated compatibility check.",
+      "evidence": "Closeout: normalize inherited Enum reflection across Python versions; preserve custom signatures and immutable historical baselines. No runtime public-contract diff.",
       "description": "Public exports/signatures, result/config schemas and stable structured-error compatibility."
     },
     "skill": {
@@ -30,12 +30,12 @@
     },
     "linked_modules": {
       "status": "reviewed",
-      "evidence": "Shared absorber local change only; no estimator changes or new runtime dependency.",
+      "evidence": "Closeout: reuse the existing projection thread context; no new runtime module or dependency. Bootstrap uses the same abstraction.",
       "description": "Cross-module imports, shared schemas, adapters, compatibility shims and downstream consumers."
     },
     "results_reporting": {
       "status": "reviewed",
-      "evidence": "Result schemas and VCE formulas unchanged; local four-case numerical output comparison reports zero observed differences.",
+      "evidence": "Closeout: result schemas and VCE formulas unchanged; original weighted/unweighted serial-versus-parallel bootstrap assertions retained and passed. Historical numerical comparisons remain baseline evidence only.",
       "description": "Result fields, publication output, diagnostics metadata and serialization-facing schemas."
     },
     "config_defaults": {
@@ -45,37 +45,37 @@
     },
     "cache_state": {
       "status": "reviewed",
-      "evidence": "No cache implementation changes. New positive/zero-weight update and core invalidation guards.",
+      "evidence": "No cache implementation changes. Existing positive/zero-weight update and core invalidation guards retained.",
       "description": "Reusable state/cache invalidation, fingerprints, lifecycle semantics and stale-state hazards."
     },
     "tests_validation": {
       "status": "changed",
-      "evidence": "807 baseline pass, 99 added tests pass; full candidate and artifacts recorded in execution/evidence rather than inferred from this review.",
+      "evidence": "Closeout: 13 added regression cases; 919 local source tests passed. Remote matrix execution remains required; this review is not an execution attestation.",
       "description": "Regression tests, install smoke tests, golden/parity coverage and failure-path tests."
     },
     "performance": {
       "status": "changed",
-      "evidence": "PERF-01 only; two fresh-process rounds per version/case, 14 hot timings, no profile in timed loops. performance-0.6.3.md.",
+      "evidence": "Historical PERF-01 evidence retained, not re-labelled as closeout measurements. Safety serialization applies only to workqueue; OpenMP/TBB remain concurrent. No new performance claim; platform performance validation remains pending.",
       "description": "Representative benchmark/resource regressions for code paths materially changed by the release."
     },
     "docs_migration": {
       "status": "changed",
-      "evidence": "Unified TODO, explicit execution acceptance, migration, environment and performance records added; historical manuscripts unmodified.",
+      "evidence": "Closeout: RELEASE_CLOSEOUT.md records fixes, interface boundaries, lower-bound rationale and remaining release gates. Historical mathematical manuscripts unchanged.",
       "description": "README/architecture/changelog/migration/versioning documentation and user-visible examples."
     },
     "packaging_dependencies": {
       "status": "changed",
-      "evidence": "No dependency changes; host candidate validation and independent installed tests separated from strict isolation and external matrix.",
+      "evidence": "Closeout: retain runtime requirements, add four feasible minimum-runtime CI combinations and preserve constraints in clean installs; use default sdist-to-wheel build chain.",
       "description": "Python/dependency matrix, optional extras, wheel/source contents and build metadata."
     },
     "external_validation": {
       "status": "reviewed",
-      "evidence": "Reviewed but NOT PASSED: remote matrix, dependency floor, external reference claims and optional backends remain unexecuted. execution.json retains blockers.",
+      "evidence": "Closeout: require fresh 12-platform plus 4 dependency-floor results for the changed fingerprint. Configuration is not execution. External Stata certification remains unclaimed.",
       "description": "Licensed/reference-environment parity gates and explicitly deferred external certification."
     },
     "release_artifacts": {
       "status": "changed",
-      "evidence": "Candidate structural verification and detached formal authorization separated. Formal offline requests rejected before output deletion. No real source commit/tag invented.",
+      "evidence": "Closeout: retain candidate-only workflow; reset stale execution records and preserve historical evidence. Formal authorization still requires detached commit/artifact binding.",
       "description": "Version consistency, source/wheel parity, hashes, clean install and reproducible bundle contents."
     }
   }

@@ -2,115 +2,17 @@
   "schema_version": 1,
   "release_version": "0.6.3",
   "fingerprint_scope": "runtime-validation-v1",
-  "code_fingerprint_sha256": "46f1de6fac10a4c521b32c73a9230aefad1f62176611732a79df06a02263814d",
+  "code_fingerprint_sha256": "52c9ef1bd786bb29ee18ae37fcb830e07fc996cf1e0c341ad2bbbf446fd21636",
   "source_commit": null,
   "checks": {
-    "local_regression": {
-      "execution_status": "passed",
-      "reason": "Actual full functional run; no skips.",
-      "environment": {
-        "python": "3.13.5 (main, Jul 15 2026, 20:25:40) [GCC 14.2.0]",
-        "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
-        "dependencies": {
-          "numpy": "2.3.5",
-          "scipy": "1.17.0",
-          "pandas": "2.2.3",
-          "numba": "0.65.1",
-          "pytest": "9.0.2",
-          "statsmodels": "0.14.6",
-          "sympy": "1.14.0",
-          "coverage": "7.13.3",
-          "setuptools": "82.0.1"
-        },
-        "env_threads": {},
-        "memory_max": "4294967296"
-      },
-      "executed_at": "2026-09-14T09:13:05.298913+00:00",
-      "code_fingerprint_sha256": "46f1de6fac10a4c521b32c73a9230aefad1f62176611732a79df06a02263814d",
-      "evidence": [
-        {
-          "path": "docs/release/evidence/0.6.3/local-regression.xml",
-          "sha256": "d9c683edfe34647df8d08385ce2452f5d8c918a7d7bcf89a4afc65014407ceb6"
-        }
-      ]
-    },
-    "installed_numerics": {
-      "execution_status": "passed",
-      "reason": "Actual local execution; see the bound test report. Installed subset uses HOST dependencies.",
-      "environment": {
-        "python": "3.13.5 (main, Jul 15 2026, 20:25:40) [GCC 14.2.0]",
-        "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
-        "dependencies": {
-          "numpy": "2.3.5",
-          "scipy": "1.17.0",
-          "pandas": "2.2.3",
-          "numba": "0.65.1",
-          "pytest": "9.0.2",
-          "statsmodels": "0.14.6",
-          "sympy": "1.14.0",
-          "coverage": "7.13.3",
-          "setuptools": "82.0.1"
-        },
-        "env_threads": {},
-        "memory_max": "4294967296"
-      },
-      "executed_at": "2026-09-14T09:14:22.406712+00:00",
-      "code_fingerprint_sha256": "46f1de6fac10a4c521b32c73a9230aefad1f62176611732a79df06a02263814d",
-      "evidence": [
-        {
-          "path": "docs/release/evidence/0.6.3/installed-numerics.xml",
-          "sha256": "e34c97edd9a3a64f97b2e3bc3de95f2476481c6a7abcdfc77e946841638b457f"
-        }
-      ]
-    },
-    "isolated_build": {
-      "execution_status": "blocked",
-      "reason": "Build frontend/prerequisites unavailable; attempted frontend invocation and prerequisite retrieval failed. No isolated build passed.",
-      "environment": {},
-      "executed_at": null,
-      "code_fingerprint_sha256": null,
-      "evidence": []
-    },
-    "clean_install": {
-      "execution_status": "failed",
-      "reason": "Actual fresh venv install failed to resolve numpy>=1.26. It did not inherit host site-packages.",
-      "environment": {},
-      "executed_at": null,
-      "code_fingerprint_sha256": null,
-      "evidence": []
-    },
-    "support_matrix": {
-      "execution_status": "not_run",
-      "reason": "Other OS/Python and remote CI jobs have not run in this environment.",
-      "environment": {},
-      "executed_at": null,
-      "code_fingerprint_sha256": null,
-      "evidence": []
-    },
-    "dependency_floor": {
-      "execution_status": "not_run",
-      "reason": "Feasible minimum dependency combinations have not been installed or tested.",
-      "environment": {},
-      "executed_at": null,
-      "code_fingerprint_sha256": null,
-      "evidence": []
-    },
-    "reference_claims": {
-      "execution_status": "blocked",
-      "reason": "Claim-by-claim external parity/support evidence or an explicit completed scope-narrowing review remains required; no licensed external run invented.",
-      "environment": {},
-      "executed_at": null,
-      "code_fingerprint_sha256": null,
-      "evidence": []
-    },
-    "final_artifacts": {
-      "execution_status": "blocked",
-      "reason": "Local candidates are checked separately. No real release commit/remote validation and no final detached formal freeze have been certified.",
-      "environment": {},
-      "executed_at": null,
-      "code_fingerprint_sha256": null,
-      "evidence": []
-    }
+    "local_regression": {"execution_status": "not_run", "reason": "Bind fresh final candidate evidence after CI.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},
+    "installed_numerics": {"execution_status": "not_run", "reason": "Bind final wheel numerical evidence separately from clean installation.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},
+    "isolated_build": {"execution_status": "not_run", "reason": "Await isolated sdist-to-wheel evidence for this fingerprint.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},
+    "clean_install": {"execution_status": "not_run", "reason": "Await clean-venv evidence for this fingerprint.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},
+    "support_matrix": {"execution_status": "not_run", "reason": "Await all 12 current-source OS/Python CI results.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},
+    "dependency_floor": {"execution_status": "not_run", "reason": "Await all four current-source dependency-floor CI results.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},
+    "reference_claims": {"execution_status": "not_run", "reason": "Retain alpha and uncompleted external-Stata certification boundaries; attach final claims review.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},
+    "final_artifacts": {"execution_status": "not_run", "reason": "Bind final commit and artifact hashes in a detached execution manifest after validation.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []}
   },
   "artifacts": []
 }

@@ -1,8 +1,9 @@
 # Real-world benchmark record — 2026-09-12
 
 This directory archives a user-supplied local-machine benchmark run and its PPML diagnosis.
-The records are archived verbatim in the release bundle. The copies in this public repository are
-redacted for local paths and confidential dataset labels — see `provenance.json`. Do not overwrite
+The original pre-publication submission archives retain the verbatim records. This public repository
+and bundles rebuilt from it contain the redacted copies (local paths and confidential dataset labels);
+`provenance.json` preserves separate original and public-copy hashes. Do not overwrite
 them when a new build is rerun; add a dated follow-up artifact instead.
 
 ## Evidence status

@@ -1,4 +1,4 @@
-include README.md TODO.md CHANGELOG.md LICENSE NOTICE.md CONTRIBUTING.md SECURITY.md pyproject.toml MANIFEST.in .gitignore
+include README.md TODO.md CHANGELOG.md LICENSE NOTICE.md CONTRIBUTING.md SECURITY.md pyproject.toml MANIFEST.in .gitignore .gitattributes RELEASE_CLOSEOUT.md
 include compatibility/APPROVED_CHANGES.json
 graft compatibility/baselines
 graft econhdfe

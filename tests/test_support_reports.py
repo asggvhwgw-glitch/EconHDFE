@@ -95,12 +95,13 @@ def test_rendered_error_report_is_parameter_only():
 
 
 def test_packaged_templates_match_repository_and_skill(tmp_path):
+    # Template APIs return text, so checkout line endings are not content.
     error = error_report_template()
     bench = benchmark_report_template()
-    assert error.encode() == (ROOT / "docs/development/ERROR_REPORT_TEMPLATE.md").read_bytes()
-    assert error.encode() == (ROOT / "skills/econhdfe/references/error-report-template.md").read_bytes()
-    assert bench.encode() == (ROOT / "benchmarks/real_world/BENCHMARK_REPORT_TEMPLATE.md").read_bytes()
-    assert bench.encode() == (ROOT / "skills/econhdfe/references/benchmark-report-template.md").read_bytes()
+    assert error == (ROOT / "docs/development/ERROR_REPORT_TEMPLATE.md").read_text(encoding="utf-8")
+    assert error == (ROOT / "skills/econhdfe/references/error-report-template.md").read_text(encoding="utf-8")
+    assert bench == (ROOT / "benchmarks/real_world/BENCHMARK_REPORT_TEMPLATE.md").read_text(encoding="utf-8")
+    assert bench == (ROOT / "skills/econhdfe/references/benchmark-report-template.md").read_text(encoding="utf-8")
     out = tmp_path / "error.md"
     write_template("error", out)
     assert out.read_text() == error
@@ -127,3 +128,23 @@ def test_release_verifier_checks_wheel_templates_and_console_script():
     assert "wheel error-report template missing or differs" in text
     assert "wheel benchmark template missing or differs" in text
     assert "econhdfe-report = econhdfe.support_reports:main" in text
+
+
+def test_template_equality_normalizes_crlf_but_rejects_content_changes(tmp_path, monkeypatch):
+    import pytest
+
+    paths = (
+        "docs/development/ERROR_REPORT_TEMPLATE.md",
+        "skills/econhdfe/references/error-report-template.md",
+        "benchmarks/real_world/BENCHMARK_REPORT_TEMPLATE.md",
+        "skills/econhdfe/references/benchmark-report-template.md",
+    )
+    for relative in paths:
+        target = tmp_path / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes((ROOT / relative).read_text(encoding="utf-8").replace("\n", "\r\n").encode("utf-8"))
+    monkeypatch.setitem(globals(), "ROOT", tmp_path)
+    test_packaged_templates_match_repository_and_skill(tmp_path)
+    (tmp_path / paths[0]).write_text("changed content\n", encoding="utf-8")
+    with pytest.raises(AssertionError):
+        test_packaged_templates_match_repository_and_skill(tmp_path)

@@ -1,0 +1,7 @@
+# Portable source/CI fingerprints and packaged text templates.
+* text=auto eol=lf
+# Preserve the exact bytes of already-recorded execution evidence.
+docs/release/evidence/** -text
+*.pdf binary
+*.zip binary
+*.png binary
