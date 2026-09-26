@@ -2,10 +2,10 @@
   "schema_version": 1,
   "release_version": "0.6.3",
   "fingerprint_scope": "runtime-validation-v1",
-  "code_fingerprint_sha256": "4d2eb4b4e4fc97b0bb64078ca567279035fcc661fddab4447f668208d4f91fbb",
+  "code_fingerprint_sha256": "93e65d6512eb6303cea1f8362666d568e8229b59dce32ba8a21148697c318912",
   "source_commit": null,
   "checks": {
-    "local_regression": {"execution_status": "not_run", "reason": "Prior local results are retained separately; bind fresh evidence for this candidate fingerprint.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},
+    "local_regression": {"execution_status": "not_run", "reason": "Bind fresh evidence for the final candidate fingerprint.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},
     "installed_numerics": {"execution_status": "not_run", "reason": "Bind fresh installed-wheel evidence; host-dependency tests are not clean installation.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},
     "isolated_build": {"execution_status": "not_run", "reason": "Await isolated sdist-to-wheel CI evidence for this candidate.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},
     "clean_install": {"execution_status": "not_run", "reason": "Await new-venv installation evidence for this candidate.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},

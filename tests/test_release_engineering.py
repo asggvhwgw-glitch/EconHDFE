@@ -28,3 +28,29 @@ def test_release_checksum_manifest_coverage(tmp_path,mode):
     if mode=='valid':assert m.verify_checksums(tmp_path)==1
     else:
         with pytest.raises(ValueError):m.verify_checksums(tmp_path)
+
+
+def test_closeout_document_is_identical_in_outer_bundle_and_source(tmp_path, monkeypatch):
+    import io
+    import sys
+    import zipfile
+
+    # Synthetic archive fixture tests packaging only, not numerical acceptance.
+    m = script('assemble_release')
+    root = tmp_path / 'source'
+    (root / 'docs').mkdir(parents=True)
+    (root / 'skills/econhdfe').mkdir(parents=True)
+    payload = '# Release closeout\nCandidate only.\n'
+    (root / 'RELEASE_CLOSEOUT.md').write_text(payload, encoding='utf-8')
+    wheel = tmp_path / 'fixture.whl'
+    wheel.write_bytes(b'synthetic packaging fixture')
+    out = tmp_path / 'out'
+    monkeypatch.setattr(sys, 'argv', ['assemble_release', '--root', str(root),
+                                    '--wheel', str(wheel), '--out-dir', str(out)])
+    m.main()
+    with zipfile.ZipFile(out / f'econhdfe-v{m.VERSION}-release-bundle.zip') as bundle:
+        assert bundle.read('RELEASE_CLOSEOUT.md') == payload.encode()
+        raw_source = bundle.read(f'econhdfe-v{m.VERSION}-source.zip')
+        with zipfile.ZipFile(io.BytesIO(raw_source)) as source:
+            assert source.read(f'econhdfe-{m.VERSION}/RELEASE_CLOSEOUT.md') == payload.encode()
+        assert 'RELEASE_CLOSEOUT.md' in bundle.read('SHA256SUMS.txt').decode()

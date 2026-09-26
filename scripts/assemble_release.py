@@ -12,7 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = re.search(r'^version\s*=\s*"([^"]+)"', (ROOT / "pyproject.toml").read_text(), re.MULTILINE).group(1)
 ROOT_NAME = f"econhdfe-{VERSION}"
-TOP_LEVEL_DOCS = ["README.md", "CHANGELOG.md", "NOTICE.md", "LICENSE", "CONTRIBUTING.md", "SECURITY.md", "TODO.md"]
+TOP_LEVEL_DOCS = ["README.md", "CHANGELOG.md", "NOTICE.md", "LICENSE", "CONTRIBUTING.md", "SECURITY.md", "TODO.md", "RELEASE_CLOSEOUT.md"]
 BENCHMARK_EVIDENCE = [
     "benchmarks/hdfe/exact_rank.json",
     "benchmarks/hdfe/solver_v044_integration.json",
