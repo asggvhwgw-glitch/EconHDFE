@@ -11,7 +11,7 @@
     "ppml": "pre-0.4.5 baseline; rerun required after execution/separation fixes"
   },
   "ppml_caveat": "The supplied diagnosis establishes that the direct PPML API did not propagate ExecutionConfig threads/memory policy into its projector. PPML timings are preserved as observed historical results but must not be relabeled as a strict configured-thread benchmark.",
-  "immutability": "The two supplied Markdown records are archived verbatim in the release bundle; the public-repository copies are redacted as recorded below. Add follow-up runs as new files rather than overwriting existing records.",
+  "immutability": "The original pre-publication submission archives retain the untouched source records. Public-repository source and release bundles contain the declared redacted copies; both original and public hashes below remain immutable. Add follow-up runs as new files.",
   "public_release_redaction": {
     "applied": "2026-09-18",
     "reason": "The public repository copy must not disclose local machine paths, the local account name, or the identity of the confidential empirical projects that supplied the data.",
@@ -24,6 +24,6 @@
       "benchmark_complete_table_20260912.md": "988587917bb900492cd66abc5dcfb51d992be65813fcb4aae851c359b8372fef",
       "mobility_ppml_speedup_diagnosis_20260912.md": "72a7895d111f66874fc4cbf3e9da661aa8f30af6c41865f80814ff11b2ae7817"
     },
-    "original_verbatim_location": "The untouched originals remain the copies inside econhdfe-v0.6.3-release-bundle.zip and econhdfe-v0.6.3-source.zip, whose hashes are recorded under source_files above."
+    "original_verbatim_location": "Original pre-publication econhdfe-v0.6.3 source/submission archives retained by the maintainer, not bundles rebuilt from this public repository. source_files identifies the original bytes; public_copy_sha256 identifies the distributed public copies."
   }
 }

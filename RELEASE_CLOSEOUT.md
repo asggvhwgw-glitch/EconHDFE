@@ -21,6 +21,10 @@ GitHub 基线：`213e33817e26bbd47ff8a2b892e07e678650aae8`。
 - `scripts/build_release.sh` 使用 `python -m build --outdir` 默认 sdist→wheel 链路；
   不再同时显式指定 `--sdist --wheel` 从工作树分别构建两个制品。
 
+- 发布包 benchmark 校验读取已声明的 `public_copy_sha256`；原始 `source_files`
+  哈希保留不变。声明了脱敏就必须完整匹配公开副本，缺失、篡改或偷偷退回原始副本均拒绝。
+  CI 额外保留完整 bundle 校验日志，失败时也上传。
+
 没有增加运行依赖、估计器、公共参数、结果字段或错误码；没有放松原有数值断言。
 API/错误/Skill 的运行命令、配置默认值和模块依赖边界维持不变。
 

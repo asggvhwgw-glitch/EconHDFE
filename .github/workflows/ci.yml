@@ -94,7 +94,13 @@ jobs:
       # Never carry successful records from a different runtime fingerprint.
       # Job evidence is uploaded separately; this remains a candidate, not a release.
       - run: python scripts/release_acceptance.py reset
-      - run: bash scripts/build_release.sh
+      - run: bash scripts/build_release.sh 2>&1 | tee bundle-validation.log
+        shell: bash
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: release-bundle-log
+          path: bundle-validation.log
       - uses: actions/upload-artifact@v7
         with:
           name: release-candidate

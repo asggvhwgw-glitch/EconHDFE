@@ -64,6 +64,34 @@ def verify_checksums(root: Path) -> int:
     return len(listed)
 
 
+def verify_benchmark_provenance(directory: Path) -> None:
+    """Verify the declared public copy, or the original when no redaction exists.
+
+    Original hashes stay immutable provenance. A declared redaction must have a
+    complete hash map; never fall back to originals or skip a mismatched file.
+    """
+    provenance = json.loads((directory / "provenance.json").read_text(encoding="utf-8"))
+    original = provenance.get("source_files")
+    if not isinstance(original, dict) or not original:
+        raise ValueError("benchmark source hash map missing")
+    expected = original
+    if "public_release_redaction" in provenance:
+        redaction = provenance["public_release_redaction"]
+        expected = redaction.get("public_copy_sha256") if isinstance(redaction, dict) else None
+    if not isinstance(expected, dict) or set(expected) != set(original):
+        raise ValueError("benchmark public hash coverage mismatch")
+    for name in original:
+        if (not isinstance(name, str) or Path(name).name != name
+                or name in {"", ".", ".."} or "\\" in name or ":" in name):
+            raise ValueError("unsafe benchmark filename")
+        for value in (original[name], expected[name]):
+            if not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{64}", value):
+                raise ValueError(f"malformed benchmark hash: {name}")
+        archived = directory / name
+        if not archived.is_file() or digest(archived) != expected[name]:
+            raise ValueError(f"real-world benchmark provenance mismatch: {name}")
+
+
 def py_digests(root: Path) -> dict[str, str]:
     return {p.relative_to(root).as_posix(): digest(p) for p in sorted(root.rglob("*.py"))}
 
@@ -93,7 +121,7 @@ def main() -> None:
             zf.extractall(b)
         skill_name = f"econhdfe-skill-v{VERSION}.zip"
         required = {
-            Path("README.md"), Path("TODO.md"), Path("docs/release/execution.json"), Path("CHANGELOG.md"), Path("LICENSE"), Path("NOTICE.md"),
+            Path("README.md"), Path("RELEASE_CLOSEOUT.md"), Path("TODO.md"), Path("docs/release/execution.json"), Path("CHANGELOG.md"), Path("LICENSE"), Path("NOTICE.md"),
             Path("docs/README.md"), Path("docs/development/architecture.md"), ERROR_REPORT_TEMPLATE, PLANNER_REPORT_TEMPLATE, *ARCH_FILES,
             Path("docs/release/versioning.md"), MAINTENANCE, INNOVATION_REGISTRY, INNOVATION_AUDIT,
             *registered_manuscripts(ROOT), *REAL_WORLD_BENCHMARK_FILES,
@@ -114,7 +142,7 @@ def main() -> None:
         with zipfile.ZipFile(b / skill_name) as zf:
             zf.extractall(skill_dir)
         src = src_dir / f"econhdfe-{VERSION}"
-        for rel in (Path("TODO.md"), Path("docs/release/execution.json")):
+        for rel in (Path("TODO.md"), Path("RELEASE_CLOSEOUT.md"), Path("docs/release/execution.json")):
             if not (src / rel).is_file() or digest(src / rel) != digest(b / rel):
                 raise SystemExit(f"bundle/source execution-roadmap mismatch: {rel}")
         # Candidate validity is intentionally weaker than formal authorization.
@@ -152,12 +180,7 @@ def main() -> None:
             if digest(src / rel) != digest(b / rel):
                 raise SystemExit(f"bundle/source benchmark evidence mismatch: {rel.as_posix()}")
 
-        provenance = json.loads((src / "benchmarks/real_world/2026-09-12/provenance.json").read_text())
-        expected_sources = provenance.get("source_files", {})
-        for name, expected_hash in expected_sources.items():
-            archived = src / "benchmarks/real_world/2026-09-12" / name
-            if not archived.is_file() or digest(archived) != expected_hash:
-                raise SystemExit(f"real-world benchmark provenance mismatch: {name}")
+        verify_benchmark_provenance(src / "benchmarks/real_world/2026-09-12")
 
         wheel_names = {p.relative_to(whl_dir).as_posix() for p in whl_dir.rglob("*") if p.is_file()}
         if any(name.endswith((".tex", ".pdf")) for name in wheel_names):

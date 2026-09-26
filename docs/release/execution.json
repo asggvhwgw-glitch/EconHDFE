@@ -2,17 +2,17 @@
   "schema_version": 1,
   "release_version": "0.6.3",
   "fingerprint_scope": "runtime-validation-v1",
-  "code_fingerprint_sha256": "d8ad240b9c8e3c7d6729f1c1ce6d833f93ee85d2cd44b456df91ff468f7fa5ec",
+  "code_fingerprint_sha256": "52c9ef1bd786bb29ee18ae37fcb830e07fc996cf1e0c341ad2bbbf446fd21636",
   "source_commit": null,
   "checks": {
-    "local_regression": {"execution_status": "not_run", "reason": "Bind fresh evidence for the final candidate fingerprint.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},
-    "installed_numerics": {"execution_status": "not_run", "reason": "Bind fresh installed-wheel evidence; host-dependency tests are not clean installation.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},
-    "isolated_build": {"execution_status": "not_run", "reason": "Await isolated sdist-to-wheel CI evidence for this candidate.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},
-    "clean_install": {"execution_status": "not_run", "reason": "Await new-venv installation evidence for this candidate.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},
-    "support_matrix": {"execution_status": "not_run", "reason": "Await all 12 OS/Python matrix results for this candidate.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},
-    "dependency_floor": {"execution_status": "not_run", "reason": "Await all four minimum-runtime-dependency CI results.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},
-    "reference_claims": {"execution_status": "not_run", "reason": "Keep alpha and uncompleted external-Stata certification boundaries; attach final claims review before release.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},
-    "final_artifacts": {"execution_status": "not_run", "reason": "Final commit and artifact hashes must be bound in a detached manifest after CI acceptance.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []}
+    "local_regression": {"execution_status": "not_run", "reason": "Bind fresh final candidate evidence after CI.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},
+    "installed_numerics": {"execution_status": "not_run", "reason": "Bind final wheel numerical evidence separately from clean installation.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},
+    "isolated_build": {"execution_status": "not_run", "reason": "Await isolated sdist-to-wheel evidence for this fingerprint.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},
+    "clean_install": {"execution_status": "not_run", "reason": "Await clean-venv evidence for this fingerprint.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},
+    "support_matrix": {"execution_status": "not_run", "reason": "Await all 12 current-source OS/Python CI results.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},
+    "dependency_floor": {"execution_status": "not_run", "reason": "Await all four current-source dependency-floor CI results.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},
+    "reference_claims": {"execution_status": "not_run", "reason": "Retain alpha and uncompleted external-Stata certification boundaries; attach final claims review.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},
+    "final_artifacts": {"execution_status": "not_run", "reason": "Bind final commit and artifact hashes in a detached execution manifest after validation.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []}
   },
   "artifacts": []
 }
