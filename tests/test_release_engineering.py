@@ -41,7 +41,7 @@ def test_closeout_document_is_identical_in_outer_bundle_and_source(tmp_path, mon
     (root / 'docs').mkdir(parents=True)
     (root / 'skills/econhdfe').mkdir(parents=True)
     payload = '# Release closeout\nCandidate only.\n'
-    (root / 'RELEASE_CLOSEOUT.md').write_text(payload, encoding='utf-8')
+    (root / 'RELEASE_CLOSEOUT.md').write_bytes(payload.encode('utf-8'))
     wheel = tmp_path / 'fixture.whl'
     wheel.write_bytes(b'synthetic packaging fixture')
     out = tmp_path / 'out'

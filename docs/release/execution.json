@@ -2,7 +2,7 @@
   "schema_version": 1,
   "release_version": "0.6.3",
   "fingerprint_scope": "runtime-validation-v1",
-  "code_fingerprint_sha256": "93e65d6512eb6303cea1f8362666d568e8229b59dce32ba8a21148697c318912",
+  "code_fingerprint_sha256": "d8ad240b9c8e3c7d6729f1c1ce6d833f93ee85d2cd44b456df91ff468f7fa5ec",
   "source_commit": null,
   "checks": {
     "local_regression": {"execution_status": "not_run", "reason": "Bind fresh evidence for the final candidate fingerprint.", "environment": {}, "executed_at": null, "code_fingerprint_sha256": null, "evidence": []},
