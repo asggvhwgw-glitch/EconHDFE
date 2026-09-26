@@ -46,13 +46,14 @@ def wild_cluster_bootstrap_ols(*, absorber: HDFEAbsorber, y_within, X_within,
         mult_g = wild_weights(rng, (G, b), weight_distribution)
         ystar = fitted[:, None] + u[:, None] * mult_g[dense]
         ystar = absorber.residualize(ystar, absorb_threads=fe_threads)
-        with threadpool_limits(limits=1):
-            coef = bread @ (Xw.T @ (ystar * sw[:, None]))
+        coef = bread @ (Xw.T @ (ystar * sw[:, None]))
         return coef.T
 
-    batches = Parallel(n_jobs=n_jobs, prefer="threads")(
-        delayed(one_batch)(ss, b) for ss, b in zip(seeds, sizes, strict=False)
-    )
+    # BLAS limits are process-wide: enter/restore once, not in racing workers.
+    with threadpool_limits(limits=1):
+        batches = Parallel(n_jobs=n_jobs, prefer="threads")(
+            delayed(one_batch)(ss, b) for ss, b in zip(seeds, sizes, strict=False)
+        )
     return np.vstack(batches)[:reps]
 
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
+from enum import Enum
 import hashlib
 import importlib
 import inspect
@@ -55,6 +56,24 @@ def _dataclass_schema(cls: type) -> list[dict[str, str]]:
     return out
 
 
+def _public_signature(obj: Any) -> str:
+    """Keep inherited Enum lookup independent of CPython's metaclass helpers.
+
+    Nonempty enums with the standard metaclass use the existing snapshot's
+    ``(*values)`` representation. Empty enums (the functional factory), custom
+    metaclasses and explicit signatures still use normal introspection.
+    Historical snapshot files are never rewritten.
+    """
+    if isinstance(obj, type(Enum)) and obj.__members__:
+        explicit = any("__signature__" in vars(base) for base in obj.__mro__ if base is not Enum)
+        if not explicit:
+            if type(obj).__call__ is type(Enum).__call__:
+                return "(*values)"
+            signature = inspect.signature(type(obj).__call__)
+            return str(signature.replace(parameters=list(signature.parameters.values())[1:]))
+    return str(inspect.signature(obj))
+
+
 def capture_contract() -> dict[str, Any]:
     pkg = importlib.import_module("econhdfe")
     errors_mod = importlib.import_module("econhdfe.errors")
@@ -71,7 +90,7 @@ def capture_contract() -> dict[str, Any]:
     for name, obj in sorted(objects.items()):
         if callable(obj):
             try:
-                signatures[name] = str(inspect.signature(obj))
+                signatures[name] = _public_signature(obj)
             except (TypeError, ValueError):
                 pass
         if inspect.isclass(obj) and dataclasses.is_dataclass(obj):

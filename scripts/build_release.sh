@@ -40,7 +40,8 @@ if [[ "${ECONHDFE_OFFLINE_BUILD:-0}" == "1" ]]; then
   python -m pip wheel . --no-deps --no-build-isolation -w "$DIST"
   python -c 'import setuptools.build_meta as b,sys; b.build_sdist(sys.argv[1])' "$DIST"
 else
-  python -m build --sdist --wheel --outdir "$DIST"
+  # The default frontend builds the wheel FROM the sdist, not alongside it.
+  python -m build --outdir "$DIST"
 fi
 WHEEL="$(find "$DIST" -maxdepth 1 -type f -name "econhdfe-${VERSION}-*.whl" -print -quit)"
 [[ -n "$WHEEL" ]] || { echo 'built wheel not found' >&2; exit 1; }

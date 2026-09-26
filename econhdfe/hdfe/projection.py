@@ -1,11 +1,17 @@
 from __future__ import annotations
 
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
+from threading import RLock
 import numpy as np
 from ..planner import effective_cpu_count
 from ..planner.calibration import auto_thread_count
-from numba import config, get_num_threads, get_thread_id, njit, prange, set_num_threads
+from numba import config, get_num_threads, get_thread_id, njit, prange, set_num_threads, threading_layer
+
+
+# workqueue aborts on concurrent entry, even with one masked Numba thread.
+# All package parallel kernels use this module's reentrant execution guard.
+_WORKQUEUE_LOCK = RLock()
 
 
 @dataclass(slots=True)
@@ -193,16 +199,23 @@ def resolve_threads(value, *, nobs: int | None = None, calibration_min_nobs: int
 
 @contextmanager
 def numba_thread_limit(nthreads: int):
-    """Temporarily set Numba threads and restore the caller's setting."""
-    old = int(get_num_threads())
+    """Restore the caller's thread mask; serialize non-threadsafe workqueue.
+
+    The lock covers package-managed parallel regions, not unrelated external
+    Numba code. Reentrancy permits an absorber to call a guarded projection.
+    OpenMP/TBB retain concurrent execution; no platform-specific defaults change.
+    """
+    old = int(get_num_threads())  # Also initializes the selected threading layer.
     n = max(1, min(int(nthreads), int(config.NUMBA_NUM_THREADS)))
-    if n != old:
-        set_num_threads(n)
-    try:
-        yield
-    finally:
+    guard = _WORKQUEUE_LOCK if threading_layer() == "workqueue" else nullcontext()
+    with guard:
         if n != old:
-            set_num_threads(old)
+            set_num_threads(n)
+        try:
+            yield
+        finally:
+            if n != old:
+                set_num_threads(old)
 
 
 def project_indexed_inplace(
