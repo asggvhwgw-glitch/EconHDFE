@@ -24,6 +24,59 @@ _GF2_MAX_XOR_BUDGET = 50_000_000
 _DEFAULT_FLINT_MAX_CELLS = 4_000_000
 _EXACT_PRIME = 2_147_483_647
 
+# Per-component native-elimination safety limits, shared by the modular and
+# rational passes. These are cooperative arithmetic/storage guards, NOT a hard
+# process RSS or wall-clock limit. Optional external backends are not metered.
+_NATIVE_MAX_WORK = 50_000_000
+_NATIVE_MAX_BYTES = 256 * 1024 * 1024
+_NATIVE_MAX_INTEGER_BITS = 16_384
+
+
+class _ExactRankResourceError(RuntimeError):
+    """No exact answer was computed; never substitute a finite-field bound."""
+
+    def __init__(self, stage: str, resource: str, used: int, limit: int):
+        self.stage, self.resource = stage, resource
+        self.used, self.limit = used, limit
+        super().__init__(
+            f"exact rank resource limit: stage={stage}, {resource}={used}, "
+            f"limit={limit}; no exact rank returned"
+        )
+
+
+def _row_storage(entries: int, bits: int = 1) -> int:
+    # Conservative accounting for a dict, keys, Python integers and spare
+    # hash-table capacity. Input arrays, interpreter/JIT and allocator overhead
+    # are outside this estimate; callers must not report it as measured RSS.
+    return 256 + int(entries) * (160 + 4 * ((int(bits) + 29) // 30))
+
+
+class _NativeRankBudget:
+    def __init__(self):
+        self.work = 0
+        self.peak_bytes = 0
+        self.max_integer_bits = 0
+
+    def check(self, stage: str, *, work: int = 0, storage: int = 0,
+              bits: int = 0) -> None:
+        self.work += int(work)
+        self.peak_bytes = max(self.peak_bytes, int(storage))
+        self.max_integer_bits = max(self.max_integer_bits, int(bits))
+        for resource, used, limit in (
+            ("work_units", self.work, _NATIVE_MAX_WORK),
+            ("estimated_bytes", self.peak_bytes, _NATIVE_MAX_BYTES),
+            ("integer_bits", self.max_integer_bits, _NATIVE_MAX_INTEGER_BITS),
+        ):
+            if used > limit:
+                raise _ExactRankResourceError(stage, resource, used, limit)
+
+    def prepare(self, edges: np.ndarray, stage: str) -> int:
+        # Check BEFORE materializing Python row dictionaries. Retain the full
+        # initial-row allowance even after rows are consumed (a safe overcount).
+        storage = int(len(edges)) * _row_storage(int(edges.shape[1]))
+        self.check(stage, work=int(edges.size), storage=storage)
+        return storage
+
 
 @dataclass(frozen=True, slots=True)
 class CategoricalRankInfo:
@@ -418,7 +471,8 @@ def _rows_as_unit_dicts(component_edges: np.ndarray, col_order: dict[int, int]):
 
 
 def _modular_sparse_rank(
-    component_edges: np.ndarray, prime: int, *, target_rank: int | None = None
+    component_edges: np.ndarray, prime: int, *, target_rank: int | None = None,
+    _budget: _NativeRankBudget | None = None,
 ) -> int:
     """Rank modulo ``prime`` using sparse row echelon.
 
@@ -427,6 +481,10 @@ def _modular_sparse_rank(
     the answer and are skipped.  This matters when unique edges greatly
     outnumber FE levels, the common HDFE case.
     """
+    budget = _NativeRankBudget() if _budget is None else _budget
+    source_storage = budget.prepare(component_edges, "native_modular")
+    pivot_storage = 0
+    value_bits = int(prime).bit_length()
     col_order = _column_order(component_edges)
     rows = _rows_as_unit_dicts(component_edges, col_order)
     pivots: dict[int, dict[int, int]] = {}
@@ -434,6 +492,8 @@ def _modular_sparse_rank(
     for raw in rows:
         row = raw
         while row:
+            budget.check("native_modular", work=len(row), bits=value_bits,
+                         storage=source_storage + pivot_storage + 3 * _row_storage(len(row), value_bits))
             c = min(row)
             a = row[c] % prime
             if a == 0:
@@ -444,11 +504,15 @@ def _modular_sparse_rank(
                 if a != 1:
                     inv = pow(a, prime - 2, prime)
                     row = {k: (v * inv) % prime for k, v in row.items() if (v * inv) % prime}
+                pivot_storage += _row_storage(len(row), value_bits)
                 pivots[c] = row
                 if target_rank is not None and len(pivots) >= target_rank:
                     return len(pivots)
                 break
             # Stored pivots are normalized to coefficient one at c.
+            budget.check("native_modular", work=len(row) + len(pivot),
+                         storage=source_storage + pivot_storage
+                         + 3 * _row_storage(len(row) + len(pivot), value_bits))
             out = dict(row)
             for k, pv in pivot.items():
                 nv = (out.get(k, 0) - a * pv) % prime
@@ -476,7 +540,9 @@ def _normalize_integer_row(row: dict[int, int]) -> dict[int, int]:
     return row
 
 
-def _rational_sparse_rank(component_edges: np.ndarray) -> int:
+def _rational_sparse_rank(
+    component_edges: np.ndarray, *, _budget: _NativeRankBudget | None = None
+) -> int:
     """Deterministic exact rank over Q using primitive integer row operations.
 
     This path is used only when the fast modular rank does not attain the
@@ -484,6 +550,9 @@ def _rational_sparse_rank(component_edges: np.ndarray) -> int:
     FE dependency. Cross-multiplication avoids floating-point tolerances;
     primitive-row normalization controls integer growth.
     """
+    budget = _NativeRankBudget() if _budget is None else _budget
+    source_storage = budget.prepare(component_edges, "native_rational")
+    pivot_storage = 0
     col_order = _column_order(component_edges)
     rows = _rows_as_unit_dicts(component_edges, col_order)
     pivots: dict[int, dict[int, int]] = {}
@@ -491,16 +560,31 @@ def _rational_sparse_rank(component_edges: np.ndarray) -> int:
     for raw in rows:
         row = raw
         while row:
+            budget.check("native_rational", work=len(row),
+                         storage=source_storage + pivot_storage)
+            row_bits = max(abs(v).bit_length() for v in row.values())
+            budget.check("native_rational", bits=row_bits,
+                         storage=source_storage + pivot_storage + 3 * _row_storage(len(row), row_bits))
             c = min(row)
             a = int(row[c])
             pivot = pivots.get(c)
             if pivot is None:
+                pivot_storage += _row_storage(len(row), row_bits)
                 pivots[c] = _normalize_integer_row(row)
                 break
             b = int(pivot[c])
             g = gcd(abs(a), abs(b))
             mr = b // g
             mp = a // g
+            pivot_bits = max(abs(v).bit_length() for v in pivot.values())
+            # Cross-products are bounded BEFORE creating big integers or union
+            # sets. Cancellation may make this conservative; failure is explicit.
+            product_bits = max(abs(mr).bit_length() + row_bits,
+                               abs(mp).bit_length() + pivot_bits) + 1
+            width = len(row) + len(pivot)
+            budget.check("native_rational", work=3 * width, bits=product_bits,
+                         storage=source_storage + pivot_storage
+                         + 3 * _row_storage(width, product_bits))
             keys = set(row)
             keys.update(pivot)
             out: dict[int, int] = {}
@@ -571,12 +655,13 @@ def _component_rank(
     # Dependency-free fallback retained for minimal installations. A nonzero
     # mod-p minor certifies the same lower bound over Q; only a shortfall from
     # the deterministic multipartite upper bound triggers rational elimination.
+    budget = _NativeRankBudget()
     rmod = _modular_sparse_rank(
-        component_edges, _EXACT_PRIME, target_rank=upper
+        component_edges, _EXACT_PRIME, target_rank=upper, _budget=budget
     )
     if rmod == upper:
         return int(rmod)
-    return int(_rational_sparse_rank(component_edges))
+    return int(_rational_sparse_rank(component_edges, _budget=budget))
 
 
 def categorical_rank(
@@ -600,7 +685,11 @@ def categorical_rank(
     dense core is safely bounded, then SymPy's sparse DomainMatrix) before
     falling back to the dependency-free native exact implementation.
 
-    The result contains no floating-point rank tolerance.
+    The result contains no floating-point rank tolerance. Native elimination
+    has cooperative per-component work, estimated-storage and integer-growth
+    limits shared by its modular/rational passes; exhaustion raises RuntimeError
+    instead of returning an uncertified bound. These are not process RSS/time
+    limits and do not meter optional SymPy/FLINT calls or topology construction.
     """
     if backend not in {"auto", "native", "sympy", "flint"}:
         raise ValueError("backend must be one of: auto, native, sympy, flint")

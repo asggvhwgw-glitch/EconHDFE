@@ -1,5 +1,22 @@
 # 0.6.2 — nonlinear and resource-boundary validation candidate
 
+## 0.6.4 — unreleased
+
+- Bound native modular/rational exact-rank fallback with shared per-component
+  work accounting, conservative sparse-storage admission and pre-multiplication
+  integer-growth guards. Resource exhaustion fails explicitly; no finite-field
+  lower bound is returned as exact. Optional external calls and process RSS/time
+  are not covered by these cooperative guards.
+- Bound `equilibrated_lstsq` validation/scaling scratch by the existing row-block
+  budget and divide directly into the private QR workspace. QR/SVD, coefficient
+  units, rank thresholds, public APIs and estimator formulas are unchanged.
+- Add independent rational/SVD, layout/scale, allocation and resource-failure
+  guards plus an isolated-process memory/timing comparison driver.
+- Reconcile the roadmap with the published 0.6.3 release; reset 0.6.4 execution
+  evidence. Cross-platform, clean-install and final release acceptance are
+  separate checks, not implied by this entry.
+
+
 ## 0.6.3 — local candidate, 2026-09-14
 
 - Fuse NumPy weighted/unweighted column products and row reductions in the shared

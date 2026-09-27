@@ -1,0 +1,43 @@
+{
+  "base_commit": "669f166db717b2ec553a4c07dd6be7faa1ae5e43",
+  "artifact_id": 10924194551,
+  "artifact_sha256": "419e6f04bb8421262c5e7528aafac3d949b8baff45a74fb31288d746a01e470d",
+  "source_tests": {
+    "baseline_passed": 931,
+    "candidate_passed": 993,
+    "failed": 0
+  },
+  "installed_numerics": {
+    "passed": 360,
+    "failed": 0,
+    "mode": "HOST dependencies; source-directory-independent wheel imports"
+  },
+  "smokes": {
+    "commands": 6,
+    "exit_code": 0,
+    "mode": "HOST dependencies"
+  },
+  "redaction": "Source, temporary and Python-prefix paths normalized; host identifier removed. Values, exception messages, counts and exit codes retained.",
+  "logs": {
+    "source-tests.log": {
+      "original_sha256": "cc797db66b45d5a4fec95cfe9eda94e72fa08eb7a8729dc5efc1817007ff38d9",
+      "public_sha256": "51f2a913fc7d45f23b8103003496335cd23c590153de5ef7d704d7f6c6588406"
+    },
+    "source-tests.xml": {
+      "original_sha256": "5ce18ef610a045655d773e83c12fcd90d0a357dfd794fb9b5563bdeb7daf8d72",
+      "public_sha256": "b7ac7b2560250c3012cc6f195a90ea89d92178f0b06c869eacb6c0f1a38b4951"
+    },
+    "installed-tests.log": {
+      "original_sha256": "33d3c03e32d30e229189f6e6f4e42a17198594c20538f551f1b3e765f775507e",
+      "public_sha256": "46b11355b01fca8923f411bb96ece98fbc80f0a58e5e390ae38bc193cebfee61"
+    },
+    "installed-tests.xml": {
+      "original_sha256": "fc4746de3d52e75024da5091a0b9b35f1317dbe2bce4994b10e668ef49716349",
+      "public_sha256": "709b87e5eea24c19fa6324b845a2b41fc4504cfac9663681f688ee00329ed7f1"
+    },
+    "wheel-build.log": {
+      "original_sha256": "d0d2d6baecb47108e23699217fb173ac92b44568dff15058c91d29f8872760b9",
+      "public_sha256": "3112a7a3aa84da066ade0a52073d64888897ed6993398766e7cbfece86f5f939"
+    }
+  }
+}

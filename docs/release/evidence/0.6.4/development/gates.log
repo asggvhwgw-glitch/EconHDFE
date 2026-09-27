@@ -1,0 +1,90 @@
+$ python scripts/version.py gate
+0.6.4
+exit_code=0
+
+$ python scripts/compatibility.py diff
+public contract: no changes
+exit_code=0
+
+$ python scripts/generate_architecture_map.py --check
+architecture map PASS: SOURCE_ROOT/docs/development/architecture-map
+exit_code=0
+
+Wheel smoke commands (six): exit_code=0
+WARNING: The directory 'HOME/.cache/pip' or its parent directory is not owned or is not writable by the current user. The cache has been disabled. Check the permissions and owner of that directory. If executing pip with sudo, you should use sudo's -H flag.
+Processing VALIDATION_DIR/dist/econhdfe-0.6.4-py3-none-any.whl
+Installing collected packages: econhdfe
+Successfully installed econhdfe-0.6.4
+isolated import: TEMP_DIR/site/pyreghdfe/__init__.py
+pyreghdfe 0.6.4: smoke PASS; OLS iter=6; IV beta=1.472017; event-ref/fv PASS; PPML iter=6; IV-PPML iter=6
+{
+  "cuda_device_count": 0,
+  "cuda_error": "ModuleNotFoundError: No module named 'cupy'",
+  "implementation": "CPython",
+  "logical_cpus": 5,
+  "machine": "x86_64",
+  "numba_threads": 4,
+  "packages": {
+    "cupy": {
+      "available": false,
+      "error": "ModuleNotFoundError: No module named 'cupy'"
+    },
+    "econhdfe": {
+      "available": true,
+      "version": "0.6.4"
+    },
+    "joblib": {
+      "available": true,
+      "version": "1.5.3"
+    },
+    "numba": {
+      "available": true,
+      "version": "0.65.1"
+    },
+    "numpy": {
+      "available": true,
+      "version": "2.3.5"
+    },
+    "pandas": {
+      "available": true,
+      "version": "2.2.3"
+    },
+    "polars": {
+      "available": false,
+      "error": "ModuleNotFoundError: No module named 'polars'"
+    },
+    "pyarrow": {
+      "available": false,
+      "error": "ModuleNotFoundError: No module named 'pyarrow'"
+    },
+    "scipy": {
+      "available": true,
+      "version": "1.17.0"
+    },
+    "threadpoolctl": {
+      "available": true,
+      "version": "3.6.0"
+    }
+  },
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+  "python": "3.13.5"
+}
+{
+  "checks": {
+    "iv_finite": true,
+    "iv_nobs": 80,
+    "ols_finite": true,
+    "ols_nobs": 80,
+    "ppml_finite": true,
+    "ppml_nobs": 80
+  },
+  "status": "pass"
+}
+cluster inference smoke PASS; G=8; WCR reps=256; p=0.195312
+support-report smoke PASS: econhdfe 0.6.4
+econhdfe effects smoke PASS
+
+Build frontend dependency probe (failed, NOT a clean-build success):
+WARNING: The directory 'HOME/.cache/pip' or its parent directory is not owned or is not writable by the current user. The cache has been disabled. Check the permissions and owner of that directory. If executing pip with sudo, you should use sudo's -H flag.
+ERROR: Could not find a version that satisfies the requirement build (from versions: none)
+ERROR: No matching distribution found for build

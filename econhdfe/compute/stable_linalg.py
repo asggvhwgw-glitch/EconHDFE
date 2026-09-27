@@ -22,18 +22,25 @@ def equilibrated_lstsq(X, y, *, chunk_rows=32768):
     y = np.asarray(y, dtype=np.float64)
     if X.ndim != 2 or y.ndim != 1 or X.shape[0] != len(y):
         raise ValueError("X must be a matrix and y a matching vector")
-    if not np.all(np.isfinite(X)) or not np.all(np.isfinite(y)):
-        raise ValueError("least-squares inputs must be finite")
     n, k = X.shape
     if k == 0:
+        if not np.all(np.isfinite(y)):
+            raise ValueError("least-squares inputs must be finite")
         return np.empty(0), np.empty((0, 0)), 0
     if n == 0:
         return np.zeros(k), np.zeros((k, k)), 0
-    scale = np.max(np.abs(X), axis=0)
+    # Bound validation/scaling scratch as well as the QR row block. Reducing
+    # absolute maxima also detects NaN/Inf, without a full n-by-k boolean mask.
+    chunk = max(1, min(int(chunk_rows), 2_000_000 // (k + 1)))
+    scale = np.zeros(k)
+    for lo in range(0, n, chunk):
+        hi = min(n, lo + chunk)
+        maxima = np.max(np.abs(X[lo:hi]), axis=0)
+        if not np.all(np.isfinite(maxima)) or not np.all(np.isfinite(y[lo:hi])):
+            raise ValueError("least-squares inputs must be finite")
+        np.maximum(scale, maxima, out=scale)
     scale[scale == 0] = 1.0
     R = np.empty((0, k + 1))
-    # Bound the temporary row block in addition to the inevitable O(k^2) R.
-    chunk = max(1, min(int(chunk_rows), 2_000_000 // (k + 1)))
     for lo in range(0, n, chunk):
         hi = min(n, lo + chunk)
         # One Fortran-ordered buffer, not block + vstack + full-height R.
@@ -41,7 +48,7 @@ def equilibrated_lstsq(X, y, *, chunk_rows=32768):
         previous = len(R)
         block = np.empty((previous + hi - lo, k + 1), order="F")
         block[:previous] = R
-        block[previous:, :k] = X[lo:hi] / scale
+        np.divide(X[lo:hi], scale, out=block[previous:, :k])
         block[previous:, k] = y[lo:hi]
         R = la.qr(block, mode="raw", overwrite_a=True, check_finite=False)[1]
     U, s, Vh = la.svd(R[:, :k], full_matrices=False, check_finite=False)
