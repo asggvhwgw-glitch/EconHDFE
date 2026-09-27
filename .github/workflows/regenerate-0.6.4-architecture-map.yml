@@ -1,0 +1,60 @@
+name: Regenerate 0.6.4 architecture map
+
+on:
+  push:
+    branches:
+      - ops/regenerate-archmap-f926583
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Regenerate and update development branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEV='dev/0.6.4-resource-workspace'
+          STAGE='ops/regenerate-archmap-f926583'
+          EXPECTED_HEAD='f926583d7453bd1a23dcf12b138d751a90465f8b'
+
+          git fetch origin "$DEV"
+          test "$(git rev-parse "origin/$DEV")" = "$EXPECTED_HEAD"
+          git checkout -B "$DEV" "origin/$DEV"
+
+          python skills/econhdfe/scripts/architecture_map.py
+          python skills/econhdfe/scripts/architecture_map.py --check
+          git diff --check
+
+          python - <<'PY'
+          import subprocess
+          expected = {
+              'docs/development/architecture-map/architecture.json',
+              'docs/development/architecture-map/architecture.md',
+              'docs/development/architecture-map/architecture.html',
+          }
+          out = subprocess.check_output(['git','status','--porcelain=v1']).decode().splitlines()
+          changed = {line[3:] for line in out if line}
+          if changed != expected:
+              raise SystemExit(f'unexpected changed paths: {sorted(changed)}')
+          PY
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/development/architecture-map/architecture.json \
+                  docs/development/architecture-map/architecture.md \
+                  docs/development/architecture-map/architecture.html
+          git commit -m 'Regenerate architecture map for 0.6.4'
+
+          git push origin HEAD:"$DEV"
+
+          CURRENT_STAGE="$(git ls-remote origin "refs/heads/$STAGE" | cut -f1)"
+          if [ "$CURRENT_STAGE" = "$GITHUB_SHA" ]; then
+            git push origin --delete "$STAGE"
+          fi
