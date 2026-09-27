@@ -80,3 +80,5 @@ Repository-local benchmark timings are development evidence unless an external c
 - [Execution acceptance, distinct from review](release/acceptance.md)
 - [Functional versus benchmark test environment](development/test-environment.md)
 - [0.6.3 measured performance](release/performance-0.6.3.md)
+
+Release publication mechanics: [release/publishing.md](release/publishing.md).
