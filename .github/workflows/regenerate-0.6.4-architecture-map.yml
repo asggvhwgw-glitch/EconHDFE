@@ -1,4 +1,4 @@
-name: Regenerate 0.6.4 architecture map
+name: Fix 0.6.4 architecture-map release parity
 
 on:
   push:
@@ -9,14 +9,14 @@ permissions:
   contents: write
 
 jobs:
-  regenerate:
+  fix:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Regenerate and update development branch
+      - name: Align architecture map with release-source exclusions
         shell: bash
         run: |
           set -euo pipefail
@@ -28,13 +28,57 @@ jobs:
           test "$(git rev-parse "origin/$DEV")" = "$EXPECTED_HEAD"
           git checkout -B "$DEV" "origin/$DEV"
 
+          python - <<'PY'
+          from pathlib import Path
+
+          generator = Path('skills/econhdfe/scripts/architecture_map.py')
+          text = generator.read_text()
+          old = '''            if p.suffix in {".pyc", ".pyo", ".nbc", ".nbi"}:
+                          continue
+          '''
+          new = '''            if p.suffix in {".pyc", ".pyo", ".nbc", ".nbi", ".aux", ".log", ".out"} or p.name == ".coverage":
+                          continue
+          '''
+          if text.count(old) != 1:
+              raise SystemExit('architecture-map exclusion patch anchor changed')
+          generator.write_text(text.replace(old, new))
+
+          test = Path('tests/test_architecture_visualization.py')
+          text = test.read_text()
+          if 'import runpy\n' not in text:
+              text = text.replace('import json\n', 'import json\nimport runpy\n', 1)
+          marker = 'def test_architecture_repo_area_counts_ignore_release_excluded_transients'
+          if marker not in text:
+              text += '''
+
+          def test_architecture_repo_area_counts_ignore_release_excluded_transients(tmp_path):
+              namespace = runpy.run_path(str(ROOT / "skills" / "econhdfe" / "scripts" / "architecture_map.py"))
+              docs = tmp_path / "docs"
+              docs.mkdir()
+              (docs / "kept.md").write_text("# kept\\n")
+              for name in ("trace.log", "trace.out", "trace.aux", ".coverage"):
+                  (docs / name).write_text("transient\\n")
+              areas = {item["name"]: item for item in namespace["_repo_areas"](tmp_path)}
+              assert areas["docs"] == {
+                  "name": "docs",
+                  "files": 1,
+                  "python_files": 0,
+                  "markdown_files": 1,
+              }
+          '''
+          test.write_text(text)
+          PY
+
           python skills/econhdfe/scripts/architecture_map.py
           python skills/econhdfe/scripts/architecture_map.py --check
+          python -m pytest -q tests/test_architecture_visualization.py
           git diff --check
 
           python - <<'PY'
           import subprocess
           expected = {
+              'skills/econhdfe/scripts/architecture_map.py',
+              'tests/test_architecture_visualization.py',
               'docs/development/architecture-map/architecture.json',
               'docs/development/architecture-map/architecture.md',
               'docs/development/architecture-map/architecture.html',
@@ -47,11 +91,12 @@ jobs:
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs/development/architecture-map/architecture.json \
+          git add skills/econhdfe/scripts/architecture_map.py \
+                  tests/test_architecture_visualization.py \
+                  docs/development/architecture-map/architecture.json \
                   docs/development/architecture-map/architecture.md \
                   docs/development/architecture-map/architecture.html
-          git commit -m 'Regenerate architecture map for 0.6.4'
-
+          git commit -m 'Keep architecture map stable in release source archives'
           git push origin HEAD:"$DEV"
 
           CURRENT_STAGE="$(git ls-remote origin "refs/heads/$STAGE" | cut -f1)"
