@@ -62,3 +62,11 @@ The GitHub workflow still produces candidate artifacts. Configuring a matrix
 is not passing that matrix. Maintainers must collect its actual results, the
 feasible dependency-floor tests and clean build/install evidence before formal
 mode can succeed. The package does not invent commit IDs or remote test results.
+
+## Publication handoff
+
+After detached formal authorization succeeds, public tag/Release/PyPI publication is
+performed by the manually dispatched **Publish release** workflow. It consumes the
+already-built `release-candidate` from the authorized validation run and never
+rebuilds it. See [publishing.md](publishing.md) for inputs, identity checks, retry
+semantics and the PyPI Trusted Publishing constraint.

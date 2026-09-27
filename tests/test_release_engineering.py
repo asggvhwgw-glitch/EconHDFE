@@ -89,3 +89,28 @@ def test_benchmark_provenance_preserves_original_and_checks_public_copy(tmp_path
 
 def test_repository_public_benchmark_hashes_match():
     script("verify_release").verify_benchmark_provenance(ROOT / "benchmarks/real_world/2026-09-12")
+
+
+def test_publication_workflow_is_manual_and_version_agnostic():
+    text = (ROOT / ".github/workflows/release-v0.6.3.yml").read_text(encoding="utf-8")
+    assert "name: Publish release" in text
+    assert "workflow_dispatch:" in text
+    assert "\n  push:" not in text
+    assert "2782d93f901ec1eed28ac0f963834701e0a44b09" not in text
+    assert "36264493861" not in text
+    assert "source_run:" in text and "source_commit:" in text and "version:" in text
+    assert "run_conclusion" in text and "run_sha" in text
+    assert ".github/workflows/ci.yml" in text
+    assert 'gh run download "$SOURCE_RUN"' in text
+    assert "sha256sum -c" in text
+    assert "Release $TAG already exists; refusing to overwrite an immutable release." in text
+
+
+def test_publication_workflow_uses_trusted_publishing_without_token_fallback():
+    text = (ROOT / ".github/workflows/release-v0.6.3.yml").read_text(encoding="utf-8")
+    assert "id-token: write" in text
+    assert "pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e" in text
+    assert "PYPI_API_TOKEN" not in text
+    assert "password:" not in text
+    assert "needs.github-release.outputs.wheel_sha256" in text
+    assert "needs.github-release.outputs.sdist_sha256" in text
