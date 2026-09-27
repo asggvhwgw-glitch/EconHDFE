@@ -457,7 +457,7 @@ flowchart LR
 | `tests/` | 67 | 67 | 0 |
 | `validation/` | 25 | 8 | 3 |
 | `benchmarks/` | 116 | 29 | 8 |
-| `docs/` | 77 | 0 | 51 |
+| `docs/` | 73 | 0 | 51 |
 | `scripts/` | 22 | 19 | 0 |
 | `skills/` | 17 | 4 | 12 |
 | `compatibility/` | 23 | 0 | 0 |
