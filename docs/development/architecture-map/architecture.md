@@ -460,7 +460,7 @@ flowchart LR
 | `docs/` | 73 | 0 | 51 |
 | `scripts/` | 22 | 19 | 0 |
 | `skills/` | 17 | 4 | 12 |
-| `compatibility/` | 23 | 0 | 0 |
+| `compatibility/` | 24 | 0 | 0 |
 
 ## Visual companion
 
