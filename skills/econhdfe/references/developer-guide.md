@@ -148,3 +148,17 @@ Treat originality as a release contract, not as marketing language. Before descr
 A registered `technical_innovation` must ship in the same release with a formal LaTeX manuscript and compiled PDF, an explicit prior-art boundary, implementation correspondence, correctness tests and appropriate benchmark/validation evidence. The release gate validates this chain.
 
 Do **not** register caching, parallelism, backend selection, memory planning, kernel fusion, API design, compatibility reproduction, documentation or release tooling as technical innovations by themselves. Established econometric/numerical methods implemented by econhdfe should retain their upstream attribution even when the implementation is substantially faster.
+
+## 0.6.4 native exact-rank resource boundary
+
+Native modular and rational elimination share a per-residual-component budget:
+50,000,000 charged coefficient-visit/update work units, 256 MiB conservative
+sparse-row storage accounting, and 16,384 bits for integer intermediates.
+These private implementation guards are not public tuning parameters. They do
+not meter input/topology allocation, external SymPy/FLINT calls, hard process
+RSS or wall time. A resource-limit RuntimeError means no exact rank was obtained;
+do not catch it and return the last modular lower bound, silently switch DoF
+methods, or increase private limits on behalf of a user. Report only the stage,
+resource/counter/limit and environment via the parameter-only support workflow.
+No data labels or observations are needed. See the development maintenance note
+in the source tree for tests and measurement limitations.

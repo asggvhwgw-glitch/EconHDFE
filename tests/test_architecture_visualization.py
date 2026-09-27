@@ -1,4 +1,5 @@
 import json
+import runpy
 import subprocess
 import sys
 import re
@@ -78,3 +79,19 @@ def test_architecture_edges_use_port_routing_terminal_gaps_and_open_chevrons():
     assert "fill=\"none\" stroke=\"var(--line)\"" in html
     assert "class:'edge-halo'" in html
     assert "edge.overview" in html
+
+
+def test_architecture_repo_area_counts_ignore_release_excluded_transients(tmp_path):
+    namespace = runpy.run_path(str(ROOT / "skills" / "econhdfe" / "scripts" / "architecture_map.py"))
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "kept.md").write_text("# kept\n")
+    for name in ("trace.log", "trace.out", "trace.aux", ".coverage"):
+        (docs / name).write_text("transient\n")
+    areas = {item["name"]: item for item in namespace["_repo_areas"](tmp_path)}
+    assert areas["docs"] == {
+        "name": "docs",
+        "files": 1,
+        "python_files": 0,
+        "markdown_files": 1,
+    }

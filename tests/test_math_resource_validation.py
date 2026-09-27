@@ -57,8 +57,8 @@ def test_actual_gf2_budget_shortfall_is_not_an_exact_rank(monkeypatch,budget):
     # The same bad prime forces actual integer, rather than modular, fallback.
     monkeypatch.setattr(mod,'_EXACT_PRIME',2)
     calls=[]; original=mod._rational_sparse_rank
-    def exact(a):
-        calls.append(True); return original(a)
+    def exact(a, **kwargs):
+        calls.append(True); return original(a, **kwargs)
     monkeypatch.setattr(mod,'_rational_sparse_rank',exact)
     D=np.column_stack([np.eye(2,dtype=int)[g] for g in edges.T])
     assert mod.categorical_rank(list(edges.T),backend='native')==fraction_rank(D)==4

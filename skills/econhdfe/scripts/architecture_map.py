@@ -503,7 +503,7 @@ def _repo_areas(root: Path) -> list[dict]:
                 continue
             if any(part in {"__pycache__", ".pytest_cache", "build", "dist", ".venv", "venv"} or part.endswith(".egg-info") for part in rel.parts):
                 continue
-            if p.suffix in {".pyc", ".pyo", ".nbc", ".nbi"}:
+            if p.suffix in {".pyc", ".pyo", ".nbc", ".nbi", ".aux", ".log", ".out"} or p.name == ".coverage":
                 continue
             files.append(p)
         areas.append(

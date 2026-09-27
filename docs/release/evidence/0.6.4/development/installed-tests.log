@@ -1,0 +1,12 @@
+WARNING: The directory 'HOME/.cache/pip' or its parent directory is not owned or is not writable by the current user. The cache has been disabled. Check the permissions and owner of that directory. If executing pip with sudo, you should use sudo's -H flag.
+Processing VALIDATION_DIR/dist/econhdfe-0.6.4-py3-none-any.whl
+Installing collected packages: econhdfe
+Successfully installed econhdfe-0.6.4
+wheel import provenance: TEMP_DIR/site/econhdfe/__init__.py
+........................................................................ [ 20%]
+........................................................................ [ 40%]
+........................................................................ [ 60%]
+........................................................................ [ 80%]
+........................................................................ [100%]
+360 passed in 22.78s
+Installed-wheel numerical suites PASS (HOST dependencies, not clean installation)

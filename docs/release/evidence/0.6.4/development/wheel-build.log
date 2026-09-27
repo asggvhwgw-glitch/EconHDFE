@@ -1,0 +1,10 @@
+WARNING: The directory 'HOME/.cache/pip' or its parent directory is not owned or is not writable by the current user. The cache has been disabled. Check the permissions and owner of that directory. If executing pip with sudo, you should use sudo's -H flag.
+Processing SOURCE_ROOT
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: econhdfe
+  Building wheel for econhdfe (pyproject.toml): started
+  Building wheel for econhdfe (pyproject.toml): finished with status 'done'
+  Created wheel for econhdfe: filename=econhdfe-0.6.4-py3-none-any.whl size=319515 sha256=755dfe52d9c89aca4d8f63138a6ab04cb01b6554f347ac57afb6e087583b24c2
+  Stored in directory: TEMP_DIR/wheels/2b/01/be/b8f7b54d535f14fbd93d7720c446feee5f482487f12f35bdf6
+Successfully built econhdfe

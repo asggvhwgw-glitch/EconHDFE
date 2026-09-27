@@ -1,0 +1,52 @@
+{"MKL_NUM_THREADS": "1", "NUMBA_NUM_THREADS": "4", "OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1"}
+........................................................................ [  7%]
+........................................................................ [ 14%]
+........................................................................ [ 21%]
+........................................................................ [ 29%]
+........................................................................ [ 36%]
+........................................................................ [ 43%]
+........................................................................ [ 50%]
+........................................................................ [ 58%]
+........................................................................ [ 65%]
+........................................................................ [ 72%]
+........................................................................ [ 79%]
+........................................................................ [ 87%]
+........................................................................ [ 94%]
+.........................................................                [100%]
+=============================== warnings summary ===============================
+tests/test_v072_collinearity.py::test_ols_order_preserving_composite_collinearity
+  SOURCE_ROOT/econhdfe/errors.py:157: OmittedVariableWarning: 2 requested column(s) omitted for collinearity/absorption: xsum (linear_combination), xdup (duplicate_or_scaled)
+    return func(*args, **kwargs)
+
+tests/test_v072_collinearity.py::test_factor_term_fully_absorbed_by_interaction_fe_is_reported
+tests/test_v073_structural_collinearity.py::test_structural_factor_block_absorbed_before_materialization
+tests/test_v073_structural_collinearity.py::test_public_structural_collinearity_toggle_preserves_estimates
+  SOURCE_ROOT/econhdfe/errors.py:157: OmittedVariableWarning: 7 requested column(s) omitted for collinearity/absorption: year[1] (absorbed_by_fe), year[2] (absorbed_by_fe), year[3] (absorbed_by_fe), year[4] (absorbed_by_fe), year[5] (absorbed_by_fe), year[6] (absorbed_by_fe), year[7] (absorbed_by_fe)
+    return func(*args, **kwargs)
+
+tests/test_v072_collinearity.py::test_iv_drops_absorbed_and_duplicate_excluded_instruments
+  SOURCE_ROOT/econhdfe/errors.py:157: OmittedVariableWarning: 8 requested column(s) omitted for collinearity/absorption: year[1] (absorbed_by_fe), year[2] (absorbed_by_fe), year[3] (absorbed_by_fe), year[4] (absorbed_by_fe), year[5] (absorbed_by_fe), year[6] (absorbed_by_fe), year[7] (absorbed_by_fe), zdup (duplicate_or_scaled)
+    return func(*args, **kwargs)
+
+tests/test_v072_collinearity.py::test_nested_factor_frontend_collinearity_is_resolved_after_expansion
+  SOURCE_ROOT/econhdfe/errors.py:157: OmittedVariableWarning: 3 requested column(s) omitted for collinearity/absorption: province[1] (structurally_spanned), province[2] (structurally_spanned), province[3] (structurally_spanned)
+    return func(*args, **kwargs)
+
+tests/test_v072_collinearity.py::test_continuous_interaction_duplicate_is_traced_to_composite_term
+  SOURCE_ROOT/econhdfe/errors.py:157: OmittedVariableWarning: 1 requested column(s) omitted for collinearity/absorption: prod (duplicate_or_scaled)
+    return func(*args, **kwargs)
+
+tests/test_v072_collinearity.py::test_near_collinearity_tolerance_is_explicit_and_user_controllable
+  SOURCE_ROOT/econhdfe/errors.py:157: OmittedVariableWarning: 1 requested column(s) omitted for collinearity/absorption: xnear (duplicate_or_scaled)
+    return func(*args, **kwargs)
+
+tests/test_v072_collinearity.py::test_iv_factor_interaction_joint_collinearity_after_absorbing_component_fe
+  SOURCE_ROOT/econhdfe/errors.py:157: OmittedVariableWarning: 8 requested column(s) omitted for collinearity/absorption: qob[4]#year[0] (structural_within_fe_relation), qob[4]#year[1] (structural_within_fe_relation), qob[4]#year[2] (structural_within_fe_relation), qob[4]#year[3] (structural_within_fe_relation), qob[4]#year[4] (structural_within_fe_relation), qob[4]#year[5] (structural_within_fe_relation), qob[4]#year[6] (structural_within_fe_relation), qob[4]#year[7] (structural_within_fe_relation)
+    return func(*args, **kwargs)
+
+tests/test_v073_structural_collinearity.py::test_public_structural_collinearity_toggle_preserves_estimates
+  SOURCE_ROOT/econhdfe/errors.py:157: OmittedVariableWarning: 7 requested column(s) omitted for collinearity/absorption: year[1] (absorbed_or_zero), year[2] (absorbed_or_zero), year[3] (absorbed_or_zero), year[4] (absorbed_or_zero), year[5] (absorbed_or_zero), year[6] (absorbed_or_zero), year[7] (absorbed_or_zero)
+    return func(*args, **kwargs)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+993 passed, 10 warnings in 55.00s

@@ -1,0 +1,531 @@
+{
+  "schema_version": 1,
+  "environment": {
+    "python": "3.13.5",
+    "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+    "cpu_count": 5,
+    "threads": 1
+  },
+  "rounds": 3,
+  "module_sha256": {
+    "baseline": "1fe29ba4dcd804ba3adcf9ed187791b951ad8d3f0740063b9fdee838b8178380",
+    "candidate": "761813e264d9cbc6c3a4882af52e4bde7c576fe6d8ff4d3d586a1e323c85b9cf"
+  },
+  "cases": {
+    "small_C": {
+      "n": 2000,
+      "k": 8,
+      "layout": "C",
+      "runs": [
+        {
+          "seconds": 0.0022490220000008776,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 107786240,
+          "rank": 8,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "baseline",
+          "cycle": 0,
+          "profiling": false
+        },
+        {
+          "seconds": 0.002144088000022748,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 107663360,
+          "rank": 8,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "candidate",
+          "cycle": 0,
+          "profiling": false
+        },
+        {
+          "seconds": 0.0020322240000041347,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 107659264,
+          "rank": 8,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "candidate",
+          "cycle": 1,
+          "profiling": false
+        },
+        {
+          "seconds": 0.0022519620000025498,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 107790336,
+          "rank": 8,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "baseline",
+          "cycle": 1,
+          "profiling": false
+        },
+        {
+          "seconds": 0.002360667000061767,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 107786240,
+          "rank": 8,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "baseline",
+          "cycle": 2,
+          "profiling": false
+        },
+        {
+          "seconds": 0.0019859980000092037,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 107528192,
+          "rank": 8,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "candidate",
+          "cycle": 2,
+          "profiling": false
+        },
+        {
+          "seconds": 0.0027472969999280394,
+          "traced_peak_bytes": 276865,
+          "process_peak_rss_bytes": 107786240,
+          "rank": 8,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "candidate",
+          "cycle": 3,
+          "profiling": true
+        },
+        {
+          "seconds": 0.002979421000077309,
+          "traced_peak_bytes": 339113,
+          "process_peak_rss_bytes": 107790336,
+          "rank": 8,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "baseline",
+          "cycle": 3,
+          "profiling": true
+        }
+      ],
+      "parity": true,
+      "max_beta_abs_diff": 0.0,
+      "max_bread_abs_diff": 0.0,
+      "median_seconds": {
+        "baseline": 0.0022519620000025498,
+        "candidate": 0.0020322240000041347
+      },
+      "candidate_over_baseline": 0.9024237531547308
+    },
+    "tall_C": {
+      "n": 240000,
+      "k": 32,
+      "layout": "C",
+      "runs": [
+        {
+          "seconds": 0.26247855199994774,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 232243200,
+          "rank": 32,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "baseline",
+          "cycle": 0,
+          "profiling": false
+        },
+        {
+          "seconds": 0.20288403999995808,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 188030976,
+          "rank": 32,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "candidate",
+          "cycle": 0,
+          "profiling": false
+        },
+        {
+          "seconds": 0.19943171099998835,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 188047360,
+          "rank": 32,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "candidate",
+          "cycle": 1,
+          "profiling": false
+        },
+        {
+          "seconds": 0.2746749919999729,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 232390656,
+          "rank": 32,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "baseline",
+          "cycle": 1,
+          "profiling": false
+        },
+        {
+          "seconds": 0.2594553879999921,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 232251392,
+          "rank": 32,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "baseline",
+          "cycle": 2,
+          "profiling": false
+        },
+        {
+          "seconds": 0.19713593699998455,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 188030976,
+          "rank": 32,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "candidate",
+          "cycle": 2,
+          "profiling": false
+        },
+        {
+          "seconds": 0.20345835600005557,
+          "traced_peak_bytes": 17332046,
+          "process_peak_rss_bytes": 188035072,
+          "rank": 32,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "candidate",
+          "cycle": 3,
+          "profiling": true
+        },
+        {
+          "seconds": 0.26633550600001854,
+          "traced_peak_bytes": 61441376,
+          "process_peak_rss_bytes": 232267776,
+          "rank": 32,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "baseline",
+          "cycle": 3,
+          "profiling": true
+        }
+      ],
+      "parity": true,
+      "max_beta_abs_diff": 0.0,
+      "max_bread_abs_diff": 0.0,
+      "median_seconds": {
+        "baseline": 0.26247855199994774,
+        "candidate": 0.19943171099998835
+      },
+      "candidate_over_baseline": 0.7598019323118944
+    },
+    "tall_F": {
+      "n": 240000,
+      "k": 32,
+      "layout": "F",
+      "runs": [
+        {
+          "seconds": 0.264012113999911,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 232263680,
+          "rank": 32,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "baseline",
+          "cycle": 0,
+          "profiling": false
+        },
+        {
+          "seconds": 0.17473535999999967,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 229609472,
+          "rank": 32,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "candidate",
+          "cycle": 0,
+          "profiling": false
+        },
+        {
+          "seconds": 0.19658651099996405,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 229625856,
+          "rank": 32,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "candidate",
+          "cycle": 1,
+          "profiling": false
+        },
+        {
+          "seconds": 0.2171342960000402,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 232235008,
+          "rank": 32,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "baseline",
+          "cycle": 1,
+          "profiling": false
+        },
+        {
+          "seconds": 0.23144558399997095,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 232140800,
+          "rank": 32,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "baseline",
+          "cycle": 2,
+          "profiling": false
+        },
+        {
+          "seconds": 0.18891887200004476,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 229560320,
+          "rank": 32,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "candidate",
+          "cycle": 2,
+          "profiling": false
+        },
+        {
+          "seconds": 0.18409054400001423,
+          "traced_peak_bytes": 17332046,
+          "process_peak_rss_bytes": 229617664,
+          "rank": 32,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "candidate",
+          "cycle": 3,
+          "profiling": true
+        },
+        {
+          "seconds": 0.2264226839999992,
+          "traced_peak_bytes": 61441376,
+          "process_peak_rss_bytes": 232181760,
+          "rank": 32,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "baseline",
+          "cycle": 3,
+          "profiling": true
+        }
+      ],
+      "parity": true,
+      "max_beta_abs_diff": 0.0,
+      "max_bread_abs_diff": 0.0,
+      "median_seconds": {
+        "baseline": 0.23144558399997095,
+        "candidate": 0.18891887200004476
+      },
+      "candidate_over_baseline": 0.8162561096869685
+    },
+    "sliced": {
+      "n": 120000,
+      "k": 32,
+      "layout": "sliced",
+      "runs": [
+        {
+          "seconds": 0.1543781279999621,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 261988352,
+          "rank": 32,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "baseline",
+          "cycle": 0,
+          "profiling": false
+        },
+        {
+          "seconds": 0.12712201200008622,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 260272128,
+          "rank": 32,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "candidate",
+          "cycle": 0,
+          "profiling": false
+        },
+        {
+          "seconds": 0.16540465800005677,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 260308992,
+          "rank": 32,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "candidate",
+          "cycle": 1,
+          "profiling": false
+        },
+        {
+          "seconds": 0.1589923120000094,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 261922816,
+          "rank": 32,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "baseline",
+          "cycle": 1,
+          "profiling": false
+        },
+        {
+          "seconds": 0.1460377260000314,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 261967872,
+          "rank": 32,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "baseline",
+          "cycle": 2,
+          "profiling": false
+        },
+        {
+          "seconds": 0.1396704009999894,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 260308992,
+          "rank": 32,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "candidate",
+          "cycle": 2,
+          "profiling": false
+        },
+        {
+          "seconds": 0.15497502800008078,
+          "traced_peak_bytes": 17330010,
+          "process_peak_rss_bytes": 260321280,
+          "rank": 32,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "candidate",
+          "cycle": 3,
+          "profiling": true
+        },
+        {
+          "seconds": 0.16729105699994307,
+          "traced_peak_bytes": 30786392,
+          "process_peak_rss_bytes": 261890048,
+          "rank": 32,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "baseline",
+          "cycle": 3,
+          "profiling": true
+        }
+      ],
+      "parity": true,
+      "max_beta_abs_diff": 0.0,
+      "max_bread_abs_diff": 0.0,
+      "median_seconds": {
+        "baseline": 0.1543781279999621,
+        "candidate": 0.1396704009999894
+      },
+      "candidate_over_baseline": 0.904729204904102
+    },
+    "wide_C": {
+      "n": 1000,
+      "k": 128,
+      "layout": "C",
+      "runs": [
+        {
+          "seconds": 0.018690609000032055,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 111194112,
+          "rank": 128,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "baseline",
+          "cycle": 0,
+          "profiling": false
+        },
+        {
+          "seconds": 0.017383848000008584,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 111071232,
+          "rank": 128,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "candidate",
+          "cycle": 0,
+          "profiling": false
+        },
+        {
+          "seconds": 0.01734838100003344,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 111194112,
+          "rank": 128,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "candidate",
+          "cycle": 1,
+          "profiling": false
+        },
+        {
+          "seconds": 0.025146423000023788,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 111190016,
+          "rank": 128,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "baseline",
+          "cycle": 1,
+          "profiling": false
+        },
+        {
+          "seconds": 0.018598954000026424,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 111099904,
+          "rank": 128,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "baseline",
+          "cycle": 2,
+          "profiling": false
+        },
+        {
+          "seconds": 0.01779837900005532,
+          "traced_peak_bytes": null,
+          "process_peak_rss_bytes": 111198208,
+          "rank": 128,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "candidate",
+          "cycle": 2,
+          "profiling": false
+        },
+        {
+          "seconds": 0.019137141999976848,
+          "traced_peak_bytes": 1970351,
+          "process_peak_rss_bytes": 111198208,
+          "rank": 128,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "candidate",
+          "cycle": 3,
+          "profiling": true
+        },
+        {
+          "seconds": 0.018437758999994003,
+          "traced_peak_bytes": 2124105,
+          "process_peak_rss_bytes": 111325184,
+          "rank": 128,
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "kind": "baseline",
+          "cycle": 3,
+          "profiling": true
+        }
+      ],
+      "parity": true,
+      "max_beta_abs_diff": 0.0,
+      "max_bread_abs_diff": 0.0,
+      "median_seconds": {
+        "baseline": 0.018690609000032055,
+        "candidate": 0.017383848000008584
+      },
+      "candidate_over_baseline": 0.9300846216396036
+    }
+  }
+}

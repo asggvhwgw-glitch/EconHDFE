@@ -1,81 +1,81 @@
 {
   "schema_version": 1,
-  "release_version": "0.6.3",
-  "previous_version": "0.6.2",
+  "release_version": "0.6.4",
+  "previous_version": "0.6.3",
   "checks": {
     "frontend_api": {
       "status": "reviewed",
-      "evidence": "Public calls/exports unchanged; compare immutable 0.6.2 baseline. No new model options.",
+      "evidence": "Public signatures/exports unchanged; compatibility diff against immutable 0.6.3 is empty.",
       "description": "Public call signatures, exports, aliases, CLI/front-end validation and compatibility."
     },
     "backend_compute": {
       "status": "changed",
-      "evidence": "Closeout: guard package-managed workqueue parallel regions; keep OpenMP/TBB concurrent. Hoist bootstrap BLAS scope outside workers. No model formulas or tolerances change.",
+      "evidence": "Native per-component cooperative work/storage/integer guards; chunked finite/scale pass and direct QR workspace division. See docs/development/maintenance-0.6.4.md.",
       "description": "Solver/compute/cache/backend contracts, numerical defaults and resource controls."
     },
     "errors": {
       "status": "reviewed",
-      "evidence": "Runtime structured errors unchanged; developer acceptance/preflight tools fail closed without skipping tests.",
+      "evidence": "Private resource RuntimeError reports no data; existing estimator error boundary remains unchanged, no new public code/schema. Exhaustion does not return a lower bound.",
       "description": "Structured exception classes, codes, stages, suggestions and public error boundaries."
     },
     "public_contract": {
       "status": "reviewed",
-      "evidence": "Closeout: normalize inherited Enum reflection across Python versions; preserve custom signatures and immutable historical baselines. No runtime public-contract diff.",
+      "evidence": "0.6.3 baseline preserved; no public-contract diff or approvals required.",
       "description": "Public exports/signatures, result/config schemas and stable structured-error compatibility."
     },
     "skill": {
-      "status": "reviewed",
-      "evidence": "Skill runtime commands/defaults unchanged; standalone identity gates retained.",
+      "status": "changed",
+      "evidence": "Developer guide records native limits, scope exclusions, no silent DoF changes and parameter-only reporting. User-facing commands unchanged.",
       "description": "Agent skill commands, examples, decision rules and newly exposed controls."
     },
     "linked_modules": {
       "status": "reviewed",
-      "evidence": "Closeout: reuse the existing projection thread context; no new runtime module or dependency. Bootstrap uses the same abstraction.",
+      "evidence": "Only two existing runtime modules; native phases share a private budget. No new runtime file/import boundary or estimator adapter.",
       "description": "Cross-module imports, shared schemas, adapters, compatibility shims and downstream consumers."
     },
     "results_reporting": {
       "status": "reviewed",
-      "evidence": "Closeout: result schemas and VCE formulas unchanged; original weighted/unweighted serial-versus-parallel bootstrap assertions retained and passed. Historical numerical comparisons remain baseline evidence only.",
+      "evidence": "Same coefficient/bread/rank and public result schemas; no inference/statistical formula changes.",
       "description": "Result fields, publication output, diagnostics metadata and serialization-facing schemas."
     },
     "config_defaults": {
-      "status": "reviewed",
-      "evidence": "Public model and solver defaults unchanged. New functional test launcher validates explicit thread cap.",
+      "status": "changed",
+      "evidence": "Public defaults/tolerances unchanged. New private native safety ceilings intentionally fail closed on oversized fallback work; documented migration boundary.",
       "description": "Config objects, defaults, deprecations, aliases and backwards-compatible behavior."
     },
     "cache_state": {
       "status": "reviewed",
-      "evidence": "No cache implementation changes. Existing positive/zero-weight update and core invalidation guards retained.",
+      "evidence": "No persistent/session cache changes; input ownership and resource-failure retry tested. Broader workflow calibration is pending in TODO.",
       "description": "Reusable state/cache invalidation, fingerprints, lifecycle semantics and stale-state hazards."
     },
     "tests_validation": {
       "status": "changed",
-      "evidence": "Closeout: 13 added regression cases; 919 local source tests passed. Remote matrix execution remains required; this review is not an execution attestation.",
+      "evidence": "Independent rational/SVD oracles plus input/layout, nonfinite, work/storage/integer exhaustion tests. Full local results recorded separately from review.",
       "description": "Regression tests, install smoke tests, golden/parity coverage and failure-path tests."
     },
     "performance": {
       "status": "changed",
-      "evidence": "Historical PERF-01 evidence retained, not re-labelled as closeout measurements. Safety serialization applies only to workqueue; OpenMP/TBB remain concurrent. No new performance claim; platform performance validation remains pending.",
+      "evidence": "Five isolated-process same-host PERF-03 cases, three alternating rounds plus separate allocation profiling. No universal or multi-host speed claim.",
       "description": "Representative benchmark/resource regressions for code paths materially changed by the release."
     },
     "docs_migration": {
       "status": "changed",
-      "evidence": "Closeout: RELEASE_CLOSEOUT.md records fixes, interface boundaries, lower-bound rationale and remaining release gates. Historical mathematical manuscripts unchanged.",
+      "evidence": "TODO archives completed 0.6.3 gates; changelog and README mark 0.6.4 unreleased; maintenance note separates native scope, numerical identities and pending tasks.",
       "description": "README/architecture/changelog/migration/versioning documentation and user-visible examples."
     },
     "packaging_dependencies": {
-      "status": "changed",
-      "evidence": "Closeout: retain runtime requirements, add four feasible minimum-runtime CI combinations and preserve constraints in clean installs; use default sdist-to-wheel build chain.",
+      "status": "reviewed",
+      "evidence": "No runtime/extras/build requirement changes. This host has no build frontend/index access; HOST wheel checks are not isolated/clean-install evidence.",
       "description": "Python/dependency matrix, optional extras, wheel/source contents and build metadata."
     },
     "external_validation": {
       "status": "reviewed",
-      "evidence": "Closeout: require fresh 12-platform plus 4 dependency-floor results for the changed fingerprint. Configuration is not execution. External Stata certification remains unclaimed.",
+      "evidence": "No new licensed-Stata/optional-backend certification claim. Fresh platform/dependency-floor results remain required for 0.6.4.",
       "description": "Licensed/reference-environment parity gates and explicitly deferred external certification."
     },
     "release_artifacts": {
       "status": "changed",
-      "evidence": "Closeout: retain candidate-only workflow; reset stale execution records and preserve historical evidence. Formal authorization still requires detached commit/artifact binding.",
+      "evidence": "Controlled bump resets execution to 0.6.4; no old passed evidence migrated. Candidate artifacts are not public release authorization.",
       "description": "Version consistency, source/wheel parity, hashes, clean install and reproducible bundle contents."
     }
   }
