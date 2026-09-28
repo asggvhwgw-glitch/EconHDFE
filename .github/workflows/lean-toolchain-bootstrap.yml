@@ -1,0 +1,48 @@
+name: Prepare isolated Lean proof environment
+on:
+  push:
+    branches: [ops/lean-toolchain-20260928]
+    paths: [.github/workflows/lean-toolchain-bootstrap.yml]
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - name: Install pinned Lean and mathlib
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain leanprover/lean4:v4.19.0
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/lean-proof-env
+          cd /tmp/lean-proof-env
+          git clone --depth 1 --branch v4.19.0 https://github.com/leanprover-community/mathlib4.git mathlib
+          cd mathlib
+          test "$(git rev-parse HEAD)" = c44e0c8ee63ca166450922a373c7409c5d26b00b
+          lake exe cache get
+          printf 'import Mathlib\nexample (a b : Nat) : a + b = b + a := Nat.add_comm a b\n' > /tmp/Check.lean
+          lake env lean /tmp/Check.lean
+          lean --version | tee ../lean-version.txt
+          git rev-parse HEAD > ../mathlib-commit.txt
+          cp -a "$HOME/.elan/toolchains/leanprover--lean4---v4.19.0" ../lean
+          cd ..
+          # Keep the compiler, sources and oleans; exclude caches, native build intermediates and Git metadata.
+          find mathlib -type d -name .git -prune -exec rm -rf {} +
+          find mathlib -type f \( -name '*.c' -o -name '*.o' -o -name '*.a' -o -name '*.ilean' -o -name '*.trace' -o -name '*.hash' -o -name '*.ltar' \) -delete
+          rm -rf mathlib/.lake/build/ir mathlib/.lake/build/bin mathlib/.lake/build/doc
+          find lean -type f \( -name '*.a' -o -name '*.ilean' \) -delete
+          rm -rf lean/src/lean/lake/tests
+          du -sh lean mathlib
+          tar -cf - lean mathlib lean-version.txt mathlib-commit.txt | zstd -T2 -8 -o /tmp/lean-proof-env.tar.zst
+          sha256sum /tmp/lean-proof-env.tar.zst | tee /tmp/lean-proof-env.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lean-proof-environment
+          path: |
+            /tmp/lean-proof-env.tar.zst
+            /tmp/lean-proof-env.sha256
+          compression-level: 0
+          retention-days: 2
