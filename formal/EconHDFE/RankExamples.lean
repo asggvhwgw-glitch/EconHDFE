@@ -43,7 +43,7 @@ def singletonTupleTrace : PeelingTrace singletonTupleCode where
 /-- Three singleton levels on one unique row contribute one, not three, rank units. -/
 theorem duplicate_rank_after_dedup : (incidenceMatrix ℝ duplicateCode).rank = 1 := by
   letI : IsEmpty (PeelingCore singletonTupleTrace) :=
-    ⟨fun c => c.property 0 (Subsingleton.elim _ _)⟩
+    ⟨fun c => c.property ⟨0, by change 0 < 1; decide⟩ (Subsingleton.elim _ _)⟩
   have hcore : (incidenceMatrix ℝ (coreCode singletonTupleTrace)).rank = 0 := by
     apply Nat.eq_zero_of_le_zero
     simpa using (incidenceMatrix ℝ (coreCode singletonTupleTrace)).rank_le_card_height
