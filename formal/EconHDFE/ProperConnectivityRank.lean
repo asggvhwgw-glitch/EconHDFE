@@ -92,7 +92,10 @@ theorem matrix_mulVec_columnExtend {V : Type*} [Fintype V]
       simp [columnExtend, hn]
     _ = ∑ v : {v // p v}, A i v.val * columnExtend p a v.val :=
       Finset.sum_subtype _ (by simp) _
-    _ = _ := by simp [columnExtend]
+    _ = _ := by
+      apply Finset.sum_congr rfl
+      intro v _
+      simp [columnExtend, v.property]
 
 /-- Connected row equations identify all coefficients of the reduced matrix. -/
 theorem proper_reduced_kernel (code : (g : G) → I → K g) (root : I)
@@ -139,8 +142,10 @@ theorem proper_connectivity_rank [Fintype I] (code : (g : G) → I → K g)
     change B.mulVecLin (a - b) = 0
     rw [map_sub, hab, sub_self]
   have hrank : B.rank = Fintype.card (RetainedLevels g₀ base) := by
-    simpa [Matrix.rank, LinearMap.ker_eq_bot.mpr hinj] using
-      LinearMap.finrank_range_add_finrank_ker B.mulVecLin
+    have hk : LinearMap.ker B.mulVecLin = ⊥ := LinearMap.ker_eq_bot.mpr hinj
+    have hdim := LinearMap.finrank_range_add_finrank_ker B.mulVecLin
+    rw [hk] at hdim
+    simpa using hdim
   calc
     (incidenceMatrix F code).rank = B.rank := multipartite_rank_drop code g₀ base
     _ = Fintype.card (RetainedLevels g₀ base) := hrank

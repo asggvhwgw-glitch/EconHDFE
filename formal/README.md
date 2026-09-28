@@ -8,9 +8,10 @@ separately and are not silently substituted into this branch. The older
 manuscripts on the base commit are not the authority for the corrected
 coefficient-selection and residual-feasibility conditions.
 
-The current increment connects actual categorical indicator columns and legal
+The library connects actual categorical indicator columns and legal
 observation-level peeling to the weighted residual-core reconstruction theorem.
-It also covers the first increment's partition-refinement and WLS foundations.
+It also covers partition-refinement and WLS foundations, and the structural
+preprocessing and proper-connectivity parts of exact categorical rank/DoF.
 It does **not** formalize all three manuscripts or verify the Python
 implementation, floating-point accuracy, numerical convergence, statistical
 assumptions, or historical originality. Only precise Lean statements in a
@@ -38,6 +39,37 @@ foundational mathematics. The evidence artifact retains the complete generated
 dependency manifest, compiler identity, source commit and hashes, theorem list,
 build log, audit log, and proof sources. Python CI and release workflows are not
 changed by the proof library.
+
+## Exact categorical rank: structural stage
+
+`RankBasics.lean` defines the actual 0/1 incidence matrix and relates its real
+rank to the categorical fitted space. It proves duplicate-row reduction and
+general rectangular row/column restriction inequalities. `ComponentRank.lean`
+constructs the image-space equivalence behind rank additivity for any finite
+family of rectangular blocks, then derives the formula under explicit
+row/column reindexings and actual cross-block zeros.
+
+`PeelingRank.lean` reuses the existing incidence reconstruction to construct a
+linear bijection from the original fitted space to the product of removed-row
+coordinates and the core fitted space. Hence each removed observation adds
+exactly one rank unit. `RankPipeline.lean` combines tuple representatives,
+legal peeling and separated core blocks in one actual-rank identity. It also
+connects rank to equality-preserving core recoding.
+
+`MultipartiteRank.lean` reconstructs the columns omitted from complete FE blocks
+and proves the deterministic `min(E, V - (G - 1))` upper bound.
+`ProperConnectivityRank.lean` proves equality under nonempty observed-level
+coding and paths changing at most one coordinate at each step. Its argument
+propagates kernel equations and proves the reduced matrix injective, rather
+than assuming the requested rank. Ordinary incidence connectivity is not a
+substitute for this stronger condition.
+
+The field-generic rank reductions can be instantiated over rationals, reals or
+finite fields separately. The peeling recursion and composed pipeline currently
+use real spaces. General rational/real rank equivalence, modular certification
+and exact-arithmetic fallback correctness are not yet part of this proof chain.
+See [rank-correspondence.md](rank-correspondence.md) for statement-by-statement
+manuscript mappings, semantic witnesses, assumptions and outstanding obligations.
 
 ## Categorical residual-core proof chain
 
@@ -153,12 +185,13 @@ its complete composition with common multipliers, explicit within-coefficient
 selection, and the finite PPML corollary. No IV/GMM/covariance invariance or
 estimator convergence follows merely from equality of fitted spaces.
 
-The exact multiway rank line is not yet implemented here. Its remaining chain
-includes characteristic-zero equivalence, duplicate rows, component direct
-sums, rank-one leaf elimination, multipartite nullity bounds, certified column
-removal, proper-connectivity rank, finite-field lower bounds, and composition
-with a correct characteristic-zero fallback. A numerical oracle or a theorem
-that assumes the desired rank is not a replacement for those proofs.
+The exact-rank structural stage is implemented, but general characteristic-zero
+equivalence, finite-field lower bounds, modular acceptance certificates,
+correctness of characteristic-zero elimination, and resource-aware fallback
+composition remain unproved here. The structural pipeline leaves actual ranks
+of unresolved core blocks; a failed proper-connectivity check does not supply
+those ranks. Prefix-rank bookkeeping is also separate. A numerical oracle or a
+theorem that assumes the desired rank is not a replacement for these proofs.
 
 No innovation-registry status, homepage claim, software version, Python API or
 release status is promoted by this directory. Mathematical theorem coverage,
