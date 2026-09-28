@@ -13,3 +13,6 @@ import EconHDFE.MultipartiteRank
 import EconHDFE.ProperConnectivityRank
 import EconHDFE.RankPipeline
 import EconHDFE.RankExamples
+import EconHDFE.RankMinors
+import EconHDFE.CharZeroRank
+import EconHDFE.ModularRankCertificate
