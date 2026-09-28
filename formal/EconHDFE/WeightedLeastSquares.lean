@@ -47,6 +47,13 @@ theorem wInner_smul_right (w x z : I → ℝ) (a : ℝ) :
     wInner w x (a • z) = a * wInner w x z := by
   rw [wInner_comm, wInner_smul_left, wInner_comm w z x]
 
+theorem wInner_sub_smul_self (w u z : I → ℝ) (t : ℝ) :
+    wInner w (u - t • z) (u - t • z) =
+    wInner w u u - 2 * t * wInner w u z + t ^ 2 * wInner w z z := by
+  simp only [wInner_sub_left, wInner_sub_right,
+    wInner_smul_right, wInner_smul_left, wInner_comm w z u]
+  ring
+
 theorem wInner_self_nonneg {w : I → ℝ} (hw : ∀ i, 0 ≤ w i) (x : I → ℝ) :
     0 ≤ wInner w x x := by
   apply Finset.sum_nonneg
@@ -57,10 +64,12 @@ theorem wInner_self_eq_zero {w x : I → ℝ} (hw : ∀ i, 0 < w i)
     (h : wInner w x x = 0) : x = 0 := by
   classical
   ext i
+  have term_nonneg : ∀ j : I, 0 ≤ w j * x j * x j := by
+    intro j
+    simpa [pow_two, mul_assoc] using mul_nonneg (le_of_lt (hw j)) (sq_nonneg (x j))
   have bound : w i * x i * x i ≤ ∑ j, w j * x j * x j :=
-    Finset.single_le_sum (fun j _ => by
-      simpa [pow_two, mul_assoc] using mul_nonneg (le_of_lt (hw j)) (sq_nonneg (x j)))
-      (Finset.mem_univ i)
+    Finset.single_le_sum (f := fun j => w j * x j * x j)
+      (fun j _ => term_nonneg j) (Finset.mem_univ i)
   change _ ≤ wInner w x x at bound
   rw [h] at bound
   by_contra hn
@@ -79,7 +88,8 @@ theorem residual_unique {w : I → ℝ} (hw : ∀ i, 0 < w i)
     (hr : IsResidual w S y r) (hs : IsResidual w S y s) : r = s := by
   have hdiff : r - s ∈ S := by
     have hh := S.sub_mem hs.1 hr.1
-    convert hh using 1 <;> abel
+    convert hh using 1
+    abel
   have hz : wInner w (r - s) (r - s) = 0 := by
     rw [wInner_sub_left, hr.2 _ hdiff, hs.2 _ hdiff, sub_self]
   exact sub_eq_zero.mp (wInner_self_eq_zero hw hz)
@@ -116,16 +126,16 @@ theorem wlsFit_isResidual {w : I → ℝ} (hw : ∀ i, 0 < w i)
       have expansion :
           wInner w ((y - f) - (a / b) • z) ((y - f) - (a / b) • z) =
           wInner w (y - f) (y - f) - a * a / b := by
-        simp only [wInner_sub_left, wInner_sub_right,
-          wInner_smul_right, wInner_smul_left, wInner_comm w z (y - f)]
-        change wInner w (y - f) (y - f) - (a / b) * a -
-          ((a / b) * a - (a / b) * ((a / b) * b)) =
+        rw [wInner_sub_smul_self]
+        change wInner w (y - f) (y - f) - 2 * (a / b) * a + (a / b) ^ 2 * b =
           wInner w (y - f) (y - f) - a * a / b
         field_simp
         <;> ring
       rw [expansion] at hg
       have hab : a * a / b ≤ 0 := by linarith
-      have haa : a * a ≤ 0 := (div_nonpos_iff_of_pos_right hbpos).mp hab
+      have hmul := mul_nonpos_of_nonpos_of_nonneg hab (le_of_lt hbpos)
+      have cancel : a * a / b * b = a * a := by field_simp
+      rw [cancel] at hmul
       change a = 0
       nlinarith [sq_nonneg a]
 
@@ -138,14 +148,14 @@ theorem wlsFit_iff_residual {w : I → ℝ} (hw : ∀ i, 0 < w i)
     simpa only [sub_sub_cancel] using
       residual_isWLSFit (fun i => le_of_lt (hw i)) h
 
-/-- Manuscript cor:wlsfit, with identical sample, outcome and weights. -/
+/-- Identical sample, outcome and positive diagonal weights. -/
 theorem wls_fitted_invariance {w : I → ℝ} (hw : ∀ i, 0 < w i)
     {S T : Submodule ℝ (I → ℝ)} (hST : S = T)
     {y f g : I → ℝ} (hf : IsWLSFit w S y f) (hg : IsWLSFit w T y g) :
     f = g := by
   subst T
   have h := residual_unique hw (wlsFit_isResidual hw hf) (wlsFit_isResidual hw hg)
-  exact sub_left_injective h
+  exact sub_right_injective h
 
 /-- A genuine singleton column forces its observation's residual to vanish. -/
 theorem singleton_residual_zero [DecidableEq I] {w : I → ℝ}
@@ -154,6 +164,6 @@ theorem singleton_residual_zero [DecidableEq I] {w : I → ℝ}
     (i : I) (hi : Pi.single i (1 : ℝ) ∈ S) : r i = 0 := by
   have h := hr.2 _ hi
   simp [wInner, Pi.single_apply, mul_ite] at h
-  exact (mul_eq_zero.mp h).resolve_left (ne_of_gt (hw i))
+  exact h.resolve_left (ne_of_gt (hw i))
 
 end EconHDFE
