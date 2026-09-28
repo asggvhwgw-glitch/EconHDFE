@@ -1,13 +1,15 @@
 name: Lean mathematical foundations
 on:
   push:
-    branches: [dev/lean-foundations]
+    branches: [main, dev/lean-foundations]
+    paths: ['formal/**', '.github/workflows/lean.yml']
+  pull_request:
     paths: ['formal/**', '.github/workflows/lean.yml']
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: lean-${{ github.ref }}
+  group: lean-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   prove:
@@ -28,6 +30,9 @@ jobs:
       - name: Resolve fixed mathematical dependencies
         run: |
           cd formal
+          mkdir -p .lake/packages
+          git clone --depth 1 --branch v4.19.0 https://github.com/leanprover-community/mathlib4.git .lake/packages/mathlib
+          test "$(git -C .lake/packages/mathlib rev-parse HEAD)" = c44e0c8ee63ca166450922a373c7409c5d26b00b
           lake update
           lake exe cache get
           lean --version | tee ../lean-version.txt
@@ -48,6 +53,7 @@ jobs:
               source = p.read_text()
               assert not re.search(r'\b(sorry|admit|axiom|native_decide|unsafe)\b', source), p
               names.extend('EconHDFE.' + n for n in re.findall(r'^theorem\s+(\w+)', source, re.M))
+          assert names and len(names) == len(set(names))
           pathlib.Path('AxiomAudit.lean').write_text('import EconHDFE\n' + '\n'.join('#print axioms ' + n for n in names) + '\n')
           pathlib.Path('../theorems.txt').write_text('\n'.join(names) + '\n')
           PY
@@ -59,6 +65,8 @@ jobs:
           for body in re.findall(r'depends on axioms:\s*\[([^]]*)\]', s):
               names = {x.strip() for x in body.split(',')} - {''}
               assert names <= {'propext', 'Classical.choice', 'Quot.sound'}, names
+          expected = pathlib.Path('../theorems.txt').read_text().splitlines()
+          assert all("'" + n + "'" in s for n in expected), s
           PY
       - name: Assemble proof-only evidence
         if: always()
