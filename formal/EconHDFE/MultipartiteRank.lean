@@ -15,6 +15,7 @@ variable {F I G : Type*} {K : G → Type*}
 variable [Field F] [Fintype G] [∀ g, Fintype (K g)]
 
 /-- Every complete categorical block has the same all-ones column sum. -/
+omit [Fintype G] in
 theorem incidence_partition_sum (code : (g : G) → I → K g) (g : G) :
     (∑ k : K g, (incidenceMatrix F code).col ⟨g, k⟩) = (fun _ : I => (1 : F)) := by
   ext i
@@ -95,7 +96,8 @@ def removedLevelsEquiv (g₀ : G) (base : (g : G) → K g) :
     have hk : k = base g := by
       by_contra hn
       exact hv (Or.inr hn)
-    simp [hk]
+    change (⟨g, base g⟩ : Sigma K) = ⟨g, k⟩
+    rw [hk]
   right_inv g := by
     apply Subtype.ext
     rfl
