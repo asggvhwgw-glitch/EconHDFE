@@ -15,7 +15,6 @@ variable {F I G : Type*} {K : G → Type*}
 variable [Field F] [Fintype G] [∀ g, Fintype (K g)]
 
 /-- Every complete categorical block has the same all-ones column sum. -/
-omit [Fintype G] in
 theorem incidence_partition_sum (code : (g : G) → I → K g) (g : G) :
     (∑ k : K g, (incidenceMatrix F code).col ⟨g, k⟩) = (fun _ : I => (1 : F)) := by
   ext i
@@ -104,9 +103,7 @@ def removedLevelsEquiv (g₀ : G) (base : (g : G) → K g) :
 
 theorem nonreference_card (g₀ : G) :
     Fintype.card {g : G // g ≠ g₀} = Fintype.card G - 1 := by
-  have hs : Fintype.card {g : G // g = g₀} = 1 := by
-    rw [Fintype.card_subtype]
-    simp
+  have hs : Fintype.card {g : G // g = g₀} = 1 := Fintype.card_unique
   simpa only [hs] using Fintype.card_subtype_compl (fun g : G => g = g₀)
 
 theorem retained_levels_card (g₀ : G) (base : (g : G) → K g) :

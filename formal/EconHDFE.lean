@@ -12,3 +12,4 @@ import EconHDFE.PeelingRank
 import EconHDFE.MultipartiteRank
 import EconHDFE.ProperConnectivityRank
 import EconHDFE.RankPipeline
+import EconHDFE.RankExamples
