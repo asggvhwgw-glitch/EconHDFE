@@ -15,33 +15,37 @@ open scoped Classical
 def cascadeCode (g : Fin 3) (i : Fin 5) : Fin 2 :=
   if i.val + g.val < 3 then 0 else 1
 
+def cascadeRow (k : Fin 3) : Fin 5 := ⟨k.val, by omega⟩
+
 def cascadePivot (k : Fin 3) : Sigma (fun _ : Fin 3 => Fin 2) :=
   ⟨⟨2 - k.val, by omega⟩, 0⟩
 
 def cascadeTrace : PeelingTrace cascadeCode where
   length := 3
-  row k := ⟨k.val, by omega⟩
+  row := cascadeRow
   row_injective := by
     intro a b h
-    exact Fin.ext (congrArg Fin.val h)
+    exact Fin.ext (congrArg (fun z : Fin 5 => z.val) h)
   pivot := cascadePivot
   singleton := by
     intro k i active
     fin_cases k <;> fin_cases i <;>
-      norm_num [cascadeCode, cascadePivot, Fin.forall_fin_succ] at *
+      norm_num [cascadeCode, cascadeRow, cascadePivot, Fin.forall_fin_succ] at * <;> omega
 
 theorem cascade_survivors : surviving cascadeTrace = {i : Fin 5 | 3 ≤ i.val} := by
   ext i
-  fin_cases i <;> norm_num [surviving, cascadeTrace, Fin.forall_fin_succ]
+  change (∀ k : Fin 3, cascadeRow k ≠ i) ↔ 3 ≤ i.val
+  fin_cases i <;> decide
 
 theorem cascade_matrix :
     peelMatrix cascadeTrace = !![1, 1, 1; 0, 1, 1; 0, 0, 1] := by
   ext i j
   fin_cases i <;> fin_cases j <;>
-    norm_num [peelMatrix, cascadeTrace, feColumn, indicator, cascadePivot, cascadeCode]
+    norm_num [peelMatrix, cascadeTrace, cascadeRow, feColumn, indicator,
+      cascadePivot, cascadeCode]
 
 theorem cascade_duplicate_core (g : Fin 3) : cascadeCode g 3 = cascadeCode g 4 := by
-  fin_cases g <;> norm_num [cascadeCode]
+  fin_cases g <;> decide
 
 theorem cascade_terminal : NoSingletons cascadeCode (surviving cascadeTrace) := by
   intro i hi v hv
@@ -50,7 +54,7 @@ theorem cascade_terminal : NoSingletons cascadeCode (surviving cascadeTrace) := 
   · subst i
     refine ⟨4, ?_, by decide, ?_⟩
     · rw [cascade_survivors]
-      norm_num
+      decide
     · exact (cascade_duplicate_core v.1).symm.trans hv
   · have hi4 : i = 4 := by
       apply Fin.ext
@@ -60,7 +64,7 @@ theorem cascade_terminal : NoSingletons cascadeCode (surviving cascadeTrace) := 
     subst i
     refine ⟨3, ?_, by decide, ?_⟩
     · rw [cascade_survivors]
-      norm_num
+      decide
     · exact (cascade_duplicate_core v.1).trans hv
 
 def duplicateCode (_ : Fin 3) (_ : Bool) : Fin 1 := 0
