@@ -1,0 +1,48 @@
+name: Transfer isolated Lean environment
+on:
+  push:
+    branches: [ops/lean-toolchain-20260928]
+    paths: [.github/workflows/lean-toolchain-split.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  split:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: lean-proof-environment
+          run-id: 36433534541
+          github-token: ${{ github.token }}
+          path: /tmp/proof-env
+      - run: |
+          cd /tmp/proof-env
+          echo '1e27a2128af4ab3d584ea4e282a3ee24ce0201f3656dd4021808c5824b2a9756  lean-proof-env.tar.zst' | sha256sum -c -
+          split -b 450000000 -d lean-proof-env.tar.zst env.part-
+          sha256sum env.part-*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lean-env-00
+          path: /tmp/proof-env/env.part-00
+          compression-level: 0
+          retention-days: 2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lean-env-01
+          path: /tmp/proof-env/env.part-01
+          compression-level: 0
+          retention-days: 2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lean-env-02
+          path: /tmp/proof-env/env.part-02
+          compression-level: 0
+          retention-days: 2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lean-env-03
+          path: /tmp/proof-env/env.part-03
+          compression-level: 0
+          retention-days: 2
