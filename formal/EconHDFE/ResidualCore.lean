@@ -33,7 +33,7 @@ theorem block_range_eq_liftCore
     (B : (K → ℝ) →ₗ[ℝ] (L → ℝ))
     (D : (K → ℝ) →ₗ[ℝ] (C → ℝ))
     (hT : Function.Surjective T) :
-    (blockMap T B D).range = liftCore D.range := by
+    LinearMap.range (blockMap T B D) = liftCore (LinearMap.range D) := by
   apply le_antisymm
   · rintro z ⟨⟨a, b⟩, rfl⟩
     exact ⟨b, rfl⟩
@@ -77,8 +77,8 @@ theorem block_residual_reconstruction [Fintype L] [Fintype C]
     (B : (K → ℝ) →ₗ[ℝ] (L → ℝ))
     (D : (K → ℝ) →ₗ[ℝ] (C → ℝ))
     (hT : Function.Surjective T) {rCore : C → ℝ}
-    (hf : IsResidual w (blockMap T B D).range y rFull)
-    (hc : IsResidual (fun c => w (Sum.inr c)) D.range
+    (hf : IsResidual w (LinearMap.range (blockMap T B D)) y rFull)
+    (hc : IsResidual (fun c => w (Sum.inr c)) (LinearMap.range D)
       (fun c => y (Sum.inr c)) rCore) :
     rFull = zeroExtend rCore := by
   rw [block_range_eq_liftCore T B D hT] at hf
@@ -92,8 +92,8 @@ theorem block_multi_rhs [Fintype L] [Fintype C] {M : Type*}
     (D : (K → ℝ) →ₗ[ℝ] (C → ℝ))
     (hT : Function.Surjective T)
     (Y R : M → (L ⊕ C) → ℝ) (RC : M → C → ℝ)
-    (hf : ∀ m, IsResidual w (blockMap T B D).range (Y m) (R m))
-    (hc : ∀ m, IsResidual (fun c => w (Sum.inr c)) D.range
+    (hf : ∀ m, IsResidual w (LinearMap.range (blockMap T B D)) (Y m) (R m))
+    (hc : ∀ m, IsResidual (fun c => w (Sum.inr c)) (LinearMap.range D)
       (fun c => Y m (Sum.inr c)) (RC m)) :
     ∀ m, R m = zeroExtend (RC m) := by
   intro m
