@@ -9,3 +9,4 @@ import EconHDFE.PeelingExamples
 import EconHDFE.RankBasics
 import EconHDFE.ComponentRank
 import EconHDFE.PeelingRank
+import EconHDFE.MultipartiteRank
