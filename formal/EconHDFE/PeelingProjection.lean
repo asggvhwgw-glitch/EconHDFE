@@ -36,6 +36,7 @@ theorem peelMatrix_surjective (t : PeelingTrace code) :
     rw [peelMatrix_det_one]
     exact isUnit_one
   refine ⟨((peelMatrix t)⁻¹).mulVec v, ?_⟩
+  change (peelMatrix t).mulVec (((peelMatrix t)⁻¹).mulVec v) = v
   rw [Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv _ hunit, Matrix.one_mulVec]
 
 /-- A linear combination of original pivot columns, in original row coordinates. -/
@@ -172,7 +173,8 @@ theorem categorical_core_wls_fit [Fintype I] (t : PeelingTrace code)
     IsWLSFit w (feSpace code) y
       (y - peelExtend t ((fun c : PeelingCore t => y c.val) - fC)) :=
   residual_isWLSFit (fun i => le_of_lt (hw i))
-    (categorical_residual_lifts t (wlsFit_isResidual (fun c => hw c.val) hc))
+    (categorical_residual_lifts t
+      (wlsFit_isResidual (fun c : PeelingCore t => hw c.val) hc))
 
 /-- The same trace works for every column and every strictly positive weight update. -/
 theorem categorical_multi_rhs [Fintype I] (t : PeelingTrace code) {M : Type*}

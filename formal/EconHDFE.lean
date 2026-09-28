@@ -4,3 +4,5 @@ import EconHDFE.ResidualCore
 import EconHDFE.CategoricalDesign
 import EconHDFE.PeelingProjection
 import EconHDFE.PeelingTermination
+import EconHDFE.CategoricalRecode
+import EconHDFE.PeelingExamples

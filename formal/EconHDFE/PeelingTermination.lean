@@ -53,12 +53,14 @@ def appendPeeling (t : PeelingTrace code) (i : I) (v : Sigma K)
         intro l
         have h := active l.castSucc (Fin.castSucc_lt_last l)
         simpa using h
+      rw [Fin.lastCases_last]
       simpa using hv j hj
     | cast k =>
       have hj : ∀ l, l < k → t.row l ≠ j := by
         intro l hl
         have h := active l.castSucc (by simpa using hl)
         simpa using h
+      rw [Fin.lastCases_castSucc]
       simpa using t.singleton k j hj
 
 @[simp]
