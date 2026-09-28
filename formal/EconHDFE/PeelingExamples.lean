@@ -39,7 +39,7 @@ theorem cascade_matrix :
   ext i j
   fin_cases i <;> fin_cases j <;>
     norm_num [peelMatrix, cascadeTrace, cascadeRow, feColumn, indicator,
-      cascadePivot, cascadeCode]
+      cascadePivot, cascadeCode] <;> decide
 
 theorem cascade_duplicate_core (g : Fin 3) : cascadeCode g 3 = cascadeCode g 4 := by
   fin_cases g <;> decide
