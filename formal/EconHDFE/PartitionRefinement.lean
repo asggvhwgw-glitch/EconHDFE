@@ -47,7 +47,7 @@ def categoricalMap (P : I → A) : (A → ℝ) →ₗ[ℝ] (I → ℝ) where
   map_smul' _ _ := rfl
 
 def partitionSpace (P : I → A) : Submodule ℝ (I → ℝ) :=
-  (categoricalMap P).range
+  LinearMap.range (categoricalMap P)
 
 def indicator [DecidableEq A] (P : I → A) (a : A) : I → ℝ :=
   fun i => if P i = a then 1 else 0
@@ -123,9 +123,9 @@ theorem coarse_indicator_sum [Fintype B] [DecidableEq A] [DecidableEq B]
       intro q _
       by_cases hq : q = Q i
       · subst q
-        simp [indicator]
+        by_cases hf : f (Q i) = p <;> simp [indicator, hf]
       · have hqi : Q i ≠ q := Ne.symm hq
-        simp [indicator, hq, hqi]
+        by_cases hf : f q = p <;> simp [indicator, hq, hqi, hf]
 
 /-- Manuscript prop:basis, full-dummy case, with an explicit retained witness. -/
 theorem drop_one_fine [Fintype B] [DecidableEq A] [DecidableEq B]
