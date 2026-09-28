@@ -1,59 +1,86 @@
 # econhdfe
 
-**High-performance high-dimensional fixed-effect econometrics for empirical research in Python.**
+**High-performance high-dimensional fixed-effect econometrics for modern empirical research.**
 
-`econhdfe` provides OLS-HDFE, linear IV-HDFE, PPML-HDFE, and IV-PPML-HDFE on top of a shared fixed-effect, inference, and execution core. It is built for the way empirical researchers actually work: large datasets, several high-dimensional fixed effects, clustered inference, and many nearby specifications in the same regression table.
+`econhdfe` is a Python package for OLS-HDFE, linear IV-HDFE, PPML-HDFE, and IV-PPML-HDFE. It is designed for empirical work with large datasets, high-cardinality fixed effects, clustered inference, rich interactions, and many closely related specifications.
 
-> **Project status:** active **alpha** research software. The repository may be ahead of the latest published release. Published versions are available from PyPI and GitHub Releases. Repository-local validation is extensive, but licensed-Stata / upstream external certification remains a separate boundary.
+The project is currently **alpha research software**. The repository contains the unreleased 0.6.5 development line, while the latest published release is v0.6.3. Repository-local validation is extensive, but licensed-Stata and complete upstream external certification remain separate validation boundaries.
 
-## Why econhdfe
+## Performance at a glance
 
-On a large empirical dataset, the final coefficient solve is often not the expensive part. Time and memory are spent repeatedly:
+The main goal of `econhdfe` is to avoid computational work that the requested econometric model never required in the first place.
 
-- reading the same columns;
-- encoding high-cardinality firm, worker, product, city, or year identifiers;
-- expanding interactions;
-- absorbing the same fixed-effect geometry;
-- rebuilding weighted projectors;
-- and rerunning nearly identical robustness specifications.
+In one recorded interaction-rich benchmark with 96,000 observations, a certified structured representation reduced the physical design from approximately **75.3 MB to 7.7 MB**. Against the package's own dense execution path on the same specification, measured runtime improved by **10.51× for OLS-HDFE**, **6.42× for PPML-HDFE**, **2.07× for IV-PPML-HDFE**, and **1.30× for linear IV-HDFE**, while maximum coefficient differences remained between roughly `1e-16` and `1e-15`.
 
-`econhdfe` treats those operations as shared computational infrastructure rather than rebuilding them estimator by estimator.
+| Estimator | Structured vs. dense | Max coefficient difference |
+|---|---:|---:|
+| OLS-HDFE | **10.51×** | `3.1e-16` |
+| Linear IV-HDFE | **1.30×** | `3.5e-15` |
+| PPML-HDFE | **6.42×** | `5.8e-16` |
+| IV-PPML-HDFE | **2.07×** | `1.7e-15` |
 
-The central design rule is simple:
+This is deliberately a workload-specific benchmark, not a claim that every regression becomes ten times faster. Other workloads benefit through different mechanisms, including projected data access, compact identifier encoding, exact structural reduction, memory-aware execution, and reuse across nearby specifications.
 
-> **The econometric specification determines the model. The execution layer only decides how to compute that same model efficiently.**
+Detailed benchmark inputs, baselines, timing rules, and parity checks are kept in [the benchmark documentation](docs/development/benchmarks.md).
 
-That separation makes it possible to optimize data access, fixed-effect projection, repeated specifications, memory use, and parallel execution without silently changing regressors, instruments, samples, weights, or inference.
+## Why econhdfe?
 
-## Installation
+Consider a researcher working with 50 million rows of product-level trade data. A baseline specification might absorb exporter-year, importer-year, and product fixed effects, include several controls, and cluster inference by trade pair.
 
-Python **3.10–3.13** is supported.
+After the first regression, the actual empirical workflow rarely stops. The researcher changes the outcome, adds or removes controls, changes one fixed effect, tries another clustering rule, estimates an event-study specification, and eventually produces a large robustness table.
+
+Econometrically, many of these specifications are close to one another. Computationally, however, a one-regression-at-a-time workflow can repeatedly pay for reading the same columns, encoding millions of categorical identifiers, expanding the same interactions, rediscovering fixed-effect structure, projecting similar variables through the same HDFE geometry, allocating large temporary arrays, and rebuilding inference objects.
+
+Once the dataset becomes large enough, the expensive part of the workflow is often no longer the final small coefficient solve. It is data movement, representation, fixed-effect projection, memory allocation, and repeated work across specifications.
+
+`econhdfe` is built around that observation.
+
+```text
+Traditional workflow
+
+data
+  ↓
+regression
+  ↓
+discard intermediate work
+  ↓
+next regression
+
+
+econhdfe
+
+data source
+  ↓
+validated encoded state
+  ↓
+symbolic econometric design
+  ↓
+exact structural analysis
+  ↓
+shared HDFE geometry
+  ↓
+execution planner
+  ↓
+OLS / IV / PPML / IV-PPML
+  ↓
+reuse what remains valid
+```
+
+This design has become especially practical because the modern Python ecosystem is very different from the Python of early scientific computing. The rise of machine learning, large-scale data systems, and AI has concentrated enormous engineering investment around Python-facing high-performance infrastructure. Heavy computation does not need to run in interpreted Python loops: NumPy, SciPy, Numba/JIT, optimized BLAS/LAPACK libraries, Arrow-style columnar data, modern dataframe engines, parallel runtimes, memory-mapped storage, and optional GPU backends can all sit behind a Python interface.
+
+`econhdfe` uses Python as the coordination layer for those numerical and data systems. The package does not try to make an interpreted loop compete with Mata or compiled code. It tries to choose a better representation, avoid unnecessary work, and send each part of the problem to the appropriate numerical backend.
+
+The econometric model remains the constraint. Execution choices may change how the computation is performed; they must not silently change the regressors, instruments, sample, weights, fixed effects, or inference requested by the researcher.
+
+## Quick start
+
+Python 3.10–3.13 is supported.
 
 ```bash
 pip install econhdfe
 ```
 
-Optional I/O support for file-backed workflows:
-
-```bash
-pip install "econhdfe[io]"
-```
-
-Optional CUDA dependencies:
-
-```bash
-pip install "econhdfe[gpu]"
-```
-
-From a checked-out source tree:
-
-```bash
-pip install .
-```
-
-## Quick start
-
-### OLS with high-dimensional fixed effects
+A standard OLS-HDFE specification can be written directly against a pandas DataFrame:
 
 ```python
 from econhdfe import olshdfe
@@ -71,9 +98,16 @@ print(res.params)
 print(res.stderr)
 ```
 
-The same public API accepts ordinary categorical fixed effects, interaction-rich designs, weights, multiway clustering, and explicit inference/execution configuration.
+The main estimator entry points are deliberately small:
 
-### Linear IV-HDFE
+| Model | Entry point |
+|---|---|
+| OLS-HDFE | `olshdfe(...)` |
+| Linear IV-HDFE | `ivhdfe(...)` |
+| PPML-HDFE | `ppmlhdfe(...)` |
+| IV-PPML-HDFE | `ivppmlhdfe(...)` |
+
+A linear IV specification, for example, looks like:
 
 ```python
 from econhdfe import ivhdfe
@@ -91,62 +125,7 @@ res = ivhdfe(
 )
 ```
 
-`estimator=` also supports LIML, k-class, and two-step GMM paths.
-
-### PPML-HDFE
-
-```python
-from econhdfe import ppmlhdfe
-
-res = ppmlhdfe(
-    y,
-    X,
-    absorb=[exporter_year, importer_year, pair],
-    clusters=[pair],
-    vce="cluster",
-)
-```
-
-PPML includes high-dimensional FE projection, separation handling, robust inference, and multiway clustering.
-
-### IV-PPML-HDFE
-
-```python
-from econhdfe import ivppmlhdfe
-
-res = ivppmlhdfe(
-    y,
-    exog=controls,
-    endog=endogenous,
-    instruments=instruments,
-    absorb=[firm, year],
-    clusters=[firm],
-    vce="cluster",
-)
-```
-
-IV-PPML uses an additive-moment formulation with the same shared weighted HDFE infrastructure.
-
-## What is supported
-
-| Area | Current support |
-|---|---|
-| OLS-HDFE | Multiway categorical FE absorption, robust/IID covariance, multiway clustering, HAC and Driscoll-Kraay paths |
-| Linear IV-HDFE | 2SLS, LIML, k-class, two-step GMM, conventional weak-IV diagnostics |
-| PPML-HDFE | IRLS, high-dimensional FE projection, separation checks, robust and clustered inference |
-| IV-PPML-HDFE | Additive-moment IV-PPML with shared weighted HDFE machinery |
-| Fixed effects | General multiway categorical FE, interactions, heterogeneous slopes, optional exact structural rank/DoF machinery |
-| Repeated specifications | Reusable OLS and linear-IV sessions for changing outcomes, controls, and FE sets |
-| Inference | IID, robust, multiway-cluster covariance, cluster diagnostics, selected wild-cluster procedures |
-| Post-estimation | Publication-oriented result objects and identified recovery of categorical/indicator fixed effects |
-| Execution | Memory budgets, bounded parallelism, automatic HDFE thread selection, dense/structured execution planning |
-| Compatibility | `reghdfe`, `ivreghdfe`, and legacy `pyreghdfe` compatibility entry points |
-
-## Repeated regression tables
-
-A common empirical workflow holds most of the specification fixed while changing outcomes, controls, or fixed effects. Recomputing every transformation from scratch wastes work.
-
-`OLSHDFESession` and `IVHDFESession` reuse only state that is valid for the same realized sample and FE geometry.
+For repeated regression tables, `econhdfe` can preserve transformations that remain valid across nearby specifications:
 
 ```python
 from econhdfe import OLSHDFESession
@@ -164,117 +143,117 @@ results = session.fit_many_y(
 )
 ```
 
-Changing the FE structure or sample creates a different cache identity; stale transformed state is not silently reused. Persistent file-backed reuse is available for exploratory workflows, but it is an execution optimization rather than part of estimator semantics.
+The reuse rules are deliberately conservative. A different sample, relevant data state, weights, or FE geometry must not silently read stale numerical state.
 
-## Where the performance comes from
+### Or give it to an AI agent
 
-There is no single "fast solver" behind the package. Performance comes from keeping several layers separate.
+`econhdfe` is designed to be **agent-native** as well as directly callable from Python.
 
-### 1. Read and encode only what the model needs
+The repository ships a package-specific Agent Skill under `skills/econhdfe/`. The README is meant to help a researcher understand the project; the Skill contains the more detailed operational knowledge needed for installation, model specification, diagnostics, advanced execution settings, benchmarking, validation, privacy-safe support, and third-party development.
 
-The data layer can project required columns from supported file-backed sources and compactly encode identifier-heavy FE/cluster columns. Repeated linear workflows can reuse validated encoded and within-transformed state.
+A researcher using a coding agent can start with the following prompt:
 
-### 2. Remove exact structure before numerical work
+> Clone or access the EconHDFE repository at `https://github.com/asggvhwgw-glitch/EconHDFE`.
+>
+> Locate `skills/econhdfe/` and read `skills/econhdfe/SKILL.md` before using the package. Treat that Skill and its linked references as the authoritative operational guide.
+>
+> Inspect my Python environment and available compute resources, install or configure the appropriate EconHDFE version and optional dependencies, and verify that the package and core estimator interfaces work. Use the Skill when choosing advanced execution settings instead of guessing parameters from general Python knowledge.
+>
+> Do not modify my data or econometric specification merely to make the computation faster. Performance choices must preserve the requested model. If something fails, use EconHDFE's structured diagnostics and privacy-safe support workflow.
+>
+> Once setup is complete, ask me for the empirical specification or research task I want to run.
 
-The symbolic design layer detects exact nesting, partition refinement, redundant FE structure, and supported interaction structure before unnecessary dense materialization. Exact reductions preserve the requested column space.
+The agent is an interface to the software, not part of the estimator. Samples, coefficients, fixed effects, convergence rules, inference, and numerical tolerances remain controlled by the same tested public API used by human callers.
 
-### 3. Share one HDFE core across estimators
+## What econhdfe does differently
 
-OLS, IV, PPML, and IV-PPML reuse common FE encoding, topology, projection, DoF, and low-level numerical infrastructure. Improvements therefore do not need to be reimplemented independently for every estimator.
+The package is designed around the full empirical workflow rather than one isolated solver. File-backed data sources can expose only the columns required by a specification; categorical identifiers can be encoded once and reused where valid; symbolic design information can be simplified before unnecessary dense matrices are created; and the execution planner can choose among certified representations according to the actual workload and resource budget.
 
-### 4. Separate execution policy from econometrics
+OLS, linear IV, PPML, and IV-PPML share the same underlying HDFE infrastructure for encoding, topology, projection, degrees of freedom, weighted projection, and low-level numerical work. This avoids maintaining four unrelated fixed-effect implementations and means improvements to the common computational core can benefit multiple estimator families.
 
-The execution planner decides between valid physical representations, memory budgets, and thread counts only after the statistical structure is fixed.
+Repeated specifications are treated as a first-class use case. For many empirical projects, avoiding a second expensive fixed-effect transformation can matter more than making one small dense matrix multiplication marginally faster. `econhdfe` therefore distinguishes the econometric specification from reusable computational state and explicitly invalidates reuse when the relevant sample or FE geometry changes.
 
-```text
-specification
-    ↓
-exact structural information
-    ↓
-cost / resource estimate
-    ↓
-execution plan
-    ↓
-estimator
-```
+The package also separates execution policy from econometric semantics. Memory budgets, thread counts, structured representations, and cache strategies are computational decisions. They are not allowed to redefine the model.
 
-### 5. Reuse work across nearby specifications
+## Beyond engineering
 
-For regression tables and robustness exercises, safe reuse can matter more than optimizing one isolated matrix operation.
+`econhdfe` is not only an engineering project. Building a general multiway HDFE system exposes structural problems that cannot be solved by caching or parallelism alone.
 
-For implementation details and benchmark evidence, see:
+One example is the absorbed degrees of freedom associated with three or more categorical fixed-effect dimensions. If \(D_{FE}\) denotes the combined fixed-effect design matrix, the relevant quantity is
 
-- [Performance architecture](docs/technical/performance-architecture.md)
-- [Benchmark index and interpretation rules](docs/development/benchmarks.md)
-- [Execution planner](docs/development/execution-planner.md)
+\[
+\mathrm{DoF}_{FE} = \operatorname{rank}(D_{FE}).
+\]
 
-Repository benchmarks are workload-specific development evidence, not universal speed claims.
+For one or two FE dimensions, redundancy has familiar graph-based structure. For general multiway fixed effects, exact structural rank is substantially more difficult. `econhdfe` contains a theorem-backed framework for computing the exact structural rank and absorbed DoF of arbitrary-`G` categorical FE designs within its documented assumptions and resource bounds.
+
+That distinction matters because numerical simplification and econometric rank are not the same object. The implementation keeps the requested FE topology, structural rank/DoF reasoning, numerical representation, and projection solver conceptually separate so that an optimization cannot silently redefine the design being estimated.
+
+The project currently tracks two other theorem-backed pieces of work. An exact residual-core reduction can eliminate eligible parts of the multiway FE incidence structure before the expensive numerical solve and reconstruct them afterwards while preserving the target projection. An exact partition-refinement reduction can detect nested and redundant categorical structure before full materialization, allowing the same requested column space to be represented by a smaller exact basis.
+
+Formal statements, assumptions, implementation mappings, tests, and prior-art boundaries are maintained separately in the [technical documentation](docs/technical/README.md). A theorem-backed result is not automatically described as historically novel: mathematical correctness, implementation correctness, and independent originality are treated as different claims.
+
+## Main capabilities
+
+| Area | Current support |
+|---|---|
+| OLS-HDFE | General multiway FE absorption, IID/robust covariance, multiway clustering, HAC and Driscoll-Kraay paths |
+| Linear IV-HDFE | 2SLS, LIML, k-class, two-step GMM and conventional weak-IV diagnostics |
+| PPML-HDFE | IRLS, high-dimensional FE projection, separation handling, robust and clustered inference |
+| IV-PPML-HDFE | Additive-moment IV-PPML on the shared weighted HDFE infrastructure |
+| Fixed effects | Multiway categorical FE, interactions, heterogeneous slopes, optional exact structural rank/DoF |
+| Repeated specifications | Reusable OLS and linear-IV sessions with FE/sample-aware invalidation |
+| Post-estimation | Publication-oriented results and identified categorical/indicator FE recovery |
+| Execution | Projected data access, memory budgets, structured representations, bounded parallelism and automatic HDFE thread selection |
+| Compatibility | `reghdfe`, `ivreghdfe`, and legacy `pyreghdfe` entry points |
+| Agent interface | Native `econhdfe` Skill for agent-driven empirical and development workflows |
+
+## Validation
+
+Performance is not useful if an optimization silently changes the model. `econhdfe` therefore separates public-interface testing, statistical behavior, independent numerical checks, and release engineering.
+
+The current test suite is organized around **contracts, behavior, numerics, and tooling** rather than historical version numbers. Statistical tests cover realized samples, weights, singleton handling, FE semantics, omitted variables, clustering, DoF, PPML separation, result semantics, and cache invalidation. Critical numerical paths are additionally checked against independent constructions such as dense dummy matrices, SVD-based references, exact rational arithmetic, deliberately difficult rank cases, extreme scales, rank deficiency, and resource-boundary failures.
+
+CI covers Linux, Windows, and macOS across supported Python versions, together with feasible minimum dependency environments. Source archives and installed wheels are also tested outside the ordinary development import path.
+
+The claim boundary remains explicit. Extensive repository-local testing is not equivalent to complete licensed-Stata or upstream external-corpus certification, and those external checks are not claimed merely because the internal suite is large.
+
+See [Testing](docs/development/testing.md) and the [validation status](docs/development/test-status.md) for details.
 
 ## Fixed-effect recovery
 
-Most regressions treat fixed effects as nuisance parameters, but some applications need the FE coefficients themselves—for example worker/firm models, mobility models, or structural gravity.
+Some applications need fixed effects as economic objects rather than nuisance parameters. Worker-firm models, mobility applications, origin-destination models, and structural gravity are common examples.
 
-`econhdfe.effects` provides component-aware recovery of **identified categorical/indicator fixed effects** with explicit normalization. Identification and normalization are kept separate, and unidentified components are not converted into arbitrary coefficient levels.
+`econhdfe.effects` provides component-aware recovery of identified categorical or indicator fixed effects with explicit normalization. Identification and normalization are treated separately: changing a normalization can change reported levels, but it cannot create identification where none exists.
 
 See [Identified categorical fixed effects](docs/technical/identified-fixed-effects.md).
 
-## Validation and claim boundaries
-
-The repository maintains separate checks for:
-
-- public API contracts;
-- statistical behavior and failure semantics;
-- independent numerical oracles and resource-boundary cases;
-- Linux, Windows, and macOS across supported Python versions;
-- feasible minimum dependency versions;
-- source and installed-wheel behavior;
-- release artifacts and reproducibility metadata.
-
-The test suite is organized around **contracts, behavior, numerics, and tooling**, not historical version numbers. See [Testing](docs/development/testing.md).
-
-Two boundaries are intentionally explicit:
-
-1. **Package-local validation is not the same as licensed-Stata / upstream external certification.**
-2. **A formal mathematical result is not automatically a proven novelty claim.**
-
-Technical manuscripts, implementation mappings, prior-art boundaries, and the originality registry are kept under [technical documentation](docs/technical/README.md).
-
-## Documentation
-
-Start with the repository [documentation index](docs/README.md).
-
-Useful entry points:
-
-- [Technical overview](docs/technical/overview.md) — estimator and computational contracts
-- [Performance architecture](docs/technical/performance-architecture.md) — large-data design and reuse strategy
-- [Identified categorical fixed effects](docs/technical/identified-fixed-effects.md) — FE recovery and normalization
-- [Economics-first architecture](docs/development/architecture.md) — module ownership and package structure
-- [Testing](docs/development/testing.md) — contract / behavior / numerics / tooling test model
-- [Migration notes](docs/release/migration.md) — public release migration
-- [Roadmap](TODO.md) — current development priorities
-
-The repository also ships a portable Agent Skill under `skills/econhdfe/` for installation, empirical workflows, validation, support reports, and third-party development.
-
 ## Compatibility
 
-New code should import directly from `econhdfe`:
+New Python code should normally import directly from `econhdfe`:
 
 ```python
 from econhdfe import olshdfe, ivhdfe, ppmlhdfe, ivppmlhdfe
 ```
 
-Compatibility aliases are also available:
+Compatibility entry points are also available:
 
 ```python
 from econhdfe import reghdfe, ivreghdfe
 import pyreghdfe
 ```
 
-Compatibility does **not** mean that every Stata syntax construct or every upstream edge case has completed external certification.
+These aliases are intended to ease migration and interoperability. They do not imply that every Stata syntax construct or every upstream edge case has completed external certification.
+
+## Documentation
+
+The main documentation index is [docs/README.md](docs/README.md). The most useful technical entry points are the [technical overview](docs/technical/overview.md), [performance architecture](docs/technical/performance-architecture.md), [economics-first architecture](docs/development/architecture.md), [execution planner](docs/development/execution-planner.md), [benchmark documentation](docs/development/benchmarks.md), and [technical innovation documentation](docs/technical/README.md).
+
+Current development priorities are tracked in [TODO.md](TODO.md). Migration information between public releases is kept under [docs/release/](docs/release/).
 
 ## Contributing
 
-Contributions should preserve the separation between econometric semantics, HDFE numerics, inference, data preparation, and execution policy.
+Contributions should preserve the separation between econometric semantics, HDFE mathematics, estimator-specific equations, inference, data preparation, numerical kernels, and execution policy. Performance changes should carry numerical parity checks as well as timing evidence, and new technical claims should include their mathematical statement, implementation correspondence, tests, and prior-art boundary.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and the [developer guide](skills/econhdfe/references/developer-guide.md).
 
