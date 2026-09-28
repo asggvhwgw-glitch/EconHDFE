@@ -1,3 +1,5 @@
 import EconHDFE.PartitionRefinement
 import EconHDFE.WeightedLeastSquares
 import EconHDFE.ResidualCore
+import EconHDFE.CategoricalDesign
+import EconHDFE.PeelingProjection
