@@ -1,0 +1,43 @@
+{
+  "base_commit": "34d5138aa771f707ebd300bed34aa2ccad32c478",
+  "base_tree": "942b6b0fafb9a8a372e0955ec21b965f18f03ffd",
+  "build_scope": "HOST backend/dependencies for local wheel and source checks; not isolated dependency resolution or clean-install certification",
+  "candidate_bundle_verifier": "passed",
+  "code_fingerprint_sha256": "e88a3b159906e04bb9756f96d2b8353b1ffe5d672b07b60036216493a55b62ce",
+  "core": {
+    "errors": 0,
+    "failures": 0,
+    "pytest_seconds": 17.767,
+    "skipped": 0,
+    "tests": 335
+  },
+  "full": {
+    "errors": 0,
+    "failures": 0,
+    "pytest_seconds": 23.374,
+    "skipped": 0,
+    "tests": 886
+  },
+  "installed_wheel": {
+    "errors": 0,
+    "failures": 0,
+    "pytest_seconds": 10.188,
+    "skipped": 0,
+    "tests": 339
+  },
+  "note": "An earlier repeated all-in-one offline build invocation stalled during local process cleanup after tests; it was not counted as acceptance. Wheel, installed tests, extracted-source tests and bundle verification were rerun as separate fresh checks.",
+  "public_contract_diff_count": 0,
+  "release_version": "0.6.5",
+  "remote_ci": "pending for this 0.6.5 PR",
+  "runtime_implementation_changed": false,
+  "source_archive": {
+    "errors": 0,
+    "failures": 0,
+    "note": "Fresh extracted source completed all 886 tests; the verbose retained local log reported 34.00s.",
+    "skipped": 0,
+    "status": "passed",
+    "suite": "full",
+    "tests": 886
+  },
+  "version_metadata_changed": true
+}

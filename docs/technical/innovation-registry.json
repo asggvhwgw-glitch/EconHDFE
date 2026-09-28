@@ -28,8 +28,8 @@
         "econhdfe/hdfe/dof.py"
       ],
       "tests": [
-        "tests/test_hdfe_exact_multiway.py",
-        "tests/test_mathematical_review.py"
+        "tests/numerics/test_exact_multiway.py",
+        "tests/numerics/test_exact_oracles.py"
       ],
       "evidence": [
         "benchmarks/hdfe/exact_rank.json"
@@ -53,9 +53,9 @@
         "econhdfe/hdfe/absorber.py"
       ],
       "tests": [
-        "tests/test_hdfe_multiway_solver_opt.py",
-        "tests/test_hdfe_complex_fe_corpus.py",
-        "tests/test_mathematical_review.py"
+        "tests/numerics/test_residual_core.py",
+        "tests/numerics/test_complex_fe_corpus.py",
+        "tests/numerics/test_exact_oracles.py"
       ],
       "evidence": [
         "benchmarks/hdfe/solver_v044_integration.json"
@@ -79,10 +79,10 @@
         "econhdfe/design_structure.py"
       ],
       "tests": [
-        "tests/test_fe_canonicalization.py",
-        "tests/test_v073_structural_collinearity.py",
-        "tests/test_v074_dependency_omission.py",
-        "tests/test_mathematical_review.py"
+        "tests/numerics/test_fe_canonicalization.py",
+        "tests/behavior/test_structural_omissions.py",
+        "tests/behavior/test_dependency_omissions.py",
+        "tests/numerics/test_exact_oracles.py"
       ],
       "evidence": [
         "benchmarks/bench_structural_collinearity.py",

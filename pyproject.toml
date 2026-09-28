@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "econhdfe"
-version = "0.6.4"
+version = "0.6.5"
 description = "High-performance econometric estimators with shared high-dimensional fixed-effect infrastructure"
 readme = {file = "README.md", content-type = "text/markdown"}
 license = {file = "LICENSE"}
@@ -41,3 +41,8 @@ econhdfe = ["templates/*.md"]
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["econhdfe*", "pyreghdfe*"]
+
+[tool.pytest.ini_options]
+# Daily regression surface. CI and release builds explicitly select tests/ (full).
+testpaths = ["tests/contracts", "tests/behavior"]
+addopts = "--strict-config --strict-markers"

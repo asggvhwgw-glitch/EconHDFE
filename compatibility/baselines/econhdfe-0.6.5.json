@@ -1,0 +1,2425 @@
+{
+  "config_schemas": {
+    "ExecutionConfig": [
+      {
+        "default": "'auto'",
+        "name": "threads"
+      },
+      {
+        "default": "512",
+        "name": "memory_budget_mb"
+      },
+      {
+        "default": "'off'",
+        "name": "profile"
+      },
+      {
+        "default": "'auto'",
+        "name": "cache"
+      },
+      {
+        "default": "'signature'",
+        "name": "cache_validation"
+      }
+    ],
+    "HDFEConfig": [
+      {
+        "default": "'auto'",
+        "name": "solver"
+      },
+      {
+        "default": "1e-08",
+        "name": "tolerance"
+      },
+      {
+        "default": "16000",
+        "name": "max_iter"
+      },
+      {
+        "default": "'pairwise'",
+        "name": "dof_method"
+      },
+      {
+        "default": "True",
+        "name": "canonicalize"
+      }
+    ],
+    "InferenceConfig": [
+      {
+        "default": "None",
+        "name": "vce"
+      },
+      {
+        "default": "0.95",
+        "name": "confidence_level"
+      },
+      {
+        "default": "'off'",
+        "name": "diagnostics"
+      }
+    ]
+  },
+  "error_catalog": {
+    "BootstrapError": {
+      "code": "resampling.failure",
+      "stage": "resampling"
+    },
+    "CollinearityError": {
+      "code": "identification.collinearity",
+      "stage": "identification"
+    },
+    "ConvergenceError": {
+      "code": "convergence.failure",
+      "stage": "solver"
+    },
+    "DataTypeError": {
+      "code": "input.non_numeric",
+      "stage": "frontend"
+    },
+    "DivergenceError": {
+      "code": "numerical.divergence",
+      "stage": "compute"
+    },
+    "EconHDFEError": {
+      "code": "econhdfe.error",
+      "stage": "estimation"
+    },
+    "IdentificationError": {
+      "code": "identification.failure",
+      "stage": "identification"
+    },
+    "InferenceError": {
+      "code": "inference.failure",
+      "stage": "inference"
+    },
+    "InputError": {
+      "code": "input.invalid",
+      "stage": "frontend"
+    },
+    "InternalEstimationError": {
+      "code": "estimation.internal",
+      "stage": "estimation"
+    },
+    "InvalidWeightError": {
+      "code": "input.invalid_weight",
+      "stage": "frontend"
+    },
+    "LinearAlgebraError": {
+      "code": "numerical.linalg",
+      "stage": "compute"
+    },
+    "MissingDataError": {
+      "code": "input.missing",
+      "stage": "frontend"
+    },
+    "NumericalError": {
+      "code": "numerical.failure",
+      "stage": "compute"
+    },
+    "ShapeError": {
+      "code": "input.shape",
+      "stage": "frontend"
+    },
+    "SpecificationError": {
+      "code": "specification.invalid",
+      "stage": "specification"
+    },
+    "UnderidentifiedError": {
+      "code": "identification.underidentified",
+      "stage": "identification"
+    }
+  },
+  "exported_dataclass_schemas": {
+    "CategoricalRankInfo": [
+      {
+        "default": "<required>",
+        "name": "rank"
+      },
+      {
+        "default": "<required>",
+        "name": "n_levels"
+      },
+      {
+        "default": "<required>",
+        "name": "n_unique_edges"
+      },
+      {
+        "default": "<required>",
+        "name": "peeled_rank"
+      },
+      {
+        "default": "<required>",
+        "name": "core_edges"
+      },
+      {
+        "default": "<required>",
+        "name": "core_vertices"
+      },
+      {
+        "default": "<required>",
+        "name": "core_components"
+      }
+    ],
+    "ClusterDiagnostics": [
+      {
+        "default": "<required>",
+        "name": "nobs"
+      },
+      {
+        "default": "<required>",
+        "name": "dimensions"
+      },
+      {
+        "default": "<required>",
+        "name": "pairwise_intersections"
+      }
+    ],
+    "ClusterDimensionDiagnostics": [
+      {
+        "default": "<required>",
+        "name": "dimension"
+      },
+      {
+        "default": "<required>",
+        "name": "n_clusters"
+      },
+      {
+        "default": "<required>",
+        "name": "min_size"
+      },
+      {
+        "default": "<required>",
+        "name": "median_size"
+      },
+      {
+        "default": "<required>",
+        "name": "mean_size"
+      },
+      {
+        "default": "<required>",
+        "name": "max_size"
+      },
+      {
+        "default": "<required>",
+        "name": "size_cv"
+      },
+      {
+        "default": "<required>",
+        "name": "largest_share"
+      },
+      {
+        "default": "<required>",
+        "name": "effective_clusters_size"
+      },
+      {
+        "default": "<required>",
+        "name": "singleton_clusters"
+      },
+      {
+        "default": "None",
+        "name": "score_share_max"
+      },
+      {
+        "default": "None",
+        "name": "score_effective_clusters"
+      },
+      {
+        "default": "()",
+        "name": "flags"
+      }
+    ],
+    "DofInfo": [
+      {
+        "default": "<required>",
+        "name": "df_absorbed"
+      },
+      {
+        "default": "<required>",
+        "name": "initial"
+      },
+      {
+        "default": "<required>",
+        "name": "redundant"
+      },
+      {
+        "default": "<required>",
+        "name": "nested"
+      },
+      {
+        "default": "<required>",
+        "name": "k_by_component"
+      },
+      {
+        "default": "<required>",
+        "name": "m_by_component"
+      },
+      {
+        "default": "<required>",
+        "name": "exact_by_component"
+      },
+      {
+        "default": "<required>",
+        "name": "nested_by_component"
+      },
+      {
+        "default": "<required>",
+        "name": "method"
+      }
+    ],
+    "EstimationState": [
+      {
+        "default": "<required>",
+        "name": "absorber"
+      },
+      {
+        "default": "<required>",
+        "name": "y_within"
+      },
+      {
+        "default": "<required>",
+        "name": "X_within"
+      },
+      {
+        "default": "()",
+        "name": "clusters"
+      },
+      {
+        "default": "None",
+        "name": "weights"
+      },
+      {
+        "default": "'none'",
+        "name": "weight_type"
+      }
+    ],
+    "ExecutionConfig": [
+      {
+        "default": "'auto'",
+        "name": "threads"
+      },
+      {
+        "default": "512",
+        "name": "memory_budget_mb"
+      },
+      {
+        "default": "'off'",
+        "name": "profile"
+      },
+      {
+        "default": "'auto'",
+        "name": "cache"
+      },
+      {
+        "default": "'signature'",
+        "name": "cache_validation"
+      }
+    ],
+    "ExecutionContext": [
+      {
+        "default": "<factory:ExecutionConfig>",
+        "name": "config"
+      },
+      {
+        "default": "<factory:dict>",
+        "name": "cache"
+      },
+      {
+        "default": "<required>",
+        "name": "profiler"
+      }
+    ],
+    "FEPlan": [
+      {
+        "default": "<required>",
+        "name": "groups"
+      },
+      {
+        "default": "<required>",
+        "name": "levels"
+      },
+      {
+        "default": "()",
+        "name": "metadata"
+      },
+      {
+        "default": "''",
+        "name": "fingerprint"
+      }
+    ],
+    "Factor": [
+      {
+        "default": "<required>",
+        "name": "variable"
+      },
+      {
+        "default": "None",
+        "name": "base"
+      },
+      {
+        "default": "True",
+        "name": "drop_base"
+      },
+      {
+        "default": "None",
+        "name": "name"
+      }
+    ],
+    "FixedEffect": [
+      {
+        "default": "<required>",
+        "name": "group"
+      },
+      {
+        "default": "()",
+        "name": "slopes"
+      },
+      {
+        "default": "True",
+        "name": "intercept"
+      },
+      {
+        "default": "None",
+        "name": "name"
+      }
+    ],
+    "FixedEffectEstimates": [
+      {
+        "default": "<required>",
+        "name": "terms"
+      },
+      {
+        "default": "<required>",
+        "name": "converged"
+      },
+      {
+        "default": "<required>",
+        "name": "iterations"
+      },
+      {
+        "default": "<required>",
+        "name": "residual_norm"
+      },
+      {
+        "default": "<required>",
+        "name": "reconstruction_error"
+      },
+      {
+        "default": "'minimum_norm_lsmr'",
+        "name": "normalization"
+      }
+    ],
+    "FixedEffectTermEstimate": [
+      {
+        "default": "<required>",
+        "name": "name"
+      },
+      {
+        "default": "<required>",
+        "name": "intercept"
+      },
+      {
+        "default": "<required>",
+        "name": "slopes"
+      },
+      {
+        "default": "<required>",
+        "name": "contribution"
+      }
+    ],
+    "GroupIndividualInfo": [
+      {
+        "default": "<required>",
+        "name": "n_groups"
+      },
+      {
+        "default": "<required>",
+        "name": "n_memberships"
+      },
+      {
+        "default": "<required>",
+        "name": "n_individuals"
+      },
+      {
+        "default": "<required>",
+        "name": "aggregation"
+      },
+      {
+        "default": "<required>",
+        "name": "group_sizes"
+      },
+      {
+        "default": "<required>",
+        "name": "first_rows"
+      },
+      {
+        "default": "<required>",
+        "name": "individual_intercept"
+      },
+      {
+        "default": "<required>",
+        "name": "individual_slopes"
+      },
+      {
+        "default": "<required>",
+        "name": "solver"
+      },
+      {
+        "default": "<required>",
+        "name": "incidence_backend"
+      },
+      {
+        "default": "'individual FE redundancy is conservatively unadjusted, matching current reghdfe'",
+        "name": "dof_note"
+      }
+    ],
+    "HDFEConfig": [
+      {
+        "default": "'auto'",
+        "name": "solver"
+      },
+      {
+        "default": "1e-08",
+        "name": "tolerance"
+      },
+      {
+        "default": "16000",
+        "name": "max_iter"
+      },
+      {
+        "default": "'pairwise'",
+        "name": "dof_method"
+      },
+      {
+        "default": "True",
+        "name": "canonicalize"
+      }
+    ],
+    "IVPPMLConfig": [
+      {
+        "default": "1e-08",
+        "name": "tolerance"
+      },
+      {
+        "default": "1e-09",
+        "name": "target_inner_tol"
+      },
+      {
+        "default": "0.0001",
+        "name": "start_inner_tol"
+      },
+      {
+        "default": "10000",
+        "name": "max_iter"
+      },
+      {
+        "default": "1",
+        "name": "min_ok"
+      },
+      {
+        "default": "False",
+        "name": "standardize"
+      },
+      {
+        "default": "True",
+        "name": "fast_partial"
+      },
+      {
+        "default": "True",
+        "name": "fast_solver"
+      },
+      {
+        "default": "('fe', 'simplex', 'relu')",
+        "name": "separation"
+      },
+      {
+        "default": "1e-06",
+        "name": "mu_tol"
+      },
+      {
+        "default": "1e-12",
+        "name": "simplex_tol"
+      },
+      {
+        "default": "1000",
+        "name": "simplex_max_iter"
+      },
+      {
+        "default": "0.0001",
+        "name": "relu_tol"
+      },
+      {
+        "default": "1e-08",
+        "name": "relu_zero_tol"
+      },
+      {
+        "default": "100",
+        "name": "relu_max_iter"
+      },
+      {
+        "default": "'replica'",
+        "name": "engine"
+      },
+      {
+        "default": "'pairwise'",
+        "name": "dof_method"
+      },
+      {
+        "default": "2",
+        "name": "max_step_halving"
+      },
+      {
+        "default": "0.9",
+        "name": "step_halving_memory"
+      }
+    ],
+    "IVPPMLResult": [
+      {
+        "default": "<required>",
+        "name": "coef"
+      },
+      {
+        "default": "<required>",
+        "name": "vcov"
+      },
+      {
+        "default": "<required>",
+        "name": "stderr"
+      },
+      {
+        "default": "<required>",
+        "name": "names"
+      },
+      {
+        "default": "<required>",
+        "name": "converged"
+      },
+      {
+        "default": "<required>",
+        "name": "iterations"
+      },
+      {
+        "default": "<required>",
+        "name": "deviance"
+      },
+      {
+        "default": "<required>",
+        "name": "loglike"
+      },
+      {
+        "default": "<required>",
+        "name": "nobs"
+      },
+      {
+        "default": "<required>",
+        "name": "n_separated"
+      },
+      {
+        "default": "<required>",
+        "name": "sample_mask"
+      },
+      {
+        "default": "<required>",
+        "name": "separation_mask"
+      },
+      {
+        "default": "<required>",
+        "name": "mu"
+      },
+      {
+        "default": "<required>",
+        "name": "eta"
+      },
+      {
+        "default": "<required>",
+        "name": "df_absorbed"
+      },
+      {
+        "default": "<required>",
+        "name": "exog_names"
+      },
+      {
+        "default": "<required>",
+        "name": "endog_names"
+      },
+      {
+        "default": "<required>",
+        "name": "instrument_names"
+      },
+      {
+        "default": "<required>",
+        "name": "moments"
+      },
+      {
+        "default": "<factory:dict>",
+        "name": "diagnostics"
+      },
+      {
+        "default": "None",
+        "name": "df_resid"
+      },
+      {
+        "default": "None",
+        "name": "vce"
+      },
+      {
+        "default": "()",
+        "name": "cluster_counts"
+      },
+      {
+        "default": "()",
+        "name": "fe_names"
+      },
+      {
+        "default": "'none'",
+        "name": "weight_type"
+      },
+      {
+        "default": "None",
+        "name": "sum_weights"
+      },
+      {
+        "default": "0",
+        "name": "n_singletons"
+      },
+      {
+        "default": "0.95",
+        "name": "confidence_level"
+      },
+      {
+        "default": "None",
+        "name": "profile"
+      },
+      {
+        "default": "None",
+        "name": "reproducibility"
+      },
+      {
+        "default": "'off'",
+        "name": "diagnostics_mode"
+      }
+    ],
+    "IVSpec": [
+      {
+        "default": "<required>",
+        "name": "y"
+      },
+      {
+        "default": "<required>",
+        "name": "exog"
+      },
+      {
+        "default": "<required>",
+        "name": "endog"
+      },
+      {
+        "default": "<required>",
+        "name": "instruments"
+      },
+      {
+        "default": "()",
+        "name": "absorb"
+      },
+      {
+        "default": "None",
+        "name": "label"
+      }
+    ],
+    "InferenceConfig": [
+      {
+        "default": "None",
+        "name": "vce"
+      },
+      {
+        "default": "0.95",
+        "name": "confidence_level"
+      },
+      {
+        "default": "'off'",
+        "name": "diagnostics"
+      }
+    ],
+    "Interaction": [
+      {
+        "default": "<required>",
+        "name": "parts"
+      },
+      {
+        "default": "None",
+        "name": "name"
+      }
+    ],
+    "OLSSpec": [
+      {
+        "default": "<required>",
+        "name": "y"
+      },
+      {
+        "default": "<required>",
+        "name": "x"
+      },
+      {
+        "default": "()",
+        "name": "absorb"
+      },
+      {
+        "default": "None",
+        "name": "label"
+      }
+    ],
+    "OmitSpec": [
+      {
+        "default": "None",
+        "name": "name"
+      },
+      {
+        "default": "None",
+        "name": "term"
+      },
+      {
+        "default": "None",
+        "name": "component"
+      },
+      {
+        "default": "None",
+        "name": "level"
+      }
+    ],
+    "PPMLConfig": [
+      {
+        "default": "1e-08",
+        "name": "tolerance"
+      },
+      {
+        "default": "1e-09",
+        "name": "target_inner_tol"
+      },
+      {
+        "default": "0.0001",
+        "name": "start_inner_tol"
+      },
+      {
+        "default": "10000",
+        "name": "max_iter"
+      },
+      {
+        "default": "1",
+        "name": "min_ok"
+      },
+      {
+        "default": "True",
+        "name": "standardize"
+      },
+      {
+        "default": "True",
+        "name": "fast_partial"
+      },
+      {
+        "default": "True",
+        "name": "fast_solver"
+      },
+      {
+        "default": "('fe', 'simplex', 'relu')",
+        "name": "separation"
+      },
+      {
+        "default": "1e-06",
+        "name": "mu_tol"
+      },
+      {
+        "default": "1e-12",
+        "name": "simplex_tol"
+      },
+      {
+        "default": "1000",
+        "name": "simplex_max_iter"
+      },
+      {
+        "default": "0.0001",
+        "name": "relu_tol"
+      },
+      {
+        "default": "1e-08",
+        "name": "relu_zero_tol"
+      },
+      {
+        "default": "100",
+        "name": "relu_max_iter"
+      },
+      {
+        "default": "'replica'",
+        "name": "engine"
+      },
+      {
+        "default": "'pairwise'",
+        "name": "dof_method"
+      }
+    ],
+    "PPMLResult": [
+      {
+        "default": "<required>",
+        "name": "coef"
+      },
+      {
+        "default": "<required>",
+        "name": "vcov"
+      },
+      {
+        "default": "<required>",
+        "name": "stderr"
+      },
+      {
+        "default": "<required>",
+        "name": "names"
+      },
+      {
+        "default": "<required>",
+        "name": "converged"
+      },
+      {
+        "default": "<required>",
+        "name": "iterations"
+      },
+      {
+        "default": "<required>",
+        "name": "deviance"
+      },
+      {
+        "default": "<required>",
+        "name": "loglike"
+      },
+      {
+        "default": "<required>",
+        "name": "nobs"
+      },
+      {
+        "default": "<required>",
+        "name": "n_separated"
+      },
+      {
+        "default": "<required>",
+        "name": "sample_mask"
+      },
+      {
+        "default": "<required>",
+        "name": "separation_mask"
+      },
+      {
+        "default": "<required>",
+        "name": "mu"
+      },
+      {
+        "default": "<required>",
+        "name": "eta"
+      },
+      {
+        "default": "0",
+        "name": "df_absorbed"
+      },
+      {
+        "default": "None",
+        "name": "loglike_null"
+      },
+      {
+        "default": "None",
+        "name": "pseudo_r2"
+      },
+      {
+        "default": "None",
+        "name": "chi2"
+      },
+      {
+        "default": "None",
+        "name": "chi2_pvalue"
+      },
+      {
+        "default": "None",
+        "name": "df_model"
+      },
+      {
+        "default": "None",
+        "name": "nobs_full"
+      },
+      {
+        "default": "None",
+        "name": "vcov_rank"
+      },
+      {
+        "default": "<factory:dict>",
+        "name": "diagnostics"
+      },
+      {
+        "default": "None",
+        "name": "df_resid"
+      },
+      {
+        "default": "None",
+        "name": "vce"
+      },
+      {
+        "default": "()",
+        "name": "cluster_counts"
+      },
+      {
+        "default": "()",
+        "name": "fe_names"
+      },
+      {
+        "default": "'none'",
+        "name": "weight_type"
+      },
+      {
+        "default": "None",
+        "name": "sum_weights"
+      },
+      {
+        "default": "0",
+        "name": "n_singletons"
+      },
+      {
+        "default": "0.95",
+        "name": "confidence_level"
+      },
+      {
+        "default": "None",
+        "name": "profile"
+      },
+      {
+        "default": "None",
+        "name": "reproducibility"
+      },
+      {
+        "default": "'off'",
+        "name": "diagnostics_mode"
+      }
+    ],
+    "PreflightIssue": [
+      {
+        "default": "<required>",
+        "name": "code"
+      },
+      {
+        "default": "<required>",
+        "name": "message"
+      },
+      {
+        "default": "None",
+        "name": "variable"
+      },
+      {
+        "default": "None",
+        "name": "role"
+      },
+      {
+        "default": "'error'",
+        "name": "severity"
+      },
+      {
+        "default": "None",
+        "name": "suggestion"
+      },
+      {
+        "default": "None",
+        "name": "details"
+      }
+    ],
+    "PreflightReport": [
+      {
+        "default": "()",
+        "name": "issues"
+      }
+    ],
+    "RegressionResult": [
+      {
+        "default": "<required>",
+        "name": "params"
+      },
+      {
+        "default": "<required>",
+        "name": "vcov"
+      },
+      {
+        "default": "<required>",
+        "name": "stderr"
+      },
+      {
+        "default": "<required>",
+        "name": "residuals"
+      },
+      {
+        "default": "<required>",
+        "name": "fitted"
+      },
+      {
+        "default": "<required>",
+        "name": "nobs"
+      },
+      {
+        "default": "<required>",
+        "name": "rank"
+      },
+      {
+        "default": "<required>",
+        "name": "df_resid"
+      },
+      {
+        "default": "<required>",
+        "name": "df_absorbed"
+      },
+      {
+        "default": "<required>",
+        "name": "converged"
+      },
+      {
+        "default": "<required>",
+        "name": "iterations"
+      },
+      {
+        "default": "<required>",
+        "name": "dropped_singletons"
+      },
+      {
+        "default": "()",
+        "name": "names"
+      },
+      {
+        "default": "None",
+        "name": "first_stage"
+      },
+      {
+        "default": "None",
+        "name": "diagnostics"
+      },
+      {
+        "default": "'ols'",
+        "name": "estimator"
+      },
+      {
+        "default": "None",
+        "name": "estimator_info"
+      },
+      {
+        "default": "None",
+        "name": "dof_info"
+      },
+      {
+        "default": "None",
+        "name": "state"
+      },
+      {
+        "default": "'none'",
+        "name": "weight_type"
+      },
+      {
+        "default": "None",
+        "name": "sum_weights"
+      },
+      {
+        "default": "None",
+        "name": "nobs_raw"
+      },
+      {
+        "default": "None",
+        "name": "fixed_effects"
+      },
+      {
+        "default": "None",
+        "name": "group_info"
+      },
+      {
+        "default": "None",
+        "name": "absorb_info"
+      },
+      {
+        "default": "None",
+        "name": "collinearity_info"
+      },
+      {
+        "default": "None",
+        "name": "vce"
+      },
+      {
+        "default": "()",
+        "name": "cluster_counts"
+      },
+      {
+        "default": "()",
+        "name": "fe_names"
+      },
+      {
+        "default": "None",
+        "name": "r2"
+      },
+      {
+        "default": "None",
+        "name": "r2_within"
+      },
+      {
+        "default": "None",
+        "name": "r2_adjusted"
+      },
+      {
+        "default": "None",
+        "name": "r2_adjusted_within"
+      },
+      {
+        "default": "None",
+        "name": "rss"
+      },
+      {
+        "default": "None",
+        "name": "tss"
+      },
+      {
+        "default": "None",
+        "name": "tss_within"
+      },
+      {
+        "default": "None",
+        "name": "mss"
+      },
+      {
+        "default": "None",
+        "name": "rmse"
+      },
+      {
+        "default": "None",
+        "name": "loglike"
+      },
+      {
+        "default": "None",
+        "name": "loglike_null"
+      },
+      {
+        "default": "None",
+        "name": "f_statistic"
+      },
+      {
+        "default": "None",
+        "name": "f_pvalue"
+      },
+      {
+        "default": "None",
+        "name": "df_model"
+      },
+      {
+        "default": "None",
+        "name": "df_resid_fit"
+      },
+      {
+        "default": "None",
+        "name": "vcov_rank"
+      },
+      {
+        "default": "0.95",
+        "name": "confidence_level"
+      },
+      {
+        "default": "None",
+        "name": "profile"
+      },
+      {
+        "default": "None",
+        "name": "reproducibility"
+      },
+      {
+        "default": "'off'",
+        "name": "diagnostics_mode"
+      }
+    ],
+    "RegressorInteraction": [
+      {
+        "default": "<required>",
+        "name": "parts"
+      },
+      {
+        "default": "None",
+        "name": "name"
+      }
+    ],
+    "SPJBootstrapResult": [
+      {
+        "default": "<required>",
+        "name": "point"
+      },
+      {
+        "default": "<required>",
+        "name": "draws"
+      },
+      {
+        "default": "<required>",
+        "name": "stderr"
+      },
+      {
+        "default": "<required>",
+        "name": "stderr_ci_implied"
+      },
+      {
+        "default": "<required>",
+        "name": "ci_low"
+      },
+      {
+        "default": "<required>",
+        "name": "ci_high"
+      },
+      {
+        "default": "<required>",
+        "name": "requested"
+      },
+      {
+        "default": "<required>",
+        "name": "completed"
+      },
+      {
+        "default": "<required>",
+        "name": "failed"
+      },
+      {
+        "default": "<required>",
+        "name": "failure_counts"
+      },
+      {
+        "default": "<required>",
+        "name": "confidence"
+      },
+      {
+        "default": "<required>",
+        "name": "seed"
+      }
+    ],
+    "SPJPanel": [
+      {
+        "default": "<required>",
+        "name": "kind"
+      },
+      {
+        "default": "<required>",
+        "name": "time"
+      },
+      {
+        "default": "None",
+        "name": "unit"
+      },
+      {
+        "default": "None",
+        "name": "exporter"
+      },
+      {
+        "default": "None",
+        "name": "importer"
+      },
+      {
+        "default": "None",
+        "name": "pair"
+      }
+    ],
+    "SPJResult": [
+      {
+        "default": "<required>",
+        "name": "coef"
+      },
+      {
+        "default": "<required>",
+        "name": "names"
+      },
+      {
+        "default": "<required>",
+        "name": "full_coef"
+      },
+      {
+        "default": "<required>",
+        "name": "bias"
+      },
+      {
+        "default": "<required>",
+        "name": "components"
+      },
+      {
+        "default": "<required>",
+        "name": "panel_class"
+      },
+      {
+        "default": "<required>",
+        "name": "seed"
+      },
+      {
+        "default": "<required>",
+        "name": "fit_count"
+      }
+    ],
+    "TwoWaySolveInfo": [
+      {
+        "default": "<required>",
+        "name": "connected_components"
+      },
+      {
+        "default": "<required>",
+        "name": "cross_nnz"
+      },
+      {
+        "default": "<required>",
+        "name": "solved_side_levels"
+      },
+      {
+        "default": "<required>",
+        "name": "eliminated_side_levels"
+      }
+    ],
+    "WeightInfo": [
+      {
+        "default": "<required>",
+        "name": "kind"
+      },
+      {
+        "default": "<required>",
+        "name": "raw"
+      },
+      {
+        "default": "<required>",
+        "name": "estimation"
+      },
+      {
+        "default": "<required>",
+        "name": "row_n"
+      },
+      {
+        "default": "<required>",
+        "name": "effective_n"
+      },
+      {
+        "default": "<required>",
+        "name": "sum_weights"
+      }
+    ],
+    "WildClusterTestResult": [
+      {
+        "default": "<required>",
+        "name": "statistic"
+      },
+      {
+        "default": "<required>",
+        "name": "pvalue"
+      },
+      {
+        "default": "<required>",
+        "name": "bootstrap_statistics"
+      },
+      {
+        "default": "<required>",
+        "name": "reps"
+      },
+      {
+        "default": "<required>",
+        "name": "completed_reps"
+      },
+      {
+        "default": "<required>",
+        "name": "bootstrap_type"
+      },
+      {
+        "default": "<required>",
+        "name": "weight_distribution"
+      },
+      {
+        "default": "<required>",
+        "name": "alternative"
+      },
+      {
+        "default": "<required>",
+        "name": "cluster_count"
+      },
+      {
+        "default": "<required>",
+        "name": "restriction_matrix"
+      },
+      {
+        "default": "<required>",
+        "name": "restriction_value"
+      },
+      {
+        "default": "<required>",
+        "name": "observed_difference"
+      },
+      {
+        "default": "False",
+        "name": "full_enumeration"
+      },
+      {
+        "default": "None",
+        "name": "requested_reps"
+      }
+    ],
+    "econhdfe.effects.EffectTermResult": [
+      {
+        "default": "<required>",
+        "name": "name"
+      },
+      {
+        "default": "<required>",
+        "name": "levels"
+      },
+      {
+        "default": "<required>",
+        "name": "coefficients"
+      },
+      {
+        "default": "<required>",
+        "name": "component"
+      },
+      {
+        "default": "<required>",
+        "name": "level_mass"
+      },
+      {
+        "default": "None",
+        "name": "identified_mask"
+      }
+    ],
+    "econhdfe.effects.FEDiagnosticIssue": [
+      {
+        "default": "<required>",
+        "name": "code"
+      },
+      {
+        "default": "<required>",
+        "name": "severity"
+      },
+      {
+        "default": "<required>",
+        "name": "message"
+      },
+      {
+        "default": "<required>",
+        "name": "details"
+      },
+      {
+        "default": "None",
+        "name": "suggestion"
+      }
+    ],
+    "econhdfe.effects.FEIdentification": [
+      {
+        "default": "<required>",
+        "name": "rank"
+      },
+      {
+        "default": "<required>",
+        "name": "n_levels"
+      },
+      {
+        "default": "<required>",
+        "name": "nullity"
+      },
+      {
+        "default": "<required>",
+        "name": "n_components"
+      },
+      {
+        "default": "<required>",
+        "name": "structural_shift_nullity"
+      },
+      {
+        "default": "<required>",
+        "name": "extra_nullity"
+      },
+      {
+        "default": "<required>",
+        "name": "component_by_term"
+      },
+      {
+        "default": "True",
+        "name": "exact_rank"
+      },
+      {
+        "default": "()",
+        "name": "components"
+      }
+    ],
+    "econhdfe.effects.FERecoveryDiagnosis": [
+      {
+        "default": "<required>",
+        "name": "estimable"
+      },
+      {
+        "default": "<required>",
+        "name": "final_identification"
+      },
+      {
+        "default": "<required>",
+        "name": "issues"
+      },
+      {
+        "default": "None",
+        "name": "raw_identification"
+      },
+      {
+        "default": "None",
+        "name": "post_singleton_identification"
+      }
+    ],
+    "econhdfe.effects.FixedEffectRecoveryResult": [
+      {
+        "default": "<required>",
+        "name": "terms"
+      },
+      {
+        "default": "<required>",
+        "name": "identification"
+      },
+      {
+        "default": "<required>",
+        "name": "normalization"
+      },
+      {
+        "default": "<required>",
+        "name": "diagnostics"
+      },
+      {
+        "default": "None",
+        "name": "diagnosis"
+      }
+    ],
+    "econhdfe.effects.NormalizationSpec": [
+      {
+        "default": "'canonical'",
+        "name": "kind"
+      },
+      {
+        "default": "0",
+        "name": "baseline"
+      },
+      {
+        "default": "None",
+        "name": "references"
+      }
+    ],
+    "econhdfe.effects.RecoveryDiagnostics": [
+      {
+        "default": "<required>",
+        "name": "solver"
+      },
+      {
+        "default": "<required>",
+        "name": "converged"
+      },
+      {
+        "default": "<required>",
+        "name": "iterations"
+      },
+      {
+        "default": "<required>",
+        "name": "residual_norm"
+      },
+      {
+        "default": "<required>",
+        "name": "reconstruction_error"
+      },
+      {
+        "default": "<required>",
+        "name": "normalization_complete"
+      },
+      {
+        "default": "0",
+        "name": "n_recovered_obs"
+      },
+      {
+        "default": "0",
+        "name": "n_total_obs"
+      },
+      {
+        "default": "0",
+        "name": "n_recovered_components"
+      },
+      {
+        "default": "0",
+        "name": "n_unidentified_components"
+      },
+      {
+        "default": "None",
+        "name": "stop_code"
+      },
+      {
+        "default": "''",
+        "name": "stop_reason"
+      },
+      {
+        "default": "None",
+        "name": "condition_estimate"
+      },
+      {
+        "default": "None",
+        "name": "normal_equation_residual_norm"
+      }
+    ]
+  },
+  "package_version": "0.6.5",
+  "public_namespaces": [
+    "econhdfe",
+    "econhdfe.effects"
+  ],
+  "public_symbols": [
+    "BootstrapError",
+    "CategoricalRankInfo",
+    "ClusterDiagnostics",
+    "ClusterDimensionDiagnostics",
+    "CollinearityError",
+    "ConvergenceError",
+    "DataTypeError",
+    "DivergenceError",
+    "DofInfo",
+    "EconHDFEError",
+    "EstimationState",
+    "ExecutionConfig",
+    "ExecutionContext",
+    "FEPlan",
+    "Factor",
+    "FixedEffect",
+    "FixedEffectEstimates",
+    "FixedEffectTermEstimate",
+    "GroupIndividualAbsorber",
+    "GroupIndividualInfo",
+    "HDFEAbsorber",
+    "HDFEConfig",
+    "HDFEConvergenceError",
+    "IVHDFESession",
+    "IVPPMLConfig",
+    "IVPPMLHDFE",
+    "IVPPMLResult",
+    "IVSpec",
+    "IdentificationError",
+    "InferenceConfig",
+    "InferenceError",
+    "InputError",
+    "Interaction",
+    "InvalidWeightError",
+    "LinearAlgebraError",
+    "MissingDataError",
+    "NumericalError",
+    "OLSHDFESession",
+    "OLSSpec",
+    "OmitSpec",
+    "OmittedVariableWarning",
+    "PPMLConfig",
+    "PPMLHDFE",
+    "PPMLResult",
+    "PreflightIssue",
+    "PreflightReport",
+    "PublicationResult",
+    "RankBackend",
+    "RegressionResult",
+    "RegressorInteraction",
+    "SPJBootstrapResult",
+    "SPJPanel",
+    "SPJResult",
+    "ShapeError",
+    "SpecificationError",
+    "TwoWayFEAbsorber",
+    "TwoWaySolveInfo",
+    "UnderidentifiedError",
+    "VariableRole",
+    "WeightInfo",
+    "WildClusterTestResult",
+    "available_rank_backends",
+    "categorical_prefix_ranks",
+    "categorical_rank",
+    "cluster_diagnostics",
+    "econhdfe.effects.EffectTermResult",
+    "econhdfe.effects.FEDiagnosticIssue",
+    "econhdfe.effects.FEIdentification",
+    "econhdfe.effects.FERecoveryDiagnosis",
+    "econhdfe.effects.FixedEffectIdentificationError",
+    "econhdfe.effects.FixedEffectRecoveryResult",
+    "econhdfe.effects.NormalizationSpec",
+    "econhdfe.effects.RecoveryDiagnostics",
+    "econhdfe.effects.diagnose_fe_recovery",
+    "econhdfe.effects.identification_structure",
+    "econhdfe.effects.raise_for_fe_identification",
+    "econhdfe.effects.recover_fixed_effects",
+    "econhdfe.effects.recover_ivppml_result",
+    "econhdfe.effects.recover_linear_result",
+    "econhdfe.effects.recover_ppml_result",
+    "econhdfe.effects.renormalize",
+    "factor",
+    "fe",
+    "fv",
+    "interaction",
+    "ivhdfe",
+    "ivppml_spj",
+    "ivppml_spj_bootstrap",
+    "ivppmlhdfe",
+    "ivreghdfe",
+    "olshdfe",
+    "omit_column",
+    "omit_level",
+    "omit_term",
+    "parallel_pairs_bootstrap",
+    "ppmlhdfe",
+    "preflight_dataframe",
+    "publication_output",
+    "reg_interaction",
+    "reghdfe",
+    "stock_yogo_critical_values",
+    "wild_bootstrap",
+    "wild_cluster_bootstrap_ols",
+    "wild_cluster_test_ols"
+  ],
+  "result_schemas": {
+    "IVPPMLResult": [
+      {
+        "default": "<required>",
+        "name": "coef"
+      },
+      {
+        "default": "<required>",
+        "name": "vcov"
+      },
+      {
+        "default": "<required>",
+        "name": "stderr"
+      },
+      {
+        "default": "<required>",
+        "name": "names"
+      },
+      {
+        "default": "<required>",
+        "name": "converged"
+      },
+      {
+        "default": "<required>",
+        "name": "iterations"
+      },
+      {
+        "default": "<required>",
+        "name": "deviance"
+      },
+      {
+        "default": "<required>",
+        "name": "loglike"
+      },
+      {
+        "default": "<required>",
+        "name": "nobs"
+      },
+      {
+        "default": "<required>",
+        "name": "n_separated"
+      },
+      {
+        "default": "<required>",
+        "name": "sample_mask"
+      },
+      {
+        "default": "<required>",
+        "name": "separation_mask"
+      },
+      {
+        "default": "<required>",
+        "name": "mu"
+      },
+      {
+        "default": "<required>",
+        "name": "eta"
+      },
+      {
+        "default": "<required>",
+        "name": "df_absorbed"
+      },
+      {
+        "default": "<required>",
+        "name": "exog_names"
+      },
+      {
+        "default": "<required>",
+        "name": "endog_names"
+      },
+      {
+        "default": "<required>",
+        "name": "instrument_names"
+      },
+      {
+        "default": "<required>",
+        "name": "moments"
+      },
+      {
+        "default": "<factory:dict>",
+        "name": "diagnostics"
+      },
+      {
+        "default": "None",
+        "name": "df_resid"
+      },
+      {
+        "default": "None",
+        "name": "vce"
+      },
+      {
+        "default": "()",
+        "name": "cluster_counts"
+      },
+      {
+        "default": "()",
+        "name": "fe_names"
+      },
+      {
+        "default": "'none'",
+        "name": "weight_type"
+      },
+      {
+        "default": "None",
+        "name": "sum_weights"
+      },
+      {
+        "default": "0",
+        "name": "n_singletons"
+      },
+      {
+        "default": "0.95",
+        "name": "confidence_level"
+      },
+      {
+        "default": "None",
+        "name": "profile"
+      },
+      {
+        "default": "None",
+        "name": "reproducibility"
+      },
+      {
+        "default": "'off'",
+        "name": "diagnostics_mode"
+      }
+    ],
+    "PPMLResult": [
+      {
+        "default": "<required>",
+        "name": "coef"
+      },
+      {
+        "default": "<required>",
+        "name": "vcov"
+      },
+      {
+        "default": "<required>",
+        "name": "stderr"
+      },
+      {
+        "default": "<required>",
+        "name": "names"
+      },
+      {
+        "default": "<required>",
+        "name": "converged"
+      },
+      {
+        "default": "<required>",
+        "name": "iterations"
+      },
+      {
+        "default": "<required>",
+        "name": "deviance"
+      },
+      {
+        "default": "<required>",
+        "name": "loglike"
+      },
+      {
+        "default": "<required>",
+        "name": "nobs"
+      },
+      {
+        "default": "<required>",
+        "name": "n_separated"
+      },
+      {
+        "default": "<required>",
+        "name": "sample_mask"
+      },
+      {
+        "default": "<required>",
+        "name": "separation_mask"
+      },
+      {
+        "default": "<required>",
+        "name": "mu"
+      },
+      {
+        "default": "<required>",
+        "name": "eta"
+      },
+      {
+        "default": "0",
+        "name": "df_absorbed"
+      },
+      {
+        "default": "None",
+        "name": "loglike_null"
+      },
+      {
+        "default": "None",
+        "name": "pseudo_r2"
+      },
+      {
+        "default": "None",
+        "name": "chi2"
+      },
+      {
+        "default": "None",
+        "name": "chi2_pvalue"
+      },
+      {
+        "default": "None",
+        "name": "df_model"
+      },
+      {
+        "default": "None",
+        "name": "nobs_full"
+      },
+      {
+        "default": "None",
+        "name": "vcov_rank"
+      },
+      {
+        "default": "<factory:dict>",
+        "name": "diagnostics"
+      },
+      {
+        "default": "None",
+        "name": "df_resid"
+      },
+      {
+        "default": "None",
+        "name": "vce"
+      },
+      {
+        "default": "()",
+        "name": "cluster_counts"
+      },
+      {
+        "default": "()",
+        "name": "fe_names"
+      },
+      {
+        "default": "'none'",
+        "name": "weight_type"
+      },
+      {
+        "default": "None",
+        "name": "sum_weights"
+      },
+      {
+        "default": "0",
+        "name": "n_singletons"
+      },
+      {
+        "default": "0.95",
+        "name": "confidence_level"
+      },
+      {
+        "default": "None",
+        "name": "profile"
+      },
+      {
+        "default": "None",
+        "name": "reproducibility"
+      },
+      {
+        "default": "'off'",
+        "name": "diagnostics_mode"
+      }
+    ],
+    "PreflightReport": [
+      {
+        "default": "()",
+        "name": "issues"
+      }
+    ],
+    "RegressionResult": [
+      {
+        "default": "<required>",
+        "name": "params"
+      },
+      {
+        "default": "<required>",
+        "name": "vcov"
+      },
+      {
+        "default": "<required>",
+        "name": "stderr"
+      },
+      {
+        "default": "<required>",
+        "name": "residuals"
+      },
+      {
+        "default": "<required>",
+        "name": "fitted"
+      },
+      {
+        "default": "<required>",
+        "name": "nobs"
+      },
+      {
+        "default": "<required>",
+        "name": "rank"
+      },
+      {
+        "default": "<required>",
+        "name": "df_resid"
+      },
+      {
+        "default": "<required>",
+        "name": "df_absorbed"
+      },
+      {
+        "default": "<required>",
+        "name": "converged"
+      },
+      {
+        "default": "<required>",
+        "name": "iterations"
+      },
+      {
+        "default": "<required>",
+        "name": "dropped_singletons"
+      },
+      {
+        "default": "()",
+        "name": "names"
+      },
+      {
+        "default": "None",
+        "name": "first_stage"
+      },
+      {
+        "default": "None",
+        "name": "diagnostics"
+      },
+      {
+        "default": "'ols'",
+        "name": "estimator"
+      },
+      {
+        "default": "None",
+        "name": "estimator_info"
+      },
+      {
+        "default": "None",
+        "name": "dof_info"
+      },
+      {
+        "default": "None",
+        "name": "state"
+      },
+      {
+        "default": "'none'",
+        "name": "weight_type"
+      },
+      {
+        "default": "None",
+        "name": "sum_weights"
+      },
+      {
+        "default": "None",
+        "name": "nobs_raw"
+      },
+      {
+        "default": "None",
+        "name": "fixed_effects"
+      },
+      {
+        "default": "None",
+        "name": "group_info"
+      },
+      {
+        "default": "None",
+        "name": "absorb_info"
+      },
+      {
+        "default": "None",
+        "name": "collinearity_info"
+      },
+      {
+        "default": "None",
+        "name": "vce"
+      },
+      {
+        "default": "()",
+        "name": "cluster_counts"
+      },
+      {
+        "default": "()",
+        "name": "fe_names"
+      },
+      {
+        "default": "None",
+        "name": "r2"
+      },
+      {
+        "default": "None",
+        "name": "r2_within"
+      },
+      {
+        "default": "None",
+        "name": "r2_adjusted"
+      },
+      {
+        "default": "None",
+        "name": "r2_adjusted_within"
+      },
+      {
+        "default": "None",
+        "name": "rss"
+      },
+      {
+        "default": "None",
+        "name": "tss"
+      },
+      {
+        "default": "None",
+        "name": "tss_within"
+      },
+      {
+        "default": "None",
+        "name": "mss"
+      },
+      {
+        "default": "None",
+        "name": "rmse"
+      },
+      {
+        "default": "None",
+        "name": "loglike"
+      },
+      {
+        "default": "None",
+        "name": "loglike_null"
+      },
+      {
+        "default": "None",
+        "name": "f_statistic"
+      },
+      {
+        "default": "None",
+        "name": "f_pvalue"
+      },
+      {
+        "default": "None",
+        "name": "df_model"
+      },
+      {
+        "default": "None",
+        "name": "df_resid_fit"
+      },
+      {
+        "default": "None",
+        "name": "vcov_rank"
+      },
+      {
+        "default": "0.95",
+        "name": "confidence_level"
+      },
+      {
+        "default": "None",
+        "name": "profile"
+      },
+      {
+        "default": "None",
+        "name": "reproducibility"
+      },
+      {
+        "default": "'off'",
+        "name": "diagnostics_mode"
+      }
+    ],
+    "SPJBootstrapResult": [
+      {
+        "default": "<required>",
+        "name": "point"
+      },
+      {
+        "default": "<required>",
+        "name": "draws"
+      },
+      {
+        "default": "<required>",
+        "name": "stderr"
+      },
+      {
+        "default": "<required>",
+        "name": "stderr_ci_implied"
+      },
+      {
+        "default": "<required>",
+        "name": "ci_low"
+      },
+      {
+        "default": "<required>",
+        "name": "ci_high"
+      },
+      {
+        "default": "<required>",
+        "name": "requested"
+      },
+      {
+        "default": "<required>",
+        "name": "completed"
+      },
+      {
+        "default": "<required>",
+        "name": "failed"
+      },
+      {
+        "default": "<required>",
+        "name": "failure_counts"
+      },
+      {
+        "default": "<required>",
+        "name": "confidence"
+      },
+      {
+        "default": "<required>",
+        "name": "seed"
+      }
+    ],
+    "SPJResult": [
+      {
+        "default": "<required>",
+        "name": "coef"
+      },
+      {
+        "default": "<required>",
+        "name": "names"
+      },
+      {
+        "default": "<required>",
+        "name": "full_coef"
+      },
+      {
+        "default": "<required>",
+        "name": "bias"
+      },
+      {
+        "default": "<required>",
+        "name": "components"
+      },
+      {
+        "default": "<required>",
+        "name": "panel_class"
+      },
+      {
+        "default": "<required>",
+        "name": "seed"
+      },
+      {
+        "default": "<required>",
+        "name": "fit_count"
+      }
+    ]
+  },
+  "schema_version": 1,
+  "signatures": {
+    "BootstrapError": "(message: 'str', *, code: 'str | None' = None, stage: 'str | None' = None, details: 'Mapping[str, Any] | None' = None, suggestion: 'str | None' = None) -> 'None'",
+    "CategoricalRankInfo": "(rank: 'int', n_levels: 'int', n_unique_edges: 'int', peeled_rank: 'int', core_edges: 'int', core_vertices: 'int', core_components: 'int') -> None",
+    "ClusterDiagnostics": "(nobs: 'int', dimensions: 'tuple[ClusterDimensionDiagnostics, ...]', pairwise_intersections: 'dict[tuple[int, int], int]') -> None",
+    "ClusterDimensionDiagnostics": "(dimension: 'int', n_clusters: 'int', min_size: 'int', median_size: 'float', mean_size: 'float', max_size: 'int', size_cv: 'float', largest_share: 'float', effective_clusters_size: 'float', singleton_clusters: 'int', score_share_max: 'float | None' = None, score_effective_clusters: 'float | None' = None, flags: 'tuple[str, ...]' = ()) -> None",
+    "CollinearityError": "(message: 'str', *, code: 'str | None' = None, stage: 'str | None' = None, details: 'Mapping[str, Any] | None' = None, suggestion: 'str | None' = None) -> 'None'",
+    "ConvergenceError": "(message: 'str', *, code: 'str | None' = None, stage: 'str | None' = None, details: 'Mapping[str, Any] | None' = None, suggestion: 'str | None' = None) -> 'None'",
+    "DataTypeError": "(message: 'str', *, code: 'str | None' = None, stage: 'str | None' = None, details: 'Mapping[str, Any] | None' = None, suggestion: 'str | None' = None) -> 'None'",
+    "DivergenceError": "(message: 'str', *, code: 'str | None' = None, stage: 'str | None' = None, details: 'Mapping[str, Any] | None' = None, suggestion: 'str | None' = None) -> 'None'",
+    "DofInfo": "(df_absorbed: 'int', initial: 'int', redundant: 'int', nested: 'int', k_by_component: 'tuple[int, ...]', m_by_component: 'tuple[int, ...]', exact_by_component: 'tuple[bool, ...]', nested_by_component: 'tuple[bool, ...]', method: 'str') -> None",
+    "EconHDFEError": "(message: 'str', *, code: 'str | None' = None, stage: 'str | None' = None, details: 'Mapping[str, Any] | None' = None, suggestion: 'str | None' = None) -> 'None'",
+    "EstimationState": "(absorber: 'Any', y_within: 'np.ndarray', X_within: 'np.ndarray', clusters: 'tuple[np.ndarray, ...]' = (), weights: 'np.ndarray | None' = None, weight_type: 'str' = 'none') -> None",
+    "ExecutionConfig": "(threads: 'int | str' = 'auto', memory_budget_mb: 'int' = 512, profile: 'str' = 'off', cache: 'str' = 'auto', cache_validation: 'str' = 'signature') -> None",
+    "ExecutionContext": "(config: 'ExecutionConfig' = <factory>, cache: 'dict[str, Any]' = <factory>) -> None",
+    "FEPlan": "(groups: 'tuple[np.ndarray, ...]', levels: 'tuple[int, ...]', metadata: 'tuple[FEPartitionMeta, ...]' = (), fingerprint: 'str' = '') -> None",
+    "Factor": "(variable: 'Any', base: 'Any | None' = None, drop_base: 'bool' = True, name: 'str | None' = None) -> None",
+    "FixedEffect": "(group: 'Any', slopes=(), intercept: 'bool' = True, name: 'str | None' = None)",
+    "FixedEffectEstimates": "(terms: 'tuple[FixedEffectTermEstimate, ...]', converged: 'bool', iterations: 'int', residual_norm: 'float', reconstruction_error: 'float', normalization: 'str' = 'minimum_norm_lsmr') -> None",
+    "FixedEffectTermEstimate": "(name: 'str', intercept: 'np.ndarray | None', slopes: 'np.ndarray | None', contribution: 'np.ndarray') -> None",
+    "GroupIndividualAbsorber": "(standard_groups, *, standard_slopes=None, standard_intercepts=None, membership_group, individual_codes, individual_slopes=None, individual_intercept=True, aggregation='mean', weights=None, tol=1e-08, max_iter=10000, method='lsmr', preconditioner='diagonal', incidence_backend='auto', memory_budget_mb=512)",
+    "GroupIndividualInfo": "(n_groups: 'int', n_memberships: 'int', n_individuals: 'int', aggregation: 'str', group_sizes: 'np.ndarray', first_rows: 'np.ndarray', individual_intercept: 'bool', individual_slopes: 'int', solver: 'str', incidence_backend: 'str', dof_note: 'str' = 'individual FE redundancy is conservatively unadjusted, matching current reghdfe') -> None",
+    "HDFEAbsorber": "(groups, *, slopes=None, intercepts=None, weights=None, tol=1e-08, max_iter=16000, backend='numpy', method='map', transform='symmetric', acceleration='cg', preconditioner='diagonal', dtype=<class 'numpy.float64'>, gram_chunk_levels=100000, projection_backend='auto', absorb_threads='auto', projection_memory_budget_mb=512, projection_min_nobs=100000, core_reduction='auto', core_min_peel_fraction=0.05, auto_plain_limit=8, auto_polish_limit=32, fused_rhs_memory_mb=128)",
+    "HDFEConfig": "(solver: 'str' = 'auto', tolerance: 'float' = 1e-08, max_iter: 'int' = 16000, dof_method: 'str' = 'pairwise', canonicalize: 'bool' = True) -> None",
+    "HDFEConvergenceError": "(info, *, context='HDFE absorption')",
+    "IVHDFESession": "(*args, estimator='2sls', kappa=None, fuller=0.0, gmm_center=False, **kwargs)",
+    "IVPPMLConfig": "(tolerance: 'float' = 1e-08, target_inner_tol: 'float' = 1e-09, start_inner_tol: 'float' = 0.0001, max_iter: 'int' = 10000, min_ok: 'int' = 1, standardize: 'bool' = False, fast_partial: 'bool' = True, fast_solver: 'bool' = True, separation: 'tuple[str, ...]' = ('fe', 'simplex', 'relu'), mu_tol: 'float' = 1e-06, simplex_tol: 'float' = 1e-12, simplex_max_iter: 'int' = 1000, relu_tol: 'float' = 0.0001, relu_zero_tol: 'float' = 1e-08, relu_max_iter: 'int' = 100, engine: 'str' = 'replica', dof_method: 'str' = 'pairwise', max_step_halving: 'int' = 2, step_halving_memory: 'float' = 0.9) -> None",
+    "IVPPMLHDFE": "(data: 'pd.DataFrame', *, absorb=(), config: 'IVPPMLConfig | None' = None, inference_config: 'InferenceConfig | None' = None, execution_config: 'ExecutionConfig | None' = None)",
+    "IVPPMLResult": "(coef: 'np.ndarray', vcov: 'np.ndarray', stderr: 'np.ndarray', names: 'tuple[str, ...]', converged: 'bool', iterations: 'int', deviance: 'float', loglike: 'float', nobs: 'int', n_separated: 'int', sample_mask: 'np.ndarray', separation_mask: 'np.ndarray', mu: 'np.ndarray', eta: 'np.ndarray', df_absorbed: 'int', exog_names: 'tuple[str, ...]', endog_names: 'tuple[str, ...]', instrument_names: 'tuple[str, ...]', moments: 'np.ndarray', diagnostics: 'dict' = <factory>, df_resid: 'float | None' = None, vce: 'str | None' = None, cluster_counts: 'tuple[int, ...]' = (), fe_names: 'tuple[str, ...]' = (), weight_type: 'str' = 'none', sum_weights: 'float | None' = None, n_singletons: 'int' = 0, confidence_level: 'float' = 0.95, profile: 'dict | None' = None, reproducibility: 'dict | None' = None, diagnostics_mode: 'str' = 'off') -> None",
+    "IVSpec": "(y: 'str', exog: 'tuple[str, ...]', endog: 'tuple[str, ...]', instruments: 'tuple[str, ...]', absorb: 'tuple' = (), label: 'str | None' = None) -> None",
+    "IdentificationError": "(message: 'str', *, code: 'str | None' = None, stage: 'str | None' = None, details: 'Mapping[str, Any] | None' = None, suggestion: 'str | None' = None) -> 'None'",
+    "InferenceConfig": "(vce: 'str | None' = None, confidence_level: 'float' = 0.95, diagnostics: 'str' = 'off') -> None",
+    "InferenceError": "(message: 'str', *, code: 'str | None' = None, stage: 'str | None' = None, details: 'Mapping[str, Any] | None' = None, suggestion: 'str | None' = None) -> 'None'",
+    "InputError": "(message: 'str', *, code: 'str | None' = None, stage: 'str | None' = None, details: 'Mapping[str, Any] | None' = None, suggestion: 'str | None' = None) -> 'None'",
+    "Interaction": "(*parts: 'Any', name: 'str | None' = None)",
+    "InvalidWeightError": "(message: 'str', *, code: 'str | None' = None, stage: 'str | None' = None, details: 'Mapping[str, Any] | None' = None, suggestion: 'str | None' = None) -> 'None'",
+    "LinearAlgebraError": "(message: 'str', *, code: 'str | None' = None, stage: 'str | None' = None, details: 'Mapping[str, Any] | None' = None, suggestion: 'str | None' = None) -> 'None'",
+    "MissingDataError": "(message: 'str', *, code: 'str | None' = None, stage: 'str | None' = None, details: 'Mapping[str, Any] | None' = None, suggestion: 'str | None' = None) -> 'None'",
+    "NumericalError": "(message: 'str', *, code: 'str | None' = None, stage: 'str | None' = None, details: 'Mapping[str, Any] | None' = None, suggestion: 'str | None' = None) -> 'None'",
+    "OLSHDFESession": "(data: 'pd.DataFrame', *, weights=None, weight_type=None, cluster=None, vce=None, drop_singletons: 'bool' = True, hdfe_config: 'HDFEConfig | None' = None, inference_config: 'InferenceConfig | None' = None, execution_config: 'ExecutionConfig | None' = None, collinearity: 'str' = 'warn', collinear_tol: 'float' = 1e-10)",
+    "OLSSpec": "(y: 'str', x: 'tuple[str, ...]', absorb: 'tuple' = (), label: 'str | None' = None) -> None",
+    "OmitSpec": "(name: 'str | None' = None, term: 'str | None' = None, component: 'str | None' = None, level: 'str | None' = None) -> None",
+    "PPMLConfig": "(tolerance: 'float' = 1e-08, target_inner_tol: 'float' = 1e-09, start_inner_tol: 'float' = 0.0001, max_iter: 'int' = 10000, min_ok: 'int' = 1, standardize: 'bool' = True, fast_partial: 'bool' = True, fast_solver: 'bool' = True, separation: 'tuple[str, ...]' = ('fe', 'simplex', 'relu'), mu_tol: 'float' = 1e-06, simplex_tol: 'float' = 1e-12, simplex_max_iter: 'int' = 1000, relu_tol: 'float' = 0.0001, relu_zero_tol: 'float' = 1e-08, relu_max_iter: 'int' = 100, engine: 'str' = 'replica', dof_method: 'str' = 'pairwise') -> None",
+    "PPMLHDFE": "(data: 'pd.DataFrame', *, absorb=(), config: 'PPMLConfig | None' = None, inference_config: 'InferenceConfig | None' = None, execution_config: 'ExecutionConfig | None' = None)",
+    "PPMLResult": "(coef: 'np.ndarray', vcov: 'np.ndarray', stderr: 'np.ndarray', names: 'tuple[str, ...]', converged: 'bool', iterations: 'int', deviance: 'float', loglike: 'float', nobs: 'int', n_separated: 'int', sample_mask: 'np.ndarray', separation_mask: 'np.ndarray', mu: 'np.ndarray', eta: 'np.ndarray', df_absorbed: 'int' = 0, loglike_null: 'float | None' = None, pseudo_r2: 'float | None' = None, chi2: 'float | None' = None, chi2_pvalue: 'float | None' = None, df_model: 'int | None' = None, nobs_full: 'int | None' = None, vcov_rank: 'int | None' = None, diagnostics: 'dict' = <factory>, df_resid: 'float | None' = None, vce: 'str | None' = None, cluster_counts: 'tuple[int, ...]' = (), fe_names: 'tuple[str, ...]' = (), weight_type: 'str' = 'none', sum_weights: 'float | None' = None, n_singletons: 'int' = 0, confidence_level: 'float' = 0.95, profile: 'dict | None' = None, reproducibility: 'dict | None' = None, diagnostics_mode: 'str' = 'off') -> None",
+    "PreflightIssue": "(code: 'str', message: 'str', variable: 'str | None' = None, role: 'str | None' = None, severity: 'str' = 'error', suggestion: 'str | None' = None, details: 'dict[str, Any] | None' = None) -> None",
+    "PreflightReport": "(issues: 'tuple[PreflightIssue, ...]' = ()) -> None",
+    "PublicationResult": "(*args, **kwargs)",
+    "RankBackend": "(*args, **kwargs)",
+    "RegressionResult": "(params: 'np.ndarray', vcov: 'np.ndarray', stderr: 'np.ndarray', residuals: 'np.ndarray', fitted: 'np.ndarray', nobs: 'int', rank: 'int', df_resid: 'float', df_absorbed: 'int', converged: 'bool', iterations: 'int', dropped_singletons: 'int', names: 'tuple[str, ...]' = (), first_stage: 'dict | None' = None, diagnostics: 'dict | None' = None, estimator: 'str' = 'ols', estimator_info: 'dict | None' = None, dof_info: 'Any | None' = None, state: 'EstimationState | None' = None, weight_type: 'str' = 'none', sum_weights: 'float | None' = None, nobs_raw: 'int | None' = None, fixed_effects: 'FixedEffectEstimates | None' = None, group_info: 'Any | None' = None, absorb_info: 'Any | None' = None, collinearity_info: 'Any | None' = None, vce: 'str | None' = None, cluster_counts: 'tuple[int, ...]' = (), fe_names: 'tuple[str, ...]' = (), r2: 'float | None' = None, r2_within: 'float | None' = None, r2_adjusted: 'float | None' = None, r2_adjusted_within: 'float | None' = None, rss: 'float | None' = None, tss: 'float | None' = None, tss_within: 'float | None' = None, mss: 'float | None' = None, rmse: 'float | None' = None, loglike: 'float | None' = None, loglike_null: 'float | None' = None, f_statistic: 'float | None' = None, f_pvalue: 'float | None' = None, df_model: 'float | None' = None, df_resid_fit: 'float | None' = None, vcov_rank: 'int | None' = None, confidence_level: 'float' = 0.95, profile: 'dict | None' = None, reproducibility: 'dict | None' = None, diagnostics_mode: 'str' = 'off') -> None",
+    "RegressorInteraction": "(*parts: 'Any', name: 'str | None' = None)",
+    "SPJBootstrapResult": "(point: 'SPJResult', draws: 'np.ndarray', stderr: 'np.ndarray', stderr_ci_implied: 'np.ndarray', ci_low: 'np.ndarray', ci_high: 'np.ndarray', requested: 'int', completed: 'int', failed: 'int', failure_counts: 'dict[str, int]', confidence: 'float', seed: 'int') -> None",
+    "SPJPanel": "(kind: 'PanelClass', time: 'str', unit: 'str | None' = None, exporter: 'str | None' = None, importer: 'str | None' = None, pair: 'str | None' = None) -> None",
+    "SPJResult": "(coef: 'np.ndarray', names: 'tuple[str, ...]', full_coef: 'np.ndarray', bias: 'np.ndarray', components: 'dict[str, np.ndarray]', panel_class: 'str', seed: 'int', fit_count: 'int') -> None",
+    "ShapeError": "(message: 'str', *, code: 'str | None' = None, stage: 'str | None' = None, details: 'Mapping[str, Any] | None' = None, suggestion: 'str | None' = None) -> 'None'",
+    "SpecificationError": "(message: 'str', *, code: 'str | None' = None, stage: 'str | None' = None, details: 'Mapping[str, Any] | None' = None, suggestion: 'str | None' = None) -> 'None'",
+    "TwoWayFEAbsorber": "(groups, *, weights=None, tol=1e-08, max_iter=16000)",
+    "TwoWaySolveInfo": "(connected_components: 'int', cross_nnz: 'int', solved_side_levels: 'int', eliminated_side_levels: 'int') -> None",
+    "UnderidentifiedError": "(message: 'str', *, code: 'str | None' = None, stage: 'str | None' = None, details: 'Mapping[str, Any] | None' = None, suggestion: 'str | None' = None) -> 'None'",
+    "VariableRole": "(*values)",
+    "WeightInfo": "(kind: 'str', raw: 'np.ndarray | None', estimation: 'np.ndarray | None', row_n: 'int', effective_n: 'float', sum_weights: 'float') -> None",
+    "WildClusterTestResult": "(statistic: 'float', pvalue: 'float', bootstrap_statistics: 'np.ndarray', reps: 'int', completed_reps: 'int', bootstrap_type: 'str', weight_distribution: 'str', alternative: 'str', cluster_count: 'int', restriction_matrix: 'np.ndarray', restriction_value: 'np.ndarray', observed_difference: 'np.ndarray', full_enumeration: 'bool' = False, requested_reps: 'int | None' = None) -> None",
+    "available_rank_backends": "() -> 'tuple[str, ...]'",
+    "categorical_prefix_ranks": "(groups: 'list[np.ndarray] | tuple[np.ndarray, ...]', *, assume_dense: 'bool' = False, backend: 'RankBackend' = 'auto', flint_max_cells: 'int' = 4000000) -> 'tuple[int, ...]'",
+    "categorical_rank": "(groups: 'list[np.ndarray] | tuple[np.ndarray, ...]', *, assume_dense: 'bool' = False, return_info: 'bool' = False, backend: 'RankBackend' = 'auto', flint_max_cells: 'int' = 4000000)",
+    "cluster_diagnostics": "(result, *, include_pairwise_intersections: 'bool' = True) -> 'ClusterDiagnostics'",
+    "econhdfe.effects.EffectTermResult": "(name: 'str', levels: 'np.ndarray', coefficients: 'np.ndarray', component: 'np.ndarray', level_mass: 'np.ndarray', identified_mask: 'np.ndarray | None' = None) -> None",
+    "econhdfe.effects.FEDiagnosticIssue": "(code: 'str', severity: 'str', message: 'str', details: 'dict[str, Any]', suggestion: 'str | None' = None) -> None",
+    "econhdfe.effects.FEIdentification": "(rank: 'int', n_levels: 'int', nullity: 'int', n_components: 'int', structural_shift_nullity: 'int', extra_nullity: 'int', component_by_term: 'tuple[np.ndarray, ...]', exact_rank: 'bool' = True, components: 'tuple[FEComponentIdentification, ...]' = ()) -> None",
+    "econhdfe.effects.FERecoveryDiagnosis": "(estimable: 'bool', final_identification: 'FEIdentification', issues: 'tuple[FEDiagnosticIssue, ...]', raw_identification: 'FEIdentification | None' = None, post_singleton_identification: 'FEIdentification | None' = None) -> None",
+    "econhdfe.effects.FixedEffectIdentificationError": "(message: 'str', *, code: 'str | None' = None, stage: 'str | None' = None, details: 'Mapping[str, Any] | None' = None, suggestion: 'str | None' = None) -> 'None'",
+    "econhdfe.effects.FixedEffectRecoveryResult": "(terms: 'tuple[EffectTermResult, ...]', identification: 'FEIdentification', normalization: 'NormalizationSpec', diagnostics: 'RecoveryDiagnostics', diagnosis: \"'FERecoveryDiagnosis | None'\" = None) -> None",
+    "econhdfe.effects.NormalizationSpec": "(kind: 'str' = 'canonical', baseline: 'int | str' = 0, references: 'dict[str, Any] | None' = None) -> None",
+    "econhdfe.effects.RecoveryDiagnostics": "(solver: 'str', converged: 'bool', iterations: 'int', residual_norm: 'float', reconstruction_error: 'float', normalization_complete: 'bool', n_recovered_obs: 'int' = 0, n_total_obs: 'int' = 0, n_recovered_components: 'int' = 0, n_unidentified_components: 'int' = 0, stop_code: 'int | None' = None, stop_reason: 'str' = '', condition_estimate: 'float | None' = None, normal_equation_residual_norm: 'float | None' = None) -> None",
+    "econhdfe.effects.diagnose_fe_recovery": "(groups, *, names=None, final_mask=None, singleton_mask=None, separation_mask=None, separation_by_method=None, reported_singletons: 'int' = 0, reported_separated: 'int' = 0, estimator: 'str | None' = None, rank_backend: 'str' = 'auto') -> 'FERecoveryDiagnosis'",
+    "econhdfe.effects.identification_structure": "(groups, *, rank_backend='auto') -> 'FEIdentification'",
+    "econhdfe.effects.raise_for_fe_identification": "(diagnosis: 'FERecoveryDiagnosis') -> 'None'",
+    "econhdfe.effects.recover_fixed_effects": "(target, groups, *, names=None, levels=None, weights=None, normalization: 'NormalizationSpec | str' = 'canonical', assume_dense: 'bool' = False, solver: 'str' = 'auto', tol: 'float' = 1e-10, max_iter: 'int' = 16000, rank_backend: 'str' = 'auto', strict_identification: 'bool' = True, identification_diagnosis=None) -> 'FixedEffectRecoveryResult'",
+    "econhdfe.effects.recover_ivppml_result": "(*args, **kwargs) -> 'FixedEffectRecoveryResult'",
+    "econhdfe.effects.recover_linear_result": "(result, X, groups, *, x_names=None, fe_names=None, levels=None, weights=None, normalization: 'NormalizationSpec | str' = 'canonical', solver: 'str' = 'auto', tol: 'float' = 1e-10, max_iter: 'int' = 16000, rank_backend: 'str' = 'auto', strict_identification: 'bool' = True) -> 'FixedEffectRecoveryResult'",
+    "econhdfe.effects.recover_ppml_result": "(result, X, groups, *, offset=None, x_names=None, fe_names=None, levels=None, weights=None, normalization: 'NormalizationSpec | str' = 'canonical', solver: 'str' = 'auto', tol: 'float' = 1e-10, max_iter: 'int' = 16000, rank_backend: 'str' = 'auto', strict_identification: 'bool' = True) -> 'FixedEffectRecoveryResult'",
+    "econhdfe.effects.renormalize": "(result: 'FixedEffectRecoveryResult', spec: 'NormalizationSpec') -> 'FixedEffectRecoveryResult'",
+    "factor": "(variable: 'Any', *, base: 'Any | None' = None, drop_base: 'bool' = True, name: 'str | None' = None) -> 'Factor'",
+    "fe": "(group: 'Any', *slopes: 'Any', intercept: 'bool' = True, name: 'str | None' = None) -> 'FixedEffect'",
+    "fv": "(expression: 'str') -> 'FactorVariableExpression'",
+    "interaction": "(*parts: 'Any', name: 'str | None' = None) -> 'Interaction'",
+    "ivhdfe": "(data=None, *, y, exog=None, endog, instruments, absorb, weights=None, weight_type=None, cluster=None, vce=None, drop_singletons=True, tol=1e-08, max_iter=16000, method='auto', transform='symmetric', acceleration='auto', preconditioner='diagonal', backend='numpy', pool_size='auto', memory_budget_mb=512, projection_backend='auto', absorb_threads='auto', dof_method='pairwise', estimator='2sls', kappa=None, fuller=0.0, gmm_center=False, keep_state=False, time=None, panel=None, bandwidth=None, kernel='bartlett', save_fe=False, group=None, individual=None, aggregation='mean', incidence_backend='auto', canonicalize_fe=True, allow_nonconverged=False, collinearity='warn', collinear_tol=1e-10, structural_collinearity=True, omit_exog=None, omit_endog=None, omit_instruments=None, hdfe_config: 'HDFEConfig | None' = None, inference_config: 'InferenceConfig | None' = None, execution_config: 'ExecutionConfig | None' = None)",
+    "ivppml_spj": "(data: 'pd.DataFrame', *, panel: 'SPJPanel', y: 'str', exog=(), endog=(), instruments=(), weights: 'str | None' = None, weight_type=None, offset: 'str | None' = None, exposure: 'str | None' = None, config: 'IVPPMLConfig | None' = None, seed: 'int' = 0, _export_half=None, _import_half=None, _time_mid=None) -> 'SPJResult'",
+    "ivppml_spj_bootstrap": "(data: 'pd.DataFrame', *, panel: 'SPJPanel', y: 'str', exog=(), endog=(), instruments=(), weights: 'str | None' = None, weight_type=None, offset: 'str | None' = None, exposure: 'str | None' = None, config: 'IVPPMLConfig | None' = None, reps: 'int' = 999, seed: 'int' = 0, confidence: 'float' = 0.95, n_jobs: 'int' = 1) -> 'SPJBootstrapResult'",
+    "ivppmlhdfe": "(y, *, exog=None, endog=None, instruments=None, absorb=None, offset=None, exposure=None, weights=None, weight_type=None, vce='robust', clusters=None, exog_names=None, endog_names=None, instrument_names=None, config: 'IVPPMLConfig | None' = None, inference_config: 'InferenceConfig | None' = None, execution_config: 'ExecutionConfig | None' = None, warm_start=None)",
+    "ivreghdfe": "(data=None, *, y, exog=None, endog, instruments, absorb, weights=None, weight_type=None, cluster=None, vce=None, drop_singletons=True, tol=1e-08, max_iter=16000, method='auto', transform='symmetric', acceleration='auto', preconditioner='diagonal', backend='numpy', pool_size='auto', memory_budget_mb=512, projection_backend='auto', absorb_threads='auto', dof_method='pairwise', estimator='2sls', kappa=None, fuller=0.0, gmm_center=False, keep_state=False, time=None, panel=None, bandwidth=None, kernel='bartlett', save_fe=False, group=None, individual=None, aggregation='mean', incidence_backend='auto', canonicalize_fe=True, allow_nonconverged=False, collinearity='warn', collinear_tol=1e-10, structural_collinearity=True, omit_exog=None, omit_endog=None, omit_instruments=None, hdfe_config: 'HDFEConfig | None' = None, inference_config: 'InferenceConfig | None' = None, execution_config: 'ExecutionConfig | None' = None)",
+    "olshdfe": "(data=None, *, y, x, absorb, weights=None, weight_type=None, cluster=None, vce=None, drop_singletons=True, tol=1e-08, max_iter=16000, method='auto', transform='symmetric', acceleration='auto', preconditioner='diagonal', backend='numpy', pool_size='auto', memory_budget_mb=512, projection_backend='auto', absorb_threads='auto', dof_method='pairwise', keep_state=False, save_fe=False, time=None, panel=None, bandwidth=None, kernel='bartlett', group=None, individual=None, aggregation='mean', incidence_backend='auto', canonicalize_fe=True, allow_nonconverged=False, collinearity='warn', collinear_tol=1e-10, structural_collinearity=True, omit=None, hdfe_config: 'HDFEConfig | None' = None, inference_config: 'InferenceConfig | None' = None, execution_config: 'ExecutionConfig | None' = None)",
+    "omit_column": "(name: 'str') -> 'OmitSpec'",
+    "omit_level": "(component: 'str', level, *, term: 'str | None' = None) -> 'OmitSpec'",
+    "omit_term": "(term: 'str') -> 'OmitSpec'",
+    "parallel_pairs_bootstrap": "(estimator, nobs: 'int', *, reps=999, n_jobs=-1, seed=0)",
+    "ppmlhdfe": "(y, X=None, *, absorb=None, offset=None, exposure=None, weights=None, vce='robust', clusters=None, names=None, config: 'PPMLConfig | None' = None, inference_config: 'InferenceConfig | None' = None, execution_config: 'ExecutionConfig | None' = None, warm_start=None)",
+    "preflight_dataframe": "(data: 'pd.DataFrame', roles: 'Mapping[str, str | VariableRole]', *, model: 'str | None' = None, level: 'str' = 'basic') -> 'PreflightReport'",
+    "publication_output": "(result: 'PublicationResult', *, level: 'float | None' = None, include_diagnostics: 'bool | None' = None, include_profile: 'bool' = False) -> 'dict[str, Any]'",
+    "reg_interaction": "(*parts: 'Any', name: 'str | None' = None) -> 'RegressorInteraction'",
+    "reghdfe": "(data=None, *, y, x, absorb, weights=None, weight_type=None, cluster=None, vce=None, drop_singletons=True, tol=1e-08, max_iter=16000, method='auto', transform='symmetric', acceleration='auto', preconditioner='diagonal', backend='numpy', pool_size='auto', memory_budget_mb=512, projection_backend='auto', absorb_threads='auto', dof_method='pairwise', keep_state=False, save_fe=False, time=None, panel=None, bandwidth=None, kernel='bartlett', group=None, individual=None, aggregation='mean', incidence_backend='auto', canonicalize_fe=True, allow_nonconverged=False, collinearity='warn', collinear_tol=1e-10, structural_collinearity=True, omit=None, hdfe_config: 'HDFEConfig | None' = None, inference_config: 'InferenceConfig | None' = None, execution_config: 'ExecutionConfig | None' = None)",
+    "stock_yogo_critical_values": "(l1: 'int', k1: 'int', *, estimator='2sls') -> 'dict'",
+    "wild_bootstrap": "(result, *, reps=999, n_jobs=-1, batch_size=8, seed=0, cluster_index=0, weight_distribution='rademacher')",
+    "wild_cluster_bootstrap_ols": "(*, absorber: 'HDFEAbsorber', y_within, X_within, beta, residuals, clusters=None, weights=None, reps=999, n_jobs=-1, batch_size=8, seed=0, weight_distribution='rademacher')",
+    "wild_cluster_test_ols": "(result, *, param=None, R=None, r=0.0, reps=9999, impose_null: 'bool' = True, weight_distribution: 'str' = 'rademacher', alternative: 'str' = 'two_sided', n_jobs: 'int' = 1, batch_size: 'int' = 32, seed: 'int' = 0) -> 'WildClusterTestResult'"
+  }
+}

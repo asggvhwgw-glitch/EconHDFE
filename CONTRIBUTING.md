@@ -1,8 +1,12 @@
 # Contributing
 
 Use Python 3.10–3.13, create a virtual environment, and install `.[test]` plus
-`build`. Run `python -m pytest -q`, `python scripts/version.py gate`, and
-`python scripts/generate_architecture_map.py --check` before submitting a PR.
+`build`. For daily public behavior, run `python scripts/run_tests.py --suite core -- -q`.
+Plain `python -m pytest -q` now selects this core subset, NOT the full release suite.
+Before submitting a PR run `python scripts/run_tests.py --suite full -- -q`,
+`python scripts/version.py gate`, and `python scripts/generate_architecture_map.py --check`.
+See `docs/development/testing.md` for contracts/behavior/numerics/tooling responsibilities
+and `test-migration-0.6.5.md` for every retired test's replacement.
 For predictable CPU use, set OPENBLAS_NUM_THREADS=1, OMP_NUM_THREADS=1 and
 NUMBA_NUM_THREADS=4 (tests exercise explicit two- and three-thread settings).
 

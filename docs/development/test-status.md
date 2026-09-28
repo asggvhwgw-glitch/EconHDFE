@@ -1,3 +1,6 @@
+> 本文件是 2026-09-14 的历史执行记录，以下计数不是当前默认或完整套件。
+> 0.6.5 的新测试结构及命令见 [testing.md](testing.md)，迁移见 [test-migration-0.6.5.md](test-migration-0.6.5.md)。
+
 # econhdfe 0.6.3 local candidate validation — 2026-09-14
 
 **Executed local result: 906 passed / 0 failed / 0 skipped**, with 10 existing omission warnings. The installed-host subset has **350 passed / 0 failed / 0 skipped**.

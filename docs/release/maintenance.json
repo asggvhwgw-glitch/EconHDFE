@@ -1,81 +1,81 @@
 {
   "schema_version": 1,
-  "release_version": "0.6.4",
-  "previous_version": "0.6.3",
+  "release_version": "0.6.5",
+  "previous_version": "0.6.4",
   "checks": {
     "frontend_api": {
-      "status": "reviewed",
-      "evidence": "Public signatures/exports unchanged; compatibility diff against immutable 0.6.3 is empty.",
+      "status": "changed",
+      "evidence": "Estimator exports/signatures unchanged; developer test runner adds --suite and path-free pytest now selects the documented core subset. Full acceptance remains explicit.",
       "description": "Public call signatures, exports, aliases, CLI/front-end validation and compatibility."
     },
     "backend_compute": {
-      "status": "changed",
-      "evidence": "Native per-component cooperative work/storage/integer guards; chunked finite/scale pass and direct QR workspace division. See docs/development/maintenance-0.6.4.md.",
+      "status": "not_applicable",
+      "evidence": "No econhdfe/compute, HDFE solver, estimator algorithm, numerical tolerance or runtime backend implementation changes in 0.6.5.",
       "description": "Solver/compute/cache/backend contracts, numerical defaults and resource controls."
     },
     "errors": {
       "status": "reviewed",
-      "evidence": "Private resource RuntimeError reports no data; existing estimator error boundary remains unchanged, no new public code/schema. Exhaustion does not return a lower bound.",
+      "evidence": "Structured error classes/codes/stages and estimator error boundaries are unchanged; redesigned tests retain rejection and privacy semantics.",
       "description": "Structured exception classes, codes, stages, suggestions and public error boundaries."
     },
     "public_contract": {
       "status": "reviewed",
-      "evidence": "0.6.3 baseline preserved; no public-contract diff or approvals required.",
+      "evidence": "Frozen 0.6.5 snapshot has zero public-contract changes relative to immutable 0.6.4; no compatibility approvals required.",
       "description": "Public exports/signatures, result/config schemas and stable structured-error compatibility."
     },
     "skill": {
       "status": "changed",
-      "evidence": "Developer guide records native limits, scope exclusions, no silent DoF changes and parameter-only reporting. User-facing commands unchanged.",
+      "evidence": "Developer guide documents core versus full suites and current installed-test selection; empirical user commands and model semantics are unchanged.",
       "description": "Agent skill commands, examples, decision rules and newly exposed controls."
     },
     "linked_modules": {
-      "status": "reviewed",
-      "evidence": "Only two existing runtime modules; native phases share a private budget. No new runtime file/import boundary or estimator adapter.",
+      "status": "changed",
+      "evidence": "Runtime import topology is unchanged. Active technical-registry test paths, installed-test copies and nested test roots were updated together.",
       "description": "Cross-module imports, shared schemas, adapters, compatibility shims and downstream consumers."
     },
     "results_reporting": {
-      "status": "reviewed",
-      "evidence": "Same coefficient/bread/rank and public result schemas; no inference/statistical formula changes.",
+      "status": "not_applicable",
+      "evidence": "No result dataclass, reporting field, serialization-facing schema, coefficient/VCE convention or publication output implementation changes.",
       "description": "Result fields, publication output, diagnostics metadata and serialization-facing schemas."
     },
     "config_defaults": {
-      "status": "changed",
-      "evidence": "Public defaults/tolerances unchanged. New private native safety ceilings intentionally fail closed on oversized fallback work; documented migration boundary.",
+      "status": "reviewed",
+      "evidence": "No EconHDFE runtime config/default/tolerance changes. Only pytest discovery configuration is changed for developer feedback.",
       "description": "Config objects, defaults, deprecations, aliases and backwards-compatible behavior."
     },
     "cache_state": {
-      "status": "reviewed",
-      "evidence": "No persistent/session cache changes; input ownership and resource-failure retry tested. Broader workflow calibration is pending in TODO.",
+      "status": "not_applicable",
+      "evidence": "No session, persistent cache, topology cache, fingerprint or lifecycle implementation changes; existing invalidation semantics remain tested.",
       "description": "Reusable state/cache invalidation, fingerprints, lifecycle semantics and stale-state hazards."
     },
     "tests_validation": {
       "status": "changed",
-      "evidence": "Independent rational/SVD oracles plus input/layout, nonfinite, work/storage/integer exhaustion tests. Full local results recorded separately from review.",
+      "evidence": "Tests are reorganized into contracts/behavior/numerics/tooling; redundant historical checks and repeated parameter products are compressed with a replacement ledger, preserved independent oracles and targeted semantic fault guards.",
       "description": "Regression tests, install smoke tests, golden/parity coverage and failure-path tests."
     },
     "performance": {
-      "status": "changed",
-      "evidence": "Five isolated-process same-host PERF-03 cases, three alternating rounds plus separate allocation profiling. No universal or multi-host speed claim.",
+      "status": "not_applicable",
+      "evidence": "No estimator/runtime performance code change. Only test-suite feedback time is measured; it is not an estimator speed claim.",
       "description": "Representative benchmark/resource regressions for code paths materially changed by the release."
     },
     "docs_migration": {
       "status": "changed",
-      "evidence": "TODO archives completed 0.6.3 gates; changelog and README mark 0.6.4 unreleased; maintenance note separates native scope, numerical identities and pending tasks.",
+      "evidence": "README, changelog, contributing guide, testing design and 0.6.5 migration audit document the new default core discovery and mandatory full PR/release acceptance.",
       "description": "README/architecture/changelog/migration/versioning documentation and user-visible examples."
     },
     "packaging_dependencies": {
-      "status": "reviewed",
-      "evidence": "No runtime/extras/build requirement changes. This host has no build frontend/index access; HOST wheel checks are not isolated/clean-install evidence.",
+      "status": "changed",
+      "evidence": "Runtime/build dependency declarations are unchanged. CI, source-archive retest and installed-wheel numerical selection are adapted to the nested test layout and explicitly run full where required.",
       "description": "Python/dependency matrix, optional extras, wheel/source contents and build metadata."
     },
     "external_validation": {
       "status": "reviewed",
-      "evidence": "No new licensed-Stata/optional-backend certification claim. Fresh platform/dependency-floor results remain required for 0.6.4.",
+      "evidence": "No new licensed-Stata/upstream/optional-backend parity claim. Internal oracles and CI do not substitute for external certification.",
       "description": "Licensed/reference-environment parity gates and explicitly deferred external certification."
     },
     "release_artifacts": {
       "status": "changed",
-      "evidence": "Controlled bump resets execution to 0.6.4; no old passed evidence migrated. Candidate artifacts are not public release authorization.",
+      "evidence": "Version bumped to 0.6.5, public-contract baseline frozen, execution evidence reset, and build/source-archive validation commands explicitly select the full suite. No publication is authorized.",
       "description": "Version consistency, source/wheel parity, hashes, clean install and reproducible bundle contents."
     }
   }

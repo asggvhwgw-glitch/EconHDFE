@@ -34,7 +34,7 @@ python scripts/compatibility.py check --version "$VERSION"
 python scripts/generate_architecture_map.py
 python scripts/generate_architecture_map.py --check
 python -m compileall -q econhdfe pyreghdfe validation scripts benchmarks skills/econhdfe/scripts
-python scripts/run_tests.py -- -q
+python scripts/run_tests.py --suite full -- -q
 if [[ "${ECONHDFE_OFFLINE_BUILD:-0}" == "1" ]]; then
   echo 'OFFLINE DIAGNOSTIC BUILD: host backend/dependencies; NOT isolated validation' >&2
   python -m pip wheel . --no-deps --no-build-isolation -w "$DIST"
@@ -46,7 +46,7 @@ fi
 WHEEL="$(find "$DIST" -maxdepth 1 -type f -name "econhdfe-${VERSION}-*.whl" -print -quit)"
 [[ -n "$WHEEL" ]] || { echo 'built wheel not found' >&2; exit 1; }
 python scripts/verify_wheel_install.py "$WHEEL"
-python scripts/verify_installed_numerics.py --wheel "$WHEEL" --extra-test test_weighted_colsum_fusion.py
+python scripts/verify_installed_numerics.py --wheel "$WHEEL" --extra-test test_weighted_reductions.py
 if [[ "${ECONHDFE_OFFLINE_BUILD:-0}" != "1" ]]; then
   python scripts/verify_clean_install.py --wheel "$WHEEL"
 fi
@@ -55,7 +55,7 @@ python scripts/assemble_release.py --wheel "$WHEEL" --sdist "$DIST/econhdfe-${VE
 TMP_SRC="$(mktemp -d)"
 trap 'rm -rf "$TMP_SRC"' EXIT
 unzip -q "$DIST/econhdfe-v${VERSION}-source.zip" -d "$TMP_SRC"
-(cd "$TMP_SRC/econhdfe-${VERSION}" && PYTHONPATH=. python scripts/run_tests.py -- -q)
+(cd "$TMP_SRC/econhdfe-${VERSION}" && PYTHONPATH=. python scripts/run_tests.py --suite full -- -q)
 rm -rf "$TMP_SRC"
 trap - EXIT
 
