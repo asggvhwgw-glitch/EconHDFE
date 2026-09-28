@@ -22,7 +22,7 @@ def blockMap (T : (L → ℝ) →ₗ[ℝ] (L → ℝ))
     cases i <;> simp [map_add, add_assoc, add_left_comm, add_comm]
   map_smul' a x := by
     ext i
-    cases i <;> simp [map_smul, smul_add]
+    cases i <;> simp [map_smul, smul_add, mul_add]
 
 def liftCore (S : Submodule ℝ (C → ℝ)) : Submodule ℝ ((L ⊕ C) → ℝ) :=
   S.comap (categoricalMap Sum.inr)
