@@ -1,10 +1,14 @@
 name: Tests and release validation
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: tests-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     timeout-minutes: 30
@@ -49,7 +53,7 @@ jobs:
           python scripts/release_acceptance.py fingerprint > code-fingerprint.txt
           python -m pip check
       - run: python scripts/version.py gate
-      - run: python scripts/run_tests.py -- -q --junitxml=test-results.xml 2>&1 | tee tests.log
+      - run: python scripts/run_tests.py --suite full -- -q --junitxml=test-results.xml 2>&1 | tee tests.log
       - run: python -m build --outdir dist 2>&1 | tee build.log
       - name: Clean installation with latest dependencies
         if: matrix.dependencies == 'latest'

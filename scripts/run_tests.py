@@ -1,6 +1,7 @@
 """Functional-test launcher; benchmark thread caps are NOT suite settings.
 
-Run `python scripts/run_tests.py -- -q` or use --preflight for an environment
+Run `python scripts/run_tests.py --suite core -- -q` for public behavior,
+`--suite full` for all numerical/tooling gates, or --preflight for an environment
 check only. Never skips multithread tests or silently raises an explicit cap.
 """
 from __future__ import annotations
@@ -10,6 +11,14 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+
+
+SUITES = {
+    'core': ('tests/contracts', 'tests/behavior'),
+    'numerics': ('tests/numerics',),
+    'tooling': ('tests/tooling',),
+    'full': ('tests',),
+}
 
 
 def functional_environment(env: dict[str,str]) -> dict[str,str]:
@@ -31,6 +40,7 @@ def functional_environment(env: dict[str,str]) -> dict[str,str]:
 def main() -> None:
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--preflight',action='store_true')
+    p.add_argument('--suite', choices=tuple(SUITES), help='Explicit test layer; default pytest discovery is the core suite')
     p.add_argument('pytest_args',nargs=argparse.REMAINDER)
     a=p.parse_args()
     try:
@@ -42,7 +52,7 @@ def main() -> None:
         args=a.pytest_args
         if args[:1]==['--']:
             args=args[1:]
-        raise SystemExit(subprocess.call([sys.executable,'-m','pytest',*(args or ['-q'])],
+        raise SystemExit(subprocess.call([sys.executable,'-m','pytest',*(SUITES[a.suite] if a.suite else ()),*(args or ['-q'])],
                                        cwd=Path(__file__).resolve().parents[1],env=env))
 
 

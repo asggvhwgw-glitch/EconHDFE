@@ -1,103 +1,37 @@
 {
   "schema_version": 1,
-  "release_version": "0.6.4",
+  "release_version": "0.6.5",
   "fingerprint_scope": "runtime-validation-v1",
-  "code_fingerprint_sha256": "227d480df3af00214df5fea453dc3f08fe72c534767aa53ac1c0c07fbbc71476",
+  "code_fingerprint_sha256": "e88a3b159906e04bb9756f96d2b8353b1ffe5d672b07b60036216493a55b62ce",
   "source_commit": null,
   "checks": {
     "local_regression": {
-      "execution_status": "passed",
-      "reason": "Current local source: 993 passed. No previous-version pass was carried forward.",
-      "environment": {
-        "python": "3.13.5",
-        "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
-        "threads": {
-          "OPENBLAS_NUM_THREADS": 1,
-          "OMP_NUM_THREADS": 1,
-          "NUMBA_NUM_THREADS": 4
-        },
-        "dependencies": {
-          "numpy": "2.3.5",
-          "scipy": "1.17.0",
-          "pandas": "2.2.3",
-          "numba": "0.65.1",
-          "joblib": "1.5.3",
-          "threadpoolctl": "3.6.0",
-          "pytest": "9.0.2",
-          "sympy": "1.14.0",
-          "statsmodels": "0.14.6"
-        },
-        "optional_flint": "not installed"
-      },
-      "executed_at": "2026-09-27T09:51:11.551034+00:00",
-      "code_fingerprint_sha256": "227d480df3af00214df5fea453dc3f08fe72c534767aa53ac1c0c07fbbc71476",
-      "evidence": [
-        {
-          "path": "docs/release/evidence/0.6.4/development/source-tests.log",
-          "sha256": "51f2a913fc7d45f23b8103003496335cd23c590153de5ef7d704d7f6c6588406"
-        },
-        {
-          "path": "docs/release/evidence/0.6.4/development/source-tests.xml",
-          "sha256": "b7ac7b2560250c3012cc6f195a90ea89d92178f0b06c869eacb6c0f1a38b4951"
-        },
-        {
-          "path": "docs/release/evidence/0.6.4/development/environment.json",
-          "sha256": "42a42223a03fc38d628cd47fa427eb9ae3a5840699067f67e4ec76cf39a7fca3"
-        }
-      ]
+      "execution_status": "not_run",
+      "reason": "Not executed for this release.",
+      "environment": {},
+      "executed_at": null,
+      "code_fingerprint_sha256": null,
+      "evidence": []
     },
     "installed_numerics": {
-      "execution_status": "passed",
-      "reason": "360 installed-wheel numerical tests plus six smoke commands; HOST dependencies, not clean resolution.",
-      "environment": {
-        "python": "3.13.5",
-        "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
-        "threads": {
-          "OPENBLAS_NUM_THREADS": 1,
-          "OMP_NUM_THREADS": 1,
-          "NUMBA_NUM_THREADS": 4
-        },
-        "dependencies": {
-          "numpy": "2.3.5",
-          "scipy": "1.17.0",
-          "pandas": "2.2.3",
-          "numba": "0.65.1",
-          "joblib": "1.5.3",
-          "threadpoolctl": "3.6.0",
-          "pytest": "9.0.2",
-          "sympy": "1.14.0",
-          "statsmodels": "0.14.6"
-        },
-        "optional_flint": "not installed"
-      },
-      "executed_at": "2026-09-27T09:51:11.551034+00:00",
-      "code_fingerprint_sha256": "227d480df3af00214df5fea453dc3f08fe72c534767aa53ac1c0c07fbbc71476",
-      "evidence": [
-        {
-          "path": "docs/release/evidence/0.6.4/development/installed-tests.log",
-          "sha256": "46b11355b01fca8923f411bb96ece98fbc80f0a58e5e390ae38bc193cebfee61"
-        },
-        {
-          "path": "docs/release/evidence/0.6.4/development/installed-tests.xml",
-          "sha256": "709b87e5eea24c19fa6324b845a2b41fc4504cfac9663681f688ee00329ed7f1"
-        },
-        {
-          "path": "docs/release/evidence/0.6.4/development/gates.log",
-          "sha256": "39b3134c9d10514accea1277a5960129840b5efbec9f850d7dfd7e83ef72701d"
-        }
-      ]
+      "execution_status": "not_run",
+      "reason": "Not executed for this release.",
+      "environment": {},
+      "executed_at": null,
+      "code_fingerprint_sha256": null,
+      "evidence": []
     },
     "isolated_build": {
-      "execution_status": "blocked",
-      "reason": "Blocked: build frontend unavailable and package-index probe could not obtain it. pip wheel --no-build-isolation used HOST setuptools; not an isolated build.",
+      "execution_status": "not_run",
+      "reason": "Not executed for this release.",
       "environment": {},
       "executed_at": null,
       "code_fingerprint_sha256": null,
       "evidence": []
     },
     "clean_install": {
-      "execution_status": "blocked",
-      "reason": "Blocked: no independent complete dependency environment/wheelhouse; HOST target installs are not clean dependency resolution.",
+      "execution_status": "not_run",
+      "reason": "Not executed for this release.",
       "environment": {},
       "executed_at": null,
       "code_fingerprint_sha256": null,
@@ -105,7 +39,7 @@
     },
     "support_matrix": {
       "execution_status": "not_run",
-      "reason": "Not run for these changes: code has not yet been committed to GitHub/PR CI. The successful baseline CI does not certify this candidate.",
+      "reason": "Not executed for this release.",
       "environment": {},
       "executed_at": null,
       "code_fingerprint_sha256": null,
@@ -113,60 +47,23 @@
     },
     "dependency_floor": {
       "execution_status": "not_run",
-      "reason": "Not run for these changes; requires fresh four-cell dependency-floor CI.",
+      "reason": "Not executed for this release.",
       "environment": {},
       "executed_at": null,
       "code_fingerprint_sha256": null,
       "evidence": []
     },
     "reference_claims": {
-      "execution_status": "passed",
-      "reason": "Reviewed README and maintenance note: alpha research status remains, no new licensed-Stata, independent novelty or multi-host performance certification claimed. This is a claims-boundary review, not an external parity run.",
-      "environment": {
-        "python": "3.13.5",
-        "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
-        "threads": {
-          "OPENBLAS_NUM_THREADS": 1,
-          "OMP_NUM_THREADS": 1,
-          "NUMBA_NUM_THREADS": 4
-        },
-        "dependencies": {
-          "numpy": "2.3.5",
-          "scipy": "1.17.0",
-          "pandas": "2.2.3",
-          "numba": "0.65.1",
-          "joblib": "1.5.3",
-          "threadpoolctl": "3.6.0",
-          "pytest": "9.0.2",
-          "sympy": "1.14.0",
-          "statsmodels": "0.14.6"
-        },
-        "optional_flint": "not installed"
-      },
-      "executed_at": "2026-09-27T09:51:11.551034+00:00",
-      "code_fingerprint_sha256": "227d480df3af00214df5fea453dc3f08fe72c534767aa53ac1c0c07fbbc71476",
-      "evidence": [
-        {
-          "path": "docs/release/evidence/0.6.4/development/provenance.json",
-          "sha256": "fe9efc4b547d50cccde7551dcaee91f3c734f1e7fcec064f45b76d85242614e3"
-        },
-        {
-          "path": "docs/release/evidence/0.6.4/development/gates.log",
-          "sha256": "39b3134c9d10514accea1277a5960129840b5efbec9f850d7dfd7e83ef72701d"
-        },
-        {
-          "path": "README.md",
-          "sha256": "c17b2021a2a857bbfad10da479874e8083e02a399e543a91c1bcb66b8b622c4b"
-        },
-        {
-          "path": "docs/development/maintenance-0.6.4.md",
-          "sha256": "627a5bca3c8fb793bd0b713653077f9e6ae706f90ba463a16a5a4a5bd80815ea"
-        }
-      ]
+      "execution_status": "not_run",
+      "reason": "Not executed for this release.",
+      "environment": {},
+      "executed_at": null,
+      "code_fingerprint_sha256": null,
+      "evidence": []
     },
     "final_artifacts": {
       "execution_status": "not_run",
-      "reason": "Not run: no final source commit, detached frozen-artifact binding or publication authorization.",
+      "reason": "Not executed for this release.",
       "environment": {},
       "executed_at": null,
       "code_fingerprint_sha256": null,

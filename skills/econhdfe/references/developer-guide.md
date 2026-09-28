@@ -100,6 +100,23 @@ python scripts/compatibility.py approve <change-id> --reason "intentional API ch
 
 The release gate rejects unapproved or stale approvals. Do not edit a baseline snapshot to hide a change; snapshots represent released artifacts.
 
+## Current tests: contracts, behavior, numerics and tooling
+
+Tests are organized by responsibility, not historical release numbers. Use
+`python scripts/run_tests.py --suite core -- -q` for the current public workflows;
+plain `python -m pytest -q` also selects this daily subset. Neither is a full gate.
+Before a PR or release use `python scripts/run_tests.py --suite full -- -q`.
+`--suite numerics` and `--suite tooling` allow focused checks without hiding them
+from full CI. Existing thread prerequisites and independent oracles still apply.
+
+Align named-data, array and reusable routes with actual fits and result semantics;
+do not invent identical keywords across estimators. Keep success, invalid-input,
+sample/weight/DoF and cache-invalidation checks explicit. Retire a regression test
+only with an identified replacement; fewer collected items are not evidence of
+correctness. See `docs/development/testing.md` in the source distribution.
+Installed-wheel validation now copies nested test paths and shared fixtures;
+`--extra-test test_weighted_reductions.py` must resolve to one unique test file.
+
 ## Version/release closeout
 
 Do not manually edit version strings. When the update is complete:

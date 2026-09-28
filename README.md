@@ -6,7 +6,7 @@
 
 The package is designed around a practical empirical problem: once a dataset becomes large, the expensive part of a regression table is often no longer the final small linear solve. Time and memory are spent repeatedly reading columns, encoding high-cardinality identifiers, expanding interactions, projecting out fixed effects, rebuilding weighted projectors, and rerunning nearly identical specifications. `econhdfe` treats those operations as shared computational infrastructure rather than reimplementing them estimator by estimator.
 
-> **Development status:** this branch prepares **v0.6.4 (unreleased)**; the latest published version is **v0.6.3**, an alpha research release. The local release suite and package-level parity gates are extensive, but licensed-Stata / upstream external certification remains a separate release boundary. See [Validation and claims](#validation-and-claims).
+> **Development status:** this branch prepares **v0.6.5 (unreleased)**; the latest published version is **v0.6.3**, an alpha research release. The local release suite and package-level parity gates are extensive, but licensed-Stata / upstream external certification remains a separate release boundary. See [Validation and claims](#validation-and-claims).
 
 ## Why econhdfe exists
 
@@ -342,3 +342,12 @@ Developer workflow and release gates are documented under `docs/development/`, `
 ## License
 
 BSD-licensed. See [`LICENSE`](LICENSE).
+
+## Contributor test entry points
+
+The test suite is organized around current public contracts, observable statistical
+behavior, numerical guards, and release tooling. `python -m pytest -q` selects
+only the daily core. Before a PR or release run
+`python scripts/run_tests.py --suite full -- -q`; all 16 CI environments and
+source-archive validation use that complete suite. See [Testing](docs/development/testing.md)
+and the [migration audit](docs/development/test-migration-0.6.5.md).

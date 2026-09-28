@@ -1,6 +1,18 @@
 # 0.6.2 — nonlinear and resource-boundary validation candidate
 
-## 0.6.4 — unreleased
+## 0.6.5 — unreleased
+
+- Reorganize tests around current contracts, behavior, numerical oracles and release
+  tooling; replace redundant historical smoke checks and reduce repeated parameter
+  combinations without relaxing retained tolerances. **Plain pytest now selects
+  the daily core; use `scripts/run_tests.py --suite full -- -q` for full acceptance.**
+- Align installed-wheel test selection, active technical-registry references, and
+  source-archive validation with the nested layout. Avoid duplicate branch-push/PR
+  matrices while keeping all 16 full-suite CI environments.
+- No estimator formula, runtime API, numerical tolerance, result schema or runtime
+  dependency changes are part of this test-system release.
+
+## 0.6.4 — development baseline
 
 - Bound native modular/rational exact-rank fallback with shared per-component
   work accounting, conservative sparse-storage admission and pre-multiplication
