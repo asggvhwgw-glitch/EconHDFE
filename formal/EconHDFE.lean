@@ -6,3 +6,6 @@ import EconHDFE.PeelingProjection
 import EconHDFE.PeelingTermination
 import EconHDFE.CategoricalRecode
 import EconHDFE.PeelingExamples
+import EconHDFE.RankBasics
+import EconHDFE.ComponentRank
+import EconHDFE.PeelingRank
