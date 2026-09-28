@@ -27,10 +27,7 @@ def cascadeTrace : PeelingTrace cascadeCode where
     intro a b h
     exact Fin.ext (congrArg (fun z : Fin 5 => z.val) h)
   pivot := cascadePivot
-  singleton := by
-    intro k i active
-    fin_cases k <;> fin_cases i <;>
-      norm_num [cascadeCode, cascadeRow, cascadePivot, Fin.forall_fin_succ] at * <;> omega
+  singleton := by decide
 
 theorem cascade_survivors : surviving cascadeTrace = {i : Fin 5 | 3 ≤ i.val} := by
   ext i
