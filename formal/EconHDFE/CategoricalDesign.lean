@@ -29,8 +29,14 @@ theorem feSpace_restrict {J : Type*} (code : (g : G) → I → K g) (rows : J �
     (feSpace code).map (categoricalMap rows) =
       feSpace (fun g j => code g (rows j)) := by
   unfold feSpace
-  rw [Submodule.map_span, Set.image_range]
-  rfl
+  rw [Submodule.map_span]
+  congr 1
+  ext y
+  constructor
+  · rintro ⟨x, ⟨v, rfl⟩, rfl⟩
+    exact ⟨v, rfl⟩
+  · rintro ⟨v, rfl⟩
+    exact ⟨feColumn code v, ⟨v, rfl⟩, rfl⟩
 
 structure PeelingTrace (code : (g : G) → I → K g) where
   length : ℕ

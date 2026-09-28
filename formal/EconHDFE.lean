@@ -3,3 +3,4 @@ import EconHDFE.WeightedLeastSquares
 import EconHDFE.ResidualCore
 import EconHDFE.CategoricalDesign
 import EconHDFE.PeelingProjection
+import EconHDFE.PeelingTermination
