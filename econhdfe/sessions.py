@@ -44,6 +44,7 @@ from .reporting import (
     ivreghdfe_model_statistics,
 )
 from .results import RegressionResult
+from .prediction import SampleExclusionState, named_design_state, linear_prediction_state
 
 
 def _as_tuple(value) -> tuple:
@@ -748,6 +749,27 @@ class OLSHDFESession(_LinearHDFESessionBase):
                 _resolve_pool_size(entry.absorber, max(len(spec.x) + 1, 1), "auto", entry.memory_budget_mb),
                 solver_selection=entry.solver_selection,
             )
+        sample_history = (
+            SampleExclusionState("hdfe", "singleton_pruning", entry.dropped, int(np.sum(entry.mask))),
+        ) if entry.dropped else ()
+        prediction_state = linear_prediction_state(
+            estimator="ols",
+            coefficient_names=collin_plan.active_names,
+            coefficient_roles=("regressor",),
+            designs=(
+                named_design_state(
+                    spec.x, role="regressor", active_indices=collin_plan.active_indices,
+                ),
+            ),
+            fe_plan=entry.fe_plan,
+            fe_names=entry.fe_names,
+            requested_fe_groups=() if entry.inference_fe is None else entry.inference_fe.groups,
+            effective_fe_groups=entry.groups,
+            fe_intercepts=entry.intercepts,
+            fe_slopes=entry.slopes,
+            sample_mask=entry.mask,
+            sample_history=sample_history,
+        )
         result = RegressionResult(
             params=beta, vcov=V, stderr=np.sqrt(np.clip(np.diag(V), 0, None)),
             residuals=resid, fitted=y1-resid, nobs=int(round(entry.winfo.effective_n)), rank=rank,
@@ -768,6 +790,7 @@ class OLSHDFESession(_LinearHDFESessionBase):
             df_resid_fit=fit_stats["df_resid_fit"], vcov_rank=(int(np.linalg.matrix_rank(V)) if V.size else 0),
             confidence_level=self.inference.confidence_level,
             diagnostics_mode=self.inference.diagnostics,
+            prediction_state=prediction_state,
         )
         if self.execution.profile != "off":
             result.profile = {
@@ -917,6 +940,36 @@ class IVHDFESession(_LinearHDFESessionBase):
                 _resolve_pool_size(entry.absorber, max(len(cols), 1), "auto", entry.memory_budget_mb),
                 solver_selection=entry.solver_selection,
             )
+        sample_history = (
+            SampleExclusionState("hdfe", "singleton_pruning", entry.dropped, int(np.sum(entry.mask))),
+        ) if entry.dropped else ()
+        prediction_state = linear_prediction_state(
+            estimator=meta.get("estimator", self.estimator),
+            coefficient_names=tuple(cn + en),
+            coefficient_roles=("exogenous", "endogenous"),
+            designs=(
+                named_design_state(
+                    spec.exog, role="exogenous",
+                    active_indices=collin_info["exogenous"]["active_indices"],
+                ),
+                named_design_state(
+                    spec.endog, role="endogenous",
+                    active_indices=collin_info["endogenous"]["active_indices"],
+                ),
+                named_design_state(
+                    spec.instruments, role="excluded_instrument",
+                    active_indices=collin_info["excluded_instruments"]["active_indices"],
+                ),
+            ),
+            fe_plan=entry.fe_plan,
+            fe_names=entry.fe_names,
+            requested_fe_groups=() if entry.inference_fe is None else entry.inference_fe.groups,
+            effective_fe_groups=entry.groups,
+            fe_intercepts=entry.intercepts,
+            fe_slopes=entry.slopes,
+            sample_mask=entry.mask,
+            sample_history=sample_history,
+        )
         result = RegressionResult(
             params=beta, vcov=V, stderr=np.sqrt(np.clip(np.diag(V), 0, None)),
             residuals=resid, fitted=y1-resid, nobs=int(round(entry.winfo.effective_n)), rank=rank,
@@ -935,6 +988,7 @@ class IVHDFESession(_LinearHDFESessionBase):
             df_model=fit_stats["df_model"], df_resid_fit=fit_stats["df_resid_fit"], vcov_rank=(int(np.linalg.matrix_rank(V)) if V.size else 0),
             confidence_level=self.inference.confidence_level,
             diagnostics_mode=self.inference.diagnostics,
+            prediction_state=prediction_state,
         )
         if self.execution.profile != "off":
             result.profile = {

@@ -179,3 +179,11 @@ methods, or increase private limits on behalf of a user. Report only the stage,
 resource/counter/limit and environment via the parameter-only support workflow.
 No data labels or observations are needed. See the development maintenance note
 in the source tree for tests and measurement limitations.
+
+## 0.7 预测维护
+
+冻结契约在 prediction.py，分块转换在 prediction_api.py，拟合适配器在 effects/prediction.py。
+结果不得保存原始 DataFrame/N×K 设计；FE 映射仅 save_fe 时按 level 构建。预测层不回调
+拟合器。扩展范围时补未知类别、列序、物理行、归一化/识别和缓存测试，使用独立 dummy/WLS
+或相应模型 oracle。stdp 不能升级为完整 FE 预测 SE。测试入口为 tests/behavior/test_prediction.py
+和 tests/numerics/test_prediction_oracles.py；本机证据不等于跨平台/外部认证。

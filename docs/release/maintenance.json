@@ -1,81 +1,81 @@
 {
   "schema_version": 1,
-  "release_version": "0.6.5",
-  "previous_version": "0.6.4",
+  "release_version": "0.7.0.dev0",
+  "previous_version": "0.6.5",
   "checks": {
     "frontend_api": {
       "status": "changed",
-      "evidence": "Estimator exports/signatures unchanged; developer test runner adds --suite and path-free pytest now selects the documented core subset. Full acceptance remains explicit.",
+      "evidence": "增加 RegressionResult.predict 薄转发；拟合签名和默认 save_fe 不变。目标及拒绝语义见 postestimation-0.7.md。",
       "description": "Public call signatures, exports, aliases, CLI/front-end validation and compatibility."
     },
     "backend_compute": {
-      "status": "not_applicable",
-      "evidence": "No econhdfe/compute, HDFE solver, estimator algorithm, numerical tolerance or runtime backend implementation changes in 0.6.5.",
+      "status": "reviewed",
+      "evidence": "未改变估计公式、HDFE 投影或容差；save_fe 后复用 native exact rank，资源失败只禁用新行 FE 预测。",
       "description": "Solver/compute/cache/backend contracts, numerical defaults and resource controls."
     },
     "errors": {
-      "status": "reviewed",
-      "evidence": "Structured error classes/codes/stages and estimator error boundaries are unchanged; redesigned tests retain rejection and privacy semantics.",
+      "status": "changed",
+      "evidence": "预测使用既有异常家族及 postestimation stage；未知、形状、状态、识别和负方差代码有行为测试，不输出原始数据。",
       "description": "Structured exception classes, codes, stages, suggestions and public error boundaries."
     },
     "public_contract": {
-      "status": "reviewed",
-      "evidence": "Frozen 0.6.5 snapshot has zero public-contract changes relative to immutable 0.6.4; no compatibility approvals required.",
+      "status": "changed",
+      "evidence": "有意增加 prediction_state 默认 None；相对不可改写 0.6.5 进行精确审批，0.7.0.dev0 当前快照另存。",
       "description": "Public exports/signatures, result/config schemas and stable structured-error compatibility."
     },
     "skill": {
       "status": "changed",
-      "evidence": "Developer guide documents core versus full suites and current installed-test selection; empirical user commands and model semantics are unchanged.",
+      "evidence": "经验研究与开发指南明确预测目标、beta-only 标准误、未支持范围及测试入口。",
       "description": "Agent skill commands, examples, decision rules and newly exposed controls."
     },
     "linked_modules": {
       "status": "changed",
-      "evidence": "Runtime import topology is unchanged. Active technical-registry test paths, installed-test copies and nested test roots were updated together.",
+      "evidence": "设计状态、内部 FE metadata、OLS/IV 适配器、结果/序列化联动；两个新模块登记经济职责并重新生成架构。",
       "description": "Cross-module imports, shared schemas, adapters, compatibility shims and downstream consumers."
     },
     "results_reporting": {
-      "status": "not_applicable",
-      "evidence": "No result dataclass, reporting field, serialization-facing schema, coefficient/VCE convention or publication output implementation changes.",
+      "status": "changed",
+      "evidence": "predict 不改变已有 params/V/fitted/publication_output；保存 FE 配对 beta，不提供完整预测区间。",
       "description": "Result fields, publication output, diagnostics metadata and serialization-facing schemas."
     },
     "config_defaults": {
       "status": "reviewed",
-      "evidence": "No EconHDFE runtime config/default/tolerance changes. Only pytest discovery configuration is changed for developer feedback.",
+      "evidence": "拟合参数和 HDFE/推断/执行 config 默认不变；预测参数独立，未知类别默认拒绝。",
       "description": "Config objects, defaults, deprecations, aliases and backwards-compatible behavior."
     },
     "cache_state": {
-      "status": "not_applicable",
-      "evidence": "No session, persistent cache, topology cache, fingerprint or lifecycle implementation changes; existing invalidation semantics remain tested.",
+      "status": "changed",
+      "evidence": "结果 ABI 为 linear-session-result-3；within ABI 不变；允许列表式 JSON/NPY，已添加 saved-FE roundtrip 测试。",
       "description": "Reusable state/cache invalidation, fingerprints, lifecycle semantics and stale-state hazards."
     },
     "tests_validation": {
       "status": "changed",
-      "evidence": "Tests are reorganized into contracts/behavior/numerics/tooling; redundant historical checks and repeated parameter products are compressed with a replacement ledger, preserved independent oracles and targeted semantic fault guards.",
+      "evidence": "增加 OLS/IV、block、文件/缓存、物理行、未知/嵌套/断开/extra-nullity 以及独立 dummy/WLS 检查；执行证据独立登记。",
       "description": "Regression tests, install smoke tests, golden/parity coverage and failure-path tests."
     },
     "performance": {
-      "status": "not_applicable",
-      "evidence": "No estimator/runtime performance code change. Only test-suite feedback time is measured; it is not an estimator speed claim.",
+      "status": "reviewed",
+      "evidence": "默认拟合不新增原始设计或 FE 识别；save_fe 显式承担 level/识别成本。预测按 chunk_size×K 分块，不承诺未经测量的提速。",
       "description": "Representative benchmark/resource regressions for code paths materially changed by the release."
     },
     "docs_migration": {
       "status": "changed",
-      "evidence": "README, changelog, contributing guide, testing design and 0.6.5 migration audit document the new default core discovery and mandatory full PR/release acceptance.",
+      "evidence": "README/TODO/CHANGELOG/后估计说明及 Skill 同步；0.6.5 快照与历史证据保留。",
       "description": "README/architecture/changelog/migration/versioning documentation and user-visible examples."
     },
     "packaging_dependencies": {
-      "status": "changed",
-      "evidence": "Runtime/build dependency declarations are unchanged. CI, source-archive retest and installed-wheel numerical selection are adapted to the nested test layout and explicitly run full where required.",
+      "status": "reviewed",
+      "evidence": "不新增运行依赖，不改 Python/依赖下限；wheel 安装与跨平台执行分开记录。",
       "description": "Python/dependency matrix, optional extras, wheel/source contents and build metadata."
     },
     "external_validation": {
       "status": "reviewed",
-      "evidence": "No new licensed-Stata/upstream/optional-backend parity claim. Internal oracles and CI do not substitute for external certification.",
+      "evidence": "未新增 licensed-Stata/upstream parity 声明；内部 oracle 不等于外部认证。",
       "description": "Licensed/reference-environment parity gates and explicitly deferred external certification."
     },
     "release_artifacts": {
       "status": "changed",
-      "evidence": "Version bumped to 0.6.5, public-contract baseline frozen, execution evidence reset, and build/source-archive validation commands explicitly select the full suite. No publication is authorized.",
+      "evidence": "经 version.py bump 登记 0.7.0.dev0，重置本轮审阅/执行；不 tag、不合并、不发布。",
       "description": "Version consistency, source/wheel parity, hashes, clean install and reproducible bundle contents."
     }
   }

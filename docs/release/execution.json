@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "release_version": "0.6.5",
+  "release_version": "0.7.0.dev0",
   "fingerprint_scope": "runtime-validation-v1",
-  "code_fingerprint_sha256": "e88a3b159906e04bb9756f96d2b8353b1ffe5d672b07b60036216493a55b62ce",
+  "code_fingerprint_sha256": "a9bc65bda384775c834fc6a61b78cf3f42083fdf4ecc5443c489d1e822101e2c",
   "source_commit": null,
   "checks": {
     "local_regression": {

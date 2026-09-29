@@ -203,7 +203,7 @@ Formal statements, assumptions, implementation mappings, tests, and prior-art bo
 | IV-PPML-HDFE | Additive-moment IV-PPML on the shared weighted HDFE infrastructure |
 | Fixed effects | Multiway categorical FE, interactions, heterogeneous slopes, optional exact structural rank/DoF |
 | Repeated specifications | Reusable OLS and linear-IV sessions with FE/sample-aware invalidation |
-| Post-estimation | Publication-oriented results and identified categorical/indicator FE recovery |
+| Post-estimation | Publication results, linear contrasts/Wald, chunked OLS/IV predictions and explicitly saved categorical FE (0.7 development line) |
 | Execution | Projected data access, memory budgets, structured representations, bounded parallelism and automatic HDFE thread selection |
 | Compatibility | `reghdfe`, `ivreghdfe`, and legacy `pyreghdfe` entry points |
 | Agent interface | Native `econhdfe` Skill for agent-driven empirical and development workflows |
@@ -260,3 +260,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and the [developer guide](skills/econhdfe
 ## License
 
 BSD licensed. See [LICENSE](LICENSE).
+
+### 后估计开发版（0.7.0.dev0，未发布）
+
+`RegressionResult.predict()` 读取最终样本拟合值；`predict(newdata, kind="xb")` 和
+`kind="stdp"` 使用冻结设计及 beta 协方差。样本外含 FE 预测要求标准 OLS/IV 拟合时
+`save_fe=True`；未知类别和不可识别组合默认报错，`unknown="nan"` 可逐行标记。
+参见 [后估计契约与限制](docs/development/postestimation-0.7.md)。PyPI 安装不代表已包含这些开发功能。

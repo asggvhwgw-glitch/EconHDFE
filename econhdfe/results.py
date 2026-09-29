@@ -3,6 +3,9 @@ from dataclasses import dataclass
 from typing import Any
 import numpy as np
 from .reporting import inference_table, reproducibility_dict
+from .postestimation import linear_combination as _linear_combination, wald_test as _wald_test
+from .prediction import PredictionState
+from .errors import error_boundary
 
 
 @dataclass(slots=True)
@@ -120,6 +123,7 @@ class RegressionResult:
     profile: dict | None = None
     reproducibility: dict | None = None
     diagnostics_mode: str = "off"
+    prediction_state: PredictionState | None = None
 
     @property
     def tvalues(self) -> np.ndarray:
@@ -148,6 +152,40 @@ class RegressionResult:
     def conf_int(self, level: float | None = None) -> np.ndarray:
         tab = self.coef_table(level)
         return tab[["ci_low", "ci_high"]].to_numpy()
+
+    @error_boundary("postestimation")
+    def predict(self, data=None, *, X=None, kind: str = "response",
+                unknown: str = "raise", restore_sample: bool = False,
+                chunk_size: int = 65536) -> np.ndarray:
+        """Predict on the fitted sample or new rows without retaining raw data.
+
+        kind is response (including FE), xb (retained-coefficient index),
+        fe (saved FE contribution), or stdp (beta-only standard error).
+        X is explicitly transformed in names order and cannot be combined
+        with data or used for FE-inclusive new-row predictions.
+        """
+        from .prediction_api import predict_linear
+        return predict_linear(
+            self, data=data, X=X, kind=kind, unknown=unknown,
+            restore_sample=restore_sample, chunk_size=chunk_size,
+        )
+
+    @error_boundary("postestimation")
+    def linear_combination(self, weights, *, value: float = 0.0,
+                           level: float | None = None):
+        """Estimate and test one linear combination of reported coefficients."""
+        return _linear_combination(
+            self.params, self.vcov, weights, names=self.names, value=value,
+            df=self.df_resid, level=self.confidence_level if level is None else level,
+        )
+
+    @error_boundary("postestimation")
+    def wald_test(self, restrictions=None, *, values=None, distribution: str = "F"):
+        """Test one or more linear restrictions R @ beta = values."""
+        return _wald_test(
+            self.params, self.vcov, restrictions, values=values, names=self.names,
+            df_resid=self.df_resid, distribution=distribution,
+        )
 
     def model_stats(self) -> dict[str, Any]:
         out: dict[str, Any] = {

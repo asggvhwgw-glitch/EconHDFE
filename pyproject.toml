@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "econhdfe"
-version = "0.6.5"
+version = "0.7.0.dev0"
 description = "High-performance econometric estimators with shared high-dimensional fixed-effect infrastructure"
 readme = {file = "README.md", content-type = "text/markdown"}
 license = {file = "LICENSE"}
