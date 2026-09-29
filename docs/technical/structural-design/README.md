@@ -1,9 +1,12 @@
-# Exact structural-design reduction manuscript
+# Exact structural-design reduction technical document
 
-This directory contains the formal technical note for the package's exact HDFE partition canonicalization and pre-materialization structural collinearity planner.
+> **Document status:** Current EconHDFE project technical documentation.
+
+
+This directory contains the project technical document for the package's exact HDFE partition canonicalization and pre-materialization structural collinearity planner.
 
 - `exact_partition_refinement_hdfe_design.tex`: canonical LaTeX source.
-- `exact_partition_refinement_hdfe_design.pdf`: compiled manuscript.
+- `exact_partition_refinement_hdfe_design.pdf`: compiled technical document.
 
 Implementation correspondence:
 
