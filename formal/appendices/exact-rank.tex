@@ -1,0 +1,99 @@
+% Appendix fragment for the corrected exact multiway rank/DoF manuscript.
+\section{Lean formalization of exact categorical rank}
+\label{app:lean-exact-rank}
+\providecommand{\LeanDecl}[1]{\texttt{\detokenize{#1}}}
+
+\paragraph{Scope and mathematical object.}
+The formalized object is the actual finite categorical incidence matrix
+\LeanDecl{incidenceMatrix}, with entries zero or one. Its rank is the dimension
+of the image of its linear map, not a matching-based rank of its sparsity
+pattern. The library is pinned to Lean 4.19.0 and Mathlib commit
+\texttt{c44e0c8ee63ca166450922a373c7409c5d26b00b}.
+A theorem is verified only for a source commit passing both the complete build
+and the per-theorem dependency audit.
+
+\paragraph{Characteristic-zero equivalence.}
+\LeanDecl{matrix_exists_rank_minor} proves existence of a nonzero minor of order
+equal to the actual rank. Its row and column selections are injective; rank
+zero uses the empty minor of determinant one. The existence proof is not an
+executable search algorithm. Determinant transport gives
+\LeanDecl{matrix_rank_map_field}, \LeanDecl{rational_real_rank} and
+\LeanDecl{integer_rational_real_rank}. In particular,
+\LeanDecl{categorical_rational_real_rank} connects the exact rational rank
+of the categorical design to the real FE space used for projection.
+
+\paragraph{Structural reductions.}
+The duplicate-edge lemma is \LeanDecl{categorical_rank_dedup}; its premise is
+coverage of every original tuple by a retained representative. Component
+additivity is \LeanDecl{matrix_rank_components}, under actual row and column
+reindexings and vanishing cross-component entries. The rank recursion is
+\LeanDecl{categorical_peeling_matrix_rank};
+\LeanDecl{categorical_leaf_rank} supplies its one-removal specialization.
+Each removed observation contributes one rank unit, even if it has several
+singleton levels. The proof obtains this fact from a bijection of fitted
+spaces, not from a rank assumption in the removal trace.
+
+\paragraph{Block relations and the structural certificate.}
+\LeanDecl{multipartite_rank_drop} reconstructs the omitted columns from the
+retained complete reference block and the other columns in each partition.
+\LeanDecl{multipartite_rank_upper} proves
+\[
+ \operatorname{rank}(D)\leq\min\{E,V-(G-1)\}.
+\]
+\LeanDecl{proper_connectivity_rank} proves equality with $V-(G-1)$ when the
+sample is nonempty, every declared level is observed, and every two tuples
+are joined by a path changing at most one coordinate per step. This is
+stronger than ordinary incidence connectivity and is only a sufficient
+condition. The proof establishes a trivial kernel for the reduced matrix.
+
+\paragraph{Finite-field lower bounds and exact acceptance.}
+For an integer matrix $A$ and a prime $p$,
+\LeanDecl{modular_rank_le_charZero} and
+\LeanDecl{integer_rational_real_rank} establish
+\[
+ \operatorname{rank}_{\mathbb F_p}(A\bmod p)
+ \leq\operatorname{rank}_{\mathbb Q}(A)
+ =\operatorname{rank}_{\mathbb R}(A).
+\]
+\LeanDecl{modular_rank_exact} and \LeanDecl{modular_minor_rank_exact} require
+that the modular lower bound reach an independently proved upper bound.
+\LeanDecl{categorical_modular_rank_exact} supplies the categorical specialization.
+A modular shortfall is not a proof of characteristic-zero rank deficiency.
+\LeanDecl{every_prime_has_rank_shortfall} gives a general integer-matrix
+counterexample for every prime; it is not presented as a full categorical design.
+
+\paragraph{Mathematical composition.}
+\LeanDecl{categorical_structural_rank} connects tuple coverage, legal peeling
+and separated surviving blocks. \LeanDecl{categorical_certified_rank} further
+uses mathematical rank evidence for every actual integer core submatrix:
+\[
+ \operatorname{rank}_{\mathbb R}(D)
+ = n_{\rm peeled}+\sum_c r_c.
+\]
+Each core count must be supported by a valid modular certificate or a completed
+legal rational row trace. The existing \LeanDecl{exact_trace_rank} proves the
+algebraic correctness of such a trace. The composition theorem does not claim
+that a concrete backend generates the evidence. The algorithmic normal-return
+and resource-management aspects of Algorithm 1 are outside this appendix's scope.
+
+\paragraph{Prefix allocation and weighting.}
+\LeanDecl{prefix_increment_total} and \LeanDecl{prefix_redundancy_total} prove
+that nonnegative prefix increments telescope and that the redundancy allocation
+has the correct total. \LeanDecl{matrix_prefix_redundancy_total} obtains each
+block-width bound from its actual matrix. \LeanDecl{rank_column_permutation}
+proves total-rank invariance under reordering.
+\LeanDecl{positive_weight_sqrt_rank} proves
+\[
+ \operatorname{rank}(W^{1/2}D)=\operatorname{rank}(D)
+\]
+for strictly positive diagonal weights. These are structural dimension identities,
+not cluster-specific small-sample correction conventions.
+
+\paragraph{Boundaries.}
+Python, Numba, FLINT and SymPy implementations, modular elimination programs,
+gcd normalization code, execution time, memory budgets and failure-state
+refinement are not verification targets here. Source-code correspondence,
+floating-point accuracy, statistical assumptions and historical priority
+remain distinct from mathematical theorem verification. This appendix does
+not label every empirical illustration or every implementation statement in
+the manuscript as machine-checked.

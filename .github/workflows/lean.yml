@@ -42,7 +42,7 @@ jobs:
         run: |
           cd formal
           lake build 2>&1 | tee ../lean-build.log
-      - name: Audit proof axioms
+      - name: Audit proof axioms and appendix references
         run: |
           cd formal
           python3 - <<'PY'
@@ -54,8 +54,19 @@ jobs:
               assert not re.search(r'\b(sorry|admit|axiom|native_decide|unsafe)\b', source), p
               names.extend('EconHDFE.' + n for n in re.findall(r'^theorem\s+(\w+)', source, re.M))
           assert names and len(names) == len(set(names))
-          pathlib.Path('AxiomAudit.lean').write_text('import EconHDFE\n' + '\n'.join('#print axioms ' + n for n in names) + '\n')
+          appendices = sorted(pathlib.Path('appendices').glob('*.tex'))
+          assert {p.name for p in appendices} == {'residual-core.tex', 'exact-rank.tex', 'structural-design.tex'}
+          references = []
+          for p in appendices:
+              refs = re.findall(r'\\LeanDecl\{([A-Za-z_][A-Za-z0-9_]*)\}', p.read_text())
+              assert refs, p
+              references.extend((str(p), 'EconHDFE.' + n) for n in refs)
+          checks = sorted({name for _, name in references})
+          commands = ['#print axioms ' + n for n in names] + ['#check ' + n for n in checks]
+          pathlib.Path('AxiomAudit.lean').write_text('import EconHDFE\n' + '\n'.join(commands) + '\n')
           pathlib.Path('../theorems.txt').write_text('\n'.join(names) + '\n')
+          pathlib.Path('../appendix-references.txt').write_text('\n'.join(p + '\t' + n for p, n in references) + '\n')
+          print(f'Auditing {len(names)} theorems and checking {len(checks)} distinct appendix declarations.')
           PY
           lake env lean AxiomAudit.lean 2>&1 | tee ../lean-axioms.log
           python3 - <<'PY'
@@ -72,7 +83,7 @@ jobs:
         if: always()
         run: |
           mkdir -p lean-evidence
-          cp lean-*.log lean-version.txt mathlib-commit.txt theorems.txt lean-evidence/ 2>/dev/null || true
+          cp lean-*.log lean-version.txt mathlib-commit.txt theorems.txt appendix-references.txt lean-evidence/ 2>/dev/null || true
           cp formal/lake-manifest.json lean-evidence/ 2>/dev/null || true
           git rev-parse HEAD > lean-evidence/source-commit.txt
           find formal -maxdepth 2 -type f -not -path '*/.lake/*' -print0 | sort -z | xargs -0 sha256sum > lean-evidence/source-sha256.txt

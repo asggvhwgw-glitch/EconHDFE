@@ -1,155 +1,113 @@
-# Exact multiway rank: formalization correspondence
+# Exact multiway rank: mathematical correspondence
 
-This document maps the structural part of the corrected exact multiway FE
-rank/DoF manuscript to the Lean library. It describes the declarations in the
-same source tree; a declaration is verified only when that tree compiles and
-passes the axiom audit. It is not a completion claim for the full manuscript,
-the exact-arithmetic backend, or the Python implementation. The cross-field,
-modular and row-reduction extension is mapped in
-[arithmetic-correspondence.md](arithmetic-correspondence.md).
+This document maps the structural rank/DoF theory to Lean declarations in the
+same source tree. A declaration is verified only when that exact tree compiles
+and passes the dependency audit. The scope is mathematical theory, not program
+verification. The arithmetic part is mapped in
+[arithmetic-correspondence.md](arithmetic-correspondence.md), and the consolidated
+manuscript coverage is in [mathematical-coverage.md](mathematical-coverage.md).
 
-The manuscript target is the separately delivered 2026-09-28 corrected bundle
-identified in [README.md](README.md). The manuscripts on the original base
-commit still contain superseded wording and are not silently rewritten here.
+The target is the separately delivered 2026-09-28 corrected manuscript bundle
+identified in [README.md](README.md). The old manuscript sources and PDFs inherited
+from the base commit still contain superseded wording; they are not silently
+replaced or relabeled by this proof library. The input fragment
+[appendices/exact-rank.tex](appendices/exact-rank.tex) is supplied separately.
 
 ## Mathematical object and domain
 
-`incidenceMatrix F code` is the actual matrix whose `(i,v)` entry is one exactly
-when observation `i` has the level named by `v`, and zero otherwise. Its rank is
-Mathlib's dimension of the image of matrix multiplication. It is not the
-maximum matching rank of a sparsity pattern. `incidence_rank_eq_finrank` connects
-the real matrix rank to the indicator span used by the projection library.
+`incidenceMatrix F code` is the actual matrix whose entry `(i,v)` is one when
+observation i has the level named by v, and zero otherwise. Rank is the dimension
+of the image of matrix multiplication, not the maximum matching rank of a
+sparsity pattern. `incidence_rank_eq_finrank` identifies its real rank with the
+indicator span used by the projection theory.
 
-Observation types retain row identities. Generic rank reductions allow repeated
-rows because row multiplicity does not enlarge the row span. The projection
-library continues to retain all observations and their separate weights and
-outcomes. No deduplication theorem is applied to a weighted loss function.
+Row multiplicities do not enlarge the rank span, so duplicate-row reduction is
+legitimate for rank. Projection retains all observation identities and their
+separate outcomes and weights. No deduplication theorem is applied to a weighted
+loss function. In particular, rank-only deduplication does not change the sample
+size used for an original regression's residual degrees of freedom.
 
-Most structural linear-algebra results are generic over a field. They can be
-instantiated separately over the rationals, reals or a finite field. This alone
-does not establish equality of ranks across fields. The peeling recursion and
-structural pipeline use real vector spaces. `CharZeroRank.lean` supplies the
-separate rational-to-real invariance proof; `ModularRankCertificate.lean`
-supplies the finite-field lower bound, not unconditional finite-field equality.
+Most structural lemmas are generic over fields. The peeling proof uses real
+fitted spaces. The separate `CharZeroRank.lean` bridge supplies rational/real
+rank invariance; finite-field rank equality is not assumed when a prime loses
+rank.
 
 ## Correspondence
 
-| Corrected manuscript result | Lean declarations | Conditions actually used |
+| Mathematical statement | Lean declarations | Conditions |
 |---|---|---|
-| Actual categorical rank/DoF target | `incidenceMatrix`, `incidence_rank_eq_finrank` | Full categorical indicators; finite level blocks |
-| Duplicate-edge reduction, `lem:dedup` | `matrix_rank_of_same_rows`, `matrix_rank_dedup`, `categorical_rank_dedup` | Every original tuple has a retained representative; arbitrary field |
-| Component additivity, `lem:components` | `component_mulVec`, `componentRangeEquiv`, `matrix_rank_block_diagonal`, `matrix_rank_components` | Finite rectangular blocks, explicit row/column reindexings, actual off-block zeros |
-| One-unit leaf elimination, `lem:peel` | `categorical_leaf_rank` | A valid additional singleton removal in a legal categorical trace; real rank |
-| Recursive peeling rank | `peelingFitMap_bijective`, `categorical_peeling_rank`, `categorical_peeling_matrix_rank` | Any legal finite trace, including empty or partial traces; real rank |
-| Complete-block column reduction, `lem:blockdrop` | `multipartite_column_span`, `multipartite_rank_drop` | Keep all columns of one reference partition; omit one selected column from every other complete block |
-| Deterministic upper bound, `prop:upper` | `retained_levels_card`, `multipartite_rank_upper` | Finite sample and blocks; chosen reference partition and baseline levels; arbitrary field |
-| Proper-connectivity formula, `prop:proper` | `one_coordinate_kernel`, `coordinate_path_kernel`, `proper_kernel_levels`, `proper_reduced_kernel`, `proper_connectivity_rank` | Nonempty sample, all declared levels observed, paths changing at most one coordinate; arbitrary field |
-| Label renaming and removal of unused levels | `categorical_recode_rank` | Preserve equality of labels on all realized rows; real rank |
-| Connected structural preprocessing identity | `categorical_structural_rank` | Tuple coverage, legal trace on representatives, separated actual residual blocks; real rank |
-| Characteristic-zero FE target | `categorical_rational_real_rank` | Actual integer-valued indicator matrix |
-| Modular acceptance after a proved bound | `categorical_modular_rank_exact` | Prime modulus, actual modular rank and multipartite upper bound |
-| Structural and arithmetic certificate composition | `categorical_certified_rank` | Every actual residual integer block has valid modular or completed row-trace evidence |
+| Actual categorical rank target | `incidenceMatrix`, `incidence_rank_eq_finrank` | Full indicators, finite level blocks |
+| Duplicate-edge reduction (`lem:dedup`) | `matrix_rank_of_same_rows`, `matrix_rank_dedup`, `categorical_rank_dedup` | Every original row value has a representative |
+| Component additivity (`lem:components`) | `componentRangeEquiv`, `matrix_rank_block_diagonal`, `matrix_rank_components` | Actual finite rectangular blocks and off-block zeros |
+| Leaf elimination (`lem:peel`) | `categorical_leaf_rank` | A legal additional singleton removal |
+| Recursive peeling | `peelingFitMap_bijective`, `categorical_peeling_matrix_rank` | Any finite legal trace, including partial or empty traces |
+| Complete-block reduction (`lem:blockdrop`) | `multipartite_column_span`, `multipartite_rank_drop` | Retain one complete reference block, omit one column from each other block |
+| Upper bound (`prop:upper`) | `retained_levels_card`, `multipartite_rank_upper` | Reference partition and baseline levels supplied |
+| Proper-connectivity formula (`prop:proper`) | `one_coordinate_kernel`, `coordinate_path_kernel`, `proper_reduced_kernel`, `proper_connectivity_rank` | Nonempty sample, every level observed, one-coordinate paths |
+| Core recoding | `categorical_recode_rank` | Realized level equality preserved |
+| Structural composition | `categorical_structural_rank` | Tuple coverage, legal peeling, actual separated core blocks |
+| Characteristic-zero bridge | `categorical_rational_real_rank` | Actual integer indicator entries |
+| Exact modular certificate | `categorical_modular_rank_exact` | Prime modulus; actual modular rank reaches the proved bound |
+| Structural/arithmetic composition | `categorical_certified_rank` | Valid mathematical evidence for each actual core submatrix |
+| Prefix dimension accounting | `prefix_increment_total`, `matrix_prefix_redundancy_total` | Actual matrix block spaces and width bounds |
+| Reordering and positive weights | `rank_column_permutation`, `positive_weight_sqrt_rank` | Column permutation; strictly positive diagonal weights |
 
-## How the rank recursion is obtained
+## Why peeling adds one rank unit
 
-The trace does not contain a rank assumption. The existing categorical
-projection proof constructs actual pivot columns and proves their upper
-triangular matrix has determinant one. This implies that any vector supported
-on removed rows lies in the original FE span. Along with actual row restriction,
-it yields an explicit linear bijection
-
-```text
-original FE fitted space
-    <-> (arbitrary values on removed rows) x (core FE fitted space).
-```
-
-Taking finite dimensions gives
+The legal trace does not contain a rank assumption. Incidence conditions imply
+that its actual pivot matrix is upper triangular with determinant one. Together
+with the actual restriction of the categorical span, this gives a linear
+bijection
 
 ```text
-rank(original categorical matrix) = number of removed rows + rank(core matrix).
+original fitted space <-> removed-row coordinates x core fitted space.
 ```
 
-A row incident to several singleton levels is removed once and contributes one
-rank unit. Original level labels may be retained on the core: pivot levels then
-have zero columns. Equality-preserving recoding supplies the separate bridge to
-dropping unused level labels.
+Finite dimensions give `rank(D) = number of removed rows + rank(core)`.
+One row incident to several singleton levels is removed once and contributes
+one rank unit. Keeping original labels on the core merely leaves zero columns
+for unused levels; equality-preserving recoding supplies the separate bridge
+for removing those labels. `peeling_residual_dimension` concerns the FE-only
+quantity N - rank(D), not additional regressors or cluster corrections.
 
-`peeling_residual_dimension` states that `N - rank(D)` is unchanged by a legal
-projection trace. It is an FE-only residual-space dimension identity, not a
-claim about residual DoF after adding regressors, or a cluster small-sample
-correction. In particular, this sample-dimension statement must not be applied
-after rank-only deduplication to infer the original regression's sample size.
+## Components and block relations
 
-## Components and exact column reduction
+Component additivity constructs an equivalence of the actual matrix image and
+the product of component images. Row/column reindexings must satisfy genuine
+cross-block zeros. The statement does not certify a connectivity routine.
+Rectangular components of different sizes and empty blocks are allowed.
 
-The component result constructs an explicit equivalence between the image of
-the actual block diagonal matrix and the product of its component images.
-Rank additivity then follows from finite-product dimension. Supplied row and
-column equivalences are checked against actual zero cross-component entries;
-a name such as `components` is not treated as evidence about a graph routine.
-Blocks may have different row and column counts. Empty blocks are allowed.
+The complete-block reduction reconstructs each removed column as the sum of
+reference-block columns minus the remaining columns of its own partition.
+Exactly V - (G - 1) columns remain; the rank is bounded by their count and by
+the number of rows. That upper bound alone does not certify equality.
 
-The complete-block reduction reconstructs each removed column from the retained
-reference block's all-ones sum minus the other columns of its own block. This
-preserves the actual column span over every field. There are exactly
-`V - (G - 1)` retained columns, so rank is at most the minimum of that count and
-the row count. This upper bound alone does not certify exact rank.
+## Proper connectivity is a sufficient condition
 
-## What proper connectivity means here
+`OneCoordinateStep` allows two tuples to differ in at most one coordinate.
+Equal tuples add only redundant steps; on unique tuples, nontrivial steps are
+the manuscript's one-coordinate adjacency. `ProperConnected` requires paths
+between every pair of observations. Ordinary incidence connectivity is weaker.
 
-`OneCoordinateStep` permits a pair of tuples that differ in at most one FE
-coordinate. Allowing equal tuples only adds redundant steps; on unique tuples,
-nontrivial steps are precisely the manuscript's one-coordinate adjacency.
-`ProperConnected` requires a finite chain of such steps between every pair of
-observations. It is not ordinary incidence connectivity.
-
-For any kernel coefficient vector, subtracting equations at adjacent rows
-forces the affected level coefficients to agree. Path induction and observed
-level surjectivity force all level coefficients to be constant within each
-partition. Extending the reduced coefficients by zero at omitted baseline
-levels then forces every non-reference partition's constant to zero. The root
+Subtracting adjacent row equations makes kernel coefficients agree in the
+changed coordinate. Path induction and observed-level coverage make them
+constant within each partition. Extending reduced coefficients by zero on the
+omitted baseline columns forces all nonreference constants to zero; the root
 row equation forces the remaining constant to zero. Thus the reduced matrix is
-injective and has rank exactly `V - (G - 1)`.
+injective. No division by G is used. Failure of the sufficient connectivity
+condition is not a deficiency certificate.
 
-The proof is generic over fields; there is no hidden division by the number of
-partitions. Nonempty sample and observed-level surjectivity are explicit inputs,
-not inferred from dense integer labels. Proper connectivity is sufficient only;
-its failure does not imply a rank deficiency.
+## Semantic examples and limits
 
-## Small semantic witnesses
+`RankExamples.lean` proves the duplicate three-FE rank-one case and the rank-four
+cascade `000,001,011,111,111`. The duplicate-pair projection example separately
+shows why its original rows cannot be removed by a projection trace.
+`ModularRankExamples.lean` gives a generic integer family `diag(p,1)` with rank
+two in characteristic zero and one modulo p. These are exact witnesses, not an
+exhaustive formalization of every illustrative matrix in the manuscript.
 
-`RankExamples.lean` proves that repeated all-equal three-FE tuples have rank one.
-It also takes a representative of the duplicate pair and performs a legal
-one-row rank peel. This contrasts with `duplicate_trace_empty`, which proves
-that the original two-observation projection trace cannot remove either row.
-
-For `000,001,011,111,111`, the three legal removals contribute rank three and the
-two retained observations have a one-dimensional categorical fitted space.
-The actual total rank is therefore four. These are exact kernel-checked
-witnesses of the definitions and composition. The general results do not rely
-on enumeration or a floating-point rank test.
-
-The arithmetic extension additionally contains the integer family `diag(p, 1)`:
-its rank is two in characteristic zero and one modulo the chosen prime p.
-These examples check modular acceptance boundaries, not a claim that every
-integer matrix is itself a categorical FE incidence matrix.
-
-## Exact arithmetic and outstanding algorithmic obligations
-
-General rational/real rank invariance, maximal nonzero-minor existence,
-finite-field lower bounds and exact upper-bound-hit acceptance are provided by
-the arithmetic modules. Legal row replacements preserve span, and a completed
-echelon trace proves the actual pivot count. The composed certificate theorem
-therefore no longer leaves a free-standing unverified rank integer for each
-core block. See [arithmetic-correspondence.md](arithmetic-correspondence.md).
-
-That does not prove an executable backend generates the required evidence.
-The rational/integer fallback still needs a specified state-machine bridge,
-correct gcd/divisibility representation, algorithmic completion and actual
-resource-exhaustion semantics. The optional-result adapter in the proof library
-is not the production budget manager. Prefix-rank bookkeeping remains separate.
-A failed proper-connectivity or modular check cannot be treated as a rank answer.
-
-This library does not verify Python row encoding, deduplication, connectivity
-search, peeling queues, modular kernels or fallback code, and it does not prove
-floating-point accuracy, covariance conventions or historical originality.
+Mathematical evidence composition is established. Generation of evidence by a
+Python program, dictionary/gcd representation, backend termination, budgets and
+error-state refinement are outside the agreed scope, not pending completion
+gates. The optional-result adapter is not a production budget manager. Covariance
+conventions, floating-point accuracy and historical novelty are separate claims.

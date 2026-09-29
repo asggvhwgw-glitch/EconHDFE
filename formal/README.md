@@ -1,25 +1,102 @@
-# EconHDFE Lean formalization
+# EconHDFE: Lean proofs of the mathematical theory
 
-This is a separate mathematical proof library, not a dependency of the Python
-package. Its target is the **2026-09-28 corrected manuscript bundle**
-`econhdfe-manuscripts-corrected-20260928.zip`, prepared against
-`main@06cd0a5efe34de50c52d8b7c0db68c240b9d2673`. Those corrections were delivered
-separately and are not silently substituted into this branch. The older
-manuscripts on the base commit are not the authority for the corrected
-coefficient-selection and residual-feasibility conditions.
+This is an independent mathematical library, not a dependency of the Python
+package. Its scope is the mathematical results of the three corrected technical
+manuscripts. Verification of Python/Numba programs, sparse dictionaries, modular
+kernels, queue code, gcd normalization code, numerical convergence, resource
+budgets and backend completion is **not a completion requirement** for this work.
 
-The library connects actual categorical indicator columns and legal
-observation-level peeling to the weighted residual-core reconstruction theorem.
-It covers partition-refinement and WLS foundations, categorical rank structure,
-characteristic-zero invariance, modular acceptance and exact row-trace partial
-correctness. It does **not** formalize all three manuscripts or verify the Python
-implementation, floating-point accuracy, numerical convergence, statistical
-assumptions, or historical originality. Only precise Lean statements in a
-successfully compiled and audited commit are kernel-checked.
+The manuscript target remains the separately delivered 2026-09-28 corrected
+bundle, `econhdfe-manuscripts-corrected-20260928.zip`, prepared against
+`main@06cd0a5efe34de50c52d8b7c0db68c240b9d2673`. The corrected bundle has not been
+silently substituted into this branch. The older manuscript sources/PDFs on the
+base commit still contain superseded wording. The appendix fragments below are
+provided separately for the corrected manuscripts; this Lean workflow does not
+compile or replace manuscript PDFs.
+
+## What is verified
+
+Verification applies to the exact Lean declarations in a commit whose complete
+`lake build` and per-theorem dependency audit both succeed. It is not a blanket
+claim that every sentence, benchmark, illustrative example, algorithm description
+or historical originality claim in a manuscript is machine-checked. Progress is
+recorded by mathematical correspondence, not estimated percentages or counts of
+helper lemmas.
+
+| Manuscript | Mathematical proof chain | Appendix fragment |
+|---|---|---|
+| Residual-core reduction | WLS existence and uniqueness; actual categorical incidence; legal leaf removal; triangular reconstruction; exact loss/normal-equation transport; total residual-core identity; terminal existence and order independence; recoding and multiple RHS | [Residual-core appendix](appendices/residual-core.tex) |
+| Exact multiway FE rank/DoF | Actual matrix rank; duplicate rows; component additivity; peeling rank; complete-block reduction; proper-connectivity formula; Q/R equivalence; modular lower bounds and exact certificates; conditional mathematical composition; prefix allocation and positive weights | [Exact-rank appendix](appendices/exact-rank.tex) |
+| Structural design reduction | Refinement and dependency closure; full and active/reference-coded block identities; shared multipliers; finite algebraic composition; full/within WLS equivalence; identified or consistently selected coefficients; attained finite PPML predictors | [Structural-design appendix](appendices/structural-design.tex) |
+
+[Mathematical coverage](mathematical-coverage.md) gives the manuscript statements,
+Lean names and exact qualifications. More detailed descriptions of the existing
+rank layers remain in [rank-correspondence.md](rank-correspondence.md) and
+[arithmetic-correspondence.md](arithmetic-correspondence.md).
+
+## Common WLS foundation
+
+`WeightedLeastSquares.lean` defines a residual by both attainable fitted values
+and weighted orthogonality. It proves equivalence with the explicit weighted
+least-squares objective and uniqueness under strictly positive diagonal weights.
+`LeastSquaresExistence.lean` now also proves existence for every finite input,
+using the normal-equation map into the dual of the fitted space. It constructs
+the unique mathematical residual and its linear within operator. No numerical
+optimizer is assumed to exist or converge.
+
+`ResidualCoreTotal.lean` uses this existence theorem to remove the former
+assumption that an exact core residual or attained minimizer has already been
+provided. The categorical proof starts from actual indicator columns and legal
+singleton incidence; it does not assume an invertible block. Duplicate tuples
+retain separate row identities. Positive weight changes may reuse topology,
+not an old weighted solution. `core_inner_transport` gives the corrected normal
+equations in original column coordinates, and `core_loss_transport` preserves
+the objective on zero extension.
+
+## Structural reductions and statistical consequences
+
+`ActivePartitionRefinement.lean` permits partial/reference-coded blocks only
+when every realized fine level needed inside the reduced coarse cell remains
+represented. The retained coarse witness is explicit. Common multipliers act
+on both the coarse witness and fine columns, and need not be nonzero or positive.
+
+`StructuralConsequences.lean` describes finite sequences of these mathematical
+reductions. A step carries actual refinement/coverage data, not a pre-assumed
+space equality. The proof derives the equality and then its WLS and PPML
+consequences. This mathematical trace is not a model of the planner's program.
+
+`FrischWaughLovell.lean` connects full and within WLS optima in both directions
+and proves identified non-FE coefficient invariance. `WithinInvariance.lean`
+handles the same selector on the same transformed problem in rank-deficient
+cases. It does not equate arbitrary full-model minimum-norm coordinates.
+Estimable coefficient functionals must annihilate the design kernel.
+
+`PPMLInvariance.lean` uses the actual weighted exponential objective and proves
+strict midpoint convexity and uniqueness of an attained finite predictor.
+Equal design spaces, unchanged response, sample, positive weights and offset
+then give identical eta and mu. The theorem does not assert existence of finite
+optima for separated samples. No IV/GMM or covariance invariance is inferred
+from column-space equality alone.
+
+## Exact rank and its mathematical boundary
+
+The rank is that of actual 0/1 matrices, not a sparsity-pattern matching rank.
+The library proves maximal nonzero minors, field-embedding invariance and
+`rank_Fp(A mod p) <= rank_Q(A) = rank_R(A)` for integer A and prime p. Modular
+acceptance needs a proved upper bound. A modular shortfall is not a deficiency
+certificate, regardless of the size of the prime.
+
+The mathematical composition theorem requires valid evidence for each actual
+core block. Existing finite row-trace lemmas are retained as algebraic support;
+producing such traces from production programs is outside the present scope.
+`RankConsequences.lean` supplies prefix-rank redundancy identities and proves
+that multiplication by a strictly positive diagonal square-root weight matrix
+does not change structural rank. Cluster finite-sample conventions remain
+separate from the rank target.
 
 ## Reproduce and audit
 
-Install the official Lean toolchain manager `elan`, then run from this directory:
+Install the official Lean toolchain manager, then run in this directory:
 
 ```bash
 lake update
@@ -27,201 +104,15 @@ lake exe cache get
 lake build
 ```
 
-`lean-toolchain` pins Lean 4.19.0. `lakefile.lean` pins mathlib to commit
-`c44e0c8ee63ca166450922a373c7409c5d26b00b`, the matching v4.19.0 library. This pair
-is selected for reproducibility, not claimed to be the latest release.
+`lean-toolchain` pins Lean 4.19.0 and `lakefile.lean` pins Mathlib to
+`c44e0c8ee63ca166450922a373c7409c5d26b00b`. This pair is chosen for reproducibility,
+not as a latest-version claim. The independent Lean workflow compiles every
+module and runs `#print axioms` for every named project theorem. It rejects
+proof placeholders and unproved project assertions. Permitted foundational
+axioms are `propext`, `Classical.choice` and `Quot.sound`; this is not axiom-free
+mathematics. The evidence artifact preserves dependency versions, theorem names,
+build/audit logs, the exact source commit, hashes and proof sources.
 
-The isolated `.github/workflows/lean.yml` workflow compiles the library and audits
-every named project theorem with `#print axioms`. It rejects proof placeholders
-and project-defined unproved assertions. The only permitted ambient axioms are
-`propext`, `Classical.choice`, and `Quot.sound`. This is not a claim of axiom-free
-foundational mathematics. The evidence artifact retains the complete generated
-dependency manifest, compiler identity, source commit and hashes, theorem list,
-build log, audit log, and proof sources. Python CI and release workflows are not
-changed by the proof library.
-
-## Exact categorical rank: structural stage
-
-`RankBasics.lean` defines the actual 0/1 incidence matrix and relates its real
-rank to the categorical fitted space. It proves duplicate-row reduction and
-general rectangular row/column restriction inequalities. `ComponentRank.lean`
-constructs the image-space equivalence behind rank additivity for any finite
-family of rectangular blocks, then derives the formula under explicit
-row/column reindexings and actual cross-block zeros.
-
-`PeelingRank.lean` reuses the existing incidence reconstruction to construct a
-linear bijection from the original fitted space to the product of removed-row
-coordinates and the core fitted space. Hence each removed observation adds
-exactly one rank unit. `RankPipeline.lean` combines tuple representatives,
-legal peeling and separated core blocks in one actual-rank identity. It also
-connects rank to equality-preserving core recoding.
-
-`MultipartiteRank.lean` reconstructs the columns omitted from complete FE blocks
-and proves the deterministic `min(E, V - (G - 1))` upper bound.
-`ProperConnectivityRank.lean` proves equality under nonempty observed-level
-coding and paths changing at most one coordinate at each step. Its argument
-propagates kernel equations and proves the reduced matrix injective, rather
-than assuming the requested rank. Ordinary incidence connectivity is not a
-substitute for this stronger condition.
-
-The field-generic structural reductions can be instantiated over rationals,
-reals or finite fields separately. The peeling recursion uses real spaces.
-The arithmetic layer below now provides the separate rational/real bridge; it
-does not assert equality with finite-field rank when the modulus loses rank.
-See [rank-correspondence.md](rank-correspondence.md) for statement-by-statement
-structural mappings, semantic witnesses and assumptions.
-
-## Exact rank: arithmetic and conditional composition
-
-`RankMinors.lean` proves that an actual rank-r matrix has an actual nonzero
-r-by-r minor. Selecting a basis from columns and then from rows establishes
-existence, including the empty minor at rank zero. This is a mathematical
-existence proof, not a new executable rank routine. `CharZeroRank.lean` proves
-rank invariance under field embeddings and connects integer and rational
-matrices to their real counterparts.
-
-`ModularRankCertificate.lean` uses integer determinants to prove the full
-finite-field lower bound and the upper-bound-hit acceptance rule. It does not
-assume a map from Q to a finite field. `ModularRankExamples.lean` gives explicit
-bad-prime, successful-certificate and empty-minor witnesses.
-
-`ExactRowReduction.lean` proves that legitimate nonzero-scaled row operations
-preserve span, then derives exact rank from a completed echelon trace. Its
-certificate does not assume the rank to be proved. The optional-return adapter
-only yields a count when completed evidence is present. It is not the Python
-budget manager, and neither termination nor extraction of such a trace from
-the production dictionary loop is established here.
-
-`CertifiedRankPipeline.lean` composes the structural rank identity with evidence
-for each actual integer core block. A block can be certified by a modular hit
-at a valid upper bound or by a completed rational row trace. The result is a
-connected conditional correctness theorem from original categorical rows to
-certified block counts, not a proof of backend generation or bounded runtime.
-The precise distinction is documented in
-[arithmetic-correspondence.md](arithmetic-correspondence.md).
-
-## Categorical residual-core proof chain
-
-`CategoricalDesign.lean` defines `feColumn` as an actual categorical indicator,
-and `feSpace` as the span of those columns. Its coordinates are **observation
-identities**: equal FE tuples remain separate rows. `PeelingTrace` records a
-finite sequence of distinct removed observations and selected FE levels. Its
-only incidence condition is that the selected level occurs on exactly the
-selected row among observations not removed earlier. It does not assume a
-matrix rank, invertible block, column-space equality, or residual conclusion.
-
-`PeelingProjection.lean` constructs the actual pivot matrix
-`T[i,j] = feColumn code (pivot j) (row i)`. Trace legality implies diagonal entries
-one, zeros below the diagonal, and zeros on surviving rows. The determinant is
-therefore one, including the empty-trace case, and its coefficient map is
-surjective. A linear combination of original pivot columns can consequently
-fit any vector supported on the removed observations.
-
-Together with the separately proved restriction of the original indicator span,
-this establishes the precise feasibility equivalence
-
-```text
-z belongs to the original FE column space
-    if and only if
-z restricted to surviving rows belongs to the restricted FE column space.
-```
-
-Core residuals are inserted into their original row coordinates, with zeros
-elsewhere. Finite weighted inner-product transport proves the full normal
-equations, while the feasibility equivalence proves that the reconstructed fit
-is attainable. Combining these two facts with WLS optimality and uniqueness
-closes the projection proof; orthogonality alone is never used as a substitute
-for attainable fitted values.
-
-| Mathematical result | Lean declaration | Exact scope |
-|---|---|---|
-| Restrict the actual full-dummy span | `feSpace_restrict` | Original level labels, arbitrary row map |
-| Legal trace gives the triangular pivot matrix | `peeling_column_diagonal`, `peeling_column_later_zero`, `peeling_column_core_zero` | Derived from active singleton incidence |
-| Pivot block is invertible | `peelMatrix_det_one`, `peelMatrix_surjective` | No invertibility hypothesis in the categorical theorem |
-| Reconstruct all removed coordinates | `off_core_mem`, `peeling_feasible_iff` | Original indicator span and original row identities |
-| Lift feasibility and normal equations | `categorical_residual_lifts` | Exact core residual; no numerical solver assumption |
-| Exact recursive residual-core theorem (`thm:core`) | `categorical_residual_core` | Finite sample, positive diagonal weights, any legal trace, including partial traces |
-| Core minimizer produces a full minimizer | `categorical_core_wls_fit` | Assumes an attained core optimum, not a full-sample solver |
-| Multi-RHS and positive weight updates | `categorical_multi_rhs` | Same trace, each RHS may have different strictly positive weights |
-| Terminal trace exists | `terminal_trace_exists`, `terminal_extension_exists`, `peeling_length_le` | A finite sample bounds the number of valid removals; no verification of the Python queue |
-| Terminal core is order independent | `noSingletons_survive`, `terminal_core_unique` | Any two legal traces ending with no active singleton |
-| Core redensification preserves the result | `feSpace_recode`, `categorical_reencoded_residual_core` | Recoding preserves equality of labels on realized core rows; unused labels need not be retained |
-
-`PeelingTermination.lean` constructs a valid one-row extension whenever a
-surviving singleton exists and proves terminal existence by decreasing remaining
-sample size. Its extension theorem states existence of a terminal legal trace
-whose survivor set is contained in the initial trace's survivor set; a separate
-API for literal trace-prefix refinement is not asserted. A leafless subset
-survives every legal trace. Two terminal traces must therefore have the same
-surviving set.
-
-`CategoricalRecode.lean` removes an otherwise hidden redensification assumption:
-only equality relations between labels on actual rows must be preserved.
-Unused levels can disappear and the label types may differ.
-
-`PeelingExamples.lean` supplies small kernel-checked witnesses. A three-FE
-cascade with tuples `000, 001, 011, 111, 111` removes the first three observations
-and retains both equal terminal tuples. A separate duplicate-pair result proves
-that no row can be legally removed from two identical tuples. These examples
-check the definitions' intended interpretation; the general theorem does not
-rely on finite enumeration.
-
-The earlier `ResidualCore.lean` remains a reusable block-algebra module with an
-explicit surjectivity assumption. The categorical chain now derives that
-property from incidence instead of assuming it. The production queue, encoding
-implementation and floating-point core solver remain separate obligations.
-
-## Partition refinement and WLS foundations
-
-`PartitionRefinement.lean` defines refinement by an actual level map and relates
-the categorical coefficient-map range to the full indicator span. It proves
-refinement transitivity, restriction under row deletion, column-space inclusion,
-equivalent partitions, one-step FE canonicalization, a shared continuous
-multiplier, component interaction certificates, full-dummy fine-column
-elimination, and finite composition of certified space equalities.
-
-The relevant declarations are `refines_trans`, `refines_restrict`,
-`partitionSpace_eq_span`, `partitionSpace_le`, `equivalent_partition_spaces`,
-`canonicalize_one`, `shared_multiplier_le`, `interaction_refines`,
-`coarse_indicator_sum`, `drop_one_fine`, and
-`finite_reduction_preserves_space`. Shared multipliers may be zero or negative,
-but must be the same on both blocks. `drop_one_fine` requires a retained coarse
-space and the complete fine block; arbitrary reference-coded partial blocks
-are not covered by that statement.
-
-`WeightedLeastSquares.lean` defines `IsWLSFit` as an attainable fitted vector
-minimizing the explicit finite weighted sum of squared residuals. `IsResidual`
-requires both fitted-value feasibility and orthogonality to the fitted space.
-`wlsFit_iff_residual` proves their equivalence under strictly positive diagonal
-weights; `residual_unique` proves uniqueness. `wls_fitted_invariance` gives the
-same fitted vector for equal spaces on the same sample, outcome and weights.
-It does not assert equality of arbitrary rank-deficient coefficient coordinates.
-
-## Remaining boundaries
-
-The categorical residual-core reconstruction theorem, mathematical terminal
-core existence and order independence now have a connected proof chain. This
-is narrower than full-manuscript certification. General WLS existence for every
-input is not separately established here: the reconstruction result assumes an
-exact core residual or attained core minimizer. Explicit zero-weight and
-non-diagonal-GLS counterexamples, quantitative floating-point error bounds, and
-correctness or complexity of the production queue and encoder remain outside
-the current library. Positive weight reuse refers to topology, not reusing a
-weighted solution after changing its weights.
-
-The structural-design line still needs active/reference-coded block elimination,
-its complete composition with common multipliers, explicit within-coefficient
-selection, and the finite PPML corollary. No IV/GMM/covariance invariance or
-estimator convergence follows merely from equality of fitted spaces.
-
-For exact rank, cross-field inequalities, modular acceptance and legal finite
-row-trace correctness are established by the arithmetic statements above.
-Outstanding obligations include producing the traces from a specified sparse
-elimination algorithm, integer gcd/normalization representation, modular-kernel
-correctness, termination and actual work/bit/storage-budget semantics. The
-conditional certificate pipeline does not discharge those implementation or
-completion obligations. Prefix-rank bookkeeping also remains separate.
-
-No innovation-registry status, homepage claim, software version, Python API or
-release status is promoted by this directory. Mathematical theorem coverage,
-implementation correctness and historical originality remain distinct claims.
+The library does not change Python APIs, test organization, release status or
+innovation-registry claims. Mathematical verification, software correctness and
+historical novelty remain separate.
