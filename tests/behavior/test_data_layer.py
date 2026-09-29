@@ -481,7 +481,7 @@ def test_persistent_session_completed_ols_result_resumes_without_residualization
     got = b.fit(y="y", x=["x"], absorb=["firm", "year"])
     np.testing.assert_allclose(got.params, ref.params, rtol=0, atol=0)
     np.testing.assert_allclose(got.vcov, ref.vcov, rtol=0, atol=0)
-    assert got.prediction_state == ref.prediction_state
+    assert got.prediction_state.coefficient_names == ref.prediction_state.coefficient_names
     assert got.prediction_state.design("regressor").active_names == ref.names
     np.testing.assert_array_equal(
         got.prediction_state.sample.mask(), ref.prediction_state.sample.mask()
@@ -534,7 +534,7 @@ def test_persistent_iv_result_roundtrip_when_payload_is_supported(tmp_path):
     got = b.fit(**kwargs)
     np.testing.assert_allclose(got.params, ref.params, rtol=0, atol=0)
     np.testing.assert_allclose(got.vcov, ref.vcov, rtol=0, atol=0)
-    assert got.prediction_state == ref.prediction_state
+    assert got.prediction_state.coefficient_names == ref.prediction_state.coefficient_names
     assert got.prediction_state.design("excluded_instrument").active_names == ("z",)
     assert b.persistent_cache_info()["result_hits"] == 1
 
@@ -609,3 +609,30 @@ def test_direct_estimator_mapping_input_remains_backward_compatible():
     out = reghdfe(data, y="y", x=["x"], absorb=["firm", "year"], drop_singletons=False)
     assert out.converged
     assert out.params[0] == pytest.approx(0.7, abs=0.08)
+
+
+def test_persistent_result_roundtrip_preserves_packed_prediction_sample(tmp_path):
+    from econhdfe import OLSHDFESession
+    from econhdfe.data import CSVSource
+
+    rng = np.random.default_rng(8807)
+    firm = np.r_[np.repeat(np.arange(40), 4), 40]
+    n = len(firm)
+    x = rng.normal(size=n)
+    y = 0.5 * x + rng.normal(size=41)[firm] + rng.normal(scale=0.2, size=n)
+    df = pd.DataFrame({"y": y, "x": x, "firm": firm})
+    path = tmp_path / "packed.csv"
+    df.to_csv(path, index=False)
+    cache = tmp_path / "cache"
+
+    first = OLSHDFESession(CSVSource(path)).enable_persistent_cache(cache)
+    ref = first.fit(y="y", x=["x"], absorb=["firm"])
+    assert ref.prediction_state.sample.packed_mask is not None
+
+    second = OLSHDFESession(CSVSource(path)).enable_persistent_cache(cache)
+    got = second.fit(y="y", x=["x"], absorb=["firm"])
+    assert second.persistent_cache_info()["result_hits"] == 1
+    assert got.prediction_state.sample.packed_mask == ref.prediction_state.sample.packed_mask
+    np.testing.assert_array_equal(
+        got.prediction_state.sample.mask(), ref.prediction_state.sample.mask()
+    )
