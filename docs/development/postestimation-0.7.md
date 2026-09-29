@@ -44,9 +44,29 @@ The realized sample is retained as a packed bit mask only when rows were exclude
 
 For absorbed fixed effects, PRED-00 deliberately freezes requested/effective FE topology, final-sample level counts, varying-slope counts, canonicalization, and saved-normalization status, but does not yet retain raw FE level maps on every fit. Accordingly `level_maps_available=False` and FE-inclusive out-of-sample prediction is not claimed. This avoids adding an N-row label-retention cost to ordinary estimation. Group+individual linear HDFE uses its specialized aggregation path and remains outside the first PRED-00 implementation.
 
+## Interface references
+
+The staged boundary also matches established HDFE post-estimation behavior. reghdfe
+separates beta-only `xb` and its `stdp` from FE-inclusive `xbd`/`d`; the
+latter require saved fixed-effect information. ppmlhdfe similarly requires the
+saved sum of fixed effects for predictions other than `xb`, and its prediction
+tests explicitly enforce realized-sample masking after singleton/separation
+removal. Statsmodels exposes coefficient contrasts/Wald tests and prediction from
+a retained model object; EconHDFE intentionally keeps the smaller frozen-state
+contract instead. PyFixest delegates richer linear/nonlinear transformations to
+marginaleffects, which is a useful precedent for keeping delta-method extensions
+separate from the estimator core.
+
+References:
+- https://scorreia.com/help/reghdfe.html
+- https://scorreia.com/help/ppmlhdfe.html
+- https://github.com/sergiocorreia/ppmlhdfe/blob/master/test/predict.do
+- https://www.statsmodels.org/stable/generated/statsmodels.regression.linear_model.RegressionResults.html
+- https://py-econometrics.github.io/pyfixest/marginaleffects.html
+
 ## Phase 3: prediction API (PRED-01; not yet implemented)
 
-Start with categorical fixed effects. The API should distinguish at least:
+Start with beta-only prediction. The first public surface should cover `xb` and the beta-only prediction standard error (`stdp`) from the stored covariance matrix. This is valid without pretending absorbed-effect uncertainty is known. Then add categorical fixed effects. The API should distinguish at least:
 
 - linear index / link;
 - response scale;
