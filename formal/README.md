@@ -6,13 +6,13 @@ manuscripts. Verification of Python/Numba programs, sparse dictionaries, modular
 kernels, queue code, gcd normalization code, numerical convergence, resource
 budgets and backend completion is **not a completion requirement** for this work.
 
-The manuscript target remains the separately delivered 2026-09-28 corrected
-bundle, `econhdfe-manuscripts-corrected-20260928.zip`, prepared against
-`main@06cd0a5efe34de50c52d8b7c0db68c240b9d2673`. The corrected bundle has not been
-silently substituted into this branch. The older manuscript sources/PDFs on the
-base commit still contain superseded wording. The appendix fragments below are
-provided separately for the corrected manuscripts; this Lean workflow does not
-compile or replace manuscript PDFs.
+The formalization was developed against the corrected 2026-09-28 manuscript
+texts. Those corrections and the three Lean appendix fragments are now integrated
+into the manuscript sources on this branch. The dedicated manuscript workflow
+compiles the three corresponding PDFs and rejects undefined references,
+undefined citations, overfull boxes, or missing Lean-appendix text. The historical
+base-commit PDFs remain provenance only; verification attaches to the exact
+source commit that passes the proof and document checks.
 
 ## What is verified
 
