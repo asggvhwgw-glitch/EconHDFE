@@ -4,9 +4,9 @@ Version 0.4.4 integrated the solver-opt2 module into the shared HDFE layer witho
 
 ## Innovation boundary
 
-The package-wide technical-innovation audit classifies only the **exact arbitrary-G residual-core reduction theorem** as a solver-side technical innovation. Its formal manuscript is `../numerical-residual-core/exact_multiway_hdfe_residual_core.{tex,pdf}`.
+The package-wide technical-innovation audit classifies only the **exact arbitrary-G residual-core reduction theorem** as a solver-side technical innovation. Its project technical document is `../numerical-residual-core/exact_multiway_hdfe_residual_core.{tex,pdf}`.
 
-The remaining solver-opt2 features in this note—adaptive MAP/CG routing, fused multi-RHS kernels, output-buffer reuse, memory budgeting and runtime planner choices—are engineering optimizations around established numerical methods. They are important performance work but are not advertised as new mathematical or econometric contributions. Degree-one pruning itself is also prior art in two-way graph-based HDFE solvers; the formal paper limits the claim to the exact arbitrary-G categorical-hypergraph generalization and reconstruction theorem.
+The remaining solver-opt2 features in this note—adaptive MAP/CG routing, fused multi-RHS kernels, output-buffer reuse, memory budgeting and runtime planner choices—are engineering optimizations around established numerical methods. They are important performance work but are not advertised as new mathematical or econometric contributions. Degree-one pruning itself is also prior art in two-way graph-based HDFE solvers; the project technical document limits the claim to the exact arbitrary-G categorical-hypergraph generalization and reconstruction theorem.
 
 The main additions were:
 

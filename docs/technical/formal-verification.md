@@ -2,7 +2,7 @@
 
 EconHDFE keeps mathematical verification separate from software verification.
 
-The three registered theorem-backed contributions have Lean 4 proofs for their core mathematical statements under the assumptions recorded in `formal/mathematical-coverage.md`. The proof library is rooted at `formal/README.md`; manuscript-ready appendix fragments are in `formal/appendices/`.
+The three registered theorem-backed contributions have Lean 4 proofs for their core mathematical statements under the assumptions recorded in `formal/mathematical-coverage.md`. The proof library is rooted at `formal/README.md`; technical-document appendix fragments are in `formal/appendices/`.
 
 ## Verified mathematical lines
 
@@ -22,15 +22,15 @@ The library pins Lean 4.19.0 and Mathlib commit `c44e0c8ee63ca166450922a373c7409
 
 The canonical theorem-by-theorem mapping is `formal/mathematical-coverage.md`. More detailed exact-rank mapping is retained in `formal/rank-correspondence.md` and `formal/arithmetic-correspondence.md`.
 
-## Manuscript integration
+## Technical-document integration
 
-The Lean appendix fragments target the corrected 2026-09-28 manuscript texts and are now included directly by those corrected TeX sources on `dev/lean-foundations`. A dedicated manuscript workflow recompiles the three PDFs and checks references, citations, overfull boxes, and the presence of the Lean appendix text. The historical base PDFs remain provenance only; machine-checked status belongs to the mapped mathematical statements in the exact audited source commit.
+The Lean appendix fragments target the corrected 2026-09-28 technical-document sources and are now included directly by those corrected TeX sources on `dev/lean-foundations`. A dedicated technical-document workflow recompiles the three PDFs and checks references, citations, overfull boxes, and the presence of the Lean appendix text. The historical base PDFs remain provenance only; machine-checked status belongs to the mapped mathematical statements in the exact audited source commit.
 
 
-## Compiled manuscript artifacts
+## Compiled technical-document artifacts
 
 The corrected sources and integrated Lean appendices are compiled by the dedicated
-`Technical manuscript PDFs` workflow. The final closeout build produced:
+`Project technical document PDFs` workflow. The final closeout build produced:
 
 - exact multiway rank/DoF: 17 pages;
 - residual-core reduction: 8 pages;
@@ -38,5 +38,5 @@ The corrected sources and integrated Lean appendices are compiled by the dedicat
 
 The build rejects undefined references/citations and overfull boxes, and confirms
 that each PDF contains its Lean formalization appendix. The PDFs are committed at
-their canonical manuscript paths in `docs/technical/`; the workflow artifact is
+their canonical technical-document paths in `docs/technical/`; the workflow artifact is
 an additional reproducibility bundle rather than the sole copy.

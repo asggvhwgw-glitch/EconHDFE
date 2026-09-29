@@ -185,7 +185,7 @@ Implementation difficulty is not treated as evidence of originality. The package
 2. exact arbitrary-G residual-core reduction for categorical HDFE projection;
 3. exact partition-refinement HDFE structural design reduction.
 
-Each has a formal manuscript and explicit prior-art boundary, and the registry records mathematical support rather than proven novelty (`originality_status: not_independently_established`; see the 0.6.1 mathematical review). PPML-HDFE, IV-PPML, Schur/CG/LSMR, clustered covariance, wild bootstrap, TSQR/block-angular least squares, caching, threading, Data Layer and Execution Planner work are documented as established methods or engineering unless separately audited and registered.
+Each has a project technical document and explicit prior-art boundary, and the registry records mathematical support rather than proven novelty (`originality_status: not_independently_established`; see the 0.6.1 mathematical review). PPML-HDFE, IV-PPML, Schur/CG/LSMR, clustered covariance, wild bootstrap, TSQR/block-angular least squares, caching, threading, Data Layer and Execution Planner work are documented as established methods or engineering unless separately audited and registered.
 
 See [`innovation-audit.md`](innovation-audit.md).
 

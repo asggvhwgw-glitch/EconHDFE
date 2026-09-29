@@ -1,4 +1,4 @@
-name: Technical manuscript PDFs
+name: Project technical document PDFs
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ on:
       - 'docs/technical/structural-design/*.tex'
       - 'docs/technical/structural-design/*.pdf'
       - 'formal/appendices/*.tex'
-      - '.github/workflows/manuscript-pdfs.yml'
+      - '.github/workflows/technical-document-pdfs.yml'
   push:
     branches: [main]
     paths:
@@ -21,7 +21,7 @@ on:
       - 'docs/technical/structural-design/*.tex'
       - 'docs/technical/structural-design/*.pdf'
       - 'formal/appendices/*.tex'
-      - '.github/workflows/manuscript-pdfs.yml'
+      - '.github/workflows/technical-document-pdfs.yml'
   workflow_dispatch:
 
 permissions:
@@ -37,21 +37,21 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - name: Preserve tracked PDFs
+      - name: Preserve tracked technical-document PDFs
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/tracked-manuscripts
-          cp docs/technical/hdfe/exact-multiway-dof/exact_multiway_hdfe_dof.pdf /tmp/tracked-manuscripts/
-          cp docs/technical/hdfe/numerical-residual-core/exact_multiway_hdfe_residual_core.pdf /tmp/tracked-manuscripts/
-          cp docs/technical/structural-design/exact_partition_refinement_hdfe_design.pdf /tmp/tracked-manuscripts/
+          mkdir -p /tmp/tracked-documents
+          cp docs/technical/hdfe/exact-multiway-dof/exact_multiway_hdfe_dof.pdf /tmp/tracked-documents/
+          cp docs/technical/hdfe/numerical-residual-core/exact_multiway_hdfe_residual_core.pdf /tmp/tracked-documents/
+          cp docs/technical/structural-design/exact_partition_refinement_hdfe_design.pdf /tmp/tracked-documents/
       - name: Install TeX and PDF inspection tools
         run: |
           sudo apt-get update
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
             latexmk texlive-latex-base texlive-latex-recommended \
             texlive-latex-extra texlive-fonts-recommended poppler-utils
-      - name: Compile manuscripts
+      - name: Compile project technical documents
         shell: bash
         run: |
           set -euo pipefail
@@ -81,7 +81,7 @@ jobs:
           set -euo pipefail
           check_one() {
             pdf="$1"
-            tracked="/tmp/tracked-manuscripts/$(basename "$pdf")"
+            tracked="/tmp/tracked-documents/$(basename "$pdf")"
             echo "===== $pdf ====="
             pdfinfo "$pdf" | grep -E '^(Pages|Page size|File size|PDF version):'
             pdftotext "$pdf" /tmp/generated.txt
@@ -96,7 +96,7 @@ jobs:
           check_one docs/technical/structural-design/exact_partition_refinement_hdfe_design.pdf
       - uses: actions/upload-artifact@v4
         with:
-          name: corrected-lean-manuscripts
+          name: project-technical-documents
           path: |
             docs/technical/hdfe/exact-multiway-dof/exact_multiway_hdfe_dof.pdf
             docs/technical/hdfe/numerical-residual-core/exact_multiway_hdfe_residual_core.pdf
