@@ -230,7 +230,7 @@ Performance gains depend on peelability. Leaf-rich designs can shrink dramatical
 
 \section{Limitations}
 
-The theorem is intentionally limited to intercept-only categorical FE blocks. Heterogeneous slopes create coefficient columns whose first-order conditions are weighted by continuous covariates; a degree-one categorical level need not imply the same elimination identity when the relevant term structure differs. Group-individual multi-membership FE designs also require a separate incidence model. Zero-weight observations invalidate the positive-weight topology argument. Finally, the theorem is an exact reduction of the projection problem, not a convergence theorem for the iterative solver used on the residual core.
+The theorem is intentionally limited to intercept-only categorical FE blocks. Heterogeneous slopes create coefficient columns whose first-order conditions are weighted by continuous covariates; a degree-one categorical level need not imply the same elimination identity when the relevant term structure differs. Group-individual multi-membership FE designs also require a separate incidence model. Zero-weight observations invalidate the positive-weight topology argument. The theorem also assumes a diagonal weight matrix: for a general non-diagonal positive-definite GLS weight, cross-row terms enter the first-order conditions and a degree-one categorical level need not force its observation residual to zero. Finally, the theorem is an exact reduction of the projection problem, not a convergence theorem for the iterative solver used on the residual core.
 
 \section{Conclusion}
 
