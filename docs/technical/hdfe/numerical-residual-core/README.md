@@ -1,9 +1,12 @@
-# Exact multiway HDFE residual-core manuscript
+# Exact multiway HDFE residual-core technical document
 
-This directory contains the formal technical note for the arbitrary-multiway numerical residual-core reduction used by the HDFE solver.
+> **Document status:** Current EconHDFE project technical documentation.
+
+
+This directory contains the project technical document for the arbitrary-multiway numerical residual-core reduction used by the HDFE solver.
 
 - `exact_multiway_hdfe_residual_core.tex`: canonical LaTeX source.
-- `exact_multiway_hdfe_residual_core.pdf`: compiled manuscript.
+- `exact_multiway_hdfe_residual_core.pdf`: compiled technical document.
 
 Implementation correspondence:
 
