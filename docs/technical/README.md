@@ -41,3 +41,8 @@ The verification scope is deliberately mathematical only: explicitly mapped theo
 ## Format convention
 
 Current project technical documents use one top-level title, an explicit document-status line, a clear scope or claim boundary, and links to validation or related material where relevant. Version-specific reviews, migration notes, checkpoints, and closeout records are historical records and live under dedicated `history/` directories rather than beside current source-of-truth documents.
+
+
+## Historical technical reviews
+
+Version-specific correctness/resource reviews are retained under [`history/`](history/) for provenance. They are not the current source of truth for package behavior. Current mathematical status is recorded in [formal verification](formal-verification.md), while historical originality remains separately qualified in the innovation registry.
