@@ -112,7 +112,12 @@ class DesignPredictionState:
     def reconstructable(self) -> bool:
         if not self.active_names:
             return True
-        return bool(self.terms) and all(term.reconstructable for term in self.terms)
+        active = set(self.active_names)
+        relevant = tuple(
+            term for term in self.terms
+            if any(name in active for name in term.active_names)
+        )
+        return bool(relevant) and all(term.reconstructable for term in relevant)
 
 
 @dataclass(frozen=True, slots=True)
@@ -206,14 +211,22 @@ def fixed_effect_state(
     plan,
     *,
     effective_names,
+    requested_groups,
+    effective_groups,
     intercepts,
     slopes,
     recovered_effects=None,
 ) -> FixedEffectPredictionState:
     requested_names = tuple(str(x) for x in getattr(plan, "requested_names", effective_names))
     effective_names = tuple(str(x) for x in effective_names)
-    requested_levels = tuple(int(x) for x in getattr(plan, "requested_levels", ()))
-    effective_levels = tuple(int(x) for x in getattr(plan, "effective_levels", ()))
+    requested_levels = tuple(
+        int(np.asarray(group).max()) + 1 if len(group) else 0
+        for group in requested_groups
+    )
+    effective_levels = tuple(
+        int(np.asarray(group).max()) + 1 if len(group) else 0
+        for group in effective_groups
+    )
     dropped = tuple(
         DroppedFixedEffectState(
             str(item.name), str(item.spanned_by), str(item.reason), str(item.proof_type)
@@ -251,6 +264,8 @@ def linear_prediction_state(
     sample_state,
     fe_plan,
     fe_names,
+    requested_fe_groups,
+    effective_fe_groups,
     fe_intercepts,
     fe_slopes,
     recovered_effects=None,
@@ -264,6 +279,8 @@ def linear_prediction_state(
         fixed_effects=fixed_effect_state(
             fe_plan,
             effective_names=fe_names,
+            requested_groups=requested_fe_groups,
+            effective_groups=effective_fe_groups,
             intercepts=fe_intercepts,
             slopes=fe_slopes,
             recovered_effects=recovered_effects,
