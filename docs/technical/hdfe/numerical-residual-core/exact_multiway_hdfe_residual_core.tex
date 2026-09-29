@@ -11,11 +11,11 @@
 \usepackage{fancyhdr}
 \usepackage{setspace}
 
-\hypersetup{pdftitle={Exact Residual-Core Reduction for Multiway High-Dimensional Fixed-Effect Projection},pdfauthor={Anonymous technical manuscript}}
+\hypersetup{pdftitle={Exact Residual-Core Reduction for Multiway High-Dimensional Fixed-Effect Projection},pdfauthor={EconHDFE Project}}
 \pagestyle{fancy}
 \fancyhf{}
 \fancyhead[L]{Multiway HDFE Residual-Core Reduction}
-\fancyhead[R]{Technical Note}
+\fancyhead[R]{EconHDFE Technical Documentation}
 \fancyfoot[C]{\thepage}
 \setlength{\headheight}{14pt}
 
@@ -36,18 +36,18 @@
 
 \title{\textbf{Exact Residual-Core Reduction for Multiway High-Dimensional Fixed-Effect Projection}\\
 \large Hypergraph leaf elimination for arbitrary categorical FE partitions}
-\author{Anonymous technical manuscript\\[2pt]\small Implementation reference: \texttt{econhdfe/hdfe/numerical\_core.py}}
+\author{EconHDFE Project\\[2pt]\small Project Technical Documentation\\[2pt]\small Implementation reference: \texttt{econhdfe/hdfe/numerical\_core.py} and \texttt{econhdfe/hdfe/absorber.py}}
 \date{September 2026}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-High-dimensional fixed-effect (HDFE) solvers repeatedly project outcome and regressor blocks onto the orthogonal complement of a large categorical dummy design. Existing graph-based HDFE work already recognizes degree-one pruning as a useful device in two-way fixed-effect networks. This note gives an exact arbitrary-multiway formulation for the projection problem. The categorical design is represented as a multipartite hypergraph whose observations are hyperedges and whose fixed-effect levels are vertices. With strictly positive observation weights, if an active fixed-effect level is incident to exactly one active observation, the first-order condition for that dummy coefficient forces the residual on that observation to be exactly zero. The observation can therefore be eliminated without altering the residuals on the remaining observations. Repeating the argument yields an exact residual core for any finite number of categorical fixed-effect partitions. The full HDFE residual is obtained by solving only on the core and inserting exact zeros on peeled rows. We prove the reduction for scalar and multiple right-hand sides, show why duplicate observation tuples cannot be collapsed in the projection problem, characterize the positive-weight requirement and zero-weight invalidation rule, and map each mathematical claim to the implementation and regression tests in \texttt{econhdfe}. The technical contribution is the arbitrary-$G$ exact residual-core reduction and its solver-safe formulation; the underlying idea of graph leaf pruning is not claimed to be new.
+High-dimensional fixed-effect (HDFE) solvers repeatedly project outcome and regressor blocks onto the orthogonal complement of a large categorical dummy design. Existing graph-based HDFE work already recognizes degree-one pruning as a useful device in two-way fixed-effect networks. This technical document gives an exact arbitrary-multiway formulation for the projection problem. The categorical design is represented as a multipartite hypergraph whose observations are hyperedges and whose fixed-effect levels are vertices. With strictly positive observation weights, if an active fixed-effect level is incident to exactly one active observation, the first-order condition for that dummy coefficient forces the residual on that observation to be exactly zero. The observation can therefore be eliminated without altering the residuals on the remaining observations. Repeating the argument yields an exact residual core for any finite number of categorical fixed-effect partitions. The full HDFE residual is obtained by solving only on the core and inserting exact zeros on peeled rows. We prove the reduction for scalar and multiple right-hand sides, show why duplicate observation tuples cannot be collapsed in the projection problem, characterize the positive-weight requirement and zero-weight invalidation rule, and map each mathematical claim to the implementation and regression tests in \texttt{econhdfe}. The technical contribution is the arbitrary-$G$ exact residual-core reduction and its solver-safe formulation; the underlying idea of graph leaf pruning is not claimed to be new.
 \end{abstract}
 
 \paragraph{Formal verification and priority boundary (September 2026).}
-The core mathematical statements in this note are mapped to an independent
+The core mathematical statements in this technical document are mapped to an independent
 Lean~4 proof library and have passed complete compilation and per-theorem axiom
 audit under the assumptions recorded in
 \texttt{formal/mathematical-coverage.md}. This machine-checked status concerns
