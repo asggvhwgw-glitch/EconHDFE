@@ -6,13 +6,13 @@ Current registry classes are `theorem_backed_framework` and `theorem_backed_appl
 
 This document records the package mathematical contributions and their prior-art boundaries. **The 0.6.1 review does not certify historical originality or priority.** It deliberately separates mathematical or algorithmic contributions from high-quality engineering, upstream reproduction, compatibility work, and product/API design.
 
-The audit is conservative. A feature is not called an innovation merely because it is difficult to implement, much faster than another package, or absent from one particular upstream implementation. To qualify as `technical_innovation`, the package must contain a nontrivial algorithmic, mathematical, inferential, or exact structural result whose claim can be stated and defended independently of Python engineering. Every such item must be registered in `innovation-registry.json` and must ship a formal `.tex` manuscript and compiled `.pdf`.
+The audit is conservative. A feature is not called an innovation merely because it is difficult to implement, much faster than another package, or absent from one particular upstream implementation. To qualify as `technical_innovation`, the package must contain a nontrivial algorithmic, mathematical, inferential, or exact structural result whose claim can be stated and defended independently of Python engineering. Every such item must be registered in `innovation-registry.json` and must ship a project technical-document `.tex` source and compiled `.pdf`.
 
 ## Audited innovations
 
 The following three contributions have theorem-backed artifacts. Their correctness and implementation have been reviewed under the assumptions stated in `mathematical-review-0.6.1.md`; none is advertised as independently established new mathematics.
 
-| ID | Technical contribution | Formal manuscript | Claim boundary |
+| ID | Technical contribution | Project technical document | Claim boundary |
 | --- | --- | --- | --- |
 | `HDFE-EXACT-RANK-001` | Exact arbitrary-G categorical FE structural-rank / absorbed-DoF computational framework | `hdfe/exact-multiway-dof/` | The matrix-rank identity itself is established; novelty is limited to the exact general computational/certification framework. |
 | `HDFE-NUMCORE-002` | Exact arbitrary-G residual-core reduction for multiway categorical HDFE projection | `hdfe/numerical-residual-core/` | Two-way degree-one pruning is prior art; the claim is the arbitrary-G hypergraph projection theorem and exact reconstruction/weight-validity conditions. |
@@ -26,7 +26,7 @@ docs/technical/innovation-registry.json
 
 ## Full package classification
 
-The following table records the major computational and inferential subsystems reviewed through 0.6.3. A classification of `established_method` or `engineering_optimization` is intentional and must not be rewritten as an originality claim without a new literature audit and formal manuscript.
+The following table records the major computational and inferential subsystems reviewed through 0.6.3. A classification of `established_method` or `engineering_optimization` is intentional and must not be rewritten as an originality claim without a new literature audit and project technical document.
 
 | Subsystem / feature | Classification | Audit conclusion |
 | --- | --- | --- |
@@ -56,7 +56,7 @@ The following table records the major computational and inferential subsystems r
 | PPML execution-resource propagation and reusable projectors | engineering_optimization | Correctness/engineering fixes to runtime policy; no new statistical method. |
 | IV-PPML additive-moment estimator | established_method / compatibility_implementation | Implements an established IV-PPML construction; not claimed as invented by econhdfe. |
 | IV-PPML SPJ bias correction | established_method / compatibility_implementation | Split-panel jackknife is established; package implementation is not a new bias-correction theory. |
-| IV-PPML weak-identification/KP work carried in separate experimental modules | research/experimental, not core-package innovation | Any future novel nonlinear weak-IV statistic requires its own theory audit and manuscript before core registration. |
+| IV-PPML weak-identification/KP work carried in separate experimental modules | research/experimental, not core-package innovation | Any future novel nonlinear weak-IV statistic requires its own theory audit and project technical document before core registration. |
 | CRV1 one-/multi-way clustered covariance | established_method | Standard cluster-robust covariance/inclusion-exclusion machinery. |
 | Cluster diagnostics | established_method / product integration | Useful diagnostics assembled for applied work; no originality claim. |
 | WCR11/WCU11 wild cluster bootstrap | established_method / compatibility_implementation | Established wild-cluster bootstrap inference; package adds tested implementation. |
@@ -89,13 +89,13 @@ PPML-HDFE, IV-PPML, split-panel jackknife, conventional linear-IV diagnostics, c
 A new item may be added to `innovation-registry.json` only when all of the following exist in the same release:
 
 1. a precise novelty statement and prior-art boundary;
-2. a formal LaTeX manuscript with definitions, assumptions, propositions/theorems and proofs or a clearly delimited computational result;
+2. a project technical LaTeX document with definitions, assumptions, propositions/theorems and proofs or a clearly delimited computational result;
 3. the compiled PDF retained in the source and release bundle;
 4. explicit implementation correspondence;
 5. regression/correctness tests addressing the claimed result;
 6. benchmark, validation or exact-oracle evidence appropriate to the claim;
 7. a release-gate check proving that the paper artifacts are present and identical between source and bundle.
 
-Technical manuscripts are **not** wheel payload. Runtime users should not pay installation-size cost for audit artifacts.
+Project technical documents are **not** wheel payload. Runtime users should not pay installation-size cost for audit artifacts.
 
-If a contribution is later shown to be established prior art, the registry must be corrected in a subsequent release. Historical manuscripts remain for provenance, but the current audit must no longer advertise novelty.
+If a contribution is later shown to be established prior art, the registry must be corrected in a subsequent release. Historical technical documents remain for provenance, but the current audit must no longer advertise novelty.
