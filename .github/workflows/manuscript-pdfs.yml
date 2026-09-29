@@ -1,21 +1,34 @@
 name: Technical manuscript PDFs
 
 on:
-  push:
-    branches: [dev/lean-foundations]
+  pull_request:
     paths:
       - 'docs/technical/hdfe/exact-multiway-dof/*.tex'
+      - 'docs/technical/hdfe/exact-multiway-dof/*.pdf'
       - 'docs/technical/hdfe/numerical-residual-core/*.tex'
+      - 'docs/technical/hdfe/numerical-residual-core/*.pdf'
       - 'docs/technical/structural-design/*.tex'
+      - 'docs/technical/structural-design/*.pdf'
+      - 'formal/appendices/*.tex'
+      - '.github/workflows/manuscript-pdfs.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'docs/technical/hdfe/exact-multiway-dof/*.tex'
+      - 'docs/technical/hdfe/exact-multiway-dof/*.pdf'
+      - 'docs/technical/hdfe/numerical-residual-core/*.tex'
+      - 'docs/technical/hdfe/numerical-residual-core/*.pdf'
+      - 'docs/technical/structural-design/*.tex'
+      - 'docs/technical/structural-design/*.pdf'
       - 'formal/appendices/*.tex'
       - '.github/workflows/manuscript-pdfs.yml'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: manuscript-pdfs-${{ github.ref }}
+  group: manuscript-pdfs-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -24,8 +37,14 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
+      - name: Preserve tracked PDFs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/tracked-manuscripts
+          cp docs/technical/hdfe/exact-multiway-dof/exact_multiway_hdfe_dof.pdf /tmp/tracked-manuscripts/
+          cp docs/technical/hdfe/numerical-residual-core/exact_multiway_hdfe_residual_core.pdf /tmp/tracked-manuscripts/
+          cp docs/technical/structural-design/exact_partition_refinement_hdfe_design.pdf /tmp/tracked-manuscripts/
       - name: Install TeX and PDF inspection tools
         run: |
           sudo apt-get update
@@ -56,36 +75,25 @@ jobs:
           compile_one docs/technical/hdfe/exact-multiway-dof exact_multiway_hdfe_dof.tex
           compile_one docs/technical/hdfe/numerical-residual-core exact_multiway_hdfe_residual_core.tex
           compile_one docs/technical/structural-design exact_partition_refinement_hdfe_design.tex
-      - name: Inspect generated PDFs
+      - name: Inspect and compare generated PDFs
         shell: bash
         run: |
           set -euo pipefail
-          for pdf in \
-            docs/technical/hdfe/exact-multiway-dof/exact_multiway_hdfe_dof.pdf \
-            docs/technical/hdfe/numerical-residual-core/exact_multiway_hdfe_residual_core.pdf \
-            docs/technical/structural-design/exact_partition_refinement_hdfe_design.pdf
-          do
+          check_one() {
+            pdf="$1"
+            tracked="/tmp/tracked-manuscripts/$(basename "$pdf")"
             echo "===== $pdf ====="
             pdfinfo "$pdf" | grep -E '^(Pages|Page size|File size|PDF version):'
-            pdftotext "$pdf" - | grep -q 'Lean formalization'
-          done
-      - name: Commit compiled PDFs
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add \
-            docs/technical/hdfe/exact-multiway-dof/exact_multiway_hdfe_dof.pdf \
-            docs/technical/hdfe/numerical-residual-core/exact_multiway_hdfe_residual_core.pdf \
-            docs/technical/structural-design/exact_partition_refinement_hdfe_design.pdf
-          if git diff --cached --quiet; then
-            echo "Compiled PDFs are already current."
-          else
-            git commit -m "Compile corrected manuscripts with Lean appendices"
-            git pull --rebase origin dev/lean-foundations
-            git push origin HEAD:dev/lean-foundations
-          fi
+            pdftotext "$pdf" /tmp/generated.txt
+            pdftotext "$tracked" /tmp/tracked.txt
+            grep -q 'Lean formalization' /tmp/generated.txt
+            diff -u /tmp/tracked.txt /tmp/generated.txt
+            test "$(pdfinfo "$tracked" | awk '/^Pages:/ {print $2}')" = \
+                 "$(pdfinfo "$pdf" | awk '/^Pages:/ {print $2}')"
+          }
+          check_one docs/technical/hdfe/exact-multiway-dof/exact_multiway_hdfe_dof.pdf
+          check_one docs/technical/hdfe/numerical-residual-core/exact_multiway_hdfe_residual_core.pdf
+          check_one docs/technical/structural-design/exact_partition_refinement_hdfe_design.pdf
       - uses: actions/upload-artifact@v4
         with:
           name: corrected-lean-manuscripts
