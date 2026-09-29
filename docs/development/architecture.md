@@ -18,6 +18,7 @@ A detailed module-by-module economics-facing map is maintained in [`economic-mod
 | Event studies and group-specific slopes with many explicit heterogeneous coefficients | Heterogeneous-specification optimization preserves the requested coefficients but avoids materializing structural zeros when exact and worthwhile | `design.py`, `compute/design_plan.py`, `compute/block_design.py`, `compute/partitioned_lstsq.py`, model `heterogeneous.py` consumers |
 | Correlated shocks and few/unbalanced clusters | Shared covariance plus cluster diagnostics/wild-cluster procedures provide inference at the economic dependence level | `compute/vcov.py`, `inference/cluster/` |
 | Regression-table robustness exercises | Session/cache infrastructure reuses FE/sample work across specifications without reusing invalid specification-specific diagnostics | `sessions.py`, `compute/context.py` |
+| Post-estimation of fitted linear models | Coefficient restrictions and future predictions reuse the exact reported parameter order, realized sample and frozen design/FE semantics rather than reconstructing them from mutable estimator internals | `postestimation.py`, `prediction.py`, `results.py` |
 | Large-sample feasibility | A shared execution planner separates exactness certificates from memory/representation/thread policy, then compute/HDFE kernels execute the chosen plan without changing the estimand | `planner/`, `compute/`, `hdfe/projection.py` |
 
 The architecture therefore follows the sequence **economic specification → data requirements/sample state → canonical design and nuisance structure → estimator → inference**. A separate execution-planner layer acts across data, HDFE and compute stages: certificates answer whether an optimization is exact, while cost/resource policy answers whether an exact optimization is worthwhile. Numerical objects such as QR, MAP, PCG, TSQR or sparse/block storage are implementation mechanisms, not top-level package concepts.
@@ -61,7 +62,7 @@ The direction is strict:
 - `models` owns estimating equations and may compose `hdfe`, `iv`, and `compute`.
 - `resampling` is outcome-model agnostic and must not import `models`, `hdfe`, or `iv`; model-specific bootstrap definitions call into it.
 - `frontend` provides cheap role-aware input checks and structured reports; `errors` provides the public failure taxonomy.
-- root-level `pipeline`, `design`, `results`, and `collinearity` are thin orchestration/shared-interface modules; root `bootstrap.py` is compatibility-only.
+- root-level `pipeline`, `design`, `results`, `postestimation`, `prediction`, and `collinearity` are thin orchestration/shared-interface modules; root `bootstrap.py` is compatibility-only.
 
 The stronger IV rule is deliberate: endogeneity is not a synonym for linear 2SLS. Linear IV and future IV-PPML should consume the same instrument/moment/weighted-2SLS primitives without depending on one another.
 
@@ -72,6 +73,7 @@ econhdfe/
   api.py
   pipeline.py
   results.py
+  postestimation.py / prediction.py
   design.py / design_structure.py
   collinearity.py
   errors.py

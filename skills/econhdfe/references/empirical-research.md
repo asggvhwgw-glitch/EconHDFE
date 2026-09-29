@@ -271,3 +271,17 @@ Unexpected automatic omissions can change the estimand or identified dynamic eff
 
 When PPML runtime is unexpectedly high, first distinguish separation from IRLS. In v0.4.5+ inspect `result.diagnostics["separation_seconds"]` and `result.diagnostics["projection_resources"]`. Keep the full requested separation policy for formal estimates; treat FE-only separation as a labelled sensitivity/performance decomposition rather than silently changing the estimator workflow.
 
+
+## 0.7 开发版后估计
+
+先核实版本：以下在 0.7.0.dev0 开发线可用。res.predict() 返回最终样本 fitted；
+restore_sample=True 按物理行补 NaN。predict(newdata, kind="xb") 使用冻结保留系数设计；
+stdp 仅为 beta 部分标准误，不是完整预测区间或 FE 不确定性。标准 OLS/IV 的新数据含 FE
+预测需拟合时 save_fe=True；FE 必须为命名 categorical intercept。未知 level、未见
+interaction cell、跨 component/extra-nullity 或破坏训练嵌套的新组合默认拒绝，
+unknown="nan" 只将这些行标 NaN，不更改模型。自动遗漏回归项时新行 response 尚未认证，
+不能把 xb 改称完整预测。IV 结构预测不需要排除工具变量。
+
+linear_combination/wald_test 仅对一个结果的参数/V 作常规推断，不是弱 IV 稳健检验。
+PPML/IV-PPML、varying-slope、group+individual 样本外预测、margins/AME 和跨模型联合推断
+仍不支持。不得以新样本重拟合、未知类别填零、beta-only V 冒充含 FE 不确定性来补齐边界。

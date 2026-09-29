@@ -6,6 +6,7 @@ import numpy as np
 from .frontend.validate import require_numeric, require_identifier
 from .frontend.roles import VariableRole
 from .factorvars import FactorVariableExpression, _FVAtom
+from .prediction import PredictionInput, CategoricalEncodingState, DesignTermState
 
 from .design_structure import StructuralTerm, StructuralCollinearityPlan, plan_structural_collinearity
 
@@ -135,6 +136,7 @@ class DesignMatrix:
     structural_plan: StructuralCollinearityPlan | None = None
     structural_terms: tuple[StructuralTerm, ...] = ()
     user_omissions: tuple[UserOmission, ...] = ()
+    prediction_terms: tuple[DesignTermState, ...] = ()
 
     @property
     def ncols(self) -> int:
@@ -227,9 +229,12 @@ class _Blueprint:
     origins: tuple[ColumnOrigin, ...]
     continuous_specs: tuple[Any, ...]
     continuous_labels: tuple[str, ...]
+    continuous_tokens: tuple[str, ...]
     continuous_signature: tuple[str, ...]
     categorical_tokens: tuple[str, ...]
     categorical_codes: tuple[np.ndarray, ...]
+    categorical_encodings: tuple[_FactorEncoding, ...]
+    categorical_cells: tuple[tuple[int, ...], ...]
 
 
 def _factor_encoding(data, term: Factor, n_active: int, fallback: str, row_mask, cache) -> _FactorEncoding:
@@ -343,7 +348,8 @@ def _blueprint(data, spec, n_active: int, fallback: str, row_mask, cache, index:
     codes, active, tuples, labels = _joint_partition(encs, n_active)
     root = _root_name(spec, atoms, fallback)
     cont_labels = tuple(_label(p, f"{fallback}_c{j+1}") for j, p in enumerate(continuous))
-    cont_sig = tuple(sorted(_token(p, f"{fallback}_c{j+1}") for j, p in enumerate(continuous)))
+    cont_tokens = tuple(_token(p, f"{fallback}_c{j+1}") for j, p in enumerate(continuous))
+    cont_sig = tuple(sorted(cont_tokens))
 
     level_names = []
     origins = []
@@ -368,9 +374,10 @@ def _blueprint(data, spec, n_active: int, fallback: str, row_mask, cache, index:
         codes=np.asarray(codes, dtype=np.int32), n_levels=len(active), active=np.asarray(active, dtype=bool),
         level_names=tuple(level_names), origins=tuple(origins),
         continuous_specs=tuple(continuous), continuous_labels=cont_labels,
-        continuous_signature=cont_sig,
+        continuous_tokens=cont_tokens, continuous_signature=cont_sig,
         categorical_tokens=tuple(e.token for e in encs),
         categorical_codes=tuple(e.codes for e in encs),
+        categorical_encodings=tuple(encs), categorical_cells=tuple(tuple(int(v) for v in cell) for cell in tuples),
     )
 
 
@@ -552,6 +559,47 @@ def _compile_structured_design(
     )
 
 
+def _prediction_source(token: str) -> str | None:
+    token = str(token)
+    return token[len("column:"):] if token.startswith("column:") else None
+
+
+def _python_level(value):
+    return value.item() if isinstance(value, np.generic) else value
+
+
+def _prediction_terms(compiled: _CompiledStructuredDesign) -> tuple[DesignTermState, ...]:
+    out = []
+    for bp in compiled.blueprints:
+        categorical = tuple(
+            CategoricalEncodingState(
+                name=str(enc.root),
+                source=_prediction_source(enc.token),
+                levels=enc.levels,
+                selected=enc.selected,
+            )
+            for enc in bp.categorical_encodings
+        )
+        continuous = tuple(
+            PredictionInput(str(label), _prediction_source(token))
+            for label, token in zip(bp.continuous_labels, bp.continuous_tokens, strict=False)
+        )
+        cell_codes = (
+            np.asarray(bp.categorical_cells, dtype=np.int32)
+            if bp.categorical_encodings else None
+        )
+        out.append(DesignTermState(
+            name=str(bp.name),
+            kind=str(bp.kind),
+            column_names=tuple(str(x) for x in bp.level_names),
+            active_mask=tuple(bool(x) for x in bp.active.tolist()),
+            categorical=categorical,
+            continuous=continuous,
+            cell_codes=cell_codes,
+        ))
+    return tuple(out)
+
+
 def _materialize_compiled_dense(data, compiled: _CompiledStructuredDesign) -> DesignMatrix:
     cols, names, origins = [], [], []
     for bp in compiled.blueprints:
@@ -561,7 +609,7 @@ def _materialize_compiled_dense(data, compiled: _CompiledStructuredDesign) -> De
     return DesignMatrix(
         values, tuple(names), tuple(origins), compiled.requested_names,
         compiled.requested_origins, compiled.structural_plan, compiled.terms,
-        compiled.user_omissions,
+        compiled.user_omissions, _prediction_terms(compiled),
     )
 
 
@@ -647,6 +695,7 @@ class _BlockDesignMatrix:
     structural_terms: tuple[StructuralTerm, ...]
     user_omissions: tuple[UserOmission, ...]
     execution_structure: Any
+    prediction_terms: tuple[DesignTermState, ...] = ()
 
     @property
     def ncols(self) -> int:
@@ -686,7 +735,7 @@ def _build_heterogeneous_design(
     return _BlockDesignMatrix(
         values, compiled.names, compiled.origins, compiled.requested_names,
         compiled.requested_origins, compiled.structural_plan, compiled.terms,
-        compiled.user_omissions, structure,
+        compiled.user_omissions, structure, _prediction_terms(compiled),
     )
 
 
@@ -702,6 +751,7 @@ class _ExecutionDesignMatrix:
     user_omissions: tuple[UserOmission, ...]
     execution_structure: Any
     storage_plan: Any
+    prediction_terms: tuple[DesignTermState, ...] = ()
 
     @property
     def ncols(self) -> int:
@@ -747,7 +797,7 @@ def _compile_execution_design(
         return _ExecutionDesignMatrix(
             dense.values, dense.names, dense.origins, dense.requested_names,
             dense.requested_origins, dense.structural_plan, dense.structural_terms,
-            dense.user_omissions, None, storage,
+            dense.user_omissions, None, storage, dense.prediction_terms,
         )
 
     compiled = _compile_structured_design(
@@ -790,7 +840,7 @@ def _compile_execution_design(
         return _ExecutionDesignMatrix(
             dense.values, compiled.names, compiled.origins, compiled.requested_names,
             compiled.requested_origins, compiled.structural_plan, compiled.terms,
-            compiled.user_omissions, None, storage,
+            compiled.user_omissions, None, storage, _prediction_terms(compiled),
         )
 
     from .compute.design_plan import analyze_execution_structure
@@ -806,7 +856,7 @@ def _compile_execution_design(
     return _ExecutionDesignMatrix(
         values, compiled.names, compiled.origins, compiled.requested_names,
         compiled.requested_origins, compiled.structural_plan, compiled.terms,
-        compiled.user_omissions, structure, storage,
+        compiled.user_omissions, structure, storage, _prediction_terms(compiled),
     )
 
 
@@ -866,7 +916,20 @@ def build_design(
         # NumPy matrix when no column was actually omitted; this matters at
         # 10M+ rows where an unnecessary X copy can approach a gigabyte.
         values = a if bool(np.all(keep)) else a[:, keep]
-        return DesignMatrix(values, active_names, active_origins, names, origins, None, (), tuple(user_omissions))
+        prediction_terms = tuple(
+            DesignTermState(
+                name=name,
+                kind="array",
+                column_names=(name,),
+                active_mask=(bool(keep[j]),),
+                continuous=(PredictionInput(name, None),),
+            )
+            for j, name in enumerate(names)
+        )
+        return DesignMatrix(
+            values, active_names, active_origins, names, origins, None, (),
+            tuple(user_omissions), prediction_terms,
+        )
     compiled = _compile_structured_design(
         data, specs, n, prefix=prefix, row_mask=row_mask,
         absorbed_groups=absorbed_groups, absorbed_names=absorbed_names,

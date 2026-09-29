@@ -1,5 +1,31 @@
 # 0.6.2 — nonlinear and resource-boundary validation candidate
 
+## 0.7.0.dev0 — 后估计开发版，未发布
+
+- 标准 OLS/线性 IV 的冻结状态支持 predict(response/xb/fe/stdp)，分块重建；stdp 仅包含
+  beta 协方差。样本恢复按原始行位置，不保留 DataFrame。
+- save_fe=True 保存命名 categorical FE 的原始 level 映射及 exact component 识别；
+  拒绝未知类别、跨分量、extra-nullity 或违反训练嵌套关系的新组合，不默认置零。
+- 结果缓存 ABI 更新，旧结果安全失效；within 数值缓存 ABI 不变。
+- 线性组合/Wald 补齐非有限、负方差、秩亏和零方差保护。
+- 0.7 审阅和执行证据独立登记，0.6.5 快照不变；尚未正式发布，不新增外部认证声明。
+
+## Unreleased — IV correctness closeout
+
+- Reject deficient IV cross moments with `UnderidentifiedError` and numerically
+  unsafe moment systems or solver rank loss with `NumericalError`. This is a
+  numerical identification policy, not a weak-instrument F-test.
+- Use a compressed instrument-coordinate QR/SVD solve for sensitive 2SLS
+  systems; do not silently truncate projected coefficient directions.
+- Report weighted first-stage fitted endogenous values in unweighted within
+  coordinates consistently across dense, block and two-step GMM paths.
+- Fixed k-class covariance now uses H=(1-kappa)X+kappa PzX scores; kappa=0
+  matches OLS. This treats kappa as fixed, retains conventional LIML inference,
+  and does not assert consistency for arbitrary kappa with endogenous X.
+- Avoid a redundant joint instrument materialization for exactly identified
+  block overidentification diagnostics. End-to-end memory budgeting and the
+  full-score KP fallback remain open; this is not an out-of-core implementation.
+
 ## 0.6.5 — unreleased
 
 - Reorganize tests around current contracts, behavior, numerical oracles and release

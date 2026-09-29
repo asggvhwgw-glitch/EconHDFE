@@ -12,7 +12,13 @@ from typing import Any, Mapping, Sequence
 import numpy as np
 
 from ..errors import SpecificationError
-from ..results import DofInfo, RegressionResult
+from ..results import DofInfo, RegressionResult, FixedEffectEstimates, FixedEffectTermEstimate
+from ..prediction import (
+    CategoricalEncodingState, DesignPredictionState, DesignTermState,
+    DroppedFixedEffectState, EstimationSampleSnapshot, FixedEffectPredictionState,
+    PredictionInput, PredictionState, SampleExclusionState,
+    FixedEffectLevelState, FixedEffectNestingState, CategoricalFixedEffectState,
+)
 from ..frontend.columns import compile_data_requirements, merge_data_requirements
 from .dataset import EncodedEconometricDataset, materialize_required_data
 from .source import DataFrameSource, DataSource, as_data_source
@@ -20,6 +26,18 @@ from .source import DataFrameSource, DataSource, as_data_source
 
 PERSISTENT_CACHE_FORMAT = 1
 PERSISTENT_NUMERICAL_ABI = "linear-session-1"
+PERSISTENT_RESULT_ABI = "linear-session-result-3"
+
+_PREDICTION_STATE_TYPES = {
+    cls.__name__: cls
+    for cls in (
+        SampleExclusionState, EstimationSampleSnapshot, PredictionInput,
+        CategoricalEncodingState, DesignTermState, DesignPredictionState,
+        DroppedFixedEffectState, FixedEffectPredictionState, PredictionState,
+        FixedEffectLevelState, FixedEffectNestingState, CategoricalFixedEffectState,
+        FixedEffectEstimates, FixedEffectTermEstimate,
+    )
+}
 
 
 def _json_scalar(value):
@@ -396,6 +414,7 @@ class PersistentSessionStore:
         p = dict(payload)
         p["cache_format"] = PERSISTENT_CACHE_FORMAT
         p["numerical_abi"] = PERSISTENT_NUMERICAL_ABI
+        p["result_abi"] = PERSISTENT_RESULT_ABI
         return _hash_json(p, digest_size=20)
 
     def _encode_result_value(self, value, arrays: dict[str, np.ndarray], key: str):
@@ -407,6 +426,10 @@ class PersistentSessionStore:
             arr_key = f"a{len(arrays)}"
             arrays[arr_key] = np.asarray(value)
             return {"__array__": arr_key}
+        if isinstance(value, bytes):
+            arr_key = f"a{len(arrays)}"
+            arrays[arr_key] = np.frombuffer(value, dtype=np.uint8)
+            return {"__bytes_array__": arr_key}
         if isinstance(value, tuple):
             return {"__tuple__": [self._encode_result_value(v, arrays, f"{key}[]") for v in value]}
         if isinstance(value, list):
@@ -417,6 +440,15 @@ class PersistentSessionStore:
             return {"__dict__": {k: self._encode_result_value(v, arrays, f"{key}.{k}") for k, v in value.items()}}
         if isinstance(value, DofInfo):
             return {"__dof_info__": self._encode_result_value(asdict(value), arrays, f"{key}.dof")}
+        cls = type(value)
+        if cls.__name__ in _PREDICTION_STATE_TYPES and _PREDICTION_STATE_TYPES[cls.__name__] is cls:
+            payload = {
+                field.name: self._encode_result_value(
+                    getattr(value, field.name), arrays, f"{key}.{field.name}"
+                )
+                for field in fields(cls)
+            }
+            return {"__prediction_state__": cls.__name__, "fields": payload}
         raise TypeError(f"unsupported persistent result field {key}: {type(value).__name__}")
 
     def _decode_result_value(self, value, array_dir: Path):
@@ -424,6 +456,12 @@ class PersistentSessionStore:
             return value
         if "__array__" in value:
             return np.load(array_dir / f"{value['__array__']}.npy", mmap_mode="r", allow_pickle=False)
+        if "__bytes_array__" in value:
+            raw = np.load(
+                array_dir / f"{value['__bytes_array__']}.npy",
+                mmap_mode="r", allow_pickle=False,
+            )
+            return np.asarray(raw, dtype=np.uint8).tobytes()
         if "__tuple__" in value:
             return tuple(self._decode_result_value(v, array_dir) for v in value["__tuple__"])
         if "__list__" in value:
@@ -433,6 +471,16 @@ class PersistentSessionStore:
         if "__dof_info__" in value:
             payload = self._decode_result_value(value["__dof_info__"], array_dir)
             return DofInfo(**payload)
+        if "__prediction_state__" in value:
+            name = str(value["__prediction_state__"])
+            cls = _PREDICTION_STATE_TYPES.get(name)
+            if cls is None:
+                raise ValueError(f"unknown prediction-state type {name!r}")
+            payload = {
+                key: self._decode_result_value(item, array_dir)
+                for key, item in value["fields"].items()
+            }
+            return cls(**payload)
         raise ValueError("unknown persistent result encoding")
 
     def save_result(self, key: str, result: RegressionResult) -> bool:
@@ -450,6 +498,7 @@ class PersistentSessionStore:
             _atomic_json(tmp / "result.json", {
                 "cache_format": PERSISTENT_CACHE_FORMAT,
                 "numerical_abi": PERSISTENT_NUMERICAL_ABI,
+                "result_abi": PERSISTENT_RESULT_ABI,
                 "fields": payload,
             })
             base.parent.mkdir(parents=True, exist_ok=True)
@@ -471,6 +520,7 @@ class PersistentSessionStore:
             if (
                 meta.get("cache_format") != PERSISTENT_CACHE_FORMAT
                 or meta.get("numerical_abi") != PERSISTENT_NUMERICAL_ABI
+                or meta.get("result_abi") != PERSISTENT_RESULT_ABI
             ):
                 self.stats["result_misses"] += 1
                 return None

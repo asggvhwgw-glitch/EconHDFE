@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "econhdfe",
-  "version": "0.6.5",
+  "version": "0.7.0.dev0",
   "evidence": {
     "topology": "Python AST import analysis; package __init__ re-export imports excluded from aggregated dependency counts.",
     "execution_flows": "Explicit semantic overlays reviewed against estimator orchestration modules; not presented as import edges."
@@ -141,11 +141,14 @@
       "files": [
         "econhdfe/config.py",
         "econhdfe/errors.py",
+        "econhdfe/postestimation.py",
+        "econhdfe/prediction.py",
+        "econhdfe/prediction_api.py",
         "econhdfe/reporting.py",
         "econhdfe/results.py",
         "econhdfe/support_reports.py"
       ],
-      "module_count": 5
+      "module_count": 8
     },
     {
       "id": "ols",
@@ -283,6 +286,7 @@
         "econhdfe/effects/__init__.py",
         "econhdfe/effects/adapters.py",
         "econhdfe/effects/diagnostics.py",
+        "econhdfe/effects/prediction.py",
         "econhdfe/effects/recover.py",
         "econhdfe/effects/results.py",
         "econhdfe/effects/topology.py",
@@ -303,7 +307,7 @@
         "econhdfe/hdfe/two_way.py",
         "econhdfe/hdfe/weighted_projection.py"
       ],
-      "module_count": 22
+      "module_count": 23
     },
     {
       "id": "iv",
@@ -496,13 +500,13 @@
     {
       "source": "data",
       "target": "contracts",
-      "count": 6,
+      "count": 7,
       "examples": [
         "econhdfe.data.dataset → econhdfe.errors",
         "econhdfe.data.encoding → econhdfe.errors",
         "econhdfe.data.persistent → econhdfe.errors",
         "econhdfe.data.persistent → econhdfe.results",
-        "econhdfe.data.sample → econhdfe.errors"
+        "econhdfe.data.persistent → econhdfe.prediction"
       ]
     },
     {
@@ -563,9 +567,10 @@
     {
       "source": "hdfe",
       "target": "contracts",
-      "count": 4,
+      "count": 5,
       "examples": [
         "econhdfe.effects.diagnostics → econhdfe.errors",
+        "econhdfe.effects.prediction → econhdfe.prediction",
         "econhdfe.hdfe.absorber → econhdfe.errors",
         "econhdfe.hdfe.dof → econhdfe.results",
         "econhdfe.hdfe.factorvars → econhdfe.errors"
@@ -611,13 +616,13 @@
     {
       "source": "interface",
       "target": "contracts",
-      "count": 9,
+      "count": 11,
       "examples": [
         "econhdfe.api → econhdfe.config",
         "econhdfe.api → econhdfe.reporting",
+        "econhdfe.design → econhdfe.prediction",
         "econhdfe.design → econhdfe.errors",
-        "econhdfe.factorvars → econhdfe.errors",
-        "econhdfe.sessions → econhdfe.config"
+        "econhdfe.factorvars → econhdfe.errors"
       ]
     },
     {
@@ -719,7 +724,7 @@
     {
       "source": "linear_iv",
       "target": "compute",
-      "count": 11,
+      "count": 12,
       "examples": [
         "econhdfe.models.linear_iv.api → econhdfe.compute.weights",
         "econhdfe.models.linear_iv.api → econhdfe.compute.block_design",
@@ -731,11 +736,12 @@
     {
       "source": "linear_iv",
       "target": "contracts",
-      "count": 4,
+      "count": 6,
       "examples": [
         "econhdfe.models.linear_iv.api → econhdfe.errors",
         "econhdfe.models.linear_iv.api → econhdfe.config",
         "econhdfe.models.linear_iv.api → econhdfe.results",
+        "econhdfe.models.linear_iv.api → econhdfe.prediction",
         "econhdfe.models.linear_iv.api → econhdfe.reporting"
       ]
     },
@@ -759,11 +765,12 @@
     {
       "source": "linear_iv",
       "target": "hdfe",
-      "count": 3,
+      "count": 4,
       "examples": [
         "econhdfe.models.linear_iv.api → econhdfe.hdfe.dof",
         "econhdfe.models.linear_iv.api → econhdfe.hdfe.block_projection",
-        "econhdfe.models.linear_iv.api → econhdfe.hdfe.plan"
+        "econhdfe.models.linear_iv.api → econhdfe.hdfe.plan",
+        "econhdfe.models.linear_iv.api → econhdfe.effects.prediction"
       ]
     },
     {
@@ -816,13 +823,13 @@
     {
       "source": "ols",
       "target": "contracts",
-      "count": 5,
+      "count": 6,
       "examples": [
         "econhdfe.models.ols → econhdfe.errors",
         "econhdfe.models.ols → econhdfe.config",
         "econhdfe.models.ols → econhdfe.results",
-        "econhdfe.models.ols → econhdfe.reporting",
-        "econhdfe.models.ols_bootstrap → econhdfe.errors"
+        "econhdfe.models.ols → econhdfe.prediction",
+        "econhdfe.models.ols → econhdfe.reporting"
       ]
     },
     {
@@ -845,11 +852,12 @@
     {
       "source": "ols",
       "target": "hdfe",
-      "count": 4,
+      "count": 5,
       "examples": [
         "econhdfe.models.ols → econhdfe.hdfe.dof",
         "econhdfe.models.ols → econhdfe.hdfe.block_projection",
         "econhdfe.models.ols → econhdfe.hdfe.plan",
+        "econhdfe.models.ols → econhdfe.effects.prediction",
         "econhdfe.models.ols_bootstrap → econhdfe.hdfe.absorber"
       ]
     },
@@ -1596,6 +1604,14 @@
       "source_module": "econhdfe.data.persistent",
       "source_path": "econhdfe/data/persistent.py",
       "source_group": "data",
+      "target_module": "econhdfe.prediction",
+      "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.data.persistent",
+      "source_path": "econhdfe/data/persistent.py",
+      "source_group": "data",
       "target_module": "econhdfe.frontend.columns",
       "target_group": "frontend",
       "reexport_surface": false
@@ -1678,6 +1694,14 @@
       "source_group": "interface",
       "target_module": "econhdfe.factorvars",
       "target_group": "interface",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.design",
+      "source_path": "econhdfe/design.py",
+      "source_group": "interface",
+      "target_module": "econhdfe.prediction",
+      "target_group": "contracts",
       "reexport_surface": false
     },
     {
@@ -1843,6 +1867,30 @@
     {
       "source_module": "econhdfe.effects.diagnostics",
       "source_path": "econhdfe/effects/diagnostics.py",
+      "source_group": "hdfe",
+      "target_module": "econhdfe.effects.topology",
+      "target_group": "hdfe",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.effects.prediction",
+      "source_path": "econhdfe/effects/prediction.py",
+      "source_group": "hdfe",
+      "target_module": "econhdfe.hdfe.rank",
+      "target_group": "hdfe",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.effects.prediction",
+      "source_path": "econhdfe/effects/prediction.py",
+      "source_group": "hdfe",
+      "target_module": "econhdfe.prediction",
+      "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.effects.prediction",
+      "source_path": "econhdfe/effects/prediction.py",
       "source_group": "hdfe",
       "target_module": "econhdfe.effects.topology",
       "target_group": "hdfe",
@@ -2628,6 +2676,22 @@
       "source_module": "econhdfe.models.linear_iv.api",
       "source_path": "econhdfe/models/linear_iv/api.py",
       "source_group": "linear_iv",
+      "target_module": "econhdfe.prediction",
+      "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.linear_iv.api",
+      "source_path": "econhdfe/models/linear_iv/api.py",
+      "source_group": "linear_iv",
+      "target_module": "econhdfe.effects.prediction",
+      "target_group": "hdfe",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.linear_iv.api",
+      "source_path": "econhdfe/models/linear_iv/api.py",
+      "source_group": "linear_iv",
       "target_module": "econhdfe.reporting",
       "target_group": "contracts",
       "reexport_surface": false
@@ -2710,6 +2774,22 @@
       "source_group": "linear_iv",
       "target_module": "econhdfe.iv.solve",
       "target_group": "iv",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.linear_iv.estimators",
+      "source_path": "econhdfe/models/linear_iv/estimators.py",
+      "source_group": "linear_iv",
+      "target_module": "econhdfe.compute.stable_linalg",
+      "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.linear_iv.estimators",
+      "source_path": "econhdfe/models/linear_iv/estimators.py",
+      "source_group": "linear_iv",
+      "target_module": "econhdfe.errors",
+      "target_group": "contracts",
       "reexport_surface": false
     },
     {
@@ -2862,6 +2942,22 @@
       "source_group": "ols",
       "target_module": "econhdfe.results",
       "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ols",
+      "source_path": "econhdfe/models/ols.py",
+      "source_group": "ols",
+      "target_module": "econhdfe.prediction",
+      "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ols",
+      "source_path": "econhdfe/models/ols.py",
+      "source_group": "ols",
+      "target_module": "econhdfe.effects.prediction",
+      "target_group": "hdfe",
       "reexport_surface": false
     },
     {
@@ -4409,6 +4505,14 @@
       "reexport_surface": false
     },
     {
+      "source_module": "econhdfe.prediction_api",
+      "source_path": "econhdfe/prediction_api.py",
+      "source_group": "contracts",
+      "target_module": "econhdfe.errors",
+      "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
       "source_module": "econhdfe.resampling",
       "source_path": "econhdfe/resampling/__init__.py",
       "source_group": "resampling",
@@ -4461,6 +4565,38 @@
       "source_path": "econhdfe/results.py",
       "source_group": "contracts",
       "target_module": "econhdfe.reporting",
+      "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.results",
+      "source_path": "econhdfe/results.py",
+      "source_group": "contracts",
+      "target_module": "econhdfe.postestimation",
+      "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.results",
+      "source_path": "econhdfe/results.py",
+      "source_group": "contracts",
+      "target_module": "econhdfe.prediction",
+      "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.results",
+      "source_path": "econhdfe/results.py",
+      "source_group": "contracts",
+      "target_module": "econhdfe.errors",
+      "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.results",
+      "source_path": "econhdfe/results.py",
+      "source_group": "contracts",
+      "target_module": "econhdfe.prediction_api",
       "target_group": "contracts",
       "reexport_surface": false
     },
@@ -4605,6 +4741,14 @@
       "source_path": "econhdfe/sessions.py",
       "source_group": "interface",
       "target_module": "econhdfe.results",
+      "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.sessions",
+      "source_path": "econhdfe/sessions.py",
+      "source_group": "interface",
+      "target_module": "econhdfe.prediction",
       "target_group": "contracts",
       "reexport_surface": false
     },
@@ -5236,8 +5380,8 @@
   "repo_areas": [
     {
       "name": "econhdfe",
-      "files": 120,
-      "python_files": 118,
+      "files": 124,
+      "python_files": 122,
       "markdown_files": 2
     },
     {
@@ -5248,8 +5392,8 @@
     },
     {
       "name": "tests",
-      "files": 73,
-      "python_files": 73,
+      "files": 78,
+      "python_files": 78,
       "markdown_files": 0
     },
     {
@@ -5266,9 +5410,9 @@
     },
     {
       "name": "docs",
-      "files": 91,
-      "python_files": 0,
-      "markdown_files": 64
+      "files": 100,
+      "python_files": 1,
+      "markdown_files": 67
     },
     {
       "name": "scripts",
@@ -5284,7 +5428,7 @@
     },
     {
       "name": "compatibility",
-      "files": 25,
+      "files": 26,
       "python_files": 0,
       "markdown_files": 0
     }

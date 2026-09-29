@@ -6,7 +6,7 @@
 
 `econhdfe` 是一个用于 OLS-HDFE、线性 IV-HDFE、PPML-HDFE 和 IV-PPML-HDFE 的 Python 包，面向大规模数据、高基数固定效应、聚类推断、复杂交互项以及大量相近规格的实证工作流。
 
-项目目前仍属于 **alpha 阶段研究软件**。仓库中的开发线为尚未正式发布的 0.6.5，最近一次公开发布版本是 v0.6.3。仓库内已经进行了较广泛的验证，但 licensed Stata 对照和完整 upstream external certification 仍属于独立的外部验证边界。
+项目目前仍属于 **alpha 阶段研究软件**。仓库中的开发线为尚未正式发布的 0.7.0.dev0，最近一次公开发布版本是 v0.6.3。仓库内已经进行了较广泛的验证，但 licensed Stata 对照和完整 upstream external certification 仍属于独立的外部验证边界。
 
 ## 性能概览
 
@@ -189,11 +189,9 @@ OLS、线性 IV、PPML 和 IV-PPML 共用同一套 HDFE 基础设施，包括编
 
 `econhdfe` 不只是一个工程项目。实现任意多维 HDFE 时会出现一些无法仅靠缓存或并行解决的结构问题。
 
-一个典型问题是三维及以上分类固定效应的 absorbed degrees of freedom。若 (D_{FE}) 是组合固定效应设计矩阵，则核心目标是：
+一个典型问题是三维及以上分类固定效应的 absorbed degrees of freedom。若 $D_{\mathrm{FE}}$ 是组合固定效应设计矩阵，则核心目标是：
 
-[
-mathrm{DoF}_{FE} = operatorname{rank}(D_{FE}).
-]
+$$\operatorname{DoF}_{\mathrm{FE}} = \operatorname{rank}(D_{\mathrm{FE}}).$$
 
 对于一维和二维 FE，冗余具有熟悉的图结构。到了任意多维 FE，精确结构秩问题更加复杂。项目中已经有一个 theorem-backed 框架，在明确假设和资源边界下计算任意有限维 categorical FE 的 exact structural rank 和 absorbed DoF。
 
@@ -232,7 +230,7 @@ mathrm{DoF}_{FE} = operatorname{rank}(D_{FE}).
 | IV-PPML-HDFE | 基于共享 weighted-HDFE infrastructure 的 additive-moment IV-PPML |
 | Fixed effects | 多维分类 FE、交互项、heterogeneous slopes、可选 exact structural rank/DoF |
 | 重复规格 | 可复用的 OLS 和 linear-IV session，并带 FE/sample-aware invalidation |
-| Post-estimation | 面向论文结果的输出，以及已识别 categorical/indicator FE recovery |
+| Post-estimation | 论文结果输出、线性组合/Wald、分块 OLS/IV 预测，以及显式保存的分类 FE（0.7 开发线） |
 | Execution | projected data access、memory budgets、structured representations、bounded parallelism、automatic HDFE thread selection |
 | Compatibility | `reghdfe`、`ivreghdfe` 与 legacy `pyreghdfe` 入口 |
 | Agent interface | 项目原生 `econhdfe` Skill，用于 agent-driven empirical 与 development workflow |
@@ -258,6 +256,19 @@ CI 覆盖 Linux、Windows 和 macOS，以及支持的 Python 版本和可行的�
 边界仍然明确：仓库内部的大规模验证并不等价于完整 licensed-Stata 或 upstream external corpus certification。
 
 详见 [Testing](docs/development/testing.md) 和 [validation status](docs/development/test-status.md)。
+
+## 后估计与预测
+
+尚未发布的 0.7 开发线提供 `linear_combination()`、`wald()`，以及标准 OLS 和线性 IV
+的分块预测。`result.predict()` 返回最终估计样本的拟合值；`restore_sample=True`
+按原始物理行位置恢复结果。新数据的 `kind="xb"` 使用冻结设计；`kind="stdp"`
+只包含 beta 协方差，不包含固定效应的不确定性。
+
+新数据的 `response` 和 `fe` 要求通过 `save_fe=True` 显式保存受支持的分类固定效应；
+未知水平和未识别的新组合会被拒绝。本候选不支持 PPML/IV-PPML 预测、varying-slope
+或 group+individual FE 样本外预测，也不包含 margins 和 AME。
+详见[后估计契约](docs/development/postestimation-0.7.md)。安装已发布的 PyPI 版本
+不代表已包含这些开发功能。
 
 ## 固定效应恢复
 

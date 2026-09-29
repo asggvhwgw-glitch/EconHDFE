@@ -1,4 +1,5 @@
 from __future__ import annotations
+from dataclasses import replace
 from time import perf_counter
 from ...errors import error_boundary
 from ...config import HDFEConfig, InferenceConfig, ExecutionConfig
@@ -21,6 +22,8 @@ from ...hdfe.block_projection import BlockWeightedFEProjector
 from ...hdfe.plan import FEPlan
 from ...design import is_heterogeneous_spec_candidate
 from ...results import RegressionResult, EstimationState, FixedEffectEstimates, FixedEffectTermEstimate
+from ...prediction import design_state, linear_prediction_state
+from ...effects.prediction import saved_categorical_state
 from ...reporting import (
     cluster_counts as _cluster_counts, reghdfe_r2_statistics, ivreghdfe_model_statistics,
 )
@@ -178,12 +181,16 @@ def ivhdfe(
             absorb_threads = execution_config.threads
     if individual is not None and group is None:
         raise ValueError("individual= requires group=")
+    identifier_levels = getattr(data, "identifier_levels", {})
     data, data_plan = materialize_model_data(
         data, memory_budget_mb=memory_budget_mb,
         y=y, exog=exog, endog=endog, instruments=instruments, absorb=absorb,
         weights=weights, cluster=cluster, time=time, panel=panel,
         group=group, individual=individual,
     )
+    if data_plan is not None:
+        identifier_levels = data_plan.identifier_levels
+
     collinearity = _check_collinearity_mode(collinearity)
     if group is not None:
         method_resolved, solver_selection = _resolve_method(
@@ -428,6 +435,43 @@ def ivhdfe(
             _resolve_pool_size(absorber, block.shape[1], pool_size, memory_budget_mb),
             solver_selection=solver_selection,
         )
+    prediction_state = linear_prediction_state(
+        estimator=meta.get("estimator", est),
+        coefficient_names=names,
+        coefficient_roles=("exogenous", "endogenous"),
+        designs=(
+            design_state(
+                cdesign, role="exogenous",
+                active_indices=collin_info["exogenous"]["active_indices"],
+                identifier_levels=identifier_levels,
+            ),
+            design_state(
+                edesign, role="endogenous",
+                active_indices=collin_info["endogenous"]["active_indices"],
+                identifier_levels=identifier_levels,
+            ),
+            design_state(
+                zdesign, role="excluded_instrument",
+                active_indices=collin_info["excluded_instruments"]["active_indices"],
+                identifier_levels=identifier_levels,
+            ),
+        ),
+        sample_state=sample_state,
+        fe_plan=fe_plan,
+        fe_names=fe_names,
+        requested_fe_groups=inference_fe.groups,
+        effective_fe_groups=groups,
+        fe_intercepts=intercepts,
+        fe_slopes=slopes,
+        recovered_effects=fixed_effects,
+    )
+    if save_fe:
+        fe_state = saved_categorical_state(
+            prediction_state.fixed_effects, data=data, mask=mask,
+            inference=inference_fe, plan=fe_plan, groups=groups,
+            recovered=fixed_effects, beta=beta, identifier_levels=identifier_levels,
+        )
+        prediction_state = replace(prediction_state, fixed_effects=fe_state)
     result = RegressionResult(
         params=beta, vcov=V, stderr=np.sqrt(np.clip(np.diag(V), 0, None)),
         residuals=resid, fitted=fitted, nobs=int(round(winfo.effective_n)), rank=rank,
@@ -450,6 +494,7 @@ def ivhdfe(
         ) if keep_state else None,
         confidence_level=confidence_level,
         diagnostics_mode=inference_config.diagnostics if inference_config is not None else "off",
+        prediction_state=prediction_state,
     )
     if _t0 is not None:
         result.profile = {"total_seconds": perf_counter() - _t0, "mode": execution_config.profile}

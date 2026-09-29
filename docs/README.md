@@ -11,6 +11,8 @@ The documentation is organized by **current behavior**, **mathematical/technical
 
 ## Empirical users
 
+- [Post-estimation and prediction (0.7 development)](development/postestimation-0.7.md) — frozen design, prediction targets, identification and inference boundaries.
+
 - [Identified categorical fixed effects](technical/identified-fixed-effects.md) — FE recovery, identification and normalization.
 - [Testing guide](development/testing.md) — how behavior and numerical parity are checked.
 - [Migration notes](release/migration.md) — changes between public releases.
@@ -35,12 +37,17 @@ The documentation is organized by **current behavior**, **mathematical/technical
 
 ## Inference and specialized technical notes
 
+- [IV correctness closeout](development/iv-correctness-closeout.md) — identification checks, sensitive solves and weighted/fixed-kappa inference.
+
 - [Cluster inference](technical/cluster-inference.md)
 - [Heterogeneous specification optimization](technical/heterogeneous-specification-optimization.md)
 - [Partitioned WLS](technical/partitioned-wls.md)
 - [HDFE technical documents](technical/hdfe/)
 
 ## Validation and external references
+
+- [Planner/performance report template](development/PLANNER_REPORT_TEMPLATE.md) — privacy-minimized execution feedback.
+- `econhdfe.support_reports` / `econhdfe-report` — installed scalar/counter support reports; real-data benchmarking requires separate authorization.
 
 - [Test environment](development/test-environment.md)
 - [External validation](development/external-validation.md)

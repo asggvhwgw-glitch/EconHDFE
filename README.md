@@ -6,7 +6,7 @@
 
 `econhdfe` is a Python package for OLS-HDFE, linear IV-HDFE, PPML-HDFE, and IV-PPML-HDFE. It is designed for empirical work with large datasets, high-cardinality fixed effects, clustered inference, rich interactions, and many closely related specifications.
 
-The project is currently **alpha research software**. The repository contains the unreleased 0.6.5 development line, while the latest published release is v0.6.3. Repository-local validation is extensive, but licensed-Stata and complete upstream external certification remain separate validation boundaries.
+The project is currently **alpha research software**. The repository contains the unreleased 0.7.0.dev0 development line, while the latest published release is v0.6.3. Repository-local validation is extensive, but licensed-Stata and complete upstream external certification remain separate validation boundaries.
 
 ## Performance at a glance
 
@@ -205,7 +205,7 @@ The core mathematical statements of these three theorem-backed lines are now mac
 | IV-PPML-HDFE | Additive-moment IV-PPML on the shared weighted HDFE infrastructure |
 | Fixed effects | Multiway categorical FE, interactions, heterogeneous slopes, optional exact structural rank/DoF |
 | Repeated specifications | Reusable OLS and linear-IV sessions with FE/sample-aware invalidation |
-| Post-estimation | Publication-oriented results and identified categorical/indicator FE recovery |
+| Post-estimation | Publication results, linear contrasts/Wald, chunked OLS/IV predictions and explicitly saved categorical FE (0.7 development line) |
 | Execution | Projected data access, memory budgets, structured representations, bounded parallelism and automatic HDFE thread selection |
 | Compatibility | `reghdfe`, `ivreghdfe`, and legacy `pyreghdfe` entry points |
 | Agent interface | Native `econhdfe` Skill for agent-driven empirical and development workflows |
@@ -221,6 +221,21 @@ CI covers Linux, Windows, and macOS across supported Python versions, together w
 The claim boundary remains explicit. Extensive repository-local testing is not equivalent to complete licensed-Stata or upstream external-corpus certification, and those external checks are not claimed merely because the internal suite is large.
 
 See [Testing](docs/development/testing.md) and the [validation status](docs/development/test-status.md) for details.
+
+## Post-estimation and prediction
+
+The unreleased 0.7 development line provides `linear_combination()` and `wald()`,
+plus chunked predictions for standard OLS and linear IV. `result.predict()`
+returns fitted values for the estimation sample; `restore_sample=True` restores
+original row positions. New-data `kind="xb"` uses the frozen design, while
+`kind="stdp"` includes beta covariance only, not fixed-effect uncertainty.
+New-data `response` and `fe` require supported categorical fixed effects saved
+explicitly with `save_fe=True`; unknown levels and unidentified combinations
+are rejected. PPML/IV-PPML prediction, varying-slope or group+individual FE
+prediction, margins and AME are not supported in this candidate.
+See the [post-estimation contract](docs/development/postestimation-0.7.md).
+Installing the published PyPI release does not imply these development features
+are included.
 
 ## Fixed-effect recovery
 
