@@ -1,5 +1,8 @@
 # HDFE numerical solver design
 
+> **Document status:** Current EconHDFE project technical documentation.
+
+
 The numerical solver is a distinct layer from structural DoF/rank. Its job is to compute the within transformation efficiently while preserving the column space requested by the estimator.
 
 ## Three representations
