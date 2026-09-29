@@ -1,35 +1,48 @@
-# Technical documentation and innovation policy
+# EconHDFE Technical Documentation
 
-This directory contains mathematical/algorithmic documentation, implementation notes and the package-wide technical-innovation audit.
+This directory is the source of truth for current mathematical/algorithmic documentation, technical boundaries, and theorem-backed project documents.
 
-## Technical overview documents
+## Technical overview
 
-- [`overview.md`](overview.md) — end-to-end technical contract: estimator semantics, HDFE absorption, data layer, structural compilation, execution planning, repeated workflows, fixed-effect recovery and validation boundaries.
-- [`performance-architecture.md`](performance-architecture.md) — where large HDFE workloads actually spend time, and how repeated data preparation, design construction and projection work is removed before any kernel is optimized.
-- [`identified-fixed-effects.md`](identified-fixed-effects.md) — fixed-effect recovery: realized-sample identification, connected components, normalization, singleton/separation diagnostics and partial-block salvage.
+- [`overview.md`](overview.md) — estimator semantics, HDFE absorption, structural compilation, data layer, execution planning, repeated workflows and validation boundaries.
+- [`performance-architecture.md`](performance-architecture.md) — where large HDFE workloads spend time and why representation/reuse precede kernel optimization.
+- [`identified-fixed-effects.md`](identified-fixed-effects.md) — FE recovery, connected components, normalization and identification boundaries.
+- [`formal-verification.md`](formal-verification.md) — machine-checked mathematics versus software/numerical/originality claims.
 
-## Innovation source of truth
+## Theorem-backed project technical documents
 
-- `innovation-audit.md` — complete package audit distinguishing genuine technical innovation from established methods and engineering.
-- `innovation-registry.json` — machine-readable release contract. Every item classified as `technical_innovation` must have a formal `.tex` manuscript and compiled `.pdf`, plus implementation/test/evidence mappings.
+The project currently maintains three theorem-backed technical document lines:
 
-The current registered innovations are:
+1. [Exact arbitrary-G categorical HDFE structural rank / absorbed DoF](hdfe/exact-multiway-dof/)
+2. [Exact arbitrary-G residual-core reduction](hdfe/numerical-residual-core/)
+3. [Exact partition-refinement structural design reduction](structural-design/)
 
-1. exact arbitrary-G categorical HDFE structural rank / absorbed DoF;
-2. exact arbitrary-G numerical residual-core reduction;
-3. exact partition-refinement HDFE canonicalization and structural design reduction.
+These are **EconHDFE Project Technical Documentation**, not anonymous manuscripts. Their mathematical claims, implementation mappings and prior-art boundaries are kept explicit. The core mapped mathematical statements have separate Lean 4 verification under [`formal/`](../../formal/README.md).
 
-No other current feature should be described as an original econhdfe technical contribution without updating the audit, literature boundary, registry and formal manuscript in the same release.
+## Mathematical verification
 
-## Machine-checked mathematical verification
+- [Coverage table](../../formal/mathematical-coverage.md)
+- [Exact-rank structural correspondence](../../formal/rank-correspondence.md)
+- [Exact-rank arithmetic correspondence](../../formal/arithmetic-correspondence.md)
+- [Formal-verification appendices](../../formal/appendices/)
 
-The three registered theorem-backed contributions now have a separate Lean 4 proof library under [`formal/`](../../formal/README.md). The canonical coverage table is [`formal/mathematical-coverage.md`](../../formal/mathematical-coverage.md), with manuscript-ready appendix fragments under [`formal/appendices/`](../../formal/appendices/).
+Machine-checked status applies to explicitly mapped mathematical statements and assumptions. It does not certify Python/Numba program correctness, floating-point convergence, benchmark performance, external-package parity, or historical originality.
 
-The verification scope is deliberately mathematical only: explicitly mapped theorem statements, assumptions, and corollaries are machine-checked. Python/Numba implementation correctness, floating-point convergence, benchmark performance, external Stata parity, and historical originality remain separate claims. See [formal verification status](formal-verification.md).
+## Numerical and inference documentation
 
-## Domain documentation
+- [HDFE documentation](hdfe/)
+- [Structural design](structural-design/)
+- [Cluster inference](cluster-inference.md)
+- [Heterogeneous specification optimization](heterogeneous-specification-optimization.md)
+- [Partitioned WLS](partitioned-wls.md)
 
-- `hdfe/` — exact rank/DoF mathematics, exact residual-core projection, solver implementation notes and exact-rank backends.
-- `structural-design/` — exact partition-refinement / dependency-DAG design reduction manuscript.
-- `cluster-inference.md` — established CRV/WCR cluster-inference behavior and support boundaries; this is technical documentation, not an originality claim.
-- [`heterogeneous-specification-optimization.md`](heterogeneous-specification-optimization.md): internal acceleration for interaction-rich and heterogeneous-coefficient empirical specifications, including model integration and dense-fallback boundaries.
+## Innovation policy
+
+- [`innovation-audit.md`](innovation-audit.md) — package-wide distinction between established methods, engineering and registered theorem-backed work.
+- [`innovation-registry.json`](innovation-registry.json) — machine-readable registry and artifact mapping.
+
+A theorem-backed result is not automatically a novelty claim. The registry continues to use `originality_status: not_independently_established` until a separate prior-art review supports a stronger statement.
+
+## Historical reviews
+
+Version-specific mathematical and resource reviews are retained under [`history/`](history/) for provenance. They are not the current source of truth for mathematical coverage or runtime behavior.

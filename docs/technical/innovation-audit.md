@@ -1,6 +1,6 @@
 # 0.6.1 review status
 
-Current registry classes are `theorem_backed_framework` and `theorem_backed_application`. They describe mathematical support, **not confirmed novelty**. The historical claim discussion below is retained for traceability and is subordinate to this qualification. Full proof/implementation corrections and tests: [mathematical-review-0.6.1.md](mathematical-review-0.6.1.md).
+Current registry classes are `theorem_backed_framework` and `theorem_backed_application`. They describe mathematical support, **not confirmed novelty**. The historical claim discussion below is retained for traceability and is subordinate to this qualification. Full proof/implementation corrections and tests: [historical mathematical review](history/mathematical-review-0.6.1.md).
 
 # Package-wide technical-innovation audit
 
@@ -10,7 +10,7 @@ The audit is conservative. A feature is not called an innovation merely because 
 
 ## Audited innovations
 
-The following three contributions have theorem-backed artifacts. Their correctness and implementation have been reviewed under the assumptions stated in `mathematical-review-0.6.1.md`; none is advertised as independently established new mathematics.
+The following three contributions have theorem-backed artifacts. Their correctness and implementation have been reviewed under the assumptions stated in `history/mathematical-review-0.6.1.md`; none is advertised as independently established new mathematics.
 
 | ID | Technical contribution | Formal manuscript | Claim boundary |
 | --- | --- | --- | --- |
