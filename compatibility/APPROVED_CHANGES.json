@@ -1,5 +1,24 @@
 {
-  "approved": [],
+  "approved": [
+    {
+      "id": "1b5fc6d2e56de2ed",
+      "path": "result_schemas.RegressionResult",
+      "kind": "changed",
+      "reason": "Intentional additive RegressionResult prediction_state contract for the post-estimation foundation."
+    },
+    {
+      "id": "4171fde26c73b8d0",
+      "path": "exported_dataclass_schemas.RegressionResult",
+      "kind": "changed",
+      "reason": "Intentional additive RegressionResult prediction_state contract for the post-estimation foundation."
+    },
+    {
+      "id": "dcecdeb9a0db3fe4",
+      "path": "signatures.RegressionResult",
+      "kind": "changed",
+      "reason": "Intentional additive RegressionResult prediction_state contract for the post-estimation foundation."
+    }
+  ],
   "baseline_version": "0.6.4",
   "release_version": "0.6.5",
   "schema_version": 1
