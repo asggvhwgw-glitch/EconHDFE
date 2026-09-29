@@ -17,7 +17,7 @@ theorem rank_lower_of_nonzero_minor {r : ℕ} (A : Matrix I V F)
     (rows : Fin r → I) (cols : Fin r → V)
     (hdet : (A.submatrix rows cols).det ≠ 0) : r ≤ A.rank := by
   have hunit : IsUnit (A.submatrix rows cols) :=
-    Matrix.isUnit_iff_isUnit_det.mpr (isUnit_iff_ne_zero.mpr hdet)
+    (Matrix.isUnit_iff_isUnit_det _).mpr (isUnit_iff_ne_zero.mpr hdet)
   have hr : (A.submatrix rows cols).rank = r := by
     simpa only [Fintype.card_fin] using
       Matrix.rank_of_isUnit (A.submatrix rows cols) hunit
@@ -58,25 +58,39 @@ theorem matrix_exists_rank_columns (A : Matrix I V F) (r : ℕ) (hr : A.rank = r
       exact ⟨e.symm j, rfl⟩
     · rintro ⟨j, rfl⟩
       exact ⟨e j, by simp [cols]⟩
-  rw [Matrix.rank_eq_finrank_span_cols, Matrix.rank_eq_finrank_span_cols]
-  change Module.finrank F (Submodule.span F (Set.range (A.col ∘ cols))) = _
-  rw [hsets, hspan]
+  calc
+    (A.submatrix id cols).rank =
+        Module.finrank F (Submodule.span F (Set.range (A.col ∘ cols))) :=
+      Matrix.rank_eq_finrank_span_cols _
+    _ = Module.finrank F (Submodule.span F (Set.range A.col)) := by rw [hsets, hspan]
+    _ = A.rank := (Matrix.rank_eq_finrank_span_cols A).symm
+
+/-- Explicit finite order avoids rewriting ranks inside dependent index types. -/
+theorem matrix_exists_minor_of_rank (A : Matrix I V F) (r : ℕ) (hrank : A.rank = r) :
+    ∃ (rows : Fin r → I) (cols : Fin r → V),
+      Function.Injective rows ∧ Function.Injective cols ∧
+        (A.submatrix rows cols).det ≠ 0 := by
+  obtain ⟨cols, hcols, hc⟩ := matrix_exists_rank_columns A r hrank
+  let B : Matrix I (Fin r) F := A.submatrix id cols
+  have hBt : B.transpose.rank = r := (Matrix.rank_transpose B).trans hc
+  obtain ⟨rows, hrows, hr⟩ := matrix_exists_rank_columns B.transpose r hBt
+  refine ⟨rows, cols, hrows, hcols, square_det_nonzero_of_rank _ ?_⟩
+  have heq : (A.submatrix rows cols).transpose = B.transpose.submatrix id rows := rfl
+  calc
+    (A.submatrix rows cols).rank = (A.submatrix rows cols).transpose.rank :=
+      (Matrix.rank_transpose _).symm
+    _ = (B.transpose.submatrix id rows).rank := congrArg Matrix.rank heq
+    _ = Fintype.card (Fin r) := by simpa only [Fintype.card_fin] using hr
 
 /-- A matrix has a nonzero minor of order exactly its actual rank. -/
 theorem matrix_exists_rank_minor (A : Matrix I V F) :
     ∃ (rows : Fin A.rank → I) (cols : Fin A.rank → V),
       Function.Injective rows ∧ Function.Injective cols ∧
-        (A.submatrix rows cols).det ≠ 0 := by
-  obtain ⟨cols, hcols, hc⟩ := matrix_exists_rank_columns A A.rank rfl
-  obtain ⟨rows, hrows, hr⟩ := matrix_exists_rank_columns
-    (A.submatrix id cols).transpose A.rank ((Matrix.rank_transpose _).trans hc)
-  refine ⟨rows, cols, hrows, hcols, square_det_nonzero_of_rank _ ?_⟩
-  have heq : (A.submatrix rows cols).transpose =
-      (A.submatrix id cols).transpose.submatrix id rows := rfl
-  rw [← Matrix.rank_transpose, heq]
-  simpa only [Fintype.card_fin] using hr
+        (A.submatrix rows cols).det ≠ 0 :=
+  matrix_exists_minor_of_rank A A.rank rfl
 
 /-- Taking a minor commutes with determinant under a ring homomorphism. -/
+omit [Fintype I] [Fintype V] in
 theorem minor_det_map {R S : Type*} [CommRing R] [CommRing S] {r : ℕ}
     (f : R →+* S) (A : Matrix I V R) (rows : Fin r → I) (cols : Fin r → V) :
     ((A.map f).submatrix rows cols).det = f ((A.submatrix rows cols).det) := by
