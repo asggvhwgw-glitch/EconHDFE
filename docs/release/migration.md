@@ -24,7 +24,7 @@ failure/reporting semantics change where 0.6.1 was incorrect:
   covariance bread. It is NOT the exact categorical FE rank/DoF.
 
 References, scope and local evidence:
-`docs/technical/nonlinear-and-resource-review-0.6.2.md`,
+`docs/technical/history/nonlinear-and-resource-review-0.6.2.md`,
 `docs/development/test-status.md`, `docs/release/performance-0.6.2.md`.
 
 ---
