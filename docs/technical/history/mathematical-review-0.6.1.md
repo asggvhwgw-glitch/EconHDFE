@@ -1,5 +1,8 @@
 # econhdfe 0.6.1 数学结论、跨领域应用与实现复核
 
+> **Document status:** Historical 0.6.1 mathematical correctness review; retained for provenance.
+
+
 审查日期：2026-09-14。基线：用户提供的 0.6.0 release bundle；结论针对修订后的 0.6.1 本地候选包。原始归档未覆盖。本文与 `tests/test_mathematical_review.py`、`tests/test_release_hardening.py` 及原审计测试共同构成可复核证据；不能把测试通过当成对所有输入的数学证明。
 
 ## 1. 结论与范围
