@@ -27,7 +27,7 @@ The library pins Lean 4.19.0 and Mathlib commit `c44e0c8ee63ca166450922a373c7409
 
 The canonical theorem-by-theorem mapping is `formal/mathematical-coverage.md`. More detailed exact-rank mapping is retained in `formal/rank-correspondence.md` and `formal/arithmetic-correspondence.md`.
 
-## Manuscript integration
+## Technical-document integration
 
 The Lean appendix fragments target the corrected 2026-09-28 project technical document sources and are now included directly by those corrected TeX sources on `dev/lean-foundations`. A dedicated technical-document workflow recompiles the three PDFs and checks references, citations, overfull boxes, and the presence of the Lean appendix text. The historical base PDFs remain provenance only; machine-checked status belongs to the mapped mathematical statements in the exact audited source commit.
 
@@ -35,7 +35,7 @@ The Lean appendix fragments target the corrected 2026-09-28 project technical do
 ## Compiled technical-document artifacts
 
 The corrected sources and integrated Lean appendices are compiled by the dedicated
-`Technical manuscript PDFs` workflow. The final closeout build produced:
+`Technical manuscript PDFs` workflow (workflow name retained for compatibility). The final closeout build produced:
 
 - exact multiway rank/DoF: 17 pages;
 - residual-core reduction: 8 pages;
@@ -43,5 +43,5 @@ The corrected sources and integrated Lean appendices are compiled by the dedicat
 
 The build rejects undefined references/citations and overfull boxes, and confirms
 that each PDF contains its Lean formalization appendix. The PDFs are committed at
-their canonical manuscript paths in `docs/technical/`; the workflow artifact is
+their canonical project technical-document paths in `docs/technical/`; the workflow artifact is
 an additional reproducibility bundle rather than the sole copy.
