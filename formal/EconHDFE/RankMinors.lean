@@ -26,7 +26,7 @@ theorem rank_lower_of_nonzero_minor {r : ℕ} (A : Matrix I V F)
     _ ≤ A.rank := matrix_rank_submatrix_le A rows cols
 
 /-- Full rank of a finite square matrix implies nonzero determinant. -/
-theorem square_det_nonzero_of_rank {n : Type*} [Fintype n]
+theorem square_det_nonzero_of_rank {n : Type*} [Fintype n] [DecidableEq n]
     (A : Matrix n n F) (hr : A.rank = Fintype.card n) : A.det ≠ 0 := by
   have htop : LinearMap.range A.mulVecLin = ⊤ :=
     Submodule.eq_top_of_finrank_eq (by simpa [Matrix.rank] using hr)

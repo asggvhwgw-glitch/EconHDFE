@@ -18,3 +18,4 @@ import EconHDFE.CharZeroRank
 import EconHDFE.ModularRankCertificate
 import EconHDFE.ExactRowReduction
 import EconHDFE.ModularRankExamples
+import EconHDFE.CertifiedRankPipeline
