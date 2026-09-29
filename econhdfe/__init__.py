@@ -17,6 +17,7 @@ from .hdfe import (
     CategoricalRankInfo, RankBackend, available_rank_backends, categorical_rank, categorical_prefix_ranks,
 )
 from .results import RegressionResult, EstimationState, FixedEffectEstimates, FixedEffectTermEstimate
+from .postestimation import LinearCombinationResult, WaldTestResult
 from .bootstrap import wild_bootstrap, wild_cluster_bootstrap_ols, parallel_pairs_bootstrap
 from .inference.cluster import (
     ClusterDiagnostics, ClusterDimensionDiagnostics, WildClusterTestResult,
@@ -33,7 +34,7 @@ __all__ = [
     "olshdfe", "ppmlhdfe", "ivhdfe", "ivppmlhdfe",
     "reghdfe", "ivreghdfe",
     "HDFEAbsorber", "TwoWayFEAbsorber", "TwoWaySolveInfo", "GroupIndividualAbsorber", "GroupIndividualInfo",
-    "RegressionResult", "EstimationState", "FixedEffectEstimates", "FixedEffectTermEstimate",
+    "RegressionResult", "EstimationState", "FixedEffectEstimates", "FixedEffectTermEstimate", "LinearCombinationResult", "WaldTestResult",
     "FixedEffect", "Interaction", "Factor", "RegressorInteraction", "OmitSpec", "fe", "interaction",
     "factor", "reg_interaction", "fv", "omit_column", "omit_term", "omit_level", "HDFEConvergenceError",
     "DofInfo", "WeightInfo", "wild_bootstrap", "wild_cluster_bootstrap_ols", "parallel_pairs_bootstrap", "cluster_diagnostics", "wild_cluster_test_ols", "ClusterDiagnostics", "ClusterDimensionDiagnostics", "WildClusterTestResult",
