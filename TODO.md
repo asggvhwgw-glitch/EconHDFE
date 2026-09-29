@@ -13,7 +13,7 @@ PERF-01 与 QA-01 已合入。发布工作流已泛化，后续发布仍需明�
 
 来源：[0.6.3 Release](https://github.com/asggvhwgw-glitch/EconHDFE/releases/tag/v0.6.3)、
 [基线 CI](https://github.com/asggvhwgw-glitch/EconHDFE/actions/runs/36299787125)。
-旧发布维护记录 `RELEASE_CLOSEOUT.md` 保留为历史，不改写旧测试、哈希或数学文稿。
+旧发布维护记录 `docs/release/history/0.6.3-closeout.md` 保留为历史，不改写旧测试、哈希或数学文稿。
 **旧版本通过不等于 0.6.5 通过**；新版本必须重新取得全部必要执行证据。
 VAL-01 的 licensed-Stata/upstream 外部认证仍未完成；alpha 声明保持，不以普通发行冒充外部认证。
 
@@ -32,7 +32,7 @@ VAL-01 的 licensed-Stata/upstream 外部认证仍未完成；alpha 声明保持
 | MATH-01 | P1 | 数学理论形式化已完成 | 三项 theorem-backed 工作的核心数学命题已映射到 Lean 4，并通过整库编译、逐定理公理审计与附录引用检查；软件实现、浮点行为和算法资源管理不属于本项完成标准 |
 | VAL-01 | 按声明 | 并行待验收 | 独立数值 oracle 不等于 Stata 认证；保留参考版本、样本、权重、DoF/修正与差异分类 |
 
-本轮实现说明及复现入口：`docs/development/maintenance-0.6.4.md`。
+本轮实现说明及复现入口：`docs/development/history/maintenance-0.6.4.md`。
 
 ## B. 0.6.5 主分支验收与发布边界
 
