@@ -83,6 +83,7 @@ jobs:
             echo "Compiled PDFs are already current."
           else
             git commit -m "Compile corrected manuscripts with Lean appendices [skip ci]"
+            git pull --rebase origin dev/lean-foundations
             git push origin HEAD:dev/lean-foundations
           fi
       - uses: actions/upload-artifact@v4
