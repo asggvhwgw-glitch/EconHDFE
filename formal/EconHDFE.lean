@@ -19,3 +19,7 @@ import EconHDFE.ModularRankCertificate
 import EconHDFE.ExactRowReduction
 import EconHDFE.ModularRankExamples
 import EconHDFE.CertifiedRankPipeline
+import EconHDFE.LeastSquaresExistence
+import EconHDFE.ActivePartitionRefinement
+import EconHDFE.WithinInvariance
+import EconHDFE.ResidualCoreTotal
