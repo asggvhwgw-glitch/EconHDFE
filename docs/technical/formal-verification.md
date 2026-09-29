@@ -1,8 +1,13 @@
 # Machine-checked mathematical verification
 
+> **Status:** Current project technical documentation.  
+> **Scope:** Machine-checked Lean coverage for the three theorem-backed mathematical lines.  
+> **Boundary:** Mathematical verification only; software implementation, floating-point behavior, performance, external parity, and historical originality are separate claims.
+
+
 EconHDFE keeps mathematical verification separate from software verification.
 
-The three registered theorem-backed contributions have Lean 4 proofs for their core mathematical statements under the assumptions recorded in `formal/mathematical-coverage.md`. The proof library is rooted at `formal/README.md`; manuscript-ready appendix fragments are in `formal/appendices/`.
+The three registered theorem-backed contributions have Lean 4 proofs for their core mathematical statements under the assumptions recorded in `formal/mathematical-coverage.md`. The proof library is rooted at `formal/README.md`; project-technical-document appendix fragments are in `formal/appendices/`.
 
 ## Verified mathematical lines
 
@@ -24,10 +29,10 @@ The canonical theorem-by-theorem mapping is `formal/mathematical-coverage.md`. M
 
 ## Manuscript integration
 
-The Lean appendix fragments target the corrected 2026-09-28 manuscript texts and are now included directly by those corrected TeX sources on `dev/lean-foundations`. A dedicated manuscript workflow recompiles the three PDFs and checks references, citations, overfull boxes, and the presence of the Lean appendix text. The historical base PDFs remain provenance only; machine-checked status belongs to the mapped mathematical statements in the exact audited source commit.
+The Lean appendix fragments target the corrected 2026-09-28 project technical document sources and are now included directly by those corrected TeX sources on `dev/lean-foundations`. A dedicated technical-document workflow recompiles the three PDFs and checks references, citations, overfull boxes, and the presence of the Lean appendix text. The historical base PDFs remain provenance only; machine-checked status belongs to the mapped mathematical statements in the exact audited source commit.
 
 
-## Compiled manuscript artifacts
+## Compiled technical-document artifacts
 
 The corrected sources and integrated Lean appendices are compiled by the dedicated
 `Technical manuscript PDFs` workflow. The final closeout build produced:
