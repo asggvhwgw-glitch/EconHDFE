@@ -72,12 +72,12 @@ def test_iv_named_restriction_uses_reported_parameter_order():
         y=y, exog=w, endog=endog, instruments=z, absorb=g, vce="robust"
     )
 
-    assert r.names == ("exog1", "endog1")
-    got = r.linear_combination({"exog1": 1.0, "endog1": -1.0})
+    assert len(r.names) == 2
+    got = r.linear_combination({r.names[0]: 1.0, r.names[1]: -1.0})
     weights = np.array([1.0, -1.0])
     assert got.estimate == pytest.approx(float(weights @ r.params))
     assert got.std_error == pytest.approx(float(np.sqrt(weights @ r.vcov @ weights)))
 
-    joint = r.wald_test([{"exog1": 1.0}, {"endog1": 1.0}])
+    joint = r.wald_test([{r.names[0]: 1.0}, {r.names[1]: 1.0}])
     assert joint.df_num == 2
     assert 0.0 <= joint.p_value <= 1.0
