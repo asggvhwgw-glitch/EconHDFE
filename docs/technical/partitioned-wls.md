@@ -1,5 +1,10 @@
 # Row-partitioned HDFE weighted least squares: implementation note
 
+> **Status:** Current project technical documentation.  
+> **Scope:** Row-partitioned weighted least-squares execution for structurally sparse HDFE designs.  
+> **Boundary:** Established numerical method adapted to EconHDFE; not registered as a new theorem-backed contribution.
+
+
 ## Status and originality boundary
 
 This note documents an **established numerical method adapted to econhdfe's structural execution layer**. It is not registered in `innovation-registry.json` as a new technical contribution.
