@@ -1,5 +1,8 @@
 # Machine-checked mathematical verification
 
+> **Document status:** Current EconHDFE project technical documentation.
+
+
 EconHDFE keeps mathematical verification separate from software verification.
 
 The three registered theorem-backed contributions have Lean 4 proofs for their core mathematical statements under the assumptions recorded in `formal/mathematical-coverage.md`. The proof library is rooted at `formal/README.md`; manuscript-ready appendix fragments are in `formal/appendices/`.
