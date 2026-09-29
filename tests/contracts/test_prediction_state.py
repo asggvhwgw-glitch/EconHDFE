@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from econhdfe import factor, ivhdfe, olshdfe
+from econhdfe import IVHDFESession, OLSHDFESession, factor, ivhdfe, olshdfe
 
 
 def _frame(seed=91, n=600):
@@ -118,3 +118,36 @@ def test_array_design_is_recorded_but_not_claimed_reconstructable():
     assert not design.reconstructable
     assert not state.can_rebuild_linear_predictor
     assert all(term.continuous[0].source is None for term in design.terms)
+
+
+def test_session_prediction_state_matches_direct_named_design_contract():
+    df = _frame(seed=95)
+    direct = olshdfe(
+        df, y="y", x=["x", "w"], absorb=["firm"], collinearity="drop"
+    )
+    session = OLSHDFESession(df, collinearity="drop")
+    reused = session.fit(y="y", x=["x", "w"], absorb=["firm"])
+
+    assert reused.prediction_state is not None
+    assert reused.prediction_state.coefficient_names == direct.prediction_state.coefficient_names
+    assert reused.prediction_state.design("regressor").active_names == direct.names
+    assert reused.prediction_state.design("regressor").reconstructable
+    np.testing.assert_array_equal(
+        reused.prediction_state.sample.mask(),
+        direct.prediction_state.sample.mask(),
+    )
+
+
+def test_iv_session_prediction_state_preserves_all_roles():
+    df = _frame(seed=96)
+    session = IVHDFESession(df, vce="robust", collinearity="drop")
+    result = session.fit(
+        y="y", exog=["w"], endog=["endog"], instruments=["z"], absorb=["firm"]
+    )
+
+    state = result.prediction_state
+    assert state is not None
+    assert state.coefficient_names == result.names
+    assert state.design("exogenous").active_names + state.design("endogenous").active_names == result.names
+    assert state.design("excluded_instrument").active_names == ("z",)
+    assert state.can_rebuild_linear_predictor
