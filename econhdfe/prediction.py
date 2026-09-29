@@ -29,16 +29,22 @@ class EstimationSampleSnapshot:
     history: tuple[SampleExclusionState, ...] = ()
 
     @classmethod
-    def from_state(cls, state) -> "EstimationSampleSnapshot":
-        mask = np.asarray(state.mask, dtype=bool)
+    def from_mask(cls, mask, *, history=()) -> "EstimationSampleSnapshot":
+        mask = np.asarray(mask, dtype=bool)
+        if mask.ndim != 1:
+            raise ValueError("estimation sample mask must be one-dimensional")
         packed = None if bool(np.all(mask)) else np.packbits(mask, bitorder="little").tobytes()
+        return cls(int(mask.size), int(np.count_nonzero(mask)), packed, tuple(history))
+
+    @classmethod
+    def from_state(cls, state) -> "EstimationSampleSnapshot":
         history = tuple(
             SampleExclusionState(
                 str(item.stage), str(item.reason), int(item.dropped), int(item.remaining)
             )
             for item in state.history
         )
-        return cls(int(state.nobs_raw), int(state.nobs), packed, history)
+        return cls.from_mask(state.mask, history=history)
 
     def mask(self) -> np.ndarray:
         if self.packed_mask is None:
@@ -207,6 +213,31 @@ def design_state(design, *, role: str, active_indices) -> DesignPredictionState:
     )
 
 
+def named_design_state(names, *, role: str, active_indices) -> DesignPredictionState:
+    names = tuple(str(x) for x in names)
+    terms = tuple(
+        DesignTermState(
+            name=name,
+            kind="continuous",
+            column_names=(name,),
+            active_mask=(True,),
+            continuous=(PredictionInput(name, name),),
+        )
+        for name in names
+    )
+    active = tuple(int(i) for i in active_indices)
+    if any(i < 0 or i >= len(names) for i in active):
+        raise ValueError("prediction active-column indices are out of range")
+    return DesignPredictionState(
+        role=str(role),
+        requested_names=names,
+        materialized_names=names,
+        active_names=tuple(names[i] for i in active),
+        active_indices=active,
+        terms=terms,
+    )
+
+
 def fixed_effect_state(
     plan,
     *,
@@ -261,7 +292,6 @@ def linear_prediction_state(
     coefficient_names,
     coefficient_roles,
     designs,
-    sample_state,
     fe_plan,
     fe_names,
     requested_fe_groups,
@@ -269,13 +299,23 @@ def linear_prediction_state(
     fe_intercepts,
     fe_slopes,
     recovered_effects=None,
+    sample_state=None,
+    sample_mask=None,
+    sample_history=(),
 ) -> PredictionState:
+    if (sample_state is None) == (sample_mask is None):
+        raise ValueError("provide exactly one of sample_state or sample_mask")
+    sample = (
+        EstimationSampleSnapshot.from_state(sample_state)
+        if sample_state is not None
+        else EstimationSampleSnapshot.from_mask(sample_mask, history=sample_history)
+    )
     return PredictionState(
         estimator=str(estimator),
         coefficient_names=tuple(str(x) for x in coefficient_names),
         coefficient_roles=tuple(str(x) for x in coefficient_roles),
         designs=tuple(designs),
-        sample=EstimationSampleSnapshot.from_state(sample_state),
+        sample=sample,
         fixed_effects=fixed_effect_state(
             fe_plan,
             effective_names=fe_names,
