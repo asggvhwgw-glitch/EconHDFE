@@ -575,8 +575,8 @@ def _prediction_terms(compiled: _CompiledStructuredDesign) -> tuple[DesignTermSt
             CategoricalEncodingState(
                 name=str(enc.root),
                 source=_prediction_source(enc.token),
-                levels=tuple(_python_level(v) for v in enc.levels.tolist()),
-                selected=tuple(bool(v) for v in enc.selected.tolist()),
+                levels=enc.levels,
+                selected=enc.selected,
             )
             for enc in bp.categorical_encodings
         )
@@ -584,12 +584,9 @@ def _prediction_terms(compiled: _CompiledStructuredDesign) -> tuple[DesignTermSt
             PredictionInput(str(label), _prediction_source(token))
             for label, token in zip(bp.continuous_labels, bp.continuous_tokens, strict=False)
         )
-        cells = tuple(
-            tuple(
-                _python_level(bp.categorical_encodings[j].levels[level_index])
-                for j, level_index in enumerate(cell)
-            )
-            for cell in bp.categorical_cells
+        cell_codes = (
+            np.asarray(bp.categorical_cells, dtype=np.int32)
+            if bp.categorical_encodings else None
         )
         out.append(DesignTermState(
             name=str(bp.name),
@@ -598,7 +595,7 @@ def _prediction_terms(compiled: _CompiledStructuredDesign) -> tuple[DesignTermSt
             active_mask=tuple(bool(x) for x in bp.active.tolist()),
             categorical=categorical,
             continuous=continuous,
-            cells=cells,
+            cell_codes=cell_codes,
         ))
     return tuple(out)
 
