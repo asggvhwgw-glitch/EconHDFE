@@ -1,5 +1,10 @@
 # Technical overview
 
+> **Status:** Current project technical documentation.  
+> **Scope:** Package-wide econometric, mathematical, and execution contracts.  
+> **Boundary:** Architecture and semantics; version-specific evidence lives in validation/release records.
+
+
 This document explains the technical contract of `econhdfe` without conflating three different things:
 
 1. the **econometric model** the researcher requests;
