@@ -73,12 +73,25 @@ class PredictionInput:
 class CategoricalEncodingState:
     name: str
     source: str | None
-    levels: tuple[Any, ...]
-    selected: tuple[bool, ...]
+    levels: np.ndarray
+    selected: np.ndarray
+
+    def __post_init__(self):
+        levels = np.asarray(self.levels).copy()
+        selected = np.asarray(self.selected, dtype=bool).copy()
+        if levels.ndim != 1 or selected.shape != levels.shape:
+            raise ValueError("categorical prediction levels/selection must be aligned vectors")
+        levels.flags.writeable = False
+        selected.flags.writeable = False
+        object.__setattr__(self, "levels", levels)
+        object.__setattr__(self, "selected", selected)
 
     @property
     def base_levels(self) -> tuple[Any, ...]:
-        return tuple(level for level, keep in zip(self.levels, self.selected, strict=False) if not keep)
+        return tuple(
+            value.item() if isinstance(value, np.generic) else value
+            for value in self.levels[~self.selected]
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -89,7 +102,16 @@ class DesignTermState:
     active_mask: tuple[bool, ...]
     categorical: tuple[CategoricalEncodingState, ...] = ()
     continuous: tuple[PredictionInput, ...] = ()
-    cells: tuple[tuple[Any, ...], ...] = ()
+    cell_codes: np.ndarray | None = None
+
+    def __post_init__(self):
+        if self.cell_codes is None:
+            return
+        cells = np.asarray(self.cell_codes, dtype=np.int32).copy()
+        if cells.ndim != 2 or cells.shape[1] != len(self.categorical):
+            raise ValueError("prediction cell codes must align with categorical components")
+        cells.flags.writeable = False
+        object.__setattr__(self, "cell_codes", cells)
 
     @property
     def active_names(self) -> tuple[str, ...]:
@@ -103,6 +125,20 @@ class DesignTermState:
             item.source for item in self.continuous
         )
         return all(source is not None for source in sources)
+
+    @property
+    def cells(self) -> tuple[tuple[Any, ...], ...]:
+        if self.cell_codes is None or not self.categorical:
+            return ()
+        return tuple(
+            tuple(
+                self.categorical[j].levels[int(code)].item()
+                if isinstance(self.categorical[j].levels[int(code)], np.generic)
+                else self.categorical[j].levels[int(code)]
+                for j, code in enumerate(row)
+            )
+            for row in self.cell_codes
+        )
 
 
 @dataclass(frozen=True, slots=True)
