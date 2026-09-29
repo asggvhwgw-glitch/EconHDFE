@@ -24,7 +24,7 @@ The canonical theorem-by-theorem mapping is `formal/mathematical-coverage.md`. M
 
 ## Technical-document integration
 
-The Lean appendix fragments target the corrected 2026-09-28 technical-document sources and are now included directly by those corrected TeX sources on `dev/lean-foundations`. A dedicated technical-document workflow recompiles the three PDFs and checks references, citations, overfull boxes, and the presence of the Lean appendix text. The historical base PDFs remain provenance only; machine-checked status belongs to the mapped mathematical statements in the exact audited source commit.
+The Lean appendix fragments target the corrected 2026-09-28 technical-document sources and are now included directly by the current corrected project technical-document sources. A dedicated technical-document workflow recompiles the three PDFs and checks references, citations, overfull boxes, and the presence of the Lean appendix text. Superseded historical PDFs remain provenance only; machine-checked status belongs to the mapped mathematical statements in the exact audited source commit.
 
 
 ## Compiled technical-document artifacts

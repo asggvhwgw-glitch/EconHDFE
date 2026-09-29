@@ -1,8 +1,10 @@
-# 0.6.1 review status
-
-Current registry classes are `theorem_backed_framework` and `theorem_backed_application`. They describe mathematical support, **not confirmed novelty**. The historical claim discussion below is retained for traceability and is subordinate to this qualification. Full proof/implementation corrections and tests: [historical mathematical review](history/mathematical-review-0.6.1.md).
-
 # Package-wide technical-innovation audit
+
+**Status:** Current technical-claim governance document  
+**Scope:** Registered theorem-backed contributions, prior-art boundaries, and package-wide classification.  
+**Claim boundary:** Machine-checked mathematics does not establish historical originality or priority.
+
+The registry classes `theorem_backed_framework` and `theorem_backed_application` describe mathematical support, **not confirmed novelty**. The older claim discussion is retained for traceability in the [historical mathematical review](history/mathematical-review-0.6.1.md).
 
 This document records the package mathematical contributions and their prior-art boundaries. **The 0.6.1 review does not certify historical originality or priority.** It deliberately separates mathematical or algorithmic contributions from high-quality engineering, upstream reproduction, compatibility work, and product/API design.
 
