@@ -1,0 +1,95 @@
+name: Technical manuscript PDFs
+
+on:
+  push:
+    branches: [dev/lean-foundations]
+    paths:
+      - 'docs/technical/hdfe/exact-multiway-dof/*.tex'
+      - 'docs/technical/hdfe/numerical-residual-core/*.tex'
+      - 'docs/technical/structural-design/*.tex'
+      - 'formal/appendices/*.tex'
+      - '.github/workflows/manuscript-pdfs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: manuscript-pdfs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compile:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Install TeX and PDF inspection tools
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            latexmk texlive-latex-base texlive-latex-recommended \
+            texlive-latex-extra texlive-fonts-recommended poppler-utils
+      - name: Compile manuscripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          compile_one() {
+            dir="$1"
+            tex="$2"
+            (
+              cd "$dir"
+              latexmk -pdf -interaction=nonstopmode -halt-on-error "$tex"
+              log="${tex%.tex}.log"
+              if grep -E 'LaTeX Warning:.*undefined|There were undefined references|Citation .* undefined|Reference .* undefined' "$log"; then
+                echo "Undefined LaTeX reference/citation detected in $dir/$tex" >&2
+                exit 1
+              fi
+              if grep -F 'Overfull \\hbox' "$log"; then
+                echo "Overfull box detected in $dir/$tex" >&2
+                exit 1
+              fi
+            )
+          }
+          compile_one docs/technical/hdfe/exact-multiway-dof exact_multiway_hdfe_dof.tex
+          compile_one docs/technical/hdfe/numerical-residual-core exact_multiway_hdfe_residual_core.tex
+          compile_one docs/technical/structural-design exact_partition_refinement_hdfe_design.tex
+      - name: Inspect generated PDFs
+        shell: bash
+        run: |
+          set -euo pipefail
+          for pdf in \
+            docs/technical/hdfe/exact-multiway-dof/exact_multiway_hdfe_dof.pdf \
+            docs/technical/hdfe/numerical-residual-core/exact_multiway_hdfe_residual_core.pdf \
+            docs/technical/structural-design/exact_partition_refinement_hdfe_design.pdf
+          do
+            echo "===== $pdf ====="
+            pdfinfo "$pdf" | grep -E '^(Pages|Page size|File size|PDF version):'
+            pdftotext "$pdf" - | grep -q 'Lean formalization'
+          done
+      - name: Commit compiled PDFs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            docs/technical/hdfe/exact-multiway-dof/exact_multiway_hdfe_dof.pdf \
+            docs/technical/hdfe/numerical-residual-core/exact_multiway_hdfe_residual_core.pdf \
+            docs/technical/structural-design/exact_partition_refinement_hdfe_design.pdf
+          if git diff --cached --quiet; then
+            echo "Compiled PDFs are already current."
+          else
+            git commit -m "Compile corrected manuscripts with Lean appendices [skip ci]"
+            git push origin HEAD:dev/lean-foundations
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: corrected-lean-manuscripts
+          path: |
+            docs/technical/hdfe/exact-multiway-dof/exact_multiway_hdfe_dof.pdf
+            docs/technical/hdfe/numerical-residual-core/exact_multiway_hdfe_residual_core.pdf
+            docs/technical/structural-design/exact_partition_refinement_hdfe_design.pdf
+          if-no-files-found: error
