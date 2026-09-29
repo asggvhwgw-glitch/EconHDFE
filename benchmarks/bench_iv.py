@@ -101,7 +101,8 @@ def main():
     names = {'first_stage_diagnostics', 'sanderson_windmeijer_diagnostics',
              'kleibergen_paap_stats', 'cragg_donald_stat', 'fit_iv_kclass',
              'fit_iv_kclass_block', '_first_stage_test', '_first_stage_statistics',
-             '_residualize_small', 'materialize'}
+             '_residualize_small', 'materialize', '_precisions', '_precision_cache',
+             '_conditional_from_reduced_form', 'ols_vcov', 'sandwich_vcov_xe'}
     stages, lstsq = [], []
     for (path, line, name), (_, calls, self_s, total_s, _) in stats.stats.items():
         row = dict(file=Path(path).name, line=line, function=name, calls=calls,

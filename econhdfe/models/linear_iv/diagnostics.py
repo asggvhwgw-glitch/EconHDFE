@@ -1,5 +1,5 @@
 from __future__ import annotations
-from itertools import combinations
+from hashlib import sha256
 import numpy as np
 from ...compute.wls import as_2d
 import scipy.linalg as la
@@ -7,6 +7,9 @@ from scipy.stats import chi2, f
 from ...compute.encoding import factorize_interaction
 from ...compute.vcov import ols_vcov, score_covariance
 
+
+_PRECISION_CACHE_BYTES = 8 * 1024**2
+_CONTRAST_MAX_ELEMENTS = 2_097_152
 
 
 def _residualize_small(A: np.ndarray, B: np.ndarray) -> np.ndarray:
@@ -51,6 +54,9 @@ class _IVDiagnosticWorkspace:
         )
         self._bread = None
         self._shea = None
+        self._reduced_form = None
+        self._precision_key = None
+        self._base_precisions = {}
 
     @property
     def bread(self):
@@ -64,6 +70,67 @@ class _IVDiagnosticWorkspace:
             self._shea = _shea_partial_r2(self.E, self.C, self.Z)
         return self._shea
 
+    @property
+    def reduced_form(self):
+        """Common coefficients, fitted values and residuals after removing C."""
+        if self._reduced_form is None:
+            coef, *_ = la.lstsq(self.Zp, self.Ep, cond=None, lapack_driver="gelsy")
+            fitted = self.Zp @ coef
+            self._reduced_form = coef, fitted, self.Ep - fitted
+        return self._reduced_form
+
+    def _precision_cache(self, inference):
+        """Only common reduced-form residuals may be cached, at most 8 MiB.
+
+        Compare content, not array identity: even in-place edits of inference
+        inputs invalidate reuse. Object-label arrays simply disable caching.
+        This cache stores only precision matrices, not scores or public results.
+        """
+        if self.E.shape[1] * self.Zp.shape[1]**2 * 8 > _PRECISION_CACHE_BYTES:
+            self._base_precisions.clear()
+            return None
+        key = [inference.get(name, default) for name, default in (
+            ("vce", "iid"), ("df_absorbed", 0), ("nested_adj", 0),
+            ("effective_n", None), ("bandwidth", None), ("kernel", "bartlett"))]
+        arrays = [inference.get(name) for name in ("time", "panel", "score_scale")]
+        clusters = inference.get("clusters")
+        key.append(None if clusters is None else len(clusters))
+        arrays.extend(() if clusters is None else clusters)
+        for value in arrays:
+            if value is None:
+                key.append(None)
+                continue
+            a = np.asarray(value)
+            if a.dtype.hasobject:
+                self._base_precisions.clear()
+                return None
+            key.append((a.shape, a.dtype.str, sha256(np.ascontiguousarray(a)).digest()))
+        key = tuple(key)
+        if key != self._precision_key:
+            self._base_precisions.clear()
+            self._precision_key = key
+        return self._base_precisions
+
+    def _precisions(self, residuals, inference, *, base=False, skip=None):
+        """Reuse U_j precision for AP; retain the existing streamed VCE kernel."""
+        cache = self._precision_cache(inference) if base else None
+        options = {name: value for name, value in inference.items()
+                   if name not in {"vce", "df_absorbed", "df1_override"}}
+        options.update(kind=inference["vce"],
+                       k_total=self.Zp.shape[1] + self.C.shape[1] + int(inference.get("df_absorbed", 0)))
+        for j in range(residuals.shape[1]):
+            if skip is not None and skip[j]:
+                yield None
+                continue
+            if cache is not None and j in cache:
+                yield cache[j]
+                continue
+            V = ols_vcov(self.Zp, residuals[:, j], self.bread, **options)
+            precision = np.linalg.pinv(V, hermitian=True)
+            if cache is not None:
+                cache[j] = precision
+            yield precision
+
     def tests(self, dependent=None, **inference):
         """Test several RHS with one control projection and one GELSY solve."""
         target = self.E if dependent is None else dependent
@@ -72,21 +139,29 @@ class _IVDiagnosticWorkspace:
                     for j in range(target.shape[1])]
         ep = self.Ep if dependent is None else _residualize_small(dependent, self.C)
         if self.Zp.shape[1]:
-            coef, *_ = la.lstsq(self.Zp, ep, cond=None, lapack_driver="gelsy")
-            resid = ep - self.Zp @ coef
+            if dependent is None:
+                coef, _, resid = self.reduced_form
+            else:
+                coef, *_ = la.lstsq(self.Zp, ep, cond=None, lapack_driver="gelsy")
+                resid = ep - self.Zp @ coef
         else:
             coef = np.empty((0, ep.shape[1]))
             resid = ep
         out = []
-        for j in range(ep.shape[1]):
+        # Decide fallback BEFORE any optimized covariance/inverse is evaluated.
+        # Keep the original column-wise dot-product cancellation check.
+        sensitive = [float(resid[:, j] @ resid[:, j]) <= np.finfo(float).eps * float(ep[:, j] @ ep[:, j])
+                     for j in range(ep.shape[1])]
+        precisions = (self._precisions(resid, inference, base=dependent is None, skip=sensitive)
+                      if self.Zp.shape[1] else iter([None] * ep.shape[1]))
+        for j, precision in enumerate(precisions):
             e, r = ep[:, j], resid[:, j]
-            # Near-perfect fits amplify GEMM/GEMV rounding into very different
-            # F statistics. Retain the original scalar evaluation there too.
-            if float(r @ r) <= np.finfo(float).eps * float(e @ e):
+            if sensitive[j]:
                 out.append(_first_stage_test(target[:, j], self.C, self.Z, **inference))
             else:
                 out.append(_first_stage_statistics(
-                    e, self.Zp, coef[:, j], r, self.bread, self.C.shape[1], **inference,
+                    e, self.Zp, coef[:, j], r, self.bread, self.C.shape[1],
+                    _precision=precision, **inference,
                 ))
         return out
 
@@ -114,7 +189,7 @@ def _first_stage_test(dep, C, Z, *, vce, clusters=None, df_absorbed=0, nested_ad
 def _first_stage_statistics(ep, zp, b, resid, bread, ccols, *, vce, clusters,
                             df_absorbed, nested_adj, time=None, panel=None,
                             bandwidth=None, kernel="bartlett", df1_override=None,
-                            effective_n=None, score_scale=None):
+                            effective_n=None, score_scale=None, _precision=None):
     n = len(ep)
     n_eff = float(n if effective_n is None else effective_n)
     q = zp.shape[1]
@@ -128,14 +203,15 @@ def _first_stage_statistics(ep, zp, b, resid, bread, ccols, *, vce, clusters,
     df2 = max(n_eff - ccols - q - int(df_absorbed), 1)
     f_classic = ((tss-rss) / max(df1, 1)) / (rss / df2) if rss > 0 else np.inf
     p_classic = float(f.sf(f_classic, df1, df2)) if np.isfinite(f_classic) else 0.0
-    V = ols_vcov(
-        zp, resid, bread, kind=vce, clusters=clusters,
-        k_total=q + ccols + int(df_absorbed), nested_adj=nested_adj,
-        time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
-        effective_n=n_eff, score_scale=score_scale,
-    )
-    Vinv = np.linalg.pinv(V, hermitian=True)
-    wald = float(b.T @ Vinv @ b)
+    if _precision is None:
+        V = ols_vcov(
+            zp, resid, bread, kind=vce, clusters=clusters,
+            k_total=q + ccols + int(df_absorbed), nested_adj=nested_adj,
+            time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
+            effective_n=n_eff, score_scale=score_scale,
+        )
+        _precision = np.linalg.pinv(V, hermitian=True)
+    wald = float(b.T @ _precision @ b)
     return {
         "partial_r2": float(r2p),
         "f_classic": float(f_classic),
@@ -180,6 +256,63 @@ def first_stage_diagnostics(endog, exog, instruments, *, weights=None, weight_in
     return out
 
 
+def _conditional_from_reduced_form(work, **inference):
+    """AP/SW are contrasts of the SAME reduced form, not new tall regressions.
+
+    Return None on rank/cancellation-sensitive systems so the original scalar
+    definition remains the numerical fallback. The QR is orthogonal row
+    compression, not a replacement of GELSY with normal equations.
+    """
+    E, Z = work.Ep, work.Zp
+    n, k = E.shape
+    if not work._batch_safe or n <= work.C.shape[1] + Z.shape[1]:
+        return None
+    coef, fitted, residual = work.reduced_form
+    eps = np.finfo(float).eps
+    if np.any(np.sum(residual ** 2, axis=0) <= eps * np.sum(E ** 2, axis=0)):
+        return None
+    # Guard the original [C,Z] scale as well as the conditional fitted span.
+    # This 1e3 condition cap only selects execution; it is NOT a rank cutoff.
+    R = la.qr(np.column_stack([work.C, work.Z]), mode="raw")[1]
+    singular = la.svdvals(R)
+    if singular[-1] <= 1e-3 * singular[0]:
+        return None
+    fitted_small = R[work.C.shape[1]:, work.C.shape[1]:] @ coef
+    singular = la.svdvals(fitted_small)
+    if len(singular) < k or singular[-1] <= 1e-3 * singular[0]:
+        return None
+    out = []
+    ap_precisions = work._precisions(residual, inference, base=True)
+    # Up to four RHS; shrink for long samples (16 MiB per response array,
+    # except when one column already exceeds that target). No equation-pair tensor.
+    batch = min(4, max(1, _CONTRAST_MAX_ELEMENTS // max(n, 1)))
+    for lo in range(0, k, batch):
+        hi = min(k, lo + batch)
+        contrasts = np.zeros((k, hi - lo))
+        for j in range(lo, hi):
+            keep = np.arange(k) != j
+            b, *_ = la.lstsq(fitted_small[:, keep], fitted_small[:, j],
+                             cond=None, lapack_driver="gelsy")
+            contrasts[j, j-lo], contrasts[keep, j-lo] = 1.0, -b
+        coefficient = coef @ contrasts
+        ap = residual[:, lo:hi] + fitted @ contrasts
+        sw, sw_residual = E @ contrasts, residual @ contrasts
+        if np.any(np.sum(sw_residual**2, axis=0) <= eps * np.sum(sw**2, axis=0)):
+            return None
+        sw_precisions = work._precisions(sw_residual, inference)
+        for i, precision in enumerate(sw_precisions):
+            j = lo + i
+            ap_test = _first_stage_statistics(
+                ap[:, i], Z, coefficient[:, i], residual[:, j], work.bread,
+                work.C.shape[1], _precision=next(ap_precisions), **inference)
+            sw_test = _first_stage_statistics(
+                sw[:, i], Z, coefficient[:, i], sw_residual[:, i], work.bread,
+                work.C.shape[1], _precision=precision, **inference)
+            out.append({"ap": ap_test, "sw": sw_test, "df1": Z.shape[1] - k + 1})
+
+    return out
+
+
 def sanderson_windmeijer_diagnostics(endog, exog, instruments, *, weights=None, weight_info=None,
                                      vce="robust", clusters=None, df_absorbed=0,
                                      nested_adj=0, time=None, panel=None, bandwidth=None,
@@ -208,6 +341,14 @@ def sanderson_windmeijer_diagnostics(endog, exog, instruments, *, weights=None, 
         )[0]
         base["shea_partial_r2"] = float(work.shea[0])
         return [{"ap": dict(base), "sw": dict(base), "df1": df1}]
+
+    fast = _conditional_from_reduced_form(
+        work, vce=vce, clusters=clusters, df_absorbed=df_absorbed,
+        nested_adj=nested_adj, time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
+        df1_override=df1, effective_n=n_eff, score_scale=score_scale,
+    )
+    if fast is not None:
+        return fast
 
     Q = np.column_stack([C, Z])
     coef, *_ = la.lstsq(Q, E, cond=None, lapack_driver="gelsy")
@@ -289,7 +430,7 @@ def _kron_scores(V, Z, block_rows=100_000):
     return out
 
 
-def _kp_stat(theta, kpvar, n):
+def _kp_factors(theta):
     l1, k1 = theta.shape
     U, _, Vh = np.linalg.svd(theta, full_matrices=True)
     V = Vh.T
@@ -309,6 +450,11 @@ def _kp_stat(theta, kpvar, n):
     vs = _sym_sqrt(v22 @ v22.T)
     aq = ufull @ np.linalg.pinv(u22) @ us
     bq = vs @ np.linalg.pinv(v22.T) @ vfull.T
+    return aq, bq
+
+
+def _kp_stat(theta, kpvar, n):
+    aq, bq = _kp_factors(theta)
     K = np.kron(bq, aq.T)
     vect = theta.reshape(-1, order="F")
     lam = K @ vect
@@ -349,16 +495,23 @@ def kleibergen_paap_stats(endog, exog, instruments, *, weights=None, weight_info
         raise ValueError(f"unsupported KP covariance kind: {vce}")
     if kind in {"dkraay", "driscoll_kraay", "dk"} and time is None:
         raise ValueError("Driscoll-Kraay Kleibergen-Paap statistic requires time=")
-    transform = np.kron(iryy.T, irzz.T)
+    aq, bq = _kp_factors(theta)
+    K = np.kron(bq, aq.T)
+    lam = K @ theta.reshape(-1, order="F")
+    # A single endogenous variable has no score-dimension reduction. Sensitive
+    # whitening keeps the established full-score multiplication order as well.
+    compressed = k1 > 1 and np.linalg.cond(irzz) * np.linalg.cond(iryy) < 1e3
+    projected_z = Zp @ (irzz @ aq) if compressed else None
+    v_loading = iryy @ bq.T if compressed else None
 
-    def stat_for(Vhat):
-        scores = _kron_scores(Vhat, Zp)
+    def stat_for(Vhat, *, full=False):
+        reduced = compressed and not full
+        scores = _kron_scores(Vhat @ v_loading, projected_z) if reduced else _kron_scores(Vhat, Zp)
         if kind in {"iid", "unadjusted", "homoskedastic"}:
             shat = (scores.T @ scores) / n_eff
         else:
-            # Stata ivreg2 delegates KP/rank tests to ranktest, whose HAC
-            # path uses Bartlett internally even if the coefficient VCE uses
-            # another kernel. Preserve that compatibility quirk here.
+            # Keep ranktest's Bartlett convention and the existing raw-score
+            # engine, including multiway inclusion-exclusion BEFORE any repair.
             kp_kernel = "bartlett" if kind in {
                 "hac", "newey_west", "neweywest",
                 "dkraay", "driscoll_kraay", "dk"
@@ -368,12 +521,21 @@ def kleibergen_paap_stats(endog, exog, instruments, *, weights=None, weight_info
                 small_sample=False, time=time, panel=panel, bandwidth=bandwidth, kernel=kp_kernel,
                 effective_n=n_eff, score_scale=score_scale,
             ) / n_eff
-        kpvar = transform @ shat @ transform.T
-        return _kp_stat(theta, kpvar, n_eff)
+        if not reduced:
+            transform = np.kron(iryy.T, irzz.T)
+            return _kp_stat(theta, transform @ shat @ transform.T, n_eff)
+        singular = la.svdvals(shat)
+        if singular[-1] <= 1e-10 * singular[0]:
+            # Rank-boundary rounding is not an optimization opportunity.
+            return stat_for(Vhat, full=True)
+        rank = int(np.linalg.matrix_rank(shat))
+        stat = float(n_eff * lam.T @ np.linalg.pinv(shat, hermitian=True) @ lam)
+        return stat, rank
 
     lm, lm_rank = stat_for(Ep)
     Vrf = Ep - Zp @ pihat
-    wald, wald_rank = stat_for(Vrf)
+    near_perfect = np.any(np.sum(Vrf ** 2, axis=0) <= np.finfo(float).eps * np.sum(Ep ** 2, axis=0))
+    wald, wald_rank = stat_for(Vrf, full=near_perfect)
     df = max(l1 - k1 + 1, 1)
     if kind == "cluster" and clusters:
         g = min(len(np.unique(c)) for c in clusters)

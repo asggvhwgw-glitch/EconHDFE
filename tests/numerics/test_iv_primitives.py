@@ -187,8 +187,11 @@ def test_workspace_reuses_projections_and_bounds_rhs(monkeypatch):
     for fn in (diag.first_stage_diagnostics, diag.cragg_donald_stat,
                diag.kleibergen_paap_stats, diag.sanderson_windmeijer_diagnostics):
         fn(E, C, Z, _workspace=work)
-    assert len(calls) == 22  # Mechanism, not a machine-dependent timing assertion.
-    assert batches == [8, 8, 8]
+    tall = [shape for shape, _ in calls if shape[0] == len(E)]
+    small = [shape for shape, _ in calls if shape[0] != len(E)]
+    assert len(tall) == 3  # C projections of E/Z, then one multi-RHS reduced form.
+    assert small == [(Z.shape[1], E.shape[1] - 1)] * E.shape[1]
+    assert batches == []  # No further observation-level AP/SW regression batches.
     assert work.bread is work.bread
 
 
@@ -268,3 +271,322 @@ def test_workspace_is_per_fit_and_diagnostics_off_unchanged(monkeypatch, estimat
         assert len(result.first_stage['diagnostics']) == E.shape[1]
         assert len(result.diagnostics['sanderson_windmeijer']) == E.shape[1]
         assert set(result.diagnostics) >= {'cragg_donald_f', 'kleibergen_paap', 'overidentification', 'stock_yogo'}
+
+
+def _full_score_kp_reference(E, C, Z, *, weights=None, weight_info=None,
+                             vce='robust', clusters=None, time=None, panel=None,
+                             bandwidth=None):
+    """Independent full Kronecker path for the reduced-score optimization.
+
+    The canonical transform, rank statistic and raw covariance engine are
+    unchanged; only the full versus factored moment computation is compared.
+    """
+    from econhdfe.compute.vcov import score_covariance
+    neff = None if weight_info is None else weight_info.effective_n
+    Ep, Zp, pi, theta, rz, ry, _, neff = diag._canonical_components(
+        E, C, Z, weights, effective_n=neff)
+    transform = np.kron(ry.T, rz.T)
+    out = []
+    scale = None
+    if weight_info is not None and weight_info.kind == 'fweight' and vce == 'robust':
+        scale = 1 / np.sqrt(weight_info.estimation)
+    for V in (Ep, Ep - Zp @ pi):
+        scores = np.einsum('ni,nj->nij', V, Zp).reshape(len(Ep), -1)
+        S = score_covariance(scores, kind=vce, clusters=clusters,
+                             small_sample=False, time=time, panel=panel,
+                             bandwidth=bandwidth, kernel='bartlett',
+                             effective_n=neff, score_scale=scale)
+        out.append(diag._kp_stat(theta, transform @ (S / neff) @ transform.T, neff))
+    return out
+
+
+@pytest.mark.parametrize('k', [1, 4])
+@pytest.mark.parametrize('vce', ['iid', 'robust', 'cluster', 'multiway', 'hac', 'dk'])
+def test_kp_projected_scores_match_full_kronecker_reference(k, vce):
+    E, C, Z = _problem(k=k, n=280)
+    n = len(E)
+    kind = 'cluster' if vce == 'multiway' else vce
+    wi = prepare_weights(1. + np.arange(n) % 4, n,
+                         'aweight' if vce in ('hac', 'dk') else 'fweight')
+    kwargs = dict(vce=kind, weights=wi.estimation, weight_info=wi)
+    if vce in ('cluster', 'multiway'):
+        kwargs['clusters'] = [np.arange(n) % 20]
+    if vce == 'multiway':
+        kwargs['clusters'].append(np.arange(n) // 20)
+    if vce in ('hac', 'dk'):
+        kwargs.update(time=2*(np.arange(n)//7), panel=np.arange(n)%7, bandwidth=3)
+    (lm, lr), (wald, wr) = _full_score_kp_reference(E, C, Z, **kwargs)
+    got = diag.kleibergen_paap_stats(E, C, Z, **kwargs)
+    _assert_same(got['rk_lm'], lm)
+    _assert_same(got['rk_wald_chi2'], wald)
+    assert (got['rank_lm_cov'], got['rank_wald_cov']) == (lr, wr)
+
+
+def test_kp_only_materializes_projected_scores(monkeypatch):
+    E, C, Z = _problem(k=6)
+    shapes = []
+    original = diag._kron_scores
+    def capture(v, z, *args, **kwargs):
+        shapes.append((v.shape, z.shape))
+        return original(v, z, *args, **kwargs)
+    monkeypatch.setattr(diag, '_kron_scores', capture)
+    diag.kleibergen_paap_stats(E, C, Z)
+    # L*K = 48 full scores are replaced by L-K+1 = 3 scores per observation.
+    assert shapes == [((len(E), 1), (len(E), 3))] * 2
+
+
+@pytest.mark.parametrize('case', ['collinear', 'huge_controls', 'tiny_instruments', 'perfect'])
+def test_conditional_reduction_uses_original_path_at_boundaries(case):
+    E, C, Z = _problem(k=4)
+    if case == 'collinear':
+        E[:, -1] = E[:, 0] + 1e-7 * E[:, -1]
+    elif case == 'huge_controls':
+        C *= 1e20
+    elif case == 'tiny_instruments':
+        Z *= 1e-20
+    else:
+        E = Z[:, :4].copy()
+    work = diag._IVDiagnosticWorkspace(E, C, Z)
+    assert diag._conditional_from_reduced_form(work, vce='robust') is None
+
+
+def test_kp_whitening_guard_keeps_full_score_order(monkeypatch):
+    E, C, Z = _problem(k=4)
+    E[:, -1] = E[:, 0] + 1e-7 * E[:, -1]
+    shapes = []
+    original = diag._kron_scores
+    def capture(v, z, *args, **kwargs):
+        shapes.append((v.shape[1], z.shape[1]))
+        return original(v, z, *args, **kwargs)
+    monkeypatch.setattr(diag, '_kron_scores', capture)
+    got = diag.kleibergen_paap_stats(E, C, Z)
+    assert shapes == [(E.shape[1], Z.shape[1])] * 2
+    (lm, lr), (wald, wr) = _full_score_kp_reference(E, C, Z)
+    _assert_same(got['rk_lm'], lm)
+    _assert_same(got['rk_wald_chi2'], wald)
+    assert (got['rank_lm_cov'], got['rank_wald_cov']) == (lr, wr)
+
+
+def test_kp_covariance_rank_boundary_uses_full_score_order(monkeypatch):
+    E, C, Z = _problem(k=4)
+    n = len(E)
+    shapes = []
+    original = diag._kron_scores
+    def capture(v, z, *args, **kwargs):
+        shapes.append((v.shape[1], z.shape[1]))
+        return original(v, z, *args, **kwargs)
+    monkeypatch.setattr(diag, '_kron_scores', capture)
+    kwargs = dict(vce='cluster', clusters=[np.arange(n) % 2])
+    got = diag.kleibergen_paap_stats(E, C, Z, **kwargs)
+    # Three final scores with only two groups: preserve the original rank edge.
+    assert (E.shape[1], Z.shape[1]) in shapes
+    (lm, lr), (wald, wr) = _full_score_kp_reference(E, C, Z, **kwargs)
+    _assert_same(got['rk_lm'], lm)
+    _assert_same(got['rk_wald_chi2'], wald)
+    assert (got['rank_lm_cov'], got['rank_wald_cov']) == (lr, wr)
+
+
+def test_reduced_form_is_lazy_and_reused_without_changing_inputs(monkeypatch):
+    E, C, Z = _problem(k=4)
+    work = diag._IVDiagnosticWorkspace(E, C, Z)
+    assert work._reduced_form is None
+    copies = [a.copy() for a in (E, C, Z)]
+    fit = work.reduced_form
+    def must_not_refactor(*args, **kwargs):
+        raise AssertionError('repeated first-stage solve')
+    monkeypatch.setattr(diag.la, 'lstsq', must_not_refactor)
+    assert work.reduced_form is fit
+    work.tests(vce='robust', clusters=None, df_absorbed=0, nested_adj=0)
+    for before, after in zip(copies, (E, C, Z)):
+        np.testing.assert_array_equal(before, after)
+
+
+@pytest.mark.parametrize('kind', ['iid', 'robust', 'cluster', 'multiway', 'hac', 'dk'])
+def test_ap_reuses_first_stage_precision_not_the_f_statistic(monkeypatch, kind):
+    E, C, Z = _problem(k=5, n=280)
+    options = dict(vce='cluster' if kind == 'multiway' else kind, df_absorbed=3)
+    if kind in ('cluster', 'multiway'):
+        options['clusters'] = [np.arange(len(E)) % 20]
+    if kind == 'multiway':
+        options['clusters'].append(np.arange(len(E)) // 20)
+    if kind in ('hac', 'dk'):
+        options.update(time=np.arange(len(E))//7, panel=np.arange(len(E))%7, bandwidth=2)
+    calls = []
+    original = diag.ols_vcov
+    def counted(*args, **kwargs):
+        calls.append(kwargs)
+        return original(*args, **kwargs)
+    monkeypatch.setattr(diag, 'ols_vcov', counted)
+    work = diag._IVDiagnosticWorkspace(E, C, Z)
+    first = diag.first_stage_diagnostics(E, C, Z, _workspace=work, **options)
+    after_first = len(calls)
+    conditional = diag.sanderson_windmeijer_diagnostics(E, C, Z, _workspace=work, **options)
+    assert after_first == E.shape[1]
+    assert len(calls) == 2 * E.shape[1]  # K ordinary/AP covariances + K SW covariances.
+    assert len(work._base_precisions) == E.shape[1]
+    assert not np.isclose(first[0]['f_robust'], conditional[0]['ap']['f_robust'])
+    _compare_stages(E, C, Z, work, options, options)
+
+
+@pytest.mark.parametrize('changed', ['vce', 'df_absorbed', 'nested_adj', 'effective_n',
+                                     'clusters', 'score_scale', 'time', 'panel',
+                                     'bandwidth', 'kernel'])
+def test_precision_cache_invalidates_all_inference_inputs(changed):
+    E, C, Z = _problem(k=3, n=280)
+    n = len(E)
+    options = dict(vce='robust', clusters=None, df_absorbed=3, nested_adj=0,
+                   effective_n=float(n), score_scale=np.ones(n))
+    if changed in ('clusters', 'nested_adj'):
+        options.update(vce='cluster', clusters=[np.arange(n) % 20])
+    if changed in ('time', 'panel', 'bandwidth', 'kernel'):
+        options.update(vce='hac', time=np.arange(n)//7, panel=np.arange(n)%7,
+                       bandwidth=3, kernel='bartlett')
+    work = diag._IVDiagnosticWorkspace(E, C, Z)
+    work.tests(**options)
+    previous = work._precision_key
+    if changed == 'vce':
+        options['vce'] = 'iid'
+    elif changed == 'clusters':
+        options['clusters'][0][:] = np.arange(n)//14  # Same array object, changed content.
+    elif changed == 'score_scale':
+        options['score_scale'][:] = np.linspace(.5, 2., n)
+    elif changed == 'time':
+        options['time'][options['time'] > 15] += 2  # Introduce a genuine time gap.
+    elif changed == 'panel':
+        options['panel'][:] = (options['panel'] + options['time']) % 7
+    elif changed == 'kernel':
+        options['kernel'] = 'parzen'
+    else:
+        options[changed] += 1
+    got = work.tests(**options)
+    assert work._precision_key != previous
+    expected = [_scalar_stage(E[:, j], C, Z, **options) for j in range(E.shape[1])]
+    _assert_same(got, expected)
+
+
+def test_precision_cache_is_bounded_and_object_labels_disable_reuse(monkeypatch):
+    E, C, Z = _problem(k=3, n=280)
+    work = diag._IVDiagnosticWorkspace(E, C, Z)
+    options = dict(vce='robust', clusters=None, df_absorbed=0, nested_adj=0)
+    expected = work.tests(**options)
+    assert work._base_precisions
+    monkeypatch.setattr(diag, '_PRECISION_CACHE_BYTES', 0)
+    _assert_same(work.tests(**options), expected)
+    assert work._base_precisions == {}
+    monkeypatch.setattr(diag, '_PRECISION_CACHE_BYTES', 8 * 1024**2)
+    options.update(vce='dk', time=(np.arange(len(E))//7).astype(object), bandwidth=2)
+    _assert_same(work.tests(**options),
+                 [_scalar_stage(E[:, j], C, Z, **options) for j in range(E.shape[1])])
+    assert work._base_precisions == {}
+
+
+def test_precision_failure_does_not_poison_retry(monkeypatch):
+    E, C, Z = _problem(k=3)
+    work = diag._IVDiagnosticWorkspace(E, C, Z)
+    options = dict(vce='robust', clusters=None, df_absorbed=0, nested_adj=0)
+    original = diag.ols_vcov
+    def fail(*args, **kwargs):
+        raise ValueError('injected covariance failure')
+    with monkeypatch.context() as patch:
+        patch.setattr(diag, 'ols_vcov', fail)
+        with pytest.raises(ValueError, match='injected'):
+            work.tests(**options)
+        assert work._base_precisions == {}
+    got = work.tests(**options)
+    assert diag.ols_vcov is original
+    _assert_same(got, [_scalar_stage(E[:, j], C, Z, **options) for j in range(E.shape[1])])
+
+
+@pytest.mark.parametrize('batch', [1, 2, 4])
+def test_sw_residual_batches_are_bounded(monkeypatch, batch):
+    E, C, Z = _problem(k=11)
+    monkeypatch.setattr(diag, '_CONTRAST_MAX_ELEMENTS', len(E) * batch)
+    widths = []
+    original = diag._IVDiagnosticWorkspace._precisions
+    def record(self, residuals, inference, *, base=False, skip=None):
+        if not base:
+            widths.append(residuals.shape[1])
+        yield from original(self, residuals, inference, base=base, skip=skip)
+    monkeypatch.setattr(diag._IVDiagnosticWorkspace, '_precisions', record)
+    work = diag._IVDiagnosticWorkspace(E, C, Z)
+    options = dict(vce='robust')
+    _compare_stages(E, C, Z, work, options, options)
+    assert widths == [min(batch, E.shape[1]-lo) for lo in range(0, E.shape[1], batch)]
+
+
+# Rational, independently constructed AP/SW reference. Normal equations here
+# are EXACT arithmetic, never a suggested floating-point runtime solver.
+def _rational_inverse(a):
+    from fractions import Fraction
+    n = len(a)
+    rows = [[Fraction(x) for x in a[i]] + [Fraction(int(i == j)) for j in range(n)]
+            for i in range(n)]
+    for j in range(n):
+        pivot = next(i for i in range(j, n) if rows[i][j])
+        rows[j], rows[pivot] = rows[pivot], rows[j]
+        divisor = rows[j][j]
+        rows[j] = [x/divisor for x in rows[j]]
+        for i in range(n):
+            if i != j:
+                multiplier = rows[i][j]
+                rows[i] = [x-multiplier*y for x, y in zip(rows[i], rows[j])]
+    return np.array([row[n:] for row in rows], dtype=object)
+
+
+def _rational_conditional_f(E, C, Z):
+    from fractions import Fraction
+    def fit(A, y):
+        return _rational_inverse(A.T @ A) @ A.T @ y
+    def partial(A):
+        return A-C@fit(C, A)
+    n, k = E.shape
+    q = Z.shape[1]
+    Zp = partial(Z)
+    bread = _rational_inverse(Zp.T @ Zp)
+    Q = np.column_stack([C, Z])
+    X = np.column_stack([C, E])
+    Xhat = np.column_stack([C, Q @ fit(Q, E)])
+    out = []
+    for j in range(k):
+        keep = np.arange(X.shape[1]) != C.shape[1]+j
+        coeff = fit(Xhat[:, keep], E[:, j])
+        pair = []
+        for design in (Xhat[:, keep], X[:, keep]):
+            dep = partial(E[:, j]-design@coeff)
+            b = fit(Zp, dep)
+            residual = dep-Zp@b
+            scores = Zp*residual[:, None]
+            V = bread @ (scores.T @ scores) @ bread
+            V *= Fraction(n, n-C.shape[1]-q)
+            pair.append(float(b @ _rational_inverse(V) @ b / (q-k+1)))
+        out.append(pair)
+    return np.array(out)
+
+
+@pytest.mark.parametrize('denominator', [1, 10_000, 1_000_000])
+def test_conditional_f_matches_exact_rational_reference(denominator):
+    from fractions import Fraction
+    rng = np.random.default_rng(709)
+    n = 28
+    C = np.ones((n, 1), dtype=object)
+    Z = rng.integers(-6, 7, (n, 3)).astype(object)
+    E = (2*Z[:, :2] + rng.integers(-4, 5, (n, 2))).astype(object)
+    E[:, 1] = E[:, 0] + E[:, 1] * Fraction(1, denominator)
+    expected = _rational_conditional_f(E, C, Z)
+    got = diag.sanderson_windmeijer_diagnostics(
+        E.astype(float), C.astype(float), Z.astype(float), vce='robust')
+    actual = np.array([[row['ap']['f_robust'], row['sw']['f_robust']] for row in got])
+    # Absolute small-model oracle, independent of both optimized and legacy GELSY.
+    np.testing.assert_allclose(actual, expected, rtol=2e-9, atol=1e-16)
+
+
+def test_sensitive_stage_falls_back_before_evaluating_optimized_precision(monkeypatch):
+    E, C, Z = _problem(k=3)
+    E = Z[:, :3].copy()
+    work = diag._IVDiagnosticWorkspace(E, C, Z)
+    def must_not_compute(*args, **kwargs):
+        raise AssertionError('optimized covariance evaluated before cancellation fallback')
+    monkeypatch.setattr(diag, 'ols_vcov', must_not_compute)
+    monkeypatch.setattr(diag, '_first_stage_test', lambda *a, **kw: {'fallback': True})
+    assert work.tests(vce='robust') == [{'fallback': True}] * E.shape[1]
+    assert work._base_precisions == {}
