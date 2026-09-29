@@ -19,7 +19,7 @@ The current registered innovations are:
 2. exact arbitrary-G numerical residual-core reduction;
 3. exact partition-refinement HDFE canonicalization and structural design reduction.
 
-No other current feature should be described as an original econhdfe technical contribution without updating the audit, literature boundary, registry and formal manuscript in the same release.
+No other current feature should be described as an original econhdfe technical contribution without updating the audit, literature boundary, registry and project technical document in the same release.
 
 ## Machine-checked mathematical verification
 
@@ -33,3 +33,8 @@ The verification scope is deliberately mathematical only: explicitly mapped theo
 - `structural-design/` — exact partition-refinement / dependency-DAG design reduction manuscript.
 - `cluster-inference.md` — established CRV/WCR cluster-inference behavior and support boundaries; this is technical documentation, not an originality claim.
 - [`heterogeneous-specification-optimization.md`](heterogeneous-specification-optimization.md): internal acceleration for interaction-rich and heterogeneous-coefficient empirical specifications, including model integration and dense-fallback boundaries.
+
+
+## Historical technical reviews
+
+Version-bound mathematical and nonlinear/resource reviews are retained under [`history/`](history/) for provenance. They are not current sources of truth for package behavior or theorem coverage; use the active technical documents and [formal verification status](formal-verification.md).
