@@ -10,9 +10,9 @@ coefficient-selection and residual-feasibility conditions.
 
 The library connects actual categorical indicator columns and legal
 observation-level peeling to the weighted residual-core reconstruction theorem.
-It also covers partition-refinement and WLS foundations, and the structural
-preprocessing and proper-connectivity parts of exact categorical rank/DoF.
-It does **not** formalize all three manuscripts or verify the Python
+It covers partition-refinement and WLS foundations, categorical rank structure,
+characteristic-zero invariance, modular acceptance and exact row-trace partial
+correctness. It does **not** formalize all three manuscripts or verify the Python
 implementation, floating-point accuracy, numerical convergence, statistical
 assumptions, or historical originality. Only precise Lean statements in a
 successfully compiled and audited commit are kernel-checked.
@@ -64,12 +64,41 @@ propagates kernel equations and proves the reduced matrix injective, rather
 than assuming the requested rank. Ordinary incidence connectivity is not a
 substitute for this stronger condition.
 
-The field-generic rank reductions can be instantiated over rationals, reals or
-finite fields separately. The peeling recursion and composed pipeline currently
-use real spaces. General rational/real rank equivalence, modular certification
-and exact-arithmetic fallback correctness are not yet part of this proof chain.
+The field-generic structural reductions can be instantiated over rationals,
+reals or finite fields separately. The peeling recursion uses real spaces.
+The arithmetic layer below now provides the separate rational/real bridge; it
+does not assert equality with finite-field rank when the modulus loses rank.
 See [rank-correspondence.md](rank-correspondence.md) for statement-by-statement
-manuscript mappings, semantic witnesses, assumptions and outstanding obligations.
+structural mappings, semantic witnesses and assumptions.
+
+## Exact rank: arithmetic and conditional composition
+
+`RankMinors.lean` proves that an actual rank-r matrix has an actual nonzero
+r-by-r minor. Selecting a basis from columns and then from rows establishes
+existence, including the empty minor at rank zero. This is a mathematical
+existence proof, not a new executable rank routine. `CharZeroRank.lean` proves
+rank invariance under field embeddings and connects integer and rational
+matrices to their real counterparts.
+
+`ModularRankCertificate.lean` uses integer determinants to prove the full
+finite-field lower bound and the upper-bound-hit acceptance rule. It does not
+assume a map from Q to a finite field. `ModularRankExamples.lean` gives explicit
+bad-prime, successful-certificate and empty-minor witnesses.
+
+`ExactRowReduction.lean` proves that legitimate nonzero-scaled row operations
+preserve span, then derives exact rank from a completed echelon trace. Its
+certificate does not assume the rank to be proved. The optional-return adapter
+only yields a count when completed evidence is present. It is not the Python
+budget manager, and neither termination nor extraction of such a trace from
+the production dictionary loop is established here.
+
+`CertifiedRankPipeline.lean` composes the structural rank identity with evidence
+for each actual integer core block. A block can be certified by a modular hit
+at a valid upper bound or by a completed rational row trace. The result is a
+connected conditional correctness theorem from original categorical rows to
+certified block counts, not a proof of backend generation or bounded runtime.
+The precise distinction is documented in
+[arithmetic-correspondence.md](arithmetic-correspondence.md).
 
 ## Categorical residual-core proof chain
 
@@ -185,13 +214,13 @@ its complete composition with common multipliers, explicit within-coefficient
 selection, and the finite PPML corollary. No IV/GMM/covariance invariance or
 estimator convergence follows merely from equality of fitted spaces.
 
-The exact-rank structural stage is implemented, but general characteristic-zero
-equivalence, finite-field lower bounds, modular acceptance certificates,
-correctness of characteristic-zero elimination, and resource-aware fallback
-composition remain unproved here. The structural pipeline leaves actual ranks
-of unresolved core blocks; a failed proper-connectivity check does not supply
-those ranks. Prefix-rank bookkeeping is also separate. A numerical oracle or a
-theorem that assumes the desired rank is not a replacement for these proofs.
+For exact rank, cross-field inequalities, modular acceptance and legal finite
+row-trace correctness are established by the arithmetic statements above.
+Outstanding obligations include producing the traces from a specified sparse
+elimination algorithm, integer gcd/normalization representation, modular-kernel
+correctness, termination and actual work/bit/storage-budget semantics. The
+conditional certificate pipeline does not discharge those implementation or
+completion obligations. Prefix-rank bookkeeping also remains separate.
 
 No innovation-registry status, homepage claim, software version, Python API or
 release status is promoted by this directory. Mathematical theorem coverage,

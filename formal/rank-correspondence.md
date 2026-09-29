@@ -4,7 +4,9 @@ This document maps the structural part of the corrected exact multiway FE
 rank/DoF manuscript to the Lean library. It describes the declarations in the
 same source tree; a declaration is verified only when that tree compiles and
 passes the axiom audit. It is not a completion claim for the full manuscript,
-the exact-arithmetic backend, or the Python implementation.
+the exact-arithmetic backend, or the Python implementation. The cross-field,
+modular and row-reduction extension is mapped in
+[arithmetic-correspondence.md](arithmetic-correspondence.md).
 
 The manuscript target is the separately delivered 2026-09-28 corrected bundle
 identified in [README.md](README.md). The manuscripts on the original base
@@ -23,12 +25,12 @@ rows because row multiplicity does not enlarge the row span. The projection
 library continues to retain all observations and their separate weights and
 outcomes. No deduplication theorem is applied to a weighted loss function.
 
-Most new linear-algebra results are generic over a field. They can be
-instantiated separately over the rationals, reals or a finite field. This does
-not establish that an arbitrary integer matrix has equal ranks across those
-fields. The peeling recursion and the composed categorical pipeline currently
-use real vector spaces, reusing the previous incidence reconstruction proof.
-General rational-to-real rank invariance remains a separate proof obligation.
+Most structural linear-algebra results are generic over a field. They can be
+instantiated separately over the rationals, reals or a finite field. This alone
+does not establish equality of ranks across fields. The peeling recursion and
+structural pipeline use real vector spaces. `CharZeroRank.lean` supplies the
+separate rational-to-real invariance proof; `ModularRankCertificate.lean`
+supplies the finite-field lower bound, not unconditional finite-field equality.
 
 ## Correspondence
 
@@ -44,6 +46,9 @@ General rational-to-real rank invariance remains a separate proof obligation.
 | Proper-connectivity formula, `prop:proper` | `one_coordinate_kernel`, `coordinate_path_kernel`, `proper_kernel_levels`, `proper_reduced_kernel`, `proper_connectivity_rank` | Nonempty sample, all declared levels observed, paths changing at most one coordinate; arbitrary field |
 | Label renaming and removal of unused levels | `categorical_recode_rank` | Preserve equality of labels on all realized rows; real rank |
 | Connected structural preprocessing identity | `categorical_structural_rank` | Tuple coverage, legal trace on representatives, separated actual residual blocks; real rank |
+| Characteristic-zero FE target | `categorical_rational_real_rank` | Actual integer-valued indicator matrix |
+| Modular acceptance after a proved bound | `categorical_modular_rank_exact` | Prime modulus, actual modular rank and multipartite upper bound |
+| Structural and arithmetic certificate composition | `categorical_certified_rank` | Every actual residual integer block has valid modular or completed row-trace evidence |
 
 ## How the rank recursion is obtained
 
@@ -124,19 +129,26 @@ The actual total rank is therefore four. These are exact kernel-checked
 witnesses of the definitions and composition. The general results do not rely
 on enumeration or a floating-point rank test.
 
-## Remaining exact-arithmetic obligations
+The arithmetic extension additionally contains the integer family `diag(p, 1)`:
+its rank is two in characteristic zero and one modulo the chosen prime p.
+These examples check modular acceptance boundaries, not a claim that every
+integer matrix is itself a categorical FE incidence matrix.
 
-The general characteristic-zero equivalence between rational and real rank is
-not yet proved in this library. The finite-field lower-bound theorem, extraction
-of a nonzero minor or equivalent certificate, and the full modular acceptance
-rule are also not yet formalized. No modular estimate is promoted to a final
-answer merely because an upper bound was proved.
+## Exact arithmetic and outstanding algorithmic obligations
 
-The rational/integer fallback still needs its elimination invariants, exact rank
-return theorem, and explicit normal-return/resource-exhaustion distinction.
-The current structural pipeline leaves an actual rank for each unresolved core
-block; it does not solve all such blocks by proper connectivity. Prefix-rank
-bookkeeping and the full resource-aware algorithm composition remain separate.
+General rational/real rank invariance, maximal nonzero-minor existence,
+finite-field lower bounds and exact upper-bound-hit acceptance are provided by
+the arithmetic modules. Legal row replacements preserve span, and a completed
+echelon trace proves the actual pivot count. The composed certificate theorem
+therefore no longer leaves a free-standing unverified rank integer for each
+core block. See [arithmetic-correspondence.md](arithmetic-correspondence.md).
+
+That does not prove an executable backend generates the required evidence.
+The rational/integer fallback still needs a specified state-machine bridge,
+correct gcd/divisibility representation, algorithmic completion and actual
+resource-exhaustion semantics. The optional-result adapter in the proof library
+is not the production budget manager. Prefix-rank bookkeeping remains separate.
+A failed proper-connectivity or modular check cannot be treated as a rank answer.
 
 This library does not verify Python row encoding, deduplication, connectivity
 search, peeling queues, modular kernels or fallback code, and it does not prove

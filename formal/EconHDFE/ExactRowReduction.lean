@@ -21,21 +21,23 @@ theorem span_insert_row_replace (s : Set (V → F)) (row pivot : V → F)
   apply le_antisymm
   · apply Submodule.span_le.mpr
     intro x hx
-    rcases Set.mem_insert_iff.mp hx with rfl | hx
-    · let S := Submodule.span F (insert (a • row + b • pivot) s)
+    rcases Set.mem_insert_iff.mp hx with h | h
+    · rw [h]
+      let S := Submodule.span F (insert (a • row + b • pivot) s)
       have hp' : pivot ∈ S := Submodule.span_mono (Set.subset_insert _ _) hp
       have hn : a • row + b • pivot ∈ S := Submodule.subset_span (Set.mem_insert _ _)
       have hm := S.smul_mem a⁻¹ (S.sub_mem hn (S.smul_mem b hp'))
       simpa [smul_smul, ha] using hm
-    · exact Submodule.subset_span (Set.mem_insert_of_mem _ hx)
+    · exact Submodule.subset_span (Set.mem_insert_of_mem _ h)
   · apply Submodule.span_le.mpr
     intro x hx
-    rcases Set.mem_insert_iff.mp hx with rfl | hx
-    · let S := Submodule.span F (insert row s)
+    rcases Set.mem_insert_iff.mp hx with h | h
+    · rw [h]
+      let S := Submodule.span F (insert row s)
       have hr : row ∈ S := Submodule.subset_span (Set.mem_insert _ _)
       have hp' : pivot ∈ S := Submodule.span_mono (Set.subset_insert _ _) hp
       exact S.add_mem (S.smul_mem a hr) (S.smul_mem b hp')
-    · exact Submodule.subset_span (Set.mem_insert_of_mem _ hx)
+    · exact Submodule.subset_span (Set.mem_insert_of_mem _ h)
 
 /-- Nonzero primitive normalization is a special case of the same invariant. -/
 theorem span_insert_row_scale (s : Set (V → F)) (row : V → F) (a : F) (ha : a ≠ 0) :

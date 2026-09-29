@@ -48,7 +48,7 @@ theorem good_prime_minor_accepts :
   apply modular_minor_rank_exact (p := 3) (badPrimeMatrix 2) id id
   · simpa only [Fintype.card_fin] using
       ((badPrimeMatrix 2).map (Int.castRingHom ℚ)).rank_le_card_width
-  · norm_num [badPrimeMatrix, Matrix.det_fin_two]
+  · norm_num [badPrimeMatrix, Matrix.det_fin_two] <;> decide
 
 /-- A rank-zero witness has the usual nonzero empty determinant, not a fake pivot. -/
 theorem empty_minor_det_one {I V : Type*} (A : Matrix I V ℚ) :
