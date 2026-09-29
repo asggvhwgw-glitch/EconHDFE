@@ -1,4 +1,9 @@
-# Stata golden validation — v0.8.0
+# Licensed-Stata golden validation harness
+
+> **Status:** External validation harness.  
+> **Scope:** Deterministic Python/Stata parity fixtures and recorded golden results.  
+> **Boundary:** Requires a licensed, recorded Stata environment; the repository does not fabricate missing golden results.
+
 
 Stata and Python must consume exactly the same deterministic fixtures. The generator writes both the ordinary panel fixture and a long-format patent–inventor-style membership fixture; Stata never regenerates the DGP.
 
@@ -12,7 +17,7 @@ PYTHONPATH=. python validation/compare_golden.py
 
 Before the Stata step, install and record pinned Stata, `reghdfe`, `ivreghdfe`, `ivreg2`, `ranktest`, and `ftools` versions. Archive those versions together with `golden_results_stata.csv` and the comparator output.
 
-The v0.8.0 harness prepares **23 rows**. It retains the 18 historical OLS/IV/weights/VCE/group-individual cases and adds five v0.8 cases:
+The current harness prepares **23 rows**; five cases were historically introduced under the v0.8-labelled validation expansion. It retains the 18 historical OLS/IV/weights/VCE/group-individual cases and adds five v0.8 cases:
 
 - hierarchical `firm + year + province#year + city#year` absorption, which Python must canonicalize to `firm + city#year`;
 - ordinary `firm + year` absorption with Python `method="auto"`, which must route to the specialized two-way solver;
