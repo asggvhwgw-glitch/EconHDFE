@@ -1,10 +1,13 @@
 # HDFE technical documentation
 
+> **Document status:** Current EconHDFE project technical documentation.
+
+
 HDFE technical material is split by mathematical target. This separation is deliberate: numerical rewrites must not silently change inference conventions.
 
 ## Structural rank and absorbed degrees of freedom
 
-`exact-multiway-dof/` contains the technical manuscript for exact structural DoF with three or more intercept-only categorical fixed-effect partitions. The implementation correspondence is:
+`exact-multiway-dof/` contains the technical technical document for exact structural DoF with three or more intercept-only categorical fixed-effect partitions. The implementation correspondence is:
 
 ```text
 exact-multiway-dof/exact_multiway_hdfe_dof.{tex,pdf}
@@ -14,11 +17,11 @@ exact-multiway-dof/exact_multiway_hdfe_dof.{tex,pdf}
         -> benchmarks/hdfe/exact_rank.json
 ```
 
-The manuscript concerns characteristic-zero rank of the requested categorical FE design. It does not certify numerical convergence, heterogeneous slopes, group-individual multi-membership, or cluster finite-sample conventions.
+The technical document concerns characteristic-zero rank of the requested categorical FE design. It does not certify numerical convergence, heterogeneous slopes, group-individual multi-membership, or cluster finite-sample conventions.
 
 ## Exact numerical residual-core reduction
 
-`numerical-residual-core/` contains the formal manuscript for the solver-side technical contribution that passes the package-wide novelty audit: exact arbitrary-G hypergraph leaf elimination for categorical HDFE projection. Its implementation correspondence is:
+`numerical-residual-core/` contains the formal technical document for the solver-side technical contribution that passes the package-wide novelty audit: exact arbitrary-G hypergraph leaf elimination for categorical HDFE projection. Its implementation correspondence is:
 
 ```text
 numerical-residual-core/exact_multiway_hdfe_residual_core.{tex,pdf}
