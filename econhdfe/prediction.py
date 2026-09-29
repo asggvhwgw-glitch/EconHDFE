@@ -69,7 +69,7 @@ class PredictionInput:
     source: str | None
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, eq=False)
 class CategoricalEncodingState:
     name: str
     source: str | None
@@ -94,7 +94,7 @@ class CategoricalEncodingState:
         )
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, eq=False)
 class DesignTermState:
     name: str
     kind: str
@@ -141,7 +141,7 @@ class DesignTermState:
         )
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, eq=False)
 class DesignPredictionState:
     role: str
     requested_names: tuple[str, ...]
@@ -170,7 +170,7 @@ class DroppedFixedEffectState:
     proof_type: str
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, eq=False)
 class FixedEffectPredictionState:
     requested_names: tuple[str, ...]
     effective_names: tuple[str, ...]
@@ -192,7 +192,7 @@ class FixedEffectPredictionState:
         return any(count > 0 for count in self.slope_counts)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, eq=False)
 class PredictionState:
     """Read-only fitted-design contract used by future post-estimation APIs."""
 
