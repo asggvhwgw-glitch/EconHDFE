@@ -1,6 +1,6 @@
 # 0.6.1 review status
 
-Current registry classes are `theorem_backed_framework` and `theorem_backed_application`. They describe mathematical support, **not confirmed novelty**. The historical claim discussion below is retained for traceability and is subordinate to this qualification. Full proof/implementation corrections and tests: [mathematical-review-0.6.1.md](mathematical-review-0.6.1.md).
+Current registry classes are `theorem_backed_framework` and `theorem_backed_application`. They describe mathematical support, **not confirmed novelty**. The historical claim discussion below is retained for traceability and is subordinate to this qualification. Full proof/implementation corrections and tests: [mathematical-review-0.6.1.md](history/mathematical-review-0.6.1.md).
 
 # Package-wide technical-innovation audit
 
