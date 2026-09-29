@@ -843,7 +843,7 @@ def _compile_execution_design(
         return _ExecutionDesignMatrix(
             dense.values, compiled.names, compiled.origins, compiled.requested_names,
             compiled.requested_origins, compiled.structural_plan, compiled.terms,
-            compiled.user_omissions, None, storage,
+            compiled.user_omissions, None, storage, _prediction_terms(compiled),
         )
 
     from .compute.design_plan import analyze_execution_structure
