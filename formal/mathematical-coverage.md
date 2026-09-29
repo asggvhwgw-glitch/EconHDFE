@@ -6,11 +6,12 @@ successful complete build and dependency audit for the exact source commit.
 These rows replace informal completion percentages. They are not a claim that
 all prose, numerical experiments or illustrative counterexamples are formalized.
 
-The target is the separately delivered corrected 2026-09-28 manuscripts, not the
-superseded TeX/PDF files inherited from the base commit. Stable manuscript labels
-are given where available. The three appendix fragments are provided separately
-under `appendices/` for integration with that corrected source. No manuscript
-PDF is rebuilt or relabeled by the Lean workflow.
+The target is the corrected 2026-09-28 manuscript text. The corrected TeX sources
+on this branch now include the three fragments under `appendices/`, and the
+dedicated manuscript workflow recompiles the corresponding PDFs from those
+sources. Stable manuscript labels are given where available. Machine-checked
+status still applies only to the explicitly mapped mathematical statements, not
+to every sentence or implementation claim in the PDFs.
 
 ## Residual-core reduction
 
@@ -89,10 +90,9 @@ and are not inferred here.
 ## Integration and claims
 
 Appendix sources are `appendices/residual-core.tex`, `appendices/exact-rank.tex`
-and `appendices/structural-design.tex`. Their purpose is to identify precisely
-which mathematical statements are machine-checked under which premises. They
-should be integrated with the corrected manuscripts, not appended to the old
-PDFs while leaving superseded claims in place.
+and `appendices/structural-design.tex`. They are now included by the corrected
+manuscript sources and compiled into the branch PDFs. Their purpose is to identify
+precisely which mathematical statements are machine-checked under which premises.
 
 The mathematical library has no runtime dependency on an AI agent. The trusted
 basis is the pinned Lean kernel plus the foundational axioms reported in the
