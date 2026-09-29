@@ -1,5 +1,8 @@
 # Nonlinear equations, numerical contracts and resource boundaries — 0.6.2
 
+> **Document status:** Historical 0.6.2 nonlinear/resource review; retained for provenance.
+
+
 This is a local implementation review, not an originality certificate, third-party
 peer review, Stata certification, or proof of floating-point accuracy for all inputs.
 The three 0.6.1 mathematical manuscripts are retained unchanged; this follow-up
