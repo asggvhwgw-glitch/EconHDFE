@@ -26,7 +26,7 @@ No other current feature should be described as an original econhdfe technical c
 
 ## Machine-checked mathematical verification
 
-The three registered theorem-backed contributions now have a separate Lean 4 proof library under [`formal/`](../../formal/README.md). The canonical coverage table is [`formal/mathematical-coverage.md`](../../formal/mathematical-coverage.md), with technical document-ready appendix fragments under [`formal/appendices/`](../../formal/appendices/).
+The three registered theorem-backed contributions now have a separate Lean 4 proof library under [`formal/`](../../formal/README.md). The canonical coverage table is [`formal/mathematical-coverage.md`](../../formal/mathematical-coverage.md), with appendix fragments for the three project technical documents under [`formal/appendices/`](../../formal/appendices/).
 
 The verification scope is deliberately mathematical only: explicitly mapped theorem statements, assumptions, and corollaries are machine-checked. Python/Numba implementation correctness, floating-point convergence, benchmark performance, external Stata parity, and historical originality remain separate claims. See [formal verification status](formal-verification.md).
 
