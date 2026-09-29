@@ -44,7 +44,7 @@ REL-01/02/03/04 是可重复的门禁职责，不另造同义 ID。0.6.5 已完�
 
 | ID | 范围 | 进入条件 |
 |---|---|---|
-| PRED-00 | 只读 fitted-design / prediction state | 复用现有 design/effects，冻结列、样本、类别与归一化语义；不保存不必要的原始数据 |
+| PRED-00 | 只读 fitted-design / prediction state | `feature/post-estimation` 已实现标准 OLS/IV 与 linear session 的冻结状态；等待 0.7 版本契约登记与 CI。FE 原始 level map、group+individual 路径仍明确留给 PRED-01/后续，不保存不必要原始数据 |
 | PRED-01 | 明确尺度的预测 API | 先 categorical FE；新 level、不识别组合/跨组件组合必须明确拒绝或 NaN，不默认为零；varying-slope 单独设计 |
 | POST-00 | 单模型线性约束、Wald、contrasts | 参数/协方差对齐与有效秩；跨模型比较需要联合协方差，不能默认独立 |
 | POST-01 | margins、AME、非线性变换 | 先定义预测目标与 FE 不确定性边界，不能用 beta-only 协方差冒充完整预测推断 |
