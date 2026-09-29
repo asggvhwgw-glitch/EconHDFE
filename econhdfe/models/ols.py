@@ -417,6 +417,8 @@ def olshdfe(
         sample_state=sample_state,
         fe_plan=fe_plan,
         fe_names=fe_names,
+        requested_fe_groups=inference_fe.groups,
+        effective_fe_groups=groups,
         fe_intercepts=intercepts,
         fe_slopes=slopes,
         recovered_effects=fixed_effects,
