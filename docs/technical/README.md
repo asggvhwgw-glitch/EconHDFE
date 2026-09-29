@@ -1,5 +1,8 @@
 # Technical documentation and innovation policy
 
+> **Document status:** Current EconHDFE project technical documentation.
+
+
 This directory contains mathematical/algorithmic documentation, implementation notes and the package-wide technical-innovation audit.
 
 ## Technical overview documents
@@ -11,7 +14,7 @@ This directory contains mathematical/algorithmic documentation, implementation n
 ## Innovation source of truth
 
 - `innovation-audit.md` — complete package audit distinguishing genuine technical innovation from established methods and engineering.
-- `innovation-registry.json` — machine-readable release contract. Every item classified as `technical_innovation` must have a formal `.tex` manuscript and compiled `.pdf`, plus implementation/test/evidence mappings.
+- `innovation-registry.json` — machine-readable release contract. Every item classified as `technical_innovation` must have a formal `.tex` technical document and compiled `.pdf`, plus implementation/test/evidence mappings.
 
 The current registered innovations are:
 
@@ -19,17 +22,22 @@ The current registered innovations are:
 2. exact arbitrary-G numerical residual-core reduction;
 3. exact partition-refinement HDFE canonicalization and structural design reduction.
 
-No other current feature should be described as an original econhdfe technical contribution without updating the audit, literature boundary, registry and formal manuscript in the same release.
+No other current feature should be described as an original econhdfe technical contribution without updating the audit, literature boundary, registry and formal technical document in the same release.
 
 ## Machine-checked mathematical verification
 
-The three registered theorem-backed contributions now have a separate Lean 4 proof library under [`formal/`](../../formal/README.md). The canonical coverage table is [`formal/mathematical-coverage.md`](../../formal/mathematical-coverage.md), with manuscript-ready appendix fragments under [`formal/appendices/`](../../formal/appendices/).
+The three registered theorem-backed contributions now have a separate Lean 4 proof library under [`formal/`](../../formal/README.md). The canonical coverage table is [`formal/mathematical-coverage.md`](../../formal/mathematical-coverage.md), with technical document-ready appendix fragments under [`formal/appendices/`](../../formal/appendices/).
 
 The verification scope is deliberately mathematical only: explicitly mapped theorem statements, assumptions, and corollaries are machine-checked. Python/Numba implementation correctness, floating-point convergence, benchmark performance, external Stata parity, and historical originality remain separate claims. See [formal verification status](formal-verification.md).
 
 ## Domain documentation
 
 - `hdfe/` — exact rank/DoF mathematics, exact residual-core projection, solver implementation notes and exact-rank backends.
-- `structural-design/` — exact partition-refinement / dependency-DAG design reduction manuscript.
+- `structural-design/` — exact partition-refinement / dependency-DAG design reduction technical document.
 - `cluster-inference.md` — established CRV/WCR cluster-inference behavior and support boundaries; this is technical documentation, not an originality claim.
 - [`heterogeneous-specification-optimization.md`](heterogeneous-specification-optimization.md): internal acceleration for interaction-rich and heterogeneous-coefficient empirical specifications, including model integration and dense-fallback boundaries.
+
+
+## Format convention
+
+Current project technical documents use one top-level title, an explicit document-status line, a clear scope or claim boundary, and links to validation or related material where relevant. Version-specific reviews, migration notes, checkpoints, and closeout records are historical records and live under dedicated `history/` directories rather than beside current source-of-truth documents.
