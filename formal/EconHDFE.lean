@@ -25,3 +25,5 @@ import EconHDFE.WithinInvariance
 import EconHDFE.ResidualCoreTotal
 import EconHDFE.PPMLInvariance
 import EconHDFE.RankConsequences
+import EconHDFE.FrischWaughLovell
+import EconHDFE.StructuralConsequences

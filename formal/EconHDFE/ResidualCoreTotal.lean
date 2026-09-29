@@ -15,6 +15,22 @@ namespace EconHDFE
 open scoped Classical
 variable {I G : Type*} {K : G → Type*} [Fintype I]
 
+/-- Exact transport in original row coordinates, including every FE normal equation. -/
+theorem core_inner_transport {code : (g : G) → I → K g}
+    (t : PeelingTrace code) (w : I → ℝ) (rC : PeelingCore t → ℝ) (z : I → ℝ) :
+    wInner w (peelExtend t rC) z =
+      wInner (fun c : PeelingCore t => w c.val) rC (fun c => z c.val) := by
+  simpa only [peelExtend_core] using
+    wInner_on_subtype (fun i => i ∈ surviving t) w (peelExtend t rC) z
+      (fun i hi => by simp [peelExtend, hi])
+
+/-- Zero extension preserves the core objective value exactly. -/
+theorem core_loss_transport {code : (g : G) → I → K g}
+    (t : PeelingTrace code) (w : I → ℝ) (rC : PeelingCore t → ℝ) :
+    wInner w (peelExtend t rC) (peelExtend t rC) =
+      wInner (fun c : PeelingCore t => w c.val) rC rC := by
+  simpa only [peelExtend_core] using core_inner_transport t w rC (peelExtend t rC)
+
 /-- Core reconstruction for every input, without an assumed residual or attained fit. -/
 theorem categorical_residual_core_total {code : (g : G) → I → K g}
     (t : PeelingTrace code) (w y : I → ℝ) (hw : ∀ i, 0 < w i) :
