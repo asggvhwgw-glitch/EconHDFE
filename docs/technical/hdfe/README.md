@@ -7,7 +7,7 @@ HDFE technical material is split by mathematical target. This separation is deli
 
 ## Structural rank and absorbed degrees of freedom
 
-`exact-multiway-dof/` contains the technical technical document for exact structural DoF with three or more intercept-only categorical fixed-effect partitions. The implementation correspondence is:
+`exact-multiway-dof/` contains the project technical document for exact structural DoF with three or more intercept-only categorical fixed-effect partitions. The implementation correspondence is:
 
 ```text
 exact-multiway-dof/exact_multiway_hdfe_dof.{tex,pdf}
