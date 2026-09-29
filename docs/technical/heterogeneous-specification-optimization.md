@@ -1,5 +1,8 @@
 # Heterogeneous-specification optimization
 
+**Status:** Current internal engineering documentation  
+**Scope:** Exact physical-representation optimization for interaction-rich and heterogeneous-coefficient specifications.  
+**Claim boundary:** The layer preserves the requested economic model and does not define a new estimator or infer unrequested heterogeneity.
 ## Purpose
 
 This is an internal performance layer for empirical specifications that request many explicit heterogeneous coefficients, especially factor interactions and group-specific slopes. Typical examples include event-study expansions, cohort-by-event-time terms, industry-specific slopes, region-specific policy effects, and related interaction-rich specifications.

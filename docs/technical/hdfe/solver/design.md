@@ -1,5 +1,8 @@
 # HDFE numerical solver design
 
+**Status:** Current HDFE numerical-solver design  
+**Scope:** Requested topology, canonical numerical plans, projection cores, solver routes, and execution-state invariants.  
+**Claim boundary:** Solver optimizations may change execution representation but must not redefine requested inference topology.
 The numerical solver is a distinct layer from structural DoF/rank. Its job is to compute the within transformation efficiently while preserving the column space requested by the estimator.
 
 ## Three representations

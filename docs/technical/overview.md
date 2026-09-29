@@ -1,5 +1,8 @@
 # Technical overview
 
+**Status:** Current project technical contract  
+**Scope:** Estimator semantics, exact transformations, shared HDFE architecture, data/execution layers, and validation boundaries.  
+**Claim boundary:** This document describes architecture and mathematical/engineering separation; it is not itself a novelty or software-verification claim.
 This document explains the technical contract of `econhdfe` without conflating three different things:
 
 1. the **econometric model** the researcher requests;

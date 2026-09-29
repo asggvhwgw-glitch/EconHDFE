@@ -1,5 +1,8 @@
 # Multiway HDFE solver-opt2 integration (v0.4.4)
 
+**Status:** Historical implementation note (v0.4.4)  
+**Scope:** Records the solver-opt2 integration at that version for provenance.  
+**Current-source boundary:** Use `design.md` and the current HDFE documentation for present behavior; this file is not the current solver specification.
 Version 0.4.4 integrated the solver-opt2 module into the shared HDFE layer without changing estimator equations, result schemas, DoF semantics, configuration dataclasses, or structured error codes.
 
 ## Innovation boundary

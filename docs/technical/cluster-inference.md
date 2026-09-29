@@ -1,5 +1,8 @@
 # Cluster inference boundary
 
+**Status:** Current cluster-inference boundary  
+**Scope:** CRV1 ownership, resampling responsibilities, cluster diagnostics, and supported advanced one-way procedures.  
+**Claim boundary:** Established inferential methods are documented separately from package engineering and unsupported future extensions.
 `econhdfe` separates three concerns:
 
 - `compute/vcov.py`: standard sandwich covariance, including one-/multi-way CRV1 and finite-sample/nesting conventions.

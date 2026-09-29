@@ -1,5 +1,8 @@
 # Identified categorical fixed-effect recovery
 
+**Status:** Current fixed-effect recovery documentation  
+**Scope:** Realized-sample identification, connected components, normalization, diagnostics, and recovery semantics.  
+**Claim boundary:** Recovery and normalization do not create identification that is absent from the realized design.
 High-dimensional fixed-effect estimators usually absorb FE because the coefficients are nuisance parameters. In several important empirical designs, however, the FE coefficients themselves are economic objects—for example worker and firm effects in AKM-style models or origin/destination value components used in a later structural stage.
 
 `econhdfe.effects` is therefore a small post-estimation layer. It is intentionally not another estimator family.

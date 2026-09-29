@@ -1,5 +1,8 @@
 # Row-partitioned HDFE weighted least squares: implementation note
 
+**Status:** Current numerical implementation note  
+**Scope:** Row-partitioned weighted least squares and structure-exploiting execution within the existing estimator semantics.  
+**Claim boundary:** The underlying block-angular/QR ideas are established numerical methods; this document does not register a new theorem.
 ## Status and originality boundary
 
 This note documents an **established numerical method adapted to econhdfe's structural execution layer**. It is not registered in `innovation-registry.json` as a new technical contribution.

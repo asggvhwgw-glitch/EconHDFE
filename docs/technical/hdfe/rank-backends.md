@@ -1,5 +1,8 @@
 # Exact categorical FE rank backends
 
+**Status:** Current exact-rank backend documentation  
+**Scope:** Certification order, optional exact-arithmetic backends, fallback behavior, and resource boundaries.  
+**Claim boundary:** Mathematical rank certificates and backend program correctness are separate claims; no floating-point rank is used on the exact path.
 `rank.py` keeps the exact 3+ FE DoF engine dependency-safe.  The public
 `categorical_rank(..., backend="auto")` path is:
 
