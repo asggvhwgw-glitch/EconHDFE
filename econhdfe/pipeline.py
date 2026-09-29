@@ -161,6 +161,7 @@ class StandardFEInference:
     slopes: list[np.ndarray | None]
     intercepts: list[bool]
     names: list[str]
+    metadata: tuple[FEPartitionMeta, ...] = ()
 
 
 def _prepare_standard_fe_structure(
@@ -200,7 +201,7 @@ def _prepare_standard_fe_structure(
 
     requested_groups, requested_slopes = _dense_active(all_groups, all_slopes, mask)
     inference = StandardFEInference(
-        requested_groups, requested_slopes, list(all_intercepts), list(all_names)
+        requested_groups, requested_slopes, list(all_intercepts), list(all_names), tuple(metadata)
     )
 
     if canonicalize_fe and dropped:

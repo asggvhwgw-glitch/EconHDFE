@@ -83,3 +83,5 @@ Repository-local benchmark timings are development evidence unless an external c
 - [0.6.3 measured performance](release/performance-0.6.3.md)
 
 Release publication mechanics: [release/publishing.md](release/publishing.md).
+
+- [0.7 后估计开发契约](development/postestimation-0.7.md) — 预测目标、冻结设计、识别和推断范围。

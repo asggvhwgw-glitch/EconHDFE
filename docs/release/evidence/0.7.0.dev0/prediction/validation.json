@@ -1,0 +1,95 @@
+{
+  "release_version": "0.7.0.dev0",
+  "base_branch": "feature/post-estimation",
+  "base_commit": "3ba2b4c649a03324d1e63636bb4333dfb79111dd",
+  "main_base": "22e176b771cb9554ec26cc60338a92776c42031d",
+  "source_method": "CI source archive for main plus 17 PR12 files verified against Git blob hashes",
+  "code_fingerprint_sha256": "fa7256332101b85cfcac462732bf2e21045203d7905ed664fa297f879095511a",
+  "executed_at": "2026-09-29T08:16:44.320425+00:00",
+  "environment": {
+    "python": "3.13.5",
+    "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+    "packages": {
+      "numpy": "2.3.5",
+      "scipy": "1.17.0",
+      "pandas": "2.2.3",
+      "numba": "0.65.1",
+      "joblib": "1.5.3",
+      "pytest": "9.0.2",
+      "setuptools": "82.0.1",
+      "wheel": null
+    },
+    "threads": {
+      "OPENBLAS_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "NUMBA_NUM_THREADS": "4",
+      "MKL_NUM_THREADS": "1"
+    },
+    "validation_scope": "source full suite and installed wheel using HOST dependencies; not isolated build/clean install/cross-platform"
+  },
+  "full": {
+    "tests": 930,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "installed": {
+    "tests": 346,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "runs": {
+    "full": {
+      "returncode": 0,
+      "seconds": 29.376134634017944,
+      "command": [
+        "python",
+        "scripts/run_tests.py",
+        "--suite",
+        "full",
+        "--",
+        "-q",
+        "--junitxml=/mnt/data/EconHDFE/docs/release/evidence/0.7.0.dev0/prediction/full.xml"
+      ]
+    },
+    "build": {
+      "returncode": 0,
+      "seconds": 3.1962218284606934,
+      "command": [
+        "python",
+        "-m",
+        "pip",
+        "wheel",
+        "--no-index",
+        "--no-deps",
+        "--no-build-isolation",
+        ".",
+        "-w",
+        "/mnt/data/pred-validation/dist"
+      ]
+    },
+    "installed": {
+      "returncode": 0,
+      "seconds": 20.051739931106567,
+      "command": [
+        "python",
+        "scripts/verify_installed_numerics.py",
+        "--wheel",
+        "/mnt/data/pred-validation/dist/econhdfe-0.7.0.dev0-py3-none-any.whl",
+        "--extra-test",
+        "test_prediction.py",
+        "--extra-test",
+        "test_prediction_oracles.py",
+        "--extra-test",
+        "test_postestimation.py",
+        "--extra-test",
+        "test_prediction_state.py",
+        "--junitxml=/mnt/data/EconHDFE/docs/release/evidence/0.7.0.dev0/prediction/installed.xml"
+      ]
+    }
+  },
+  "wheel_sha256": "727dc21758fa1692dc5d864563df1f77956889938a02ac14dcd96b10a026eb38",
+  "remote_ci": "not_run_for_this_candidate",
+  "release_ready": false
+}

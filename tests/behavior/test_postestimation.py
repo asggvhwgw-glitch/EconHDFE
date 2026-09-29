@@ -81,3 +81,48 @@ def test_iv_named_restriction_uses_reported_parameter_order():
     joint = r.wald_test([{r.names[0]: 1.0}, {r.names[1]: 1.0}])
     assert joint.df_num == 2
     assert 0.0 <= joint.p_value <= 1.0
+
+
+def test_singular_wald_uses_consistent_rank_and_rejects_inconsistent_null():
+    from econhdfe.postestimation import wald_test
+    beta = np.array([.4, -.2])
+    V = np.array([[.25, .03], [.03, .16]])
+    one = wald_test(beta, V, [1., -1.], df_resid=20)
+    repeated = wald_test(beta, V, [[1., -1.], [1e12, -1e12]], df_resid=20)
+    assert repeated.df_num == 1
+    assert repeated.statistic == pytest.approx(one.statistic)
+    with pytest.raises(ValueError, match='no estimated sampling variance'):
+        wald_test(beta, V, [[1., -1.], [1., -1.]], values=[0., 1.], df_resid=20)
+    with pytest.raises(ValueError, match='positive semidefinite'):
+        wald_test(beta, np.diag([1., -1.]), df_resid=20)
+
+
+@pytest.mark.parametrize('kind', ['linear', 'wald'])
+def test_nonfinite_covariance_and_duplicate_names_are_rejected(kind):
+    from econhdfe.postestimation import linear_combination, wald_test
+    fn = linear_combination if kind == 'linear' else wald_test
+    with pytest.raises(ValueError, match='finite'):
+        fn([1., 2.], np.diag([1., np.nan]), [1., 0.])
+    with pytest.raises(ValueError, match='unique'):
+        fn([1., 2.], np.eye(2), {'x': 1.}, names=('x', 'x'))
+    with pytest.raises(ValueError, match='finite'):
+        fn([1., 2.], np.eye(2), [np.nan, 0.])
+
+
+def test_zero_variance_contrast_is_not_reported_as_certain_inference():
+    from econhdfe.postestimation import linear_combination
+    with pytest.raises(ValueError, match='zero estimated variance'):
+        linear_combination([0.], [[0.]], [1.])
+    with pytest.raises(ValueError, match='degrees of freedom'):
+        linear_combination([0.], [[1.]], [1.], df=0)
+
+
+def test_result_postestimation_uses_structured_public_error_boundary():
+    from econhdfe.errors import EconHDFEError
+    r = _fit()
+    with pytest.raises(EconHDFEError) as exc:
+        r.linear_combination([1.0, np.nan])
+    assert exc.value.stage == 'postestimation'
+    with pytest.raises(EconHDFEError) as exc:
+        r.wald_test(np.ones((1, 3)))
+    assert exc.value.stage == 'postestimation'

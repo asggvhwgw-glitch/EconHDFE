@@ -354,7 +354,7 @@ def _module_name(root: Path, path: Path) -> str:
 def _group(module: str) -> str:
     if module == "pyreghdfe" or module.startswith("pyreghdfe."):
         return "compat"
-    if module in {"econhdfe.errors", "econhdfe.config", "econhdfe.results", "econhdfe.reporting", "econhdfe.support_reports", "econhdfe.postestimation", "econhdfe.prediction"}:
+    if module in {"econhdfe.errors", "econhdfe.config", "econhdfe.results", "econhdfe.reporting", "econhdfe.support_reports", "econhdfe.postestimation", "econhdfe.prediction", "econhdfe.prediction_api"}:
         return "contracts"
     if module.startswith("econhdfe.frontend"):
         return "frontend"

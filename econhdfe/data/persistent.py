@@ -12,11 +12,12 @@ from typing import Any, Mapping, Sequence
 import numpy as np
 
 from ..errors import SpecificationError
-from ..results import DofInfo, RegressionResult
+from ..results import DofInfo, RegressionResult, FixedEffectEstimates, FixedEffectTermEstimate
 from ..prediction import (
     CategoricalEncodingState, DesignPredictionState, DesignTermState,
     DroppedFixedEffectState, EstimationSampleSnapshot, FixedEffectPredictionState,
     PredictionInput, PredictionState, SampleExclusionState,
+    FixedEffectLevelState, FixedEffectNestingState, CategoricalFixedEffectState,
 )
 from ..frontend.columns import compile_data_requirements, merge_data_requirements
 from .dataset import EncodedEconometricDataset, materialize_required_data
@@ -25,7 +26,7 @@ from .source import DataFrameSource, DataSource, as_data_source
 
 PERSISTENT_CACHE_FORMAT = 1
 PERSISTENT_NUMERICAL_ABI = "linear-session-1"
-PERSISTENT_RESULT_ABI = "linear-session-result-2"
+PERSISTENT_RESULT_ABI = "linear-session-result-3"
 
 _PREDICTION_STATE_TYPES = {
     cls.__name__: cls
@@ -33,6 +34,8 @@ _PREDICTION_STATE_TYPES = {
         SampleExclusionState, EstimationSampleSnapshot, PredictionInput,
         CategoricalEncodingState, DesignTermState, DesignPredictionState,
         DroppedFixedEffectState, FixedEffectPredictionState, PredictionState,
+        FixedEffectLevelState, FixedEffectNestingState, CategoricalFixedEffectState,
+        FixedEffectEstimates, FixedEffectTermEstimate,
     )
 }
 

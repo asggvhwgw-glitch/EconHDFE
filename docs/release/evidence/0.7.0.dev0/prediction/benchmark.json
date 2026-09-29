@@ -1,0 +1,32 @@
+{
+  "n_new": 400000,
+  "n_params": 41,
+  "hypothetical_full_design_bytes": 131200000,
+  "scope": "xb only; measured design block excludes other temporaries and source/output arrays; no peak RSS claim",
+  "python": "3.13.5",
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+  "measurements": [
+    {
+      "chunk_size": 2048,
+      "seconds_all_repeats": [
+        0.1401966569999331,
+        0.15443730500010133,
+        0.1605829470001936
+      ],
+      "largest_design_chunk_bytes": 671744,
+      "result_bytes": 3200000,
+      "max_difference": 0.0
+    },
+    {
+      "chunk_size": 32768,
+      "seconds_all_repeats": [
+        0.07491386800006694,
+        0.0631698580000375,
+        0.06532144700008757
+      ],
+      "largest_design_chunk_bytes": 10747904,
+      "result_bytes": 3200000,
+      "max_difference": 0.0
+    }
+  ]
+}

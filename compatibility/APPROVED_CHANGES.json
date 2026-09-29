@@ -2,24 +2,24 @@
   "approved": [
     {
       "id": "1b5fc6d2e56de2ed",
-      "path": "result_schemas.RegressionResult",
       "kind": "changed",
-      "reason": "Intentional additive RegressionResult prediction_state contract for the post-estimation foundation."
+      "path": "result_schemas.RegressionResult",
+      "reason": "0.7 \u540e\u4f30\u8ba1\u5f00\u53d1\u7ebf\u6709\u610f\u65b0\u589e prediction_state\uff0c\u4fdd\u7559\u65e7\u4f4d\u7f6e\u53c2\u6570\u4e0e\u9ed8\u8ba4 None\uff1b0.6.5 \u5386\u53f2\u5feb\u7167\u4e0d\u6539\u5199\u3002"
     },
     {
       "id": "4171fde26c73b8d0",
-      "path": "exported_dataclass_schemas.RegressionResult",
       "kind": "changed",
-      "reason": "Intentional additive RegressionResult prediction_state contract for the post-estimation foundation."
+      "path": "exported_dataclass_schemas.RegressionResult",
+      "reason": "0.7 \u540e\u4f30\u8ba1\u5f00\u53d1\u7ebf\u6709\u610f\u65b0\u589e prediction_state\uff0c\u4fdd\u7559\u65e7\u4f4d\u7f6e\u53c2\u6570\u4e0e\u9ed8\u8ba4 None\uff1b0.6.5 \u5386\u53f2\u5feb\u7167\u4e0d\u6539\u5199\u3002"
     },
     {
       "id": "dcecdeb9a0db3fe4",
-      "path": "signatures.RegressionResult",
       "kind": "changed",
-      "reason": "Intentional additive RegressionResult prediction_state contract for the post-estimation foundation."
+      "path": "signatures.RegressionResult",
+      "reason": "0.7 \u540e\u4f30\u8ba1\u5f00\u53d1\u7ebf\u6709\u610f\u65b0\u589e prediction_state\uff0c\u4fdd\u7559\u65e7\u4f4d\u7f6e\u53c2\u6570\u4e0e\u9ed8\u8ba4 None\uff1b0.6.5 \u5386\u53f2\u5feb\u7167\u4e0d\u6539\u5199\u3002"
     }
   ],
-  "baseline_version": "0.6.4",
-  "release_version": "0.6.5",
+  "baseline_version": "0.6.5",
+  "release_version": "0.7.0.dev0",
   "schema_version": 1
 }

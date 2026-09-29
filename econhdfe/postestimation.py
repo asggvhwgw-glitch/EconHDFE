@@ -28,10 +28,23 @@ class WaldTestResult:
     distribution: str
 
 
+def _parameters(params, vcov):
+    beta = np.asarray(params, dtype=np.float64)
+    V = np.asarray(vcov, dtype=np.float64)
+    if beta.ndim != 1 or V.shape != (len(beta), len(beta)):
+        raise ValueError("params/vcov shapes are inconsistent")
+    if not np.isfinite(beta).all() or not np.isfinite(V).all():
+        raise ValueError("params/vcov must be finite")
+    scale = np.max(np.abs(V), initial=0.0)
+    if np.max(np.abs(V - V.T), initial=0.0) > 1e-10 * scale:
+        raise ValueError("covariance must be symmetric")
+    return beta, (V + V.T) * 0.5
+
+
 def _coefficient_vector(spec, names: tuple[str, ...], k: int) -> np.ndarray:
     if isinstance(spec, Mapping):
-        if not names or len(names) != k:
-            raise ValueError("named restrictions require one coefficient name per parameter")
+        if not names or len(names) != k or len(set(names)) != k:
+            raise ValueError("named restrictions require one unique coefficient name per parameter")
         index = {name: j for j, name in enumerate(names)}
         unknown = tuple(name for name in spec if name not in index)
         if unknown:
@@ -48,28 +61,27 @@ def _coefficient_vector(spec, names: tuple[str, ...], k: int) -> np.ndarray:
 
 def linear_combination(params, vcov, weights, *, names=(), value=0.0,
                        df=np.inf, level=0.95) -> LinearCombinationResult:
-    beta = np.asarray(params, dtype=np.float64)
-    V = np.asarray(vcov, dtype=np.float64)
-    if beta.ndim != 1 or V.shape != (len(beta), len(beta)):
-        raise ValueError("params/vcov shapes are inconsistent")
+    beta, V = _parameters(params, vcov)
     if not 0 < float(level) < 1:
         raise ValueError("level must lie strictly between 0 and 1")
+    if np.isnan(df) or float(df) <= 0:
+        raise ValueError("linear-combination degrees of freedom must be positive")
     w = _coefficient_vector(weights, tuple(names), len(beta))
+    if not np.isfinite(w).all() or not np.isfinite(value):
+        raise ValueError("contrast weights and null value must be finite")
     estimate = float(w @ beta)
     variance = float(w @ V @ w)
-    scale = max(1.0, float(np.max(np.abs(V))) if V.size else 1.0)
-    if variance < -1e-12 * scale:
+    scale = float(np.abs(w) @ np.abs(V) @ np.abs(w))
+    if not np.isfinite(estimate) or not np.isfinite(variance):
+        raise ValueError("contrast arithmetic is nonfinite")
+    if variance < -64 * np.finfo(float).eps * max(len(beta), 1) * scale:
         raise ValueError("contrast variance is negative; covariance matrix is not numerically valid")
     std_error = float(np.sqrt(max(variance, 0.0)))
     diff = estimate - float(value)
     if std_error == 0.0:
-        if np.isclose(diff, 0.0):
-            statistic, p_value = 0.0, 1.0
-        else:
-            raise ValueError("contrast has zero estimated variance but does not satisfy the null")
-    else:
-        statistic = diff / std_error
-        p_value = float(2.0 * t_dist.sf(abs(statistic), df))
+        raise ValueError("contrast has zero estimated variance and is not statistically testable")
+    statistic = diff / std_error
+    p_value = float(2.0 * t_dist.sf(abs(statistic), df))
     alpha = 1.0 - float(level)
     critical = float(t_dist.ppf(1.0 - alpha / 2.0, df))
     return LinearCombinationResult(
@@ -95,10 +107,7 @@ def _restriction_matrix(restrictions, names: tuple[str, ...], k: int) -> np.ndar
 
 def wald_test(params, vcov, restrictions=None, *, values=None, names=(),
               df_resid=np.inf, distribution="F") -> WaldTestResult:
-    beta = np.asarray(params, dtype=np.float64)
-    V = np.asarray(vcov, dtype=np.float64)
-    if beta.ndim != 1 or V.shape != (len(beta), len(beta)):
-        raise ValueError("params/vcov shapes are inconsistent")
+    beta, V = _parameters(params, vcov)
     k = len(beta)
     R = np.eye(k, dtype=np.float64) if restrictions is None else _restriction_matrix(
         restrictions, tuple(names), k
@@ -113,18 +122,35 @@ def wald_test(params, vcov, restrictions=None, *, values=None, names=(),
             q = np.full(R.shape[0], float(q), dtype=np.float64)
         if q.shape != (R.shape[0],):
             raise ValueError(f"values must have shape ({R.shape[0]},)")
+    if not np.isfinite(R).all() or not np.isfinite(q).all():
+        raise ValueError("restrictions and null values must be finite")
+    # Normalize rows without changing the hypothesis before forming R V R'.
+    row_scale = np.max(np.abs(R), axis=1, initial=0.0)
+    row_scale[row_scale == 0] = 1.0
+    R, q = R / row_scale[:, None], q / row_scale
     diff = R @ beta - q
     S = R @ V @ R.T
     S = 0.5 * (S + S.T)
-    rank = int(np.linalg.matrix_rank(S))
+    if not np.isfinite(S).all() or not np.isfinite(diff).all():
+        raise ValueError("restriction arithmetic is nonfinite")
+    scale = np.sqrt(np.max(np.abs(S), axis=1))
+    scale[scale == 0] = 1.0
+    S = S / scale[:, None] / scale[None, :]
+    diff = diff / scale
+    # One eigendecomposition supplies both rank and inverse. Separate
+    # matrix_rank/pinv defaults can disagree near singularity.
+    eigenvalues, eigenvectors = np.linalg.eigh(S)
+    tolerance = 64 * np.finfo(float).eps * max(S.shape) * np.max(np.abs(eigenvalues), initial=0.0)
+    if np.any(eigenvalues < -tolerance):
+        raise ValueError("restriction covariance is not positive semidefinite")
+    active = eigenvalues > tolerance
+    rank = int(np.count_nonzero(active))
     if rank == 0:
         raise ValueError("restrictions have zero estimated variance and are not statistically testable")
-    Sinv = np.linalg.pinv(S, hermitian=True)
-    projection_error = np.linalg.norm(diff - S @ (Sinv @ diff))
-    tolerance = 1e-9 * max(1.0, np.linalg.norm(diff))
-    if projection_error > tolerance:
+    coordinates = eigenvectors.T @ diff
+    if np.linalg.norm(coordinates[~active]) > 1e-9 * max(1.0, np.linalg.norm(diff)):
         raise ValueError("restriction includes a direction with no estimated sampling variance")
-    chi2_stat = float(diff @ Sinv @ diff)
+    chi2_stat = float(np.sum(coordinates[active] ** 2 / eigenvalues[active]))
     dist = str(distribution).lower()
     if dist in {"f", "f_test"}:
         if not np.isfinite(df_resid) or float(df_resid) <= 0:

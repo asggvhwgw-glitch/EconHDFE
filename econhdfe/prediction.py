@@ -1,9 +1,21 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 import numpy as np
+
+
+def _readonly(values, dtype=None) -> np.ndarray:
+    """Detach level-sized state; numeric/string buffers cannot be made writable."""
+    a = np.asarray(values, dtype=dtype)
+    if a.dtype.kind == "O" and all(isinstance(x, str) for x in a.flat):
+        a = a.astype(str)
+    if not a.dtype.hasobject:
+        return np.frombuffer(a.tobytes(), dtype=a.dtype).reshape(a.shape)
+    a = a.copy()
+    a.flags.writeable = False
+    return a
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,8 +89,8 @@ class CategoricalEncodingState:
     selected: np.ndarray
 
     def __post_init__(self):
-        levels = np.asarray(self.levels).copy()
-        selected = np.asarray(self.selected, dtype=bool).copy()
+        levels = _readonly(self.levels)
+        selected = _readonly(self.selected, bool)
         if levels.ndim != 1 or selected.shape != levels.shape:
             raise ValueError("categorical prediction levels/selection must be aligned vectors")
         levels.flags.writeable = False
@@ -105,12 +117,18 @@ class DesignTermState:
     cell_codes: np.ndarray | None = None
 
     def __post_init__(self):
+        if len(self.column_names) != len(self.active_mask):
+            raise ValueError("prediction column names and active mask must align")
         if self.cell_codes is None:
+            if self.categorical:
+                raise ValueError("categorical prediction terms require observed cells")
             return
-        cells = np.asarray(self.cell_codes, dtype=np.int32).copy()
-        if cells.ndim != 2 or cells.shape[1] != len(self.categorical):
+        cells = _readonly(self.cell_codes, np.int32)
+        if cells.shape != (len(self.column_names), len(self.categorical)):
             raise ValueError("prediction cell codes must align with categorical components")
-        cells.flags.writeable = False
+        for j, encoding in enumerate(self.categorical):
+            if np.any(cells[:, j] < 0) or np.any(cells[:, j] >= len(encoding.levels)):
+                raise ValueError("prediction cell code is outside its fitted levels")
         object.__setattr__(self, "cell_codes", cells)
 
     @property
@@ -159,7 +177,8 @@ class DesignPredictionState:
             term for term in self.terms
             if any(name in active for name in term.active_names)
         )
-        return bool(relevant) and all(term.reconstructable for term in relevant)
+        covered = {name for term in relevant for name in term.active_names}
+        return active.issubset(covered) and all(term.reconstructable for term in relevant)
 
 
 @dataclass(frozen=True, slots=True)
@@ -168,6 +187,63 @@ class DroppedFixedEffectState:
     spanned_by: str
     reason: str
     proof_type: str
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class FixedEffectLevelState:
+    """Original labels in fitted dense-code order, one entry per FE level."""
+    name: str
+    sources: tuple[str, ...]
+    labels: tuple[np.ndarray, ...]
+
+    def __post_init__(self):
+        labels = tuple(_readonly(a) for a in self.labels)
+        if not labels or len(labels) != len(self.sources):
+            raise ValueError("fixed-effect labels must align with their source columns")
+        if any(a.ndim != 1 or a.shape != labels[0].shape for a in labels):
+            raise ValueError("fixed-effect label columns must be aligned vectors")
+        object.__setattr__(self, "labels", labels)
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class FixedEffectNestingState:
+    fine: int
+    coarse: int
+    coarse_by_fine: np.ndarray
+
+    def __post_init__(self):
+        object.__setattr__(self, "coarse_by_fine", _readonly(self.coarse_by_fine, np.int32))
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class CategoricalFixedEffectState:
+    """Saved FE coefficients plus certificates needed for new observation rows.
+
+    Identification refers to the effective design. Requested partitions and
+    nesting maps additionally prevent canonicalization from accepting new
+    combinations that violate a fitted exact dependency.
+    """
+    terms: tuple[FixedEffectLevelState, ...]
+    effective_indices: tuple[int, ...]
+    coefficients: tuple[np.ndarray, ...]
+    components: tuple[np.ndarray, ...]
+    identified_components: tuple[int, ...]
+    nesting: tuple[FixedEffectNestingState, ...]
+    beta: np.ndarray
+
+    def __post_init__(self):
+        if not (len(self.effective_indices) == len(self.coefficients) == len(self.components)):
+            raise ValueError("saved fixed-effect coefficients and components must align")
+        coefficients = tuple(_readonly(a, float) for a in self.coefficients)
+        components = tuple(_readonly(a, np.int32) for a in self.components)
+        for i, coef, comp in zip(self.effective_indices, coefficients, components):
+            if coef.shape != self.terms[i].labels[0].shape or comp.shape != coef.shape:
+                raise ValueError("saved fixed effects must align with fitted levels")
+            if not np.isfinite(coef).all():
+                raise ValueError("saved fixed-effect coefficients must be finite")
+        object.__setattr__(self, "coefficients", coefficients)
+        object.__setattr__(self, "components", components)
+        object.__setattr__(self, "beta", _readonly(self.beta, float))
 
 
 @dataclass(frozen=True, slots=True, eq=False)
@@ -182,6 +258,8 @@ class FixedEffectPredictionState:
     coefficients_saved: bool
     normalization: str | None
     level_maps_available: bool = False
+    categorical: CategoricalFixedEffectState | None = None
+    unavailable_reason: str | None = None
 
     @property
     def has_fixed_effects(self) -> bool:
@@ -223,29 +301,31 @@ class PredictionState:
             or (
                 self.fixed_effects.coefficients_saved
                 and self.fixed_effects.level_maps_available
+                and self.fixed_effects.categorical is not None
                 and not self.fixed_effects.has_varying_slopes
             )
         )
 
 
-def _source_name(token: str) -> str | None:
-    prefix = "column:"
-    return token[len(prefix):] if str(token).startswith(prefix) else None
-
-
-def design_state(design, *, role: str, active_indices) -> DesignPredictionState:
+def design_state(design, *, role: str, active_indices, identifier_levels=None) -> DesignPredictionState:
     active = tuple(int(i) for i in active_indices)
     names = tuple(str(x) for x in design.names)
     if any(i < 0 or i >= len(names) for i in active):
         raise ValueError("prediction active-column indices are out of range")
     active_names = tuple(names[i] for i in active)
+    terms = tuple(getattr(design, "prediction_terms", ()))
+    if identifier_levels:
+        terms = tuple(replace(term, categorical=tuple(
+            replace(enc, levels=np.asarray(identifier_levels[enc.source])[enc.levels.astype(np.intp)])
+            if enc.source in identifier_levels else enc for enc in term.categorical
+        )) for term in terms)
     return DesignPredictionState(
         role=str(role),
         requested_names=tuple(str(x) for x in design.requested_names),
         materialized_names=names,
         active_names=active_names,
         active_indices=active,
-        terms=tuple(getattr(design, "prediction_terms", ())),
+        terms=terms,
     )
 
 
