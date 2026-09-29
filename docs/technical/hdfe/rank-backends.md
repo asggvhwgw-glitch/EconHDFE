@@ -1,5 +1,8 @@
 # Exact categorical FE rank backends
 
+> **Document status:** Current EconHDFE project technical documentation.
+
+
 `rank.py` keeps the exact 3+ FE DoF engine dependency-safe.  The public
 `categorical_rank(..., backend="auto")` path is:
 
