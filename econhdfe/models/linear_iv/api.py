@@ -21,6 +21,7 @@ from ...hdfe.block_projection import BlockWeightedFEProjector
 from ...hdfe.plan import FEPlan
 from ...design import is_heterogeneous_spec_candidate
 from ...results import RegressionResult, EstimationState, FixedEffectEstimates, FixedEffectTermEstimate
+from ...prediction import design_state, linear_prediction_state
 from ...reporting import (
     cluster_counts as _cluster_counts, reghdfe_r2_statistics, ivreghdfe_model_statistics,
 )
@@ -428,6 +429,31 @@ def ivhdfe(
             _resolve_pool_size(absorber, block.shape[1], pool_size, memory_budget_mb),
             solver_selection=solver_selection,
         )
+    prediction_state = linear_prediction_state(
+        estimator=meta.get("estimator", est),
+        coefficient_names=names,
+        coefficient_roles=("exogenous", "endogenous"),
+        designs=(
+            design_state(
+                cdesign, role="exogenous",
+                active_indices=collin_info["exogenous"]["active_indices"],
+            ),
+            design_state(
+                edesign, role="endogenous",
+                active_indices=collin_info["endogenous"]["active_indices"],
+            ),
+            design_state(
+                zdesign, role="excluded_instrument",
+                active_indices=collin_info["excluded_instruments"]["active_indices"],
+            ),
+        ),
+        sample_state=sample_state,
+        fe_plan=fe_plan,
+        fe_names=fe_names,
+        fe_intercepts=intercepts,
+        fe_slopes=slopes,
+        recovered_effects=fixed_effects,
+    )
     result = RegressionResult(
         params=beta, vcov=V, stderr=np.sqrt(np.clip(np.diag(V), 0, None)),
         residuals=resid, fitted=fitted, nobs=int(round(winfo.effective_n)), rank=rank,
@@ -450,6 +476,7 @@ def ivhdfe(
         ) if keep_state else None,
         confidence_level=confidence_level,
         diagnostics_mode=inference_config.diagnostics if inference_config is not None else "off",
+        prediction_state=prediction_state,
     )
     if _t0 is not None:
         result.profile = {"total_seconds": perf_counter() - _t0, "mode": execution_config.profile}
