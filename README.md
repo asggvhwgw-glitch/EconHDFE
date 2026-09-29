@@ -1,3 +1,5 @@
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 # econhdfe
 
 **High-performance high-dimensional fixed-effect econometrics for modern empirical research.**
@@ -191,7 +193,7 @@ That distinction matters because numerical simplification and econometric rank a
 
 The project currently tracks two other theorem-backed pieces of work. An exact residual-core reduction can eliminate eligible parts of the multiway FE incidence structure before the expensive numerical solve and reconstruct them afterwards while preserving the target projection. An exact partition-refinement reduction can detect nested and redundant categorical structure before full materialization, allowing the same requested column space to be represented by a smaller exact basis.
 
-Formal statements, assumptions, implementation mappings, tests, and prior-art boundaries are maintained separately in the [technical documentation](docs/technical/README.md). A theorem-backed result is not automatically described as historically novel: mathematical correctness, implementation correctness, and independent originality are treated as different claims.
+The core mathematical statements behind these three theorem-backed lines have now been machine-checked in Lean 4 under their documented assumptions. Formal statements, assumptions, implementation mappings, tests, and prior-art boundaries are maintained separately in the [technical documentation](docs/technical/README.md) and [formal verification documentation](docs/technical/formal-verification.md). This does not constitute formal verification of the Python implementation, and a machine-checked theorem is not automatically described as historically novel: mathematical correctness, implementation correctness, and independent originality are treated as different claims.
 
 ## Main capabilities
 
