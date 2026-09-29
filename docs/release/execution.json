@@ -2,94 +2,28 @@
   "schema_version": 1,
   "release_version": "0.7.0.dev0",
   "fingerprint_scope": "runtime-validation-v1",
-  "code_fingerprint_sha256": "fa7256332101b85cfcac462732bf2e21045203d7905ed664fa297f879095511a",
+  "code_fingerprint_sha256": "a9bc65bda384775c834fc6a61b78cf3f42083fdf4ecc5443c489d1e822101e2c",
   "source_commit": null,
   "checks": {
     "local_regression": {
-      "execution_status": "passed",
-      "reason": "Executed for this code fingerprint; installed test uses HOST dependencies, not clean dependency resolution.",
-      "environment": {
-        "python": "3.13.5",
-        "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
-        "packages": {
-          "numpy": "2.3.5",
-          "scipy": "1.17.0",
-          "pandas": "2.2.3",
-          "numba": "0.65.1",
-          "joblib": "1.5.3",
-          "pytest": "9.0.2",
-          "setuptools": "82.0.1",
-          "wheel": null
-        },
-        "threads": {
-          "OPENBLAS_NUM_THREADS": "1",
-          "OMP_NUM_THREADS": "1",
-          "NUMBA_NUM_THREADS": "4",
-          "MKL_NUM_THREADS": "1"
-        },
-        "validation_scope": "source full suite and installed wheel using HOST dependencies; not isolated build/clean install/cross-platform"
-      },
-      "executed_at": "2026-09-29T08:16:44.320425+00:00",
-      "code_fingerprint_sha256": "fa7256332101b85cfcac462732bf2e21045203d7905ed664fa297f879095511a",
-      "evidence": [
-        {
-          "path": "docs/release/evidence/0.7.0.dev0/prediction/full.xml",
-          "sha256": "9f5a795f7c9bf2a00ca95287ffed2376772b792df06ce5caa314ad4e80b031f4"
-        },
-        {
-          "path": "docs/release/evidence/0.7.0.dev0/prediction/environment.json",
-          "sha256": "162709a1372129463bd2612d6104e115710768ebd81edb4773de77d7b75c7667"
-        },
-        {
-          "path": "docs/release/evidence/0.7.0.dev0/prediction/validation.json",
-          "sha256": "dd46acbca926521423f413b0e0eb18f30277a71f39ed270d564c1883cc0e5755"
-        }
-      ]
+      "execution_status": "not_run",
+      "reason": "Not executed for this release.",
+      "environment": {},
+      "executed_at": null,
+      "code_fingerprint_sha256": null,
+      "evidence": []
     },
     "installed_numerics": {
-      "execution_status": "passed",
-      "reason": "Executed for this code fingerprint; installed test uses HOST dependencies, not clean dependency resolution.",
-      "environment": {
-        "python": "3.13.5",
-        "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
-        "packages": {
-          "numpy": "2.3.5",
-          "scipy": "1.17.0",
-          "pandas": "2.2.3",
-          "numba": "0.65.1",
-          "joblib": "1.5.3",
-          "pytest": "9.0.2",
-          "setuptools": "82.0.1",
-          "wheel": null
-        },
-        "threads": {
-          "OPENBLAS_NUM_THREADS": "1",
-          "OMP_NUM_THREADS": "1",
-          "NUMBA_NUM_THREADS": "4",
-          "MKL_NUM_THREADS": "1"
-        },
-        "validation_scope": "source full suite and installed wheel using HOST dependencies; not isolated build/clean install/cross-platform"
-      },
-      "executed_at": "2026-09-29T08:16:44.320425+00:00",
-      "code_fingerprint_sha256": "fa7256332101b85cfcac462732bf2e21045203d7905ed664fa297f879095511a",
-      "evidence": [
-        {
-          "path": "docs/release/evidence/0.7.0.dev0/prediction/installed.xml",
-          "sha256": "d0f03a75ff1e18b8b2137816701930a4db2feea94ece8a3858b6740ba4d01589"
-        },
-        {
-          "path": "docs/release/evidence/0.7.0.dev0/prediction/environment.json",
-          "sha256": "162709a1372129463bd2612d6104e115710768ebd81edb4773de77d7b75c7667"
-        },
-        {
-          "path": "docs/release/evidence/0.7.0.dev0/prediction/validation.json",
-          "sha256": "dd46acbca926521423f413b0e0eb18f30277a71f39ed270d564c1883cc0e5755"
-        }
-      ]
+      "execution_status": "not_run",
+      "reason": "Not executed for this release.",
+      "environment": {},
+      "executed_at": null,
+      "code_fingerprint_sha256": null,
+      "evidence": []
     },
     "isolated_build": {
-      "execution_status": "blocked",
-      "reason": "python -m build is unavailable in this environment; the successful pip wheel --no-build-isolation run uses HOST build dependencies and is not isolation evidence.",
+      "execution_status": "not_run",
+      "reason": "Not executed for this release.",
       "environment": {},
       "executed_at": null,
       "code_fingerprint_sha256": null,
@@ -97,7 +31,7 @@
     },
     "clean_install": {
       "execution_status": "not_run",
-      "reason": "Only installed-wheel numerical/provenance tests with HOST dependencies were executed; no clean dependency resolution.",
+      "reason": "Not executed for this release.",
       "environment": {},
       "executed_at": null,
       "code_fingerprint_sha256": null,
@@ -105,7 +39,7 @@
     },
     "support_matrix": {
       "execution_status": "not_run",
-      "reason": "No cross-platform GitHub CI for this local candidate; previous PR12 CI is for another code snapshot.",
+      "reason": "Not executed for this release.",
       "environment": {},
       "executed_at": null,
       "code_fingerprint_sha256": null,
@@ -113,7 +47,7 @@
     },
     "dependency_floor": {
       "execution_status": "not_run",
-      "reason": "Not executed with dependency-floor environments for this candidate.",
+      "reason": "Not executed for this release.",
       "environment": {},
       "executed_at": null,
       "code_fingerprint_sha256": null,
@@ -121,7 +55,7 @@
     },
     "reference_claims": {
       "execution_status": "not_run",
-      "reason": "No licensed Stata or upstream corpus run; no new external parity claim.",
+      "reason": "Not executed for this release.",
       "environment": {},
       "executed_at": null,
       "code_fingerprint_sha256": null,
@@ -129,7 +63,7 @@
     },
     "final_artifacts": {
       "execution_status": "not_run",
-      "reason": "Development candidate only; no release authorization, final release commit or detached official release binding.",
+      "reason": "Not executed for this release.",
       "environment": {},
       "executed_at": null,
       "code_fingerprint_sha256": null,
