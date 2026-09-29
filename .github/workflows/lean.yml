@@ -1,0 +1,96 @@
+name: Lean mathematical foundations
+on:
+  push:
+    branches: [main, dev/lean-foundations]
+    paths: ['formal/**', '.github/workflows/lean.yml']
+  pull_request:
+    paths: ['formal/**', '.github/workflows/lean.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: lean-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  prove:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install fixed Lean toolchain
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Resolve fixed mathematical dependencies
+        run: |
+          cd formal
+          mkdir -p .lake/packages
+          git clone --depth 1 --branch v4.19.0 https://github.com/leanprover-community/mathlib4.git .lake/packages/mathlib
+          test "$(git -C .lake/packages/mathlib rev-parse HEAD)" = c44e0c8ee63ca166450922a373c7409c5d26b00b
+          lake update
+          lake exe cache get
+          lean --version | tee ../lean-version.txt
+          git -C .lake/packages/mathlib rev-parse HEAD | tee ../mathlib-commit.txt
+          test "$(cat ../mathlib-commit.txt)" = c44e0c8ee63ca166450922a373c7409c5d26b00b
+      - name: Compile all project proofs
+        run: |
+          cd formal
+          lake build 2>&1 | tee ../lean-build.log
+      - name: Audit proof axioms and appendix references
+        run: |
+          cd formal
+          python3 - <<'PY'
+          import pathlib, re
+          files = sorted(pathlib.Path('EconHDFE').glob('*.lean'))
+          names = []
+          for p in files:
+              source = p.read_text()
+              assert not re.search(r'\b(sorry|admit|axiom|native_decide|unsafe)\b', source), p
+              names.extend('EconHDFE.' + n for n in re.findall(r'^theorem\s+(\w+)', source, re.M))
+          assert names and len(names) == len(set(names))
+          appendices = sorted(pathlib.Path('appendices').glob('*.tex'))
+          assert {p.name for p in appendices} == {'residual-core.tex', 'exact-rank.tex', 'structural-design.tex'}
+          references = []
+          for p in appendices:
+              refs = re.findall(r'\\LeanDecl\{([A-Za-z_][A-Za-z0-9_]*)\}', p.read_text())
+              assert refs, p
+              references.extend((str(p), 'EconHDFE.' + n) for n in refs)
+          checks = sorted({name for _, name in references})
+          commands = ['#print axioms ' + n for n in names] + ['#check ' + n for n in checks]
+          pathlib.Path('AxiomAudit.lean').write_text('import EconHDFE\n' + '\n'.join(commands) + '\n')
+          pathlib.Path('../theorems.txt').write_text('\n'.join(names) + '\n')
+          pathlib.Path('../appendix-references.txt').write_text('\n'.join(p + '\t' + n for p, n in references) + '\n')
+          print(f'Auditing {len(names)} theorems and checking {len(checks)} distinct appendix declarations.')
+          PY
+          lake env lean AxiomAudit.lean 2>&1 | tee ../lean-axioms.log
+          python3 - <<'PY'
+          import pathlib, re
+          s = pathlib.Path('../lean-axioms.log').read_text()
+          assert 'sorryAx' not in s and 'error:' not in s, s
+          for body in re.findall(r'depends on axioms:\s*\[([^]]*)\]', s):
+              names = {x.strip() for x in body.split(',')} - {''}
+              assert names <= {'propext', 'Classical.choice', 'Quot.sound'}, names
+          expected = pathlib.Path('../theorems.txt').read_text().splitlines()
+          assert all("'" + n + "'" in s for n in expected), s
+          PY
+      - name: Assemble proof-only evidence
+        if: always()
+        run: |
+          mkdir -p lean-evidence
+          cp lean-*.log lean-version.txt mathlib-commit.txt theorems.txt appendix-references.txt lean-evidence/ 2>/dev/null || true
+          cp formal/lake-manifest.json lean-evidence/ 2>/dev/null || true
+          git rev-parse HEAD > lean-evidence/source-commit.txt
+          find formal -maxdepth 2 -type f -not -path '*/.lake/*' -print0 | sort -z | xargs -0 sha256sum > lean-evidence/source-sha256.txt
+          tar --exclude='.lake' -czf lean-evidence/formal-source.tar.gz formal
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lean-foundations-evidence
+          path: lean-evidence/
+          if-no-files-found: error

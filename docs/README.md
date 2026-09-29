@@ -14,6 +14,7 @@ The repository keeps runtime code, technical evidence, and release governance se
 - [Performance architecture](technical/performance-architecture.md) — large-data bottlenecks, modular performance strategy and benchmark interpretation.
 - [Identified categorical fixed effects](technical/identified-fixed-effects.md) — FE recovery, identification, normalization, singleton/separation diagnostics and block salvage.
 - [Technical documentation index](technical/README.md) — formal manuscripts, numerical notes and innovation policy.
+- [Machine-checked mathematical verification](technical/formal-verification.md) — Lean scope, manuscript mapping, audit boundary and evidence.
 - [Economics-first architecture](development/architecture.md) — module ownership and dependency boundaries.
 - [Economic problem map](development/economic-module-map.md) — every runtime module mapped to the empirical/econometric problem it serves.
 - [Generated architecture map](development/architecture-map/architecture.md) — AST-backed code dependency view.

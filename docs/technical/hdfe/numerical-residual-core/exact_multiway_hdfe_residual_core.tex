@@ -46,15 +46,15 @@
 High-dimensional fixed-effect (HDFE) solvers repeatedly project outcome and regressor blocks onto the orthogonal complement of a large categorical dummy design. Existing graph-based HDFE work already recognizes degree-one pruning as a useful device in two-way fixed-effect networks. This note gives an exact arbitrary-multiway formulation for the projection problem. The categorical design is represented as a multipartite hypergraph whose observations are hyperedges and whose fixed-effect levels are vertices. With strictly positive observation weights, if an active fixed-effect level is incident to exactly one active observation, the first-order condition for that dummy coefficient forces the residual on that observation to be exactly zero. The observation can therefore be eliminated without altering the residuals on the remaining observations. Repeating the argument yields an exact residual core for any finite number of categorical fixed-effect partitions. The full HDFE residual is obtained by solving only on the core and inserting exact zeros on peeled rows. We prove the reduction for scalar and multiple right-hand sides, show why duplicate observation tuples cannot be collapsed in the projection problem, characterize the positive-weight requirement and zero-weight invalidation rule, and map each mathematical claim to the implementation and regression tests in \texttt{econhdfe}. The technical contribution is the arbitrary-$G$ exact residual-core reduction and its solver-safe formulation; the underlying idea of graph leaf pruning is not claimed to be new.
 \end{abstract}
 
-\paragraph{Review and priority boundary (version 0.6.1).}
-The package review independently checks the proof steps, assumptions and code
-correspondence, supplemented by exact finite examples and numerical oracles.
-This is not a machine-checked formal proof, exhaustive verification of all finite
-inputs, or a certification of historical priority. Established linear algebra,
-singleton elimination, functional dependencies and orthogonal reduction retain
-their prior-art status. The package's framework and implementation may be useful
-without establishing a previously unknown theorem. See the accompanying
-\texttt{mathematical-review-0.6.1.md} for qualifications and regression evidence.
+\paragraph{Formal verification and priority boundary (September 2026).}
+The core mathematical statements in this note are mapped to an independent
+Lean~4 proof library and have passed complete compilation and per-theorem axiom
+audit under the assumptions recorded in
+\texttt{formal/mathematical-coverage.md}. This machine-checked status concerns
+the exact projection mathematics, not the production queue, encoder,
+floating-point core solver, numerical stopping rule, or historical priority.
+Degree-one pruning and related linear algebra retain their prior-art status;
+Lean verification does not establish novelty.
 
 
 
@@ -138,8 +138,19 @@ The same statement holds simultaneously for any finite block of right-hand sides
 Apply Lemma~\ref{lem:elim} to the first peeled observation. The reduced problem has the same remaining residuals. Recompute active degrees; if another degree-one vertex appears, apply the lemma again. Induction over the finite peeling sequence removes all non-core rows. Each peeled row has residual zero by Lemma~\ref{lem:zero}, while the final active rows solve the residual-core problem. Multi-RHS projection is separable across columns, so the same elimination sequence applies to all columns.
 \end{proof}
 
-\begin{corollary}[Exact orthogonality]
-If the core solver returns residuals satisfying the weighted FE normal equations on the reduced core, the reconstructed full residual satisfies $D'Wr=0$ exactly on peeled rows and to the numerical accuracy of the core solver on retained rows.
+\begin{corollary}[Exact normal-equation transport]
+Let $J_C r_C$ denote insertion of a core residual into the original observation
+coordinates, with zeros on peeled observations, and let $D_C$ and $W_C$ be the
+row restrictions of $D$ and $W$ to the core. Then
+\[
+  D'WJ_C r_C = D_C'W_C r_C.
+\]
+Hence peeled observations contribute exactly zero to every original FE normal
+equation. If the core residual satisfies the reduced normal equations, its zero
+extension satisfies all original FE normal equations. Correct reconstruction
+also uses the separate feasibility statement
+$y-J_Cr_C\in\col(D)$; orthogonality alone is not treated as sufficient for a
+projection residual.
 \end{corollary}
 
 \section{Why projection peeling differs from structural-rank peeling}
@@ -219,11 +230,14 @@ Performance gains depend on peelability. Leaf-rich designs can shrink dramatical
 
 \section{Limitations}
 
-The theorem is intentionally limited to intercept-only categorical FE blocks. Heterogeneous slopes create coefficient columns whose first-order conditions are weighted by continuous covariates; a degree-one categorical level need not imply the same elimination identity when the relevant term structure differs. Group-individual multi-membership FE designs also require a separate incidence model. Zero-weight observations invalidate the positive-weight topology argument. Finally, the theorem is an exact reduction of the projection problem, not a convergence theorem for the iterative solver used on the residual core.
+The theorem is intentionally limited to intercept-only categorical FE blocks. Heterogeneous slopes create coefficient columns whose first-order conditions are weighted by continuous covariates; a degree-one categorical level need not imply the same elimination identity when the relevant term structure differs. Group-individual multi-membership FE designs also require a separate incidence model. Zero-weight observations invalidate the positive-weight topology argument. The theorem also assumes a diagonal weight matrix: for a general non-diagonal positive-definite GLS weight, cross-row terms enter the first-order conditions and a degree-one categorical level need not force its observation residual to zero. Finally, the theorem is an exact reduction of the projection problem, not a convergence theorem for the iterative solver used on the residual core.
 
 \section{Conclusion}
 
 For any finite number of intercept-only categorical fixed-effect partitions and strictly positive weights, recursive degree-one hypergraph peeling is an exact elimination procedure for HDFE residualization. Every peeled observation has zero projection residual, and the residuals on the surviving observations are exactly those obtained by solving the reduced core problem. The result provides a theorem-backed arbitrary-multiway counterpart to graph leaf pruning already known in two-way HDFE work, while preserving a strict separation between numerical execution topology and statistical inference topology.
+
+\appendix
+\input{../../../../formal/appendices/residual-core.tex}
 
 \begin{thebibliography}{99}
 \bibitem[Correia(2017)]{Correia2017}

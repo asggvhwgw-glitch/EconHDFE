@@ -1,0 +1,83 @@
+% Appendix fragment for the corrected residual-core manuscript.
+% Insert after \appendix in the corrected manuscript, not the superseded base PDF.
+\section{Lean formalization of the residual-core theory}
+\label{app:lean-residual-core}
+\providecommand{\LeanDecl}[1]{\texttt{\detokenize{#1}}}
+
+\paragraph{Scope and source identity.}
+This appendix concerns exact mathematics on a finite observation set, with
+categorical intercept columns and strictly positive real diagonal weights.
+The source is the independent \texttt{formal/} library, pinned to Lean 4.19.0
+and Mathlib commit \texttt{c44e0c8ee63ca166450922a373c7409c5d26b00b}.
+Verification refers to a source commit whose complete library build and
+per-theorem dependency audit both succeed. It does not attach automatically
+to an earlier manuscript PDF or to a later untested edit.
+
+\paragraph{Existence, feasibility and uniqueness.}
+\LeanDecl{wls_residual_exists_unique} and
+\LeanDecl{wls_fit_exists_unique} establish existence and uniqueness of the
+residual and fitted vector on every subspace of the finite observation space.
+The proof constructs the weighted normal-equation map into the dual of the
+fitted space. Positive definiteness makes that map injective, and equal finite
+dimensions make it surjective. The result does not assume a numerical optimizer.
+\LeanDecl{wlsFit_iff_residual} identifies minimization with the conjunction
+\[
+ y-r\in S,\qquad \sum_i w_i r_i z_i=0\quad\hbox{for every }z\in S.
+\]
+Orthogonality alone is not used as a definition of a correct projection.
+No uniqueness of redundant FE coefficient coordinates is required.
+
+\paragraph{Single-level and elimination lemmas.}
+The unique-level zero-residual lemma corresponds to
+\LeanDecl{singleton_residual_zero}. Actual categorical columns are defined
+by \LeanDecl{feColumn}; legal removals are specified by \LeanDecl{PeelingTrace}.
+The trace records singleton incidence on the surviving observations, not an
+assumed rank or an assumed projection equality.
+\LeanDecl{peelMatrix_det_one} derives invertibility of the actual pivot block
+from that incidence condition. \LeanDecl{off_core_mem} and
+\LeanDecl{peeling_feasible_iff} give the reconstruction and feasibility identities.
+These include a one-removal trace as the leaf-elimination special case.
+\LeanDecl{core_loss_transport} proves equality of the weighted loss of a core
+residual and its zero extension.
+
+\paragraph{Recursive residual-core theorem.}
+Let $M_D^W y$ denote the uniquely defined mathematical residual, and let $J_C$
+insert a core vector at its original observation coordinates and put zeros
+elsewhere. The principal total statement is
+\LeanDecl{categorical_residual_core_total}:
+\[
+ M_D^W y = J_C M_{D_C}^{W_C}(y|_C).
+\]
+This statement applies to every legal finite removal trace, including an empty
+trace or an early-stopped trace. It no longer assumes that a core minimizer has
+already been supplied: existence is established by the WLS results above.
+\LeanDecl{categorical_reencoded_core_total} additionally permits recoding that
+preserves equality of level labels on the realized core sample.
+
+\paragraph{Corrected normal-equation corollary.}
+\LeanDecl{core_inner_transport} states, for every original observation vector $z$,
+\[
+ \langle J_C r_C,z\rangle_W=\langle r_C,z|_C\rangle_{W_C}.
+\]
+Taking $z$ to be each original FE column gives the corrected normal-equation
+transport in FE-column coordinates. This is an exact identity, independent of
+any numerical error model. The feasibility theorem separately guarantees that
+the reconstructed fitted vector belongs to the original FE space.
+
+\paragraph{Terminal cores, weights and multiple responses.}
+\LeanDecl{terminal_trace_exists} proves existence of a terminal trace.
+\LeanDecl{terminal_core_unique} proves that its survivor set is independent
+of the legal removal order. \LeanDecl{categorical_terminal_core_projection}
+combines terminal existence with the total projection identity.
+\LeanDecl{categorical_multi_rhs_total} applies the same trace to every response,
+even with different strictly positive weights for the different responses.
+This is reuse of incidence topology, not reuse of an old weighted solution.
+Repeated FE tuples retain their distinct observation identities.
+
+\paragraph{Boundaries.}
+The theorem does not cover zero weights, indefinite weights, non-diagonal GLS
+weights or heterogeneous-slope columns without separate hypotheses and proofs.
+Floating-point accuracy, stopping tolerances, queue implementations, encoding
+programs and complexity bounds are not part of this mathematical formalization.
+Those exclusions are not outstanding requirements for this appendix.
+The mathematical claims are also independent of historical originality.

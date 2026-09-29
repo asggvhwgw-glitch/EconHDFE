@@ -61,18 +61,18 @@
 \maketitle
 
 \begin{abstract}
-High-dimensional fixed-effect (HDFE) estimators can absorb an arbitrary number of categorical effects, but exact accounting of the degrees of freedom consumed by three or more fixed-effect partitions is not generally available in widely used HDFE software. Current \texttt{reghdfe} documentation, for example, describes exact graph-theoretic accounting for the first two fixed effects and a conservative pairwise approximation thereafter. This note develops a general exact formulation for intercept-only categorical HDFE designs. The absorbed structural degrees of freedom are the rank, over characteristic zero, of the concatenated dummy matrix. After duplicate observation patterns are removed, this matrix is the edge--vertex incidence matrix of a multipartite uniform hypergraph. We establish a sequence of rank-preserving reductions: component decomposition, exact degree-one peeling, removal of the universal block-sum dependencies, and a sufficient ``proper connectivity'' certificate that yields rank in closed form. Residual cores are certified by finite-field rank whenever the finite-field lower bound reaches a deterministic characteristic-zero upper bound; otherwise an exact integer/rational backend is invoked. The resulting procedure is exact for any finite number of categorical fixed-effect partitions, contains the standard two-way connected-component formula as a special case, and separates mathematical identification from numerical projection of fixed effects. We also give a minimal three-way counterexample showing why pairwise connected-component information is insufficient in general. The note states the assumptions, proofs, computational complexity, implementation correspondence, and scope limitations needed for a reproducible software implementation.
+High-dimensional fixed-effect (HDFE) estimators can absorb an arbitrary number of categorical effects, but exact accounting of the degrees of freedom consumed by three or more fixed-effect partitions is not generally available in widely used HDFE software. Current \texttt{reghdfe} documentation, for example, describes exact graph-theoretic accounting for the first two fixed effects and a conservative pairwise approximation thereafter. This note develops a general exact formulation for intercept-only categorical HDFE designs. The absorbed structural degrees of freedom are the rank, over characteristic zero, of the concatenated dummy matrix. After duplicate observation patterns are removed, this matrix is the edge--vertex incidence matrix of a multipartite uniform hypergraph. We establish a sequence of rank-preserving reductions: component decomposition, exact degree-one peeling, removal of the universal block-sum dependencies, and a sufficient ``proper connectivity'' certificate that yields rank in closed form. Residual cores are certified by finite-field rank whenever the finite-field lower bound reaches a deterministic characteristic-zero upper bound; otherwise an exact integer/rational backend is invoked. The resulting procedure is exact for any finite number of categorical fixed-effect partitions, contains the standard two-way connected-component formula as a special case, and separates mathematical identification from numerical projection of fixed effects. We also give a small three-way counterexample showing why pairwise connected-component information is insufficient in general. The note states the assumptions, proofs, computational complexity, implementation correspondence, and scope limitations needed for a reproducible software implementation.
 \end{abstract}
 
-\paragraph{Review and priority boundary (version 0.6.1).}
-The package review independently checks the proof steps, assumptions and code
-correspondence, supplemented by exact finite examples and numerical oracles.
-This is not a machine-checked formal proof, exhaustive verification of all finite
-inputs, or a certification of historical priority. Established linear algebra,
-singleton elimination, functional dependencies and orthogonal reduction retain
-their prior-art status. The package's framework and implementation may be useful
-without establishing a previously unknown theorem. See the accompanying
-\texttt{mathematical-review-0.6.1.md} for qualifications and regression evidence.
+\paragraph{Formal verification and priority boundary (September 2026).}
+The core mathematical statements in this note are mapped to an independent
+Lean~4 proof library and have passed complete compilation and per-theorem axiom
+audit under the assumptions recorded in
+\texttt{formal/mathematical-coverage.md}. This machine-checked status concerns
+the mathematics, not the correctness of the Python/Numba implementation,
+floating-point behavior, resource management, external-package parity, or
+historical priority. Established linear algebra and graph/hypergraph ingredients
+retain their prior-art status; Lean verification does not establish novelty.
 
 
 
@@ -115,7 +115,7 @@ where $D_g\in\{0,1\}^{N\times K_g}$ is the one-hot design matrix for the $g$th c
 A separate constant, if supplied, lies in the column span of every nonempty complete dummy block and therefore does not enlarge the fixed-effect span.
 
 \begin{assumption}[Observed-level coding]\label{ass:observed}
-Each $D_g$ contains columns only for levels observed in the estimation sample. If integer level codes are passed to an implementation under a ``dense-code'' contract, the codes are a permutation of $\{0,\ldots,K_g-1\}$.
+Each $D_g$ contains columns only for levels observed in the estimation sample. If integer level codes are passed to an implementation under a ``dense-code'' contract, they take values in $\{0,\ldots,K_g-1\}$ and every code in that set occurs at least once; repeated codes across observations are permitted.
 \end{assumption}
 
 \begin{definition}[Structural absorbed degrees of freedom]
@@ -423,6 +423,17 @@ annihilates $A$ on the left. Equivalently, the full design has three independent
 
 This example is not a pathology of floating-point arithmetic. It is an exact integer-rank difference. Therefore no algorithm that observes only pairwise connected-component counts can, in general, recover the full multiway rank.
 
+A stronger comparison holds even after fixing the coarse pairwise summaries. Consider the five tuples
+\[
+ (A_0,B_0,C_0),\ (A_0,B_0,C_1),\ (A_0,B_0,C_2),\
+ (A_0,B_1,C_0),\ (A_1,B_0,C_0).
+\]
+This design has the same number of observations, the same level counts
+$(2,2,3)$, and one connected component in each of the three pairwise
+projections, but its joint incidence rank is five rather than four. Hence the
+observation count, per-partition level counts, and pairwise component counts
+together still do not determine the multiway rank.
+
 \section{Algorithmic specification}
 
 For clarity, the exact categorical rank routine can be summarized as follows.
@@ -509,7 +520,7 @@ Second, the FLINT backend is guarded by a maximum dense-cell count because \text
 
 \section{Validation strategy}
 
-Formal proof establishes correctness of the algorithmic transformations, but implementation errors remain possible. The prototype was therefore checked against direct exact rank on small designs. The validation suite associated with the audited module revision includes:
+The mathematical transformations used by the rank framework are separately machine-checked in Lean, but implementation errors remain possible because program correctness is not part of that formalization. The prototype was therefore checked against direct exact rank on small designs. The validation suite associated with the audited module revision includes:
 \begin{enumerate}[label=(\alph*)]
   \item the three-FE counterexample in Section~8, whose exact rank is four;
   \item exhaustive enumeration of all $255$ nonempty subsets of the $2\times2\times2$ three-way hyperedge universe, compared with exact rational rank;
@@ -596,6 +607,8 @@ categorical_prefix_ranks(groups, backend="auto")
 available_rank_backends()
 \end{lstlisting}
 The exact path uses no floating-point matrix-rank call. Optional backends are not required for correctness: they replace only the characteristic-zero fallback and can therefore affect speed without changing the target or the certification logic.
+
+\input{../../../../formal/appendices/exact-rank.tex}
 
 \begin{thebibliography}{99}
 

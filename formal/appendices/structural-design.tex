@@ -1,0 +1,94 @@
+% Appendix fragment for the corrected partition-refinement manuscript.
+\section{Lean formalization of structural design invariance}
+\label{app:lean-structural-design}
+\providecommand{\LeanDecl}[1]{\texttt{\detokenize{#1}}}
+
+\paragraph{Scope and assumptions.}
+This appendix records exact real column-space results on a fixed finite sample.
+The proof library uses Lean 4.19.0 and Mathlib commit
+\texttt{c44e0c8ee63ca166450922a373c7409c5d26b00b}.
+Verification is attached to an exact source commit passing the full build and
+per-theorem dependency audit. It is not a claim about the Python planner.
+
+\paragraph{Refinement and functional dependence.}
+\LeanDecl{Refines} is defined by an actual level map on all sample rows.
+\LeanDecl{partitionSpace_eq_span} identifies the categorical coefficient-map
+range with the full indicator-column span. The dummy-space lemma is
+\LeanDecl{partitionSpace_le}; equivalent partitions are handled by
+\LeanDecl{equivalent_partition_spaces}. The dependency lemmas are
+\LeanDecl{refines_trans}, \LeanDecl{refines_restrict} and
+\LeanDecl{interaction_refines}. Restriction to fewer rows preserves a true
+dependency; the statements do not certify a dependency inferred from a random
+subsample or an unverified metadata claim.
+
+\paragraph{Canonicalization and absorbed blocks.}
+\LeanDecl{canonicalize_one} removes a coarse partition only while its fine
+witness remains. \LeanDecl{absorbed_block_within_zero}, together with the
+proved refinement inclusion, shows that a regressor block already contained
+in the absorbed space has no residualized direction. The mathematical within
+operator is constructed from existence and uniqueness of finite positive-weight
+WLS; it is not introduced as an unspecified numerical routine.
+
+\paragraph{Active and reference-coded columns.}
+\LeanDecl{coarse_active_sum} requires completeness only for realized fine levels
+inside the coarse cell being reduced. \LeanDecl{drop_active_fine} retains the
+coarse indicator and all other fine columns needed for its sum identity.
+This permits missing reference cells elsewhere, as well as unused labels,
+but does not permit a further deletion when an observed fine cell required by
+the identity is already absent. \LeanDecl{drop_one_fine} is the earlier
+complete-block special case. Reductions in several coarse cells compose by
+reapplying the same condition on each current active set.
+
+\paragraph{Shared continuous multipliers.}
+\LeanDecl{shared_multiplier_le} proves inclusion after multiplication by the
+same realized continuous vector. \LeanDecl{drop_active_fine_multiplier} and
+\LeanDecl{finite_reduction_common_multiplier} cover basis elimination and its
+finite composition. The multiplier may vanish or be negative; the essential
+condition is that it acts on both the fine columns and the retained coarse
+witness. An unmultiplied coarse FE is not silently treated as a slope witness.
+
+\paragraph{Main column-space theorem.}
+\LeanDecl{StructuralStep} describes only the preceding mathematical reductions
+and their common-multiplier and unchanged-context extensions. Its constructors
+carry level maps and coverage conditions, not an assumed equality of the
+spaces. \LeanDecl{structural_step_space_eq} proves equality for each case,
+and \LeanDecl{structural_trace_space_eq} proves it for a finite sequence.
+The term ``trace'' here denotes a finite mathematical proof composition,
+not a formal model of the software planner's control flow.
+
+\paragraph{OLS/WLS and coefficient semantics.}
+\LeanDecl{wls_fit_exists_unique} proves existence and uniqueness of fitted
+vectors; \LeanDecl{structural_trace_wls_fit} gives fitted-value invariance.
+\LeanDecl{full_wls_implies_within} and
+\LeanDecl{within_wls_implies_full} connect full and within WLS optima.
+\LeanDecl{full_wls_identified_fe_invariance} therefore establishes equality of
+identified non-FE coefficients when the FE spaces agree and the non-FE design,
+sample and weights remain fixed.
+For rank-deficient transformed designs, \LeanDecl{within_selection_invariance}
+requires the same selection function of the same transformed design and outcome.
+It does not equate minimum-norm coefficients of differently parameterized full
+models. \LeanDecl{estimable_coefficient_fiber} handles coefficient functionals
+annihilating the design kernel; \LeanDecl{estimable_fit_function_invariance}
+handles a common linear functional of fitted values.
+
+\paragraph{Finite PPML corollary.}
+\LeanDecl{ppmlLoss} is the actual weighted Poisson objective, up to constants
+independent of the predictor. \LeanDecl{ppml_midpoint_strict} proves strict
+midpoint convexity for strictly positive weights, using strict convexity of
+the exponential and cancellation of the linear response term.
+\LeanDecl{finite_ppml_predictor_unique} proves uniqueness of an attained finite
+predictor on the affine space determined by the design and offset.
+\LeanDecl{finite_ppml_fitted_invariance} and
+\LeanDecl{finite_ppml_response_invariance} give equal $\eta$ and $\exp(\eta)$
+under equal design spaces, unchanged sample, weights, response and offset.
+\LeanDecl{structural_trace_ppml} connects this to the actual allowed mathematical
+reductions. Existence of a finite optimum is deliberately not asserted;
+separation and numerical convergence are different questions.
+
+\paragraph{Boundaries.}
+No IV/GMM moment or covariance theorem is inferred from column-space equality
+alone. Reference-restriction rules outside the stated witness conditions,
+planner decisions, sampled certification, sparse data structures, numerical
+ranks and floating-point behavior are not part of the mathematical claim.
+The Lean results neither certify software implementations nor establish
+historical novelty.

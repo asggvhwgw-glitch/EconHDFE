@@ -7,10 +7,12 @@
       "compiled_pdf",
       "implementation_map",
       "tests",
-      "evidence"
+      "evidence",
+      "machine_checked_math"
     ],
     "engineering_exclusion": "Caching, parallelism, memory planning, backend selection, API design, compatibility reproduction, documentation, visualization, and release tooling are not technical innovations by themselves.",
-    "priority_status": "Registration records mathematical contributions and supporting artifacts, not proven novelty or publication priority."
+    "priority_status": "Registration records mathematical contributions and supporting artifacts, not proven novelty or publication priority.",
+    "machine_checked_math_scope": "Machine-checked status applies to explicitly mapped mathematical theorems and assumptions, not to Python/Numba program correctness, floating-point convergence, benchmark claims, external-package parity, or historical originality."
   },
   "innovations": [
     {
@@ -36,7 +38,15 @@
       ],
       "originality_status": "not_independently_established",
       "mathematical_review": "docs/technical/mathematical-review-0.6.1.md",
-      "review_status": "proof_and_implementation_reviewed_under_stated_assumptions"
+      "review_status": "mathematical_theory_machine_checked_implementation_separately_reviewed",
+      "formal_verification": {
+        "status": "core_mathematical_claims_machine_checked",
+        "scope": "mathematical_theory_only",
+        "index": "formal/mathematical-coverage.md",
+        "appendix": "formal/appendices/exact-rank.tex",
+        "proof_root": "formal/README.md",
+        "note": "Program-level generation of modular/echelon certificates and resource-budget behavior are outside the formalization scope."
+      }
     },
     {
       "id": "HDFE-NUMCORE-002",
@@ -62,7 +72,15 @@
       ],
       "originality_status": "not_independently_established",
       "mathematical_review": "docs/technical/mathematical-review-0.6.1.md",
-      "review_status": "proof_and_implementation_reviewed_under_stated_assumptions"
+      "review_status": "mathematical_theory_machine_checked_implementation_separately_reviewed",
+      "formal_verification": {
+        "status": "core_mathematical_claims_machine_checked",
+        "scope": "mathematical_theory_only",
+        "index": "formal/mathematical-coverage.md",
+        "appendix": "formal/appendices/residual-core.tex",
+        "proof_root": "formal/README.md",
+        "note": "Queue/encoding implementation, floating-point core solves and numerical stopping criteria are outside the formalization scope."
+      }
     },
     {
       "id": "HDFE-STRUCTURAL-DESIGN-003",
@@ -90,7 +108,15 @@
       ],
       "originality_status": "not_independently_established",
       "mathematical_review": "docs/technical/mathematical-review-0.6.1.md",
-      "review_status": "proof_and_implementation_reviewed_under_stated_assumptions"
+      "review_status": "mathematical_theory_machine_checked_implementation_separately_reviewed",
+      "formal_verification": {
+        "status": "core_mathematical_claims_machine_checked",
+        "scope": "mathematical_theory_only",
+        "index": "formal/mathematical-coverage.md",
+        "appendix": "formal/appendices/structural-design.tex",
+        "proof_root": "formal/README.md",
+        "note": "Planner control flow and implementation correctness are outside the formalization scope; IV/GMM/covariance invariance is not inferred from column-space equality."
+      }
     }
   ]
 }
