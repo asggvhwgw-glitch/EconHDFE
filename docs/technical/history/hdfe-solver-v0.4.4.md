@@ -23,4 +23,4 @@ The direct `HDFEAbsorber` default remains `acceleration="cg"`. The additive adva
 
 Correctness is guarded by parity tests against the unreduced solver, weighted reference projections, exact-zero peeled-row checks, in-place/copy semantics, weight lifecycle tests, adaptive routing tests, and complex stable/mobility FE corpora.
 
-Performance is workload dependent. Leaf-rich and large multi-RHS weighted systems can benefit substantially; irreducible mobility systems should be expected to remain near parity. See `benchmarks.md` and `benchmarks/hdfe/solver_v044_integration.json`.
+Performance is workload dependent. Leaf-rich and large multi-RHS weighted systems can benefit substantially; irreducible mobility systems should be expected to remain near parity. See [`../hdfe/solver/benchmarks.md`](../hdfe/solver/benchmarks.md) and `benchmarks/hdfe/solver_v044_integration.json`.
