@@ -65,6 +65,7 @@ theorem matrix_exists_rank_columns (A : Matrix I V F) (r : ℕ) (hr : A.rank = r
     _ = Module.finrank F (Submodule.span F (Set.range A.col)) := by rw [hsets, hspan]
     _ = A.rank := (Matrix.rank_eq_finrank_span_cols A).symm
 
+set_option maxHeartbeats 1200000 in
 /-- Explicit finite order avoids rewriting ranks inside dependent index types. -/
 theorem matrix_exists_minor_of_rank (A : Matrix I V F) (r : ℕ) (hrank : A.rank = r) :
     ∃ (rows : Fin r → I) (cols : Fin r → V),
@@ -74,13 +75,16 @@ theorem matrix_exists_minor_of_rank (A : Matrix I V F) (r : ℕ) (hrank : A.rank
   let B : Matrix I (Fin r) F := A.submatrix id cols
   have hBt : B.transpose.rank = r := (Matrix.rank_transpose B).trans hc
   obtain ⟨rows, hrows, hr⟩ := matrix_exists_rank_columns B.transpose r hBt
-  refine ⟨rows, cols, hrows, hcols, square_det_nonzero_of_rank _ ?_⟩
   have heq : (A.submatrix rows cols).transpose = B.transpose.submatrix id rows := rfl
-  calc
-    (A.submatrix rows cols).rank = (A.submatrix rows cols).transpose.rank :=
-      (Matrix.rank_transpose _).symm
-    _ = (B.transpose.submatrix id rows).rank := congrArg Matrix.rank heq
-    _ = Fintype.card (Fin r) := by simpa only [Fintype.card_fin] using hr
+  have hmrank : (A.submatrix rows cols).rank = r := by
+    calc
+      (A.submatrix rows cols).rank = (A.submatrix rows cols).transpose.rank :=
+        (Matrix.rank_transpose _).symm
+      _ = (B.transpose.submatrix id rows).rank := congrArg Matrix.rank heq
+      _ = r := hr
+  have hd := square_det_nonzero_of_rank (A.submatrix rows cols)
+    (by simpa only [Fintype.card_fin] using hmrank)
+  exact ⟨rows, cols, hrows, hcols, hd⟩
 
 /-- A matrix has a nonzero minor of order exactly its actual rank. -/
 theorem matrix_exists_rank_minor (A : Matrix I V F) :
@@ -89,8 +93,8 @@ theorem matrix_exists_rank_minor (A : Matrix I V F) :
         (A.submatrix rows cols).det ≠ 0 :=
   matrix_exists_minor_of_rank A A.rank rfl
 
-/-- Taking a minor commutes with determinant under a ring homomorphism. -/
 omit [Fintype I] [Fintype V] in
+/-- Taking a minor commutes with determinant under a ring homomorphism. -/
 theorem minor_det_map {R S : Type*} [CommRing R] [CommRing S] {r : ℕ}
     (f : R →+* S) (A : Matrix I V R) (rows : Fin r → I) (cols : Fin r → V) :
     ((A.map f).submatrix rows cols).det = f ((A.submatrix rows cols).det) := by

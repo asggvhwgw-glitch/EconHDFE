@@ -16,3 +16,5 @@ import EconHDFE.RankExamples
 import EconHDFE.RankMinors
 import EconHDFE.CharZeroRank
 import EconHDFE.ModularRankCertificate
+import EconHDFE.ExactRowReduction
+import EconHDFE.ModularRankExamples
