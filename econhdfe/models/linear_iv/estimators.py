@@ -11,7 +11,7 @@ from ...iv.design import IVDesign
 from ...iv.solve import weighted_2sls
 from .stock_yogo import stock_yogo_critical_values
 from .diagnostics import (
-    first_stage_diagnostics, cragg_donald_stat, overid_test,
+    _IVDiagnosticWorkspace, first_stage_diagnostics, cragg_donald_stat, overid_test,
     kleibergen_paap_stats, sanderson_windmeijer_diagnostics,
 )
 
@@ -210,25 +210,30 @@ def fit_iv_kclass_block(
 
     # Compatibility diagnostics use the existing, extensively validated code.
     Cd, Ed, Id = C.materialize(), E.materialize(), I.materialize()
+    workspace = _IVDiagnosticWorkspace(Ed, Cd, Id, weights)
     first = {
         "coefficients": first_stage,
         "fitted_endog": fitted_endog,
         "diagnostics": first_stage_diagnostics(
             Ed, Cd, Id, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
+            _workspace=workspace,
             df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
         ),
     }
     diagnostics = {
         "cragg_donald_f": cragg_donald_stat(
-            Ed, Cd, Id, weights=weights, df_absorbed=df_absorbed, effective_n=n_eff
+            Ed, Cd, Id, weights=weights, df_absorbed=df_absorbed, effective_n=n_eff,
+            _workspace=workspace,
         ),
         "stock_yogo": stock_yogo_critical_values(I.ncols, E.ncols, estimator=est),
         "kleibergen_paap": kleibergen_paap_stats(
             Ed, Cd, Id, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
+            _workspace=workspace,
             df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
         ),
         "sanderson_windmeijer": sanderson_windmeijer_diagnostics(
             Ed, Cd, Id, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
+            _workspace=workspace,
             df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
         ),
         "overidentification": overid_test(
@@ -306,27 +311,32 @@ def fit_iv_kclass(
         effective_n=n_eff, score_scale=score_scale,
     )
     pi_x, xhat = _first_stage_projection(Cw, Ew, Iw)
+    workspace = _IVDiagnosticWorkspace(E, C, I, weights)
     first = {
         "coefficients": pi_x,
         "fitted_endog": xhat[:, C.shape[1]:],
         "diagnostics": first_stage_diagnostics(
             E, C, I, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
+            _workspace=workspace,
             df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
             time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
         ),
     }
     diagnostics = {
         "cragg_donald_f": cragg_donald_stat(
-            E, C, I, weights=weights, df_absorbed=df_absorbed, effective_n=n_eff
+            E, C, I, weights=weights, df_absorbed=df_absorbed, effective_n=n_eff,
+            _workspace=workspace,
         ),
         "stock_yogo": stock_yogo_critical_values(I.shape[1], E.shape[1], estimator=estimator),
         "kleibergen_paap": kleibergen_paap_stats(
             E, C, I, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
+            _workspace=workspace,
             df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
             time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
         ),
         "sanderson_windmeijer": sanderson_windmeijer_diagnostics(
             E, C, I, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
+            _workspace=workspace,
             df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
             time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
         ),
@@ -412,11 +422,13 @@ def fit_iv_gmm2s(
     )
 
     pi_x, xhat = _first_stage_projection(Xw[:, :C.shape[1]], Xw[:, C.shape[1]:], Zw[:, C.shape[1]:])
+    workspace = _IVDiagnosticWorkspace(E, C, I, weights)
     first = {
         "coefficients": pi_x,
         "fitted_endog": xhat[:, C.shape[1]:],
         "diagnostics": first_stage_diagnostics(
             E, C, I, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
+            _workspace=workspace,
             df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
             time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
         ),
@@ -430,16 +442,19 @@ def fit_iv_gmm2s(
         over = {"stat": np.nan, "df": 0, "pvalue": np.nan}
     diagnostics = {
         "cragg_donald_f": cragg_donald_stat(
-            E, C, I, weights=weights, df_absorbed=df_absorbed, effective_n=n_eff
+            E, C, I, weights=weights, df_absorbed=df_absorbed, effective_n=n_eff,
+            _workspace=workspace,
         ),
         "stock_yogo": stock_yogo_critical_values(I.shape[1], E.shape[1], estimator="gmm2s"),
         "kleibergen_paap": kleibergen_paap_stats(
             E, C, I, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
+            _workspace=workspace,
             df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
             time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
         ),
         "sanderson_windmeijer": sanderson_windmeijer_diagnostics(
             E, C, I, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
+            _workspace=workspace,
             df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
             time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
         ),
