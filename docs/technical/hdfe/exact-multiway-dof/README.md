@@ -3,7 +3,7 @@
 > **Document status:** Current EconHDFE project technical documentation.
 
 
-This directory is the repository copy of the technical technical document **Exact Structural Degrees of Freedom for Multiway High-Dimensional Categorical Fixed Effects**.
+This directory is the repository copy of the project technical document **Exact Structural Degrees of Freedom for Multiway High-Dimensional Categorical Fixed Effects**.
 
 Files:
 
