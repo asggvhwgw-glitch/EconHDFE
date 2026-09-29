@@ -61,7 +61,7 @@
 \maketitle
 
 \begin{abstract}
-High-dimensional fixed-effect (HDFE) estimators can absorb an arbitrary number of categorical effects, but exact accounting of the degrees of freedom consumed by three or more fixed-effect partitions is not generally available in widely used HDFE software. Current \texttt{reghdfe} documentation, for example, describes exact graph-theoretic accounting for the first two fixed effects and a conservative pairwise approximation thereafter. This note develops a general exact formulation for intercept-only categorical HDFE designs. The absorbed structural degrees of freedom are the rank, over characteristic zero, of the concatenated dummy matrix. After duplicate observation patterns are removed, this matrix is the edge--vertex incidence matrix of a multipartite uniform hypergraph. We establish a sequence of rank-preserving reductions: component decomposition, exact degree-one peeling, removal of the universal block-sum dependencies, and a sufficient ``proper connectivity'' certificate that yields rank in closed form. Residual cores are certified by finite-field rank whenever the finite-field lower bound reaches a deterministic characteristic-zero upper bound; otherwise an exact integer/rational backend is invoked. The resulting procedure is exact for any finite number of categorical fixed-effect partitions, contains the standard two-way connected-component formula as a special case, and separates mathematical identification from numerical projection of fixed effects. We also give a minimal three-way counterexample showing why pairwise connected-component information is insufficient in general. The note states the assumptions, proofs, computational complexity, implementation correspondence, and scope limitations needed for a reproducible software implementation.
+High-dimensional fixed-effect (HDFE) estimators can absorb an arbitrary number of categorical effects, but exact accounting of the degrees of freedom consumed by three or more fixed-effect partitions is not generally available in widely used HDFE software. Current \texttt{reghdfe} documentation, for example, describes exact graph-theoretic accounting for the first two fixed effects and a conservative pairwise approximation thereafter. This note develops a general exact formulation for intercept-only categorical HDFE designs. The absorbed structural degrees of freedom are the rank, over characteristic zero, of the concatenated dummy matrix. After duplicate observation patterns are removed, this matrix is the edge--vertex incidence matrix of a multipartite uniform hypergraph. We establish a sequence of rank-preserving reductions: component decomposition, exact degree-one peeling, removal of the universal block-sum dependencies, and a sufficient ``proper connectivity'' certificate that yields rank in closed form. Residual cores are certified by finite-field rank whenever the finite-field lower bound reaches a deterministic characteristic-zero upper bound; otherwise an exact integer/rational backend is invoked. The resulting procedure is exact for any finite number of categorical fixed-effect partitions, contains the standard two-way connected-component formula as a special case, and separates mathematical identification from numerical projection of fixed effects. We also give a small three-way counterexample showing why pairwise connected-component information is insufficient in general. The note states the assumptions, proofs, computational complexity, implementation correspondence, and scope limitations needed for a reproducible software implementation.
 \end{abstract}
 
 \paragraph{Formal verification and priority boundary (September 2026).}
@@ -422,6 +422,17 @@ There is one additional collective three-way dependency invisible to pairwise co
 annihilates $A$ on the left. Equivalently, the full design has three independent column-null relations rather than only the two universal block-sum relations.
 
 This example is not a pathology of floating-point arithmetic. It is an exact integer-rank difference. Therefore no algorithm that observes only pairwise connected-component counts can, in general, recover the full multiway rank.
+
+A stronger comparison holds even after fixing the coarse pairwise summaries. Consider the five tuples
+\[
+ (A_0,B_0,C_0),\ (A_0,B_0,C_1),\ (A_0,B_0,C_2),\
+ (A_0,B_1,C_0),\ (A_1,B_0,C_0).
+\]
+This design has the same number of observations, the same level counts
+$(2,2,3)$, and one connected component in each of the three pairwise
+projections, but its joint incidence rank is five rather than four. Hence the
+observation count, per-partition level counts, and pairwise component counts
+together still do not determine the multiway rank.
 
 \section{Algorithmic specification}
 
