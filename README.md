@@ -1,5 +1,7 @@
 # econhdfe
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 **High-performance high-dimensional fixed-effect econometrics for modern empirical research.**
 
 `econhdfe` is a Python package for OLS-HDFE, linear IV-HDFE, PPML-HDFE, and IV-PPML-HDFE. It is designed for empirical work with large datasets, high-cardinality fixed effects, clustered inference, rich interactions, and many closely related specifications.
@@ -189,7 +191,9 @@ For one or two FE dimensions, redundancy has familiar graph-based structure. For
 
 That distinction matters because numerical simplification and econometric rank are not the same object. The implementation keeps the requested FE topology, structural rank/DoF reasoning, numerical representation, and projection solver conceptually separate so that an optimization cannot silently redefine the design being estimated.
 
-The project currently tracks two other theorem-backed pieces of work. An exact residual-core reduction can eliminate eligible parts of the multiway FE incidence structure before the expensive numerical solve and reconstruct them afterwards while preserving the target projection. An exact partition-refinement reduction can detect nested and redundant categorical structure before full materialization, allowing the same requested column space to be represented by a smaller exact basis.
+The project tracks two other theorem-backed pieces of work. An exact residual-core reduction can eliminate eligible parts of the multiway FE incidence structure before the expensive numerical solve and reconstruct them afterwards while preserving the target projection. An exact partition-refinement reduction can detect nested and redundant categorical structure before full materialization, allowing the same requested column space to be represented by a smaller exact basis.
+
+The core mathematical statements for all three theorem-backed lines have now been machine-checked in Lean 4 under their documented assumptions. The formal library, theorem-by-theorem coverage, and manuscript appendices are maintained under `formal/`. This verifies the mapped mathematics; it does **not** amount to formal verification of the Python/Numba implementation, floating-point convergence, benchmark claims, external Stata parity, or historical originality.
 
 Formal statements, assumptions, implementation mappings, tests, and prior-art boundaries are maintained separately in the [technical documentation](docs/technical/README.md). A theorem-backed result is not automatically described as historically novel: mathematical correctness, implementation correctness, and independent originality are treated as different claims.
 
