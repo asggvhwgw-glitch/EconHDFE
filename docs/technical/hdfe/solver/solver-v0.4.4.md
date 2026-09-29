@@ -1,5 +1,8 @@
 # Multiway HDFE solver-opt2 integration (v0.4.4)
 
+> **Document status:** Current EconHDFE project technical documentation.
+
+
 Version 0.4.4 integrated the solver-opt2 module into the shared HDFE layer without changing estimator equations, result schemas, DoF semantics, configuration dataclasses, or structured error codes.
 
 ## Innovation boundary
