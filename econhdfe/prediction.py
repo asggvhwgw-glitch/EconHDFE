@@ -110,6 +110,8 @@ class DesignPredictionState:
 
     @property
     def reconstructable(self) -> bool:
+        if not self.active_names:
+            return True
         return bool(self.terms) and all(term.reconstructable for term in self.terms)
 
 
