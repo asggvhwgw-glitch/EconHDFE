@@ -14,13 +14,13 @@
 
 \hypersetup{
   pdftitle={Exact Structural Degrees of Freedom for Multiway High-Dimensional Categorical Fixed Effects},
-  pdfauthor={Anonymous technical manuscript}
+  pdfauthor={EconHDFE Project}
 }
 
 \pagestyle{fancy}
 \fancyhf{}
 \fancyhead[L]{Exact Multiway HDFE Degrees of Freedom}
-\fancyhead[R]{Technical Note}
+\fancyhead[R]{EconHDFE Technical Documentation}
 \fancyfoot[C]{\thepage}
 \setlength{\headheight}{14pt}
 
@@ -54,18 +54,18 @@
 
 \title{\textbf{Exact Structural Degrees of Freedom for Multiway High-Dimensional Categorical Fixed Effects}\\
 \large A rank-theoretic and hypergraph reduction approach for arbitrary numbers of fixed-effect partitions}
-\author{Anonymous technical manuscript\\[2pt]\small Implementation reference: \texttt{econhdfe/hdfe}, exactdof2 prototype}
+\author{EconHDFE Project\\[2pt]\small Project Technical Documentation\\[2pt]\small Implementation reference: \texttt{econhdfe/hdfe/rank.py} and \texttt{econhdfe/hdfe/dof.py}}
 \date{September 2026}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-High-dimensional fixed-effect (HDFE) estimators can absorb an arbitrary number of categorical effects, but exact accounting of the degrees of freedom consumed by three or more fixed-effect partitions is not generally available in widely used HDFE software. Current \texttt{reghdfe} documentation, for example, describes exact graph-theoretic accounting for the first two fixed effects and a conservative pairwise approximation thereafter. This note develops a general exact formulation for intercept-only categorical HDFE designs. The absorbed structural degrees of freedom are the rank, over characteristic zero, of the concatenated dummy matrix. After duplicate observation patterns are removed, this matrix is the edge--vertex incidence matrix of a multipartite uniform hypergraph. We establish a sequence of rank-preserving reductions: component decomposition, exact degree-one peeling, removal of the universal block-sum dependencies, and a sufficient ``proper connectivity'' certificate that yields rank in closed form. Residual cores are certified by finite-field rank whenever the finite-field lower bound reaches a deterministic characteristic-zero upper bound; otherwise an exact integer/rational backend is invoked. The resulting procedure is exact for any finite number of categorical fixed-effect partitions, contains the standard two-way connected-component formula as a special case, and separates mathematical identification from numerical projection of fixed effects. We also give a small three-way counterexample showing why pairwise connected-component information is insufficient in general. The note states the assumptions, proofs, computational complexity, implementation correspondence, and scope limitations needed for a reproducible software implementation.
+High-dimensional fixed-effect (HDFE) estimators can absorb an arbitrary number of categorical effects, but exact accounting of the degrees of freedom consumed by three or more fixed-effect partitions is not generally available in widely used HDFE software. Current \texttt{reghdfe} documentation, for example, describes exact graph-theoretic accounting for the first two fixed effects and a conservative pairwise approximation thereafter. This technical document develops a general exact formulation for intercept-only categorical HDFE designs. The absorbed structural degrees of freedom are the rank, over characteristic zero, of the concatenated dummy matrix. After duplicate observation patterns are removed, this matrix is the edge--vertex incidence matrix of a multipartite uniform hypergraph. We establish a sequence of rank-preserving reductions: component decomposition, exact degree-one peeling, removal of the universal block-sum dependencies, and a sufficient ``proper connectivity'' certificate that yields rank in closed form. Residual cores are certified by finite-field rank whenever the finite-field lower bound reaches a deterministic characteristic-zero upper bound; otherwise an exact integer/rational backend is invoked. The resulting procedure is exact for any finite number of categorical fixed-effect partitions, contains the standard two-way connected-component formula as a special case, and separates mathematical identification from numerical projection of fixed effects. We also give a small three-way counterexample showing why pairwise connected-component information is insufficient in general. The note states the assumptions, proofs, computational complexity, implementation correspondence, and scope limitations needed for a reproducible software implementation.
 \end{abstract}
 
 \paragraph{Formal verification and priority boundary (September 2026).}
-The core mathematical statements in this note are mapped to an independent
+The core mathematical statements in this technical document are mapped to an independent
 Lean~4 proof library and have passed complete compilation and per-theorem axiom
 audit under the assumptions recorded in
 \texttt{formal/mathematical-coverage.md}. This machine-checked status concerns
