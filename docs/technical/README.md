@@ -38,3 +38,8 @@ The verification scope is deliberately mathematical only: explicitly mapped theo
 ## Historical technical reviews
 
 Version-bound mathematical and nonlinear/resource reviews are retained under [`history/`](history/) for provenance. They are not current sources of truth for package behavior or theorem coverage; use the active technical documents and [formal verification status](formal-verification.md).
+
+
+## Documentation format
+
+Current technical Markdown documents use a lightweight common header: **Status**, **Scope**, and **Boundary**. Theorem-backed LaTeX documents identify the author as **EconHDFE Project** and the document class as **Project Technical Documentation**. Version-bound reviews and obsolete checkpoints belong under a `history/` directory rather than beside current sources of truth.
