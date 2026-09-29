@@ -21,7 +21,7 @@ theorem coarse_active_sum (P : I → A) (Q : I → B) (f : B → A)
     (complete : ∀ i, P i = p → Q i ∈ active) :
     indicator P p = ∑ q ∈ active, if f q = p then indicator Q q else 0 := by
   ext i
-  simp only [Finset.sum_apply]
+  simp only [Finset.sum_apply, ite_apply, Pi.zero_apply]
   have heq : (fun q => if f q = p then indicator Q q i else 0) =
       (fun q => if q = Q i then (if f q = p then (1 : ℝ) else 0) else 0) := by
     funext q

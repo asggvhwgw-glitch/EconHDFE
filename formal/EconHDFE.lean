@@ -23,3 +23,5 @@ import EconHDFE.LeastSquaresExistence
 import EconHDFE.ActivePartitionRefinement
 import EconHDFE.WithinInvariance
 import EconHDFE.ResidualCoreTotal
+import EconHDFE.PPMLInvariance
+import EconHDFE.RankConsequences
