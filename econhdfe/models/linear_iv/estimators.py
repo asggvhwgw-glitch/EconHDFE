@@ -9,10 +9,12 @@ from ...compute.wls import weighted_arrays
 from ...compute.block_design import BlockDesign, hstack_block_designs
 from ...iv.design import IVDesign
 from ...iv.solve import weighted_2sls
+from ...compute.stable_linalg import equilibrated_lstsq
+from ...errors import UnderidentifiedError, NumericalError
 from .stock_yogo import stock_yogo_critical_values
 from .diagnostics import (
-    first_stage_diagnostics, cragg_donald_stat, overid_test,
-    kleibergen_paap_stats, sanderson_windmeijer_diagnostics,
+    _IVDiagnosticWorkspace, _first_stage_suite, cragg_donald_stat, overid_test,
+    kleibergen_paap_stats,
 )
 
 def _equilibrate_iv_roles(C, E, I):
@@ -34,6 +36,63 @@ def _equilibrate_iv_roles(C, E, I):
         scales.append(scale)
     cs, es, ins = scales
     return (*arrays, np.r_[cs, es], np.r_[cs, ins], es)
+
+
+def _check_iv_moment_rank(xx, zz, xz, nobs):
+    """Reject missing or numerically unsafe IV directions before inversion.
+
+    Unit-normalized cross moments distinguish role rank from identification.
+    The square-root-epsilon guard is a conservative numerical policy, not a
+    weak-IV statistical test or a universal forward-error guarantee.
+    """
+    k = len(xx)
+    if not k:
+        return
+    nx = np.sqrt(np.maximum(np.diag(xx), np.finfo(float).tiny))
+    nz = np.sqrt(np.maximum(np.diag(zz), np.finfo(float).tiny))
+    moment = xz / nx[:, None] / nz[None, :]
+    singular = la.svdvals(moment)
+    largest = float(singular[0]) if len(singular) else 0.0
+    floor = np.finfo(float).eps * max(nobs, *moment.shape) * max(1.0, largest)
+    rank = int(np.count_nonzero(singular > floor))
+    details = {"rank": rank, "n_parameters": k}
+    if rank < k:
+        raise UnderidentifiedError(
+            "Instrument moments do not separately identify all coefficients",
+            details=details, suggestion="Revise the endogenous roles or instrument specification.",
+        )
+    if singular[-1] <= np.sqrt(np.finfo(float).eps) * max(1.0, largest):
+        raise NumericalError(
+            "IV moment system is too ill-conditioned for reliable double-precision inference",
+            details=details, suggestion="Inspect identification and near-dependent IV directions.",
+        )
+
+    return float(singular[-1] / max(1.0, largest))
+
+
+def _compressed_2sls(zz, xz, zy):
+    """Solve in instrument coordinates without forming X'PzX.
+
+    A Cholesky factor of the small instrument Gram whitens the moments;
+    QR/SVD then avoids squaring the projected-regressor condition number.
+    This cannot recover precision already lost in the original moments.
+    """
+    try:
+        lower = la.cholesky(zz, lower=True)
+    except la.LinAlgError as exc:
+        raise NumericalError("Instrument Gram is not numerically positive definite") from exc
+    projected = la.solve_triangular(lower, xz.T, lower=True)
+    response = la.solve_triangular(lower, zy, lower=True)
+    return equilibrated_lstsq(projected, response)
+
+
+def _check_solver_rank(rank, n_parameters):
+    if rank != n_parameters:
+        raise NumericalError(
+            "IV solve lost coefficient directions after moment formation",
+            details={"rank": int(rank), "n_parameters": int(n_parameters)},
+            suggestion="Inspect near-dependent IV directions and regressor scaling.",
+        )
 
 
 def _restore_iv_units(beta, V, first, meta, xscale, zscale, escale):
@@ -129,13 +188,21 @@ def _block_liml_kappa(y, C: BlockDesign, E: BlockDesign, Z: BlockDesign, w) -> f
 
 
 def _block_kclass_vcov(X: BlockDesign, Z: BlockDesign, resid, w, bread, *, kind,
-                       clusters, k_total, nested_adj, effective_n, score_scale):
+                       clusters, k_total, nested_adj, effective_n, score_scale, kappa=1.0):
     kind0 = "iid" if kind is None else str(kind).lower().replace("-", "_")
     resid = np.asarray(resid, dtype=np.float64)
     gamma = np.linalg.pinv(Z.gram(weights=w), hermitian=True) @ Z.cross_gram(X, weights=w)
     if kind0 in {"iid", "unadjusted", "homoskedastic"}:
         sigma2 = float(np.dot(w * resid, resid)) / max(float(effective_n) - int(k_total), 1)
-        return bread * sigma2
+        if kappa in (0.0, 1.0):
+            return bread * sigma2
+        hh = (1 - kappa) ** 2 * X.gram(weights=w) + kappa * (2 - kappa) * (gamma.T @ Z.gram(weights=w) @ gamma)
+        return sigma2 * (bread @ hh @ bread.T)
+    if kappa == 0.0:
+        Z, gamma = X, np.eye(X.ncols)
+    elif kappa != 1.0:
+        gamma = np.vstack(((1 - kappa) * np.eye(X.ncols), kappa * gamma))
+        Z = hstack_block_designs(X, Z)
     score = w * resid
     if kind0 in {"robust", "hc1", "heteroskedastic"}:
         base = score if score_scale is None else score * np.asarray(score_scale, dtype=np.float64)
@@ -171,6 +238,9 @@ def fit_iv_kclass_block(
     Z = hstack_block_designs(C, I)
     w = np.ones(len(y), dtype=np.float64) if weights is None else np.asarray(weights, dtype=np.float64)
     XX = X.gram(weights=w); ZZ = Z.gram(weights=w); XZ = X.cross_gram(Z, weights=w)
+    moment_ratio = 1.0
+    if str(estimator).lower() != "kclass" or (kappa is not None and float(kappa) == 1.0):
+        moment_ratio = _check_iv_moment_rank(XX, ZZ, XZ, len(y))
     Xy = X.t_matvec(w * y); Zy = Z.t_matvec(w * y)
     zz_inv = np.linalg.pinv(ZZ, hermitian=True)
     xpzx = XZ @ zz_inv @ XZ.T
@@ -196,6 +266,9 @@ def fit_iv_kclass_block(
     bread = np.linalg.pinv((A + A.T) / 2, hermitian=True)
     beta = bread @ rhs
     rank = int(np.linalg.matrix_rank(A))
+    if est_kappa == 1.0 and moment_ratio < 1e-3:
+        beta, bread, rank = _compressed_2sls(ZZ, XZ, Zy)
+    _check_solver_rank(rank, X.ncols)
     resid = y - X.matvec(beta)
     n_eff = float(len(y) if weight_info is None else weight_info.effective_n)
     score_scale = None if weight_info is None else robust_score_scale(weight_info, vce, len(y))
@@ -203,6 +276,7 @@ def fit_iv_kclass_block(
     V = _block_kclass_vcov(
         X, Z, resid, w, bread, kind=vce, clusters=clusters, k_total=k_total,
         nested_adj=nested_adj, effective_n=n_eff, score_scale=score_scale,
+        kappa=est_kappa if est == "kclass" else 1.0,
     )
 
     first_stage = zz_inv @ Z.cross_gram(X, weights=w)
@@ -210,31 +284,33 @@ def fit_iv_kclass_block(
 
     # Compatibility diagnostics use the existing, extensively validated code.
     Cd, Ed, Id = C.materialize(), E.materialize(), I.materialize()
+    workspace = _IVDiagnosticWorkspace(Ed, Cd, Id, weights)
+    first_diagnostics, conditional_diagnostics = _first_stage_suite(
+        Ed, Cd, Id, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
+        _workspace=workspace,
+        df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
+    )
     first = {
         "coefficients": first_stage,
         "fitted_endog": fitted_endog,
-        "diagnostics": first_stage_diagnostics(
-            Ed, Cd, Id, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
-            df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
-        ),
+        "diagnostics": first_diagnostics,
     }
     diagnostics = {
         "cragg_donald_f": cragg_donald_stat(
-            Ed, Cd, Id, weights=weights, df_absorbed=df_absorbed, effective_n=n_eff
+            Ed, Cd, Id, weights=weights, df_absorbed=df_absorbed, effective_n=n_eff,
+            _workspace=workspace,
         ),
         "stock_yogo": stock_yogo_critical_values(I.ncols, E.ncols, estimator=est),
         "kleibergen_paap": kleibergen_paap_stats(
             Ed, Cd, Id, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
+            _workspace=workspace,
             df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
         ),
-        "sanderson_windmeijer": sanderson_windmeijer_diagnostics(
-            Ed, Cd, Id, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
-            df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
-        ),
-        "overidentification": overid_test(
+        "sanderson_windmeijer": conditional_diagnostics,
+        "overidentification": ({"stat": np.nan, "df": 0, "pvalue": np.nan} if Z.ncols <= X.ncols else overid_test(
             resid * np.sqrt(w), Z.materialize() * np.sqrt(w)[:, None], X_cols=X.ncols,
             kind=vce, clusters=clusters, effective_n=n_eff, score_scale=score_scale,
-        ),
+        )),
         "heterogeneous_spec_path": True,
         "heterogeneous_spec_diagnostics_dense_materialization": True,
     }
@@ -272,6 +348,9 @@ def fit_iv_kclass(
     X, Z = np.column_stack([C, E]), np.column_stack([C, I])
     yw, Xw, Zw, sw = weighted_arrays(y, X, Z, weights)
     Cw = Xw[:, :C.shape[1]]; Ew = Xw[:, C.shape[1]:]; Iw = Zw[:, C.shape[1]:]
+    moment_ratio = 1.0
+    if estimator.lower() != "kclass" or (kappa is not None and float(kappa) == 1.0):
+        moment_ratio = _check_iv_moment_rank(Xw.T @ Xw, Zw.T @ Zw, Xw.T @ Zw, len(y))
 
     estimator = estimator.lower()
     liml_kappa = None
@@ -289,11 +368,14 @@ def fit_iv_kclass(
     if fuller:
         est_kappa -= float(fuller) / max(len(y) - Zw.shape[1], 1)
 
-    if estimator in {"2sls", "iv"} and not fuller and kappa is None:
+    if est_kappa == 1.0 and moment_ratio < 1e-3:
+        beta, bread, rank = _compressed_2sls(Zw.T @ Zw, Xw.T @ Zw, Zw.T @ yw)
+    elif estimator in {"2sls", "iv"} and not fuller and kappa is None:
         solved = weighted_2sls(y, X, Z, weights=weights)
         beta, bread, rank = solved.beta, solved.bread, solved.rank
     else:
         beta, bread, rank, _ = _kclass_core(yw, Xw, Zw, est_kappa)
+    _check_solver_rank(rank, X.shape[1])
     resid = y - X @ beta
     ew = resid if sw is None else resid * sw
     k_total = rank + int(df_absorbed)
@@ -304,32 +386,34 @@ def fit_iv_kclass(
         k_total=k_total, nested_adj=int(bool(nested_adj)),
         time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
         effective_n=n_eff, score_scale=score_scale,
+        kappa=est_kappa if estimator == "kclass" else 1.0,
     )
     pi_x, xhat = _first_stage_projection(Cw, Ew, Iw)
+    workspace = _IVDiagnosticWorkspace(E, C, I, weights)
+    first_diagnostics, conditional_diagnostics = _first_stage_suite(
+        E, C, I, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
+        _workspace=workspace,
+        df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
+        time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
+    )
     first = {
         "coefficients": pi_x,
-        "fitted_endog": xhat[:, C.shape[1]:],
-        "diagnostics": first_stage_diagnostics(
-            E, C, I, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
-            df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
-            time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
-        ),
+        "fitted_endog": Z @ pi_x[:, C.shape[1]:],
+        "diagnostics": first_diagnostics,
     }
     diagnostics = {
         "cragg_donald_f": cragg_donald_stat(
-            E, C, I, weights=weights, df_absorbed=df_absorbed, effective_n=n_eff
+            E, C, I, weights=weights, df_absorbed=df_absorbed, effective_n=n_eff,
+            _workspace=workspace,
         ),
         "stock_yogo": stock_yogo_critical_values(I.shape[1], E.shape[1], estimator=estimator),
         "kleibergen_paap": kleibergen_paap_stats(
             E, C, I, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
+            _workspace=workspace,
             df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
             time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
         ),
-        "sanderson_windmeijer": sanderson_windmeijer_diagnostics(
-            E, C, I, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
-            df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
-            time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
-        ),
+        "sanderson_windmeijer": conditional_diagnostics,
         "overidentification": overid_test(
             ew, Zw, X_cols=Xw.shape[1], kind=vce, clusters=clusters,
             time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
@@ -382,6 +466,7 @@ def fit_iv_gmm2s(
     C, E, I, xscale, zscale, escale = _equilibrate_iv_roles(design.exog, design.endog, design.excluded)
     X, Z = np.column_stack([C, E]), np.column_stack([C, I])
     yw, Xw, Zw, sw = weighted_arrays(y, X, Z, weights)
+    _check_iv_moment_rank(Xw.T @ Xw, Zw.T @ Zw, Xw.T @ Zw, len(y))
     n_eff = float(len(y) if weight_info is None else weight_info.effective_n)
     score_scale = None if weight_info is None else robust_score_scale(weight_info, vce, len(y))
 
@@ -401,6 +486,7 @@ def fit_iv_gmm2s(
     bread = np.linalg.pinv((A + A.T) / 2, hermitian=True)
     beta = bread @ rhs
     rank = int(np.linalg.matrix_rank(A))
+    _check_solver_rank(rank, X.shape[1])
     resid = y - X @ beta
     ew = resid if sw is None else resid * sw
     k_total = rank + int(df_absorbed)
@@ -412,14 +498,17 @@ def fit_iv_gmm2s(
     )
 
     pi_x, xhat = _first_stage_projection(Xw[:, :C.shape[1]], Xw[:, C.shape[1]:], Zw[:, C.shape[1]:])
+    workspace = _IVDiagnosticWorkspace(E, C, I, weights)
+    first_diagnostics, conditional_diagnostics = _first_stage_suite(
+        E, C, I, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
+        _workspace=workspace,
+        df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
+        time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
+    )
     first = {
         "coefficients": pi_x,
-        "fitted_endog": xhat[:, C.shape[1]:],
-        "diagnostics": first_stage_diagnostics(
-            E, C, I, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
-            df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
-            time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
-        ),
+        "fitted_endog": Z @ pi_x[:, C.shape[1]:],
+        "diagnostics": first_diagnostics,
     }
     over_df = int(Zw.shape[1] - Xw.shape[1])
     if over_df > 0:
@@ -430,19 +519,17 @@ def fit_iv_gmm2s(
         over = {"stat": np.nan, "df": 0, "pvalue": np.nan}
     diagnostics = {
         "cragg_donald_f": cragg_donald_stat(
-            E, C, I, weights=weights, df_absorbed=df_absorbed, effective_n=n_eff
+            E, C, I, weights=weights, df_absorbed=df_absorbed, effective_n=n_eff,
+            _workspace=workspace,
         ),
         "stock_yogo": stock_yogo_critical_values(I.shape[1], E.shape[1], estimator="gmm2s"),
         "kleibergen_paap": kleibergen_paap_stats(
             E, C, I, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
+            _workspace=workspace,
             df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
             time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
         ),
-        "sanderson_windmeijer": sanderson_windmeijer_diagnostics(
-            E, C, I, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
-            df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
-            time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
-        ),
+        "sanderson_windmeijer": conditional_diagnostics,
         "overidentification": over,
     }
     meta = {"estimator": "gmm2s", "center": bool(center), "first_step_params": b1, "weight_matrix": W}

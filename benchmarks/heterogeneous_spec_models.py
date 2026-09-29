@@ -106,7 +106,7 @@ def main():
       'notes':[
         'Development microbenchmark; not a release performance claim.',
         'PPML/IV-PPML use FE-only separation so shared coefficients remain on the certified structured path.',
-        'Linear-IV structured main solve retains established weak-IV diagnostics, which currently materialize role designs once.'
+        'Linear-IV diagnostics retain dense role arrays but share projections and use bounded multi-RHS AP/SW batches.'
       ]
     }
     Path(a.output).write_text(json.dumps(out,indent=2))

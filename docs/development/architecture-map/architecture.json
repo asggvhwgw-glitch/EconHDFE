@@ -719,7 +719,7 @@
     {
       "source": "linear_iv",
       "target": "compute",
-      "count": 11,
+      "count": 12,
       "examples": [
         "econhdfe.models.linear_iv.api → econhdfe.compute.weights",
         "econhdfe.models.linear_iv.api → econhdfe.compute.block_design",
@@ -731,12 +731,13 @@
     {
       "source": "linear_iv",
       "target": "contracts",
-      "count": 4,
+      "count": 5,
       "examples": [
         "econhdfe.models.linear_iv.api → econhdfe.errors",
         "econhdfe.models.linear_iv.api → econhdfe.config",
         "econhdfe.models.linear_iv.api → econhdfe.results",
-        "econhdfe.models.linear_iv.api → econhdfe.reporting"
+        "econhdfe.models.linear_iv.api → econhdfe.reporting",
+        "econhdfe.models.linear_iv.estimators → econhdfe.errors"
       ]
     },
     {
@@ -2710,6 +2711,22 @@
       "source_group": "linear_iv",
       "target_module": "econhdfe.iv.solve",
       "target_group": "iv",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.linear_iv.estimators",
+      "source_path": "econhdfe/models/linear_iv/estimators.py",
+      "source_group": "linear_iv",
+      "target_module": "econhdfe.compute.stable_linalg",
+      "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.linear_iv.estimators",
+      "source_path": "econhdfe/models/linear_iv/estimators.py",
+      "source_group": "linear_iv",
+      "target_module": "econhdfe.errors",
+      "target_group": "contracts",
       "reexport_surface": false
     },
     {
@@ -5248,8 +5265,8 @@
     },
     {
       "name": "tests",
-      "files": 73,
-      "python_files": 73,
+      "files": 74,
+      "python_files": 74,
       "markdown_files": 0
     },
     {
@@ -5266,9 +5283,9 @@
     },
     {
       "name": "docs",
-      "files": 81,
+      "files": 82,
       "python_files": 0,
-      "markdown_files": 54
+      "markdown_files": 55
     },
     {
       "name": "scripts",
