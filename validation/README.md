@@ -1,5 +1,8 @@
 # Stata golden validation — v0.8.0
 
+> **Validation status:** Current harness documentation. The `v0.8.0` label names the historical fixture corpus and is not the current package version.
+
+
 Stata and Python must consume exactly the same deterministic fixtures. The generator writes both the ordinary panel fixture and a long-format patent–inventor-style membership fixture; Stata never regenerates the DGP.
 
 Run from the repository root:
