@@ -1,5 +1,8 @@
 # Identified categorical fixed-effect recovery
 
+> **Document status:** Current EconHDFE project technical documentation.
+
+
 High-dimensional fixed-effect estimators usually absorb FE because the coefficients are nuisance parameters. In several important empirical designs, however, the FE coefficients themselves are economic objects—for example worker and firm effects in AKM-style models or origin/destination value components used in a later structural stage.
 
 `econhdfe.effects` is therefore a small post-estimation layer. It is intentionally not another estimator family.
