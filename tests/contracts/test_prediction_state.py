@@ -45,7 +45,9 @@ def test_ols_prediction_state_freezes_design_order_and_factor_levels():
     term = next(item for item in design.terms if item.name == "g")
     encoding = term.categorical[0]
     assert encoding.source == "g"
-    assert encoding.levels == ("a", "b", "c")
+    assert tuple(encoding.levels.tolist()) == ("a", "b", "c")
+    assert not encoding.levels.flags.writeable
+    assert not encoding.selected.flags.writeable
     assert encoding.base_levels == ("b",)
     assert term.cells == (("a",), ("b",), ("c",))
 
