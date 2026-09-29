@@ -82,7 +82,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "Compiled PDFs are already current."
           else
-            git commit -m "Compile corrected manuscripts with Lean appendices [skip ci]"
+            git commit -m "Compile corrected manuscripts with Lean appendices"
             git pull --rebase origin dev/lean-foundations
             git push origin HEAD:dev/lean-foundations
           fi
