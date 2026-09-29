@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from scipy.stats import f as f_dist
 
-from econhdfe import olshdfe
+from econhdfe import ivhdfe, olshdfe
 
 
 def _fit():
@@ -57,3 +57,27 @@ def test_postestimation_rejects_unknown_names_and_bad_shapes():
         r.linear_combination({"missing": 1.0})
     with pytest.raises(ValueError, match="restriction matrix"):
         r.wald_test(np.ones((2, 3)))
+
+
+def test_iv_named_restriction_uses_reported_parameter_order():
+    rng = np.random.default_rng(124)
+    n = 800
+    g = np.repeat(np.arange(80), 10)
+    w = rng.normal(size=n)
+    z = rng.normal(size=n)
+    v = rng.normal(size=n)
+    endog = 0.8 * z + 0.3 * w + v
+    y = 0.4 * w + 1.3 * endog + rng.normal(size=80)[g] + 0.4 * v + rng.normal(size=n)
+    r = ivhdfe(
+        y=y, exog=w, endog=endog, instruments=z, absorb=g, vce="robust"
+    )
+
+    assert r.names == ("exog1", "endog1")
+    got = r.linear_combination({"exog1": 1.0, "endog1": -1.0})
+    weights = np.array([1.0, -1.0])
+    assert got.estimate == pytest.approx(float(weights @ r.params))
+    assert got.std_error == pytest.approx(float(np.sqrt(weights @ r.vcov @ weights)))
+
+    joint = r.wald_test([{"exog1": 1.0}, {"endog1": 1.0}])
+    assert joint.df_num == 2
+    assert 0.0 <= joint.p_value <= 1.0
