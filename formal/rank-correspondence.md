@@ -7,11 +7,12 @@ verification. The arithmetic part is mapped in
 [arithmetic-correspondence.md](arithmetic-correspondence.md), and the consolidated
 manuscript coverage is in [mathematical-coverage.md](mathematical-coverage.md).
 
-The target is the separately delivered 2026-09-28 corrected manuscript bundle
-identified in [README.md](README.md). The old manuscript sources and PDFs inherited
-from the base commit still contain superseded wording; they are not silently
-replaced or relabeled by this proof library. The input fragment
-[appendices/exact-rank.tex](appendices/exact-rank.tex) is supplied separately.
+The target is the corrected 2026-09-28 exact-rank manuscript text identified in
+[README.md](README.md). The corresponding source on this branch now includes
+[appendices/exact-rank.tex](appendices/exact-rank.tex), and the dedicated
+manuscript workflow recompiles its PDF. The proof library still verifies only the
+mapped mathematics, not the Python backend or every implementation statement in
+the manuscript.
 
 ## Mathematical object and domain
 
