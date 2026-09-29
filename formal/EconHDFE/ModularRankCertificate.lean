@@ -63,7 +63,7 @@ theorem modular_rank_exact
   rw [hmeet] at hl
   exact le_antisymm hupper hl
 
-/-- A modular minor of maximal real order transfers that order to Q. -/
+/-- The complete modular lower bound and rational/real equality for the same integer matrix. -/
 theorem modular_rational_real_sandwich (p : ℕ) [Fact p.Prime] (A : Matrix I V ℤ) :
     (A.map (Int.castRingHom (ZMod p))).rank ≤ (A.map (Int.castRingHom ℚ)).rank ∧
     (A.map (Int.castRingHom ℚ)).rank = (A.map (Int.castRingHom ℝ)).rank :=
