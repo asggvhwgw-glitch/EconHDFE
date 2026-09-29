@@ -30,7 +30,7 @@ the estimator or HDFE numerical path.
 
 ## Phase 2: prediction state (PRED-00)
 
-Before out-of-sample predict(), add a frozen prediction-state contract containing:
+Implemented on this branch for standard linear OLS/IV and repeated linear sessions. Before out-of-sample predict(), the fitted result now carries a frozen prediction-state contract containing:
 
 1. active reported design-column order after user omission and collinearity handling;
 2. enough factor-variable metadata to reproduce expansion and reference levels;
@@ -40,9 +40,11 @@ Before out-of-sample predict(), add a frozen prediction-state contract containin
 5. normalization metadata for recovered FE coefficients;
 6. model-specific link/response semantics.
 
-Do not store the original DataFrame merely to make prediction convenient.
+The realized sample is retained as a packed bit mask only when rows were excluded. Factor levels and observed interaction cells are stored as compact read-only NumPy arrays rather than observation-sized copies or Python-object expansions. The original DataFrame is never retained merely to make prediction convenient.
 
-## Phase 3: prediction API (PRED-01)
+For absorbed fixed effects, PRED-00 deliberately freezes requested/effective FE topology, final-sample level counts, varying-slope counts, canonicalization, and saved-normalization status, but does not yet retain raw FE level maps on every fit. Accordingly `level_maps_available=False` and FE-inclusive out-of-sample prediction is not claimed. This avoids adding an N-row label-retention cost to ordinary estimation. Group+individual linear HDFE uses its specialized aggregation path and remains outside the first PRED-00 implementation.
+
+## Phase 3: prediction API (PRED-01; not yet implemented)
 
 Start with categorical fixed effects. The API should distinguish at least:
 
@@ -58,7 +60,7 @@ identified must follow the same rule.
 Varying-slope FE should be a separate extension because prediction requires both
 level and slope-variable semantics.
 
-## Phase 4: margins and nonlinear transformations (POST-01)
+## Phase 4: margins and nonlinear transformations (POST-01; not yet implemented)
 
 Margins/AME should be built on the prediction contract, not directly on raw params.
 For models with absorbed FE, beta-only covariance is not a complete uncertainty
