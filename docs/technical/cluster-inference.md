@@ -1,5 +1,8 @@
 # Cluster inference boundary
 
+> **Document status:** Current EconHDFE project technical documentation.
+
+
 `econhdfe` separates three concerns:
 
 - `compute/vcov.py`: standard sandwich covariance, including one-/multi-way CRV1 and finite-sample/nesting conventions.
