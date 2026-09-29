@@ -11,8 +11,8 @@ from ...iv.design import IVDesign
 from ...iv.solve import weighted_2sls
 from .stock_yogo import stock_yogo_critical_values
 from .diagnostics import (
-    _IVDiagnosticWorkspace, first_stage_diagnostics, cragg_donald_stat, overid_test,
-    kleibergen_paap_stats, sanderson_windmeijer_diagnostics,
+    _IVDiagnosticWorkspace, _first_stage_suite, cragg_donald_stat, overid_test,
+    kleibergen_paap_stats,
 )
 
 def _equilibrate_iv_roles(C, E, I):
@@ -211,14 +211,15 @@ def fit_iv_kclass_block(
     # Compatibility diagnostics use the existing, extensively validated code.
     Cd, Ed, Id = C.materialize(), E.materialize(), I.materialize()
     workspace = _IVDiagnosticWorkspace(Ed, Cd, Id, weights)
+    first_diagnostics, conditional_diagnostics = _first_stage_suite(
+        Ed, Cd, Id, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
+        _workspace=workspace,
+        df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
+    )
     first = {
         "coefficients": first_stage,
         "fitted_endog": fitted_endog,
-        "diagnostics": first_stage_diagnostics(
-            Ed, Cd, Id, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
-            _workspace=workspace,
-            df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
-        ),
+        "diagnostics": first_diagnostics,
     }
     diagnostics = {
         "cragg_donald_f": cragg_donald_stat(
@@ -231,11 +232,7 @@ def fit_iv_kclass_block(
             _workspace=workspace,
             df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
         ),
-        "sanderson_windmeijer": sanderson_windmeijer_diagnostics(
-            Ed, Cd, Id, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
-            _workspace=workspace,
-            df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
-        ),
+        "sanderson_windmeijer": conditional_diagnostics,
         "overidentification": overid_test(
             resid * np.sqrt(w), Z.materialize() * np.sqrt(w)[:, None], X_cols=X.ncols,
             kind=vce, clusters=clusters, effective_n=n_eff, score_scale=score_scale,
@@ -312,15 +309,16 @@ def fit_iv_kclass(
     )
     pi_x, xhat = _first_stage_projection(Cw, Ew, Iw)
     workspace = _IVDiagnosticWorkspace(E, C, I, weights)
+    first_diagnostics, conditional_diagnostics = _first_stage_suite(
+        E, C, I, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
+        _workspace=workspace,
+        df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
+        time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
+    )
     first = {
         "coefficients": pi_x,
         "fitted_endog": xhat[:, C.shape[1]:],
-        "diagnostics": first_stage_diagnostics(
-            E, C, I, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
-            _workspace=workspace,
-            df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
-            time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
-        ),
+        "diagnostics": first_diagnostics,
     }
     diagnostics = {
         "cragg_donald_f": cragg_donald_stat(
@@ -334,12 +332,7 @@ def fit_iv_kclass(
             df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
             time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
         ),
-        "sanderson_windmeijer": sanderson_windmeijer_diagnostics(
-            E, C, I, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
-            _workspace=workspace,
-            df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
-            time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
-        ),
+        "sanderson_windmeijer": conditional_diagnostics,
         "overidentification": overid_test(
             ew, Zw, X_cols=Xw.shape[1], kind=vce, clusters=clusters,
             time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
@@ -423,15 +416,16 @@ def fit_iv_gmm2s(
 
     pi_x, xhat = _first_stage_projection(Xw[:, :C.shape[1]], Xw[:, C.shape[1]:], Zw[:, C.shape[1]:])
     workspace = _IVDiagnosticWorkspace(E, C, I, weights)
+    first_diagnostics, conditional_diagnostics = _first_stage_suite(
+        E, C, I, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
+        _workspace=workspace,
+        df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
+        time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
+    )
     first = {
         "coefficients": pi_x,
         "fitted_endog": xhat[:, C.shape[1]:],
-        "diagnostics": first_stage_diagnostics(
-            E, C, I, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
-            _workspace=workspace,
-            df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
-            time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
-        ),
+        "diagnostics": first_diagnostics,
     }
     over_df = int(Zw.shape[1] - Xw.shape[1])
     if over_df > 0:
@@ -452,12 +446,7 @@ def fit_iv_gmm2s(
             df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
             time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
         ),
-        "sanderson_windmeijer": sanderson_windmeijer_diagnostics(
-            E, C, I, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
-            _workspace=workspace,
-            df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
-            time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
-        ),
+        "sanderson_windmeijer": conditional_diagnostics,
         "overidentification": over,
     }
     meta = {"estimator": "gmm2s", "center": bool(center), "first_step_params": b1, "weight_matrix": W}

@@ -187,8 +187,11 @@ def test_workspace_reuses_projections_and_bounds_rhs(monkeypatch):
     for fn in (diag.first_stage_diagnostics, diag.cragg_donald_stat,
                diag.kleibergen_paap_stats, diag.sanderson_windmeijer_diagnostics):
         fn(E, C, Z, _workspace=work)
-    assert len(calls) == 22  # Mechanism, not a machine-dependent timing assertion.
-    assert batches == [8, 8, 8]
+    tall = [shape for shape, _ in calls if shape[0] == len(E)]
+    small = [shape for shape, _ in calls if shape[0] != len(E)]
+    assert len(tall) == 3  # C projections of E/Z, then one multi-RHS reduced form.
+    assert small == [(Z.shape[1], E.shape[1] - 1)] * E.shape[1]
+    assert batches == []  # No further observation-level AP/SW regression batches.
     assert work.bread is work.bread
 
 
@@ -268,3 +271,322 @@ def test_workspace_is_per_fit_and_diagnostics_off_unchanged(monkeypatch, estimat
         assert len(result.first_stage['diagnostics']) == E.shape[1]
         assert len(result.diagnostics['sanderson_windmeijer']) == E.shape[1]
         assert set(result.diagnostics) >= {'cragg_donald_f', 'kleibergen_paap', 'overidentification', 'stock_yogo'}
+
+
+def _full_score_kp_reference(E, C, Z, *, weights=None, weight_info=None,
+                             vce='robust', clusters=None, time=None, panel=None,
+                             bandwidth=None):
+    """Independent full Kronecker path for the reduced-score optimization.
+
+    The canonical transform, rank statistic and raw covariance engine are
+    unchanged; only the full versus factored moment computation is compared.
+    """
+    from econhdfe.compute.vcov import score_covariance
+    neff = None if weight_info is None else weight_info.effective_n
+    Ep, Zp, pi, theta, rz, ry, _, neff = diag._canonical_components(
+        E, C, Z, weights, effective_n=neff)
+    transform = np.kron(ry.T, rz.T)
+    out = []
+    scale = None
+    if weight_info is not None and weight_info.kind == 'fweight' and vce == 'robust':
+        scale = 1 / np.sqrt(weight_info.estimation)
+    for V in (Ep, Ep - Zp @ pi):
+        scores = np.einsum('ni,nj->nij', V, Zp).reshape(len(Ep), -1)
+        S = score_covariance(scores, kind=vce, clusters=clusters,
+                             small_sample=False, time=time, panel=panel,
+                             bandwidth=bandwidth, kernel='bartlett',
+                             effective_n=neff, score_scale=scale)
+        out.append(diag._kp_stat(theta, transform @ (S / neff) @ transform.T, neff))
+    return out
+
+
+@pytest.mark.parametrize('k', [1, 4])
+@pytest.mark.parametrize('vce', ['iid', 'robust', 'cluster', 'multiway', 'hac', 'dk'])
+def test_kp_projected_scores_match_full_kronecker_reference(k, vce):
+    E, C, Z = _problem(k=k, n=280)
+    n = len(E)
+    kind = 'cluster' if vce == 'multiway' else vce
+    wi = prepare_weights(1. + np.arange(n) % 4, n,
+                         'aweight' if vce in ('hac', 'dk') else 'fweight')
+    kwargs = dict(vce=kind, weights=wi.estimation, weight_info=wi)
+    if vce in ('cluster', 'multiway'):
+        kwargs['clusters'] = [np.arange(n) % 20]
+    if vce == 'multiway':
+        kwargs['clusters'].append(np.arange(n) // 20)
+    if vce in ('hac', 'dk'):
+        kwargs.update(time=2*(np.arange(n)//7), panel=np.arange(n)%7, bandwidth=3)
+    (lm, lr), (wald, wr) = _full_score_kp_reference(E, C, Z, **kwargs)
+    got = diag.kleibergen_paap_stats(E, C, Z, **kwargs)
+    _assert_same(got['rk_lm'], lm)
+    _assert_same(got['rk_wald_chi2'], wald)
+    assert (got['rank_lm_cov'], got['rank_wald_cov']) == (lr, wr)
+
+
+def test_kp_only_materializes_projected_scores(monkeypatch):
+    E, C, Z = _problem(k=6)
+    shapes = []
+    original = diag._kron_scores
+    def capture(v, z, *args, **kwargs):
+        shapes.append((v.shape, z.shape))
+        return original(v, z, *args, **kwargs)
+    monkeypatch.setattr(diag, '_kron_scores', capture)
+    diag.kleibergen_paap_stats(E, C, Z)
+    # L*K = 48 full scores are replaced by L-K+1 = 3 scores per observation.
+    assert shapes == [((len(E), 1), (len(E), 3))] * 2
+
+
+@pytest.mark.parametrize('case', ['collinear', 'huge_controls', 'tiny_instruments', 'perfect'])
+def test_conditional_reduction_uses_original_path_at_boundaries(case):
+    E, C, Z = _problem(k=4)
+    if case == 'collinear':
+        E[:, -1] = E[:, 0] + 1e-7 * E[:, -1]
+    elif case == 'huge_controls':
+        C *= 1e20
+    elif case == 'tiny_instruments':
+        Z *= 1e-20
+    else:
+        E = Z[:, :4].copy()
+    work = diag._IVDiagnosticWorkspace(E, C, Z)
+    assert diag._conditional_from_reduced_form(work, vce='robust') is None
+
+
+def test_kp_whitening_guard_keeps_full_score_order(monkeypatch):
+    E, C, Z = _problem(k=4)
+    E[:, -1] = E[:, 0] + 1e-7 * E[:, -1]
+    shapes = []
+    original = diag._kron_scores
+    def capture(v, z, *args, **kwargs):
+        shapes.append((v.shape[1], z.shape[1]))
+        return original(v, z, *args, **kwargs)
+    monkeypatch.setattr(diag, '_kron_scores', capture)
+    got = diag.kleibergen_paap_stats(E, C, Z)
+    assert shapes == [(E.shape[1], Z.shape[1])] * 2
+    (lm, lr), (wald, wr) = _full_score_kp_reference(E, C, Z)
+    _assert_same(got['rk_lm'], lm)
+    _assert_same(got['rk_wald_chi2'], wald)
+    assert (got['rank_lm_cov'], got['rank_wald_cov']) == (lr, wr)
+
+
+def test_kp_covariance_rank_boundary_uses_full_score_order(monkeypatch):
+    E, C, Z = _problem(k=4)
+    n = len(E)
+    shapes = []
+    original = diag._kron_scores
+    def capture(v, z, *args, **kwargs):
+        shapes.append((v.shape[1], z.shape[1]))
+        return original(v, z, *args, **kwargs)
+    monkeypatch.setattr(diag, '_kron_scores', capture)
+    kwargs = dict(vce='cluster', clusters=[np.arange(n) % 2])
+    got = diag.kleibergen_paap_stats(E, C, Z, **kwargs)
+    # Three final scores with only two groups: preserve the original rank edge.
+    assert (E.shape[1], Z.shape[1]) in shapes
+    (lm, lr), (wald, wr) = _full_score_kp_reference(E, C, Z, **kwargs)
+    _assert_same(got['rk_lm'], lm)
+    _assert_same(got['rk_wald_chi2'], wald)
+    assert (got['rank_lm_cov'], got['rank_wald_cov']) == (lr, wr)
+
+
+def test_reduced_form_is_lazy_and_reused_without_changing_inputs(monkeypatch):
+    E, C, Z = _problem(k=4)
+    work = diag._IVDiagnosticWorkspace(E, C, Z)
+    assert work._reduced_form is None
+    copies = [a.copy() for a in (E, C, Z)]
+    fit = work.reduced_form
+    def must_not_refactor(*args, **kwargs):
+        raise AssertionError('repeated first-stage solve')
+    monkeypatch.setattr(diag.la, 'lstsq', must_not_refactor)
+    assert work.reduced_form is fit
+    work.tests(vce='robust', clusters=None, df_absorbed=0, nested_adj=0)
+    for before, after in zip(copies, (E, C, Z)):
+        np.testing.assert_array_equal(before, after)
+
+
+@pytest.mark.parametrize('k', [1, 5])
+@pytest.mark.parametrize('vce', ['iid', 'robust', 'cluster', 'multiway', 'hac', 'dk'])
+def test_joint_first_stage_suite_reuses_only_identical_covariance(monkeypatch, k, vce):
+    E, C, Z = _problem(k=k, n=280)
+    n = len(E)
+    wi = prepare_weights(1. + np.arange(n) % 4, n,
+                         'aweight' if vce in ('hac', 'dk') else 'fweight')
+    options = dict(vce='cluster' if vce == 'multiway' else vce,
+                   weights=wi.estimation, weight_info=wi, df_absorbed=3)
+    if vce in ('cluster', 'multiway'):
+        options.update(clusters=[np.arange(n) % 20], nested_adj=1)
+    if vce == 'multiway':
+        options['clusters'].append(np.arange(n) // 20)
+    if vce in ('hac', 'dk'):
+        options.update(time=2*(np.arange(n)//7), panel=np.arange(n)%7, bandwidth=3)
+    expected = (diag.first_stage_diagnostics(E, C, Z, **options),
+                diag.sanderson_windmeijer_diagnostics(E, C, Z, **options))
+    calls, original = [], diag.ols_vcov
+    def counted(*args, **kwargs):
+        calls.append(kwargs)
+        return original(*args, **kwargs)
+    monkeypatch.setattr(diag, 'ols_vcov', counted)
+    work = diag._IVDiagnosticWorkspace(E, C, Z, wi.estimation)
+    actual = diag._first_stage_suite(E, C, Z, _workspace=work, **options)
+    _assert_same(actual, expected)
+    assert len(calls) == (1 if k == 1 else 2*k)
+    # No inference object or covariance cache persists into another invocation.
+    assert set(vars(work)) == {'E', 'C', 'Z', 'Ep', 'Zp', 'zz', '_batch_safe',
+                              '_bread', '_shea', '_reduced_form'}
+
+
+def test_joint_suite_cache_budget_changes_execution_not_results(monkeypatch):
+    E, C, Z = _problem(k=5)
+    expected = diag._first_stage_suite(E, C, Z, vce='robust')
+    monkeypatch.setattr(diag, '_FIRST_STAGE_CACHE_BYTES', 0)
+    original, calls = diag.ols_vcov, []
+    def counted(*args, **kwargs):
+        calls.append(1)
+        return original(*args, **kwargs)
+    monkeypatch.setattr(diag, 'ols_vcov', counted)
+    _assert_same(diag._first_stage_suite(E, C, Z, vce='robust'), expected)
+    assert len(calls) == 3 * E.shape[1]
+
+
+def test_joint_suite_does_not_reuse_inverses_after_inference_mutation():
+    E, C, Z = _problem(k=3, n=280)
+    work = diag._IVDiagnosticWorkspace(E, C, Z)
+    clusters = [np.arange(len(E)) % 20]
+    time = np.arange(len(E)) // 7
+    configurations = [dict(vce='robust'), dict(vce='cluster', clusters=clusters),
+                      dict(vce='cluster', clusters=clusters, df_absorbed=8, nested_adj=1),
+                      dict(vce='hac', time=time, panel=np.arange(len(E)) % 7, bandwidth=2),
+                      dict(vce='dk', time=time, bandwidth=3)]
+    for options in configurations:
+        got = diag._first_stage_suite(E, C, Z, _workspace=work, **options)
+        expected = (diag.first_stage_diagnostics(E, C, Z, **options),
+                    diag.sanderson_windmeijer_diagnostics(E, C, Z, **options))
+        _assert_same(got, expected)
+        # Preserve identity while changing contents: identity-keyed caching
+        # would be wrong on the next applicable invocation.
+        clusters[0][:] = (np.arange(len(E)) // 2) % 14
+        time[:] *= 2
+
+
+def test_joint_suite_exception_does_not_poison_retry(monkeypatch):
+    E, C, Z = _problem(k=3)
+    work = diag._IVDiagnosticWorkspace(E, C, Z)
+    expected = diag._first_stage_suite(E, C, Z, vce='robust')
+    original, calls = diag.ols_vcov, []
+    def fail_second(*args, **kwargs):
+        calls.append(1)
+        if len(calls) == 2:
+            raise np.linalg.LinAlgError('injected covariance failure')
+        return original(*args, **kwargs)
+    monkeypatch.setattr(diag, 'ols_vcov', fail_second)
+    with pytest.raises(np.linalg.LinAlgError, match='injected'):
+        diag._first_stage_suite(E, C, Z, _workspace=work, vce='robust')
+    monkeypatch.setattr(diag, 'ols_vcov', original)
+    _assert_same(diag._first_stage_suite(E, C, Z, _workspace=work, vce='robust'), expected)
+
+
+@pytest.mark.parametrize('case', ['duplicate_controls', 'duplicate_instruments', 'near_perfect'])
+def test_joint_suite_does_not_cache_sensitive_scalar_residuals(case):
+    E, C, Z = _problem(k=3)
+    if case == 'duplicate_controls':
+        C = np.column_stack([C, C[:, 0]])
+    elif case == 'duplicate_instruments':
+        Z = np.column_stack([Z, Z[:, 0]])
+    else:
+        E = Z[:, :3] + 1e-10 * E
+    work = diag._IVDiagnosticWorkspace(E, C, Z)
+    cache = [None] * E.shape[1]
+    diag.first_stage_diagnostics(E, C, Z, _workspace=work, _inverse_cache=cache)
+    assert cache == [None] * E.shape[1]
+    expected = (diag.first_stage_diagnostics(E, C, Z),
+                diag.sanderson_windmeijer_diagnostics(E, C, Z))
+    _assert_same(diag._first_stage_suite(E, C, Z), expected)
+
+
+def test_conditional_path_keeps_one_contrast_in_observation_space(monkeypatch):
+    E, C, Z = _problem(k=9, n=320)
+    work = diag._IVDiagnosticWorkspace(E, C, Z)
+    original, shapes = diag._first_stage_statistics, []
+    def capture(ep, *args, **kwargs):
+        shapes.append((ep.shape, None if ep.base is None else ep.base.shape))
+        return original(ep, *args, **kwargs)
+    monkeypatch.setattr(diag, '_first_stage_statistics', capture)
+    got = diag._conditional_from_reduced_form(
+        work, vce='robust', clusters=None, df_absorbed=0, nested_adj=0,
+        df1_override=Z.shape[1] - E.shape[1] + 1)
+    assert got is not None
+    assert shapes == [((len(E),), None)] * (2 * E.shape[1])
+
+
+@pytest.mark.parametrize('noise_scale', [1, 30])
+def test_first_stage_ap_sw_matches_exact_fraction_oracle(noise_scale):
+    """Exact rational scalar regressions and HC1; no package covariance/solve.
+
+    Small well-conditioned and weaker first stages check accuracy independently
+    of either floating-point path. This is not a guarantee for arbitrary
+    ill-conditioned or rank-boundary systems.
+    """
+    from fractions import Fraction as F
+    rng = np.random.default_rng(982)
+    n, k, q, dfabs = 24, 2, 3, 2
+    c = np.column_stack([np.ones(n, dtype=int), rng.integers(-3, 4, n)])
+    z = rng.integers(-4, 5, (n, q))
+    e = z[:, :k] + noise_scale * rng.integers(-4, 5, (n, k))
+    def rational(A):
+        return [[F(int(x)) for x in row] for row in A]
+    def transpose(A):
+        return [list(row) for row in zip(*A)]
+    def multiply(A, B):
+        return [[sum(x*y for x, y in zip(row, col)) for col in zip(*B)] for row in A]
+    def difference(A, B):
+        return [[x-y for x,y in zip(a,b)] for a,b in zip(A,B)]
+    def inverse(A):
+        size = len(A)
+        rows = [list(row)+[F(i==j) for j in range(size)] for i,row in enumerate(A)]
+        for j in range(size):
+            pivot = next(i for i in range(j, size) if rows[i][j])
+            rows[j], rows[pivot] = rows[pivot], rows[j]
+            scale = rows[j][j]
+            rows[j] = [x/scale for x in rows[j]]
+            for i in range(size):
+                if i != j:
+                    scale = rows[i][j]
+                    rows[i] = [a-scale*b for a,b in zip(rows[i],rows[j])]
+        return [row[size:] for row in rows]
+    def least_squares(A, B):
+        At = transpose(A)
+        return multiply(inverse(multiply(At,A)), multiply(At,B))
+    def partial(A, B):
+        return difference(A, multiply(B,least_squares(B,A)))
+    C, Z, E = map(rational, (c,z,e))
+    Zp = partial(Z,C)
+    bread = inverse(multiply(transpose(Zp),Zp))
+    def stage(dep, df1):
+        ep = partial(dep,C)
+        beta = least_squares(Zp,ep)
+        resid = difference(ep,multiply(Zp,beta))
+        tss = sum(row[0]**2 for row in ep)
+        rss = sum(row[0]**2 for row in resid)
+        scores = [[x*r[0] for x in row] for row,r in zip(Zp,resid)]
+        meat = multiply(transpose(scores),scores)
+        scale = F(n,n-len(C[0])-q-dfabs)
+        V = multiply(multiply(bread,meat),bread)
+        V = [[x*scale for x in row] for row in V]
+        wald = multiply(multiply(transpose(beta),inverse(V)),beta)[0][0]
+        classic = (tss-rss)/df1/(rss/F(n-len(C[0])-q-dfabs))
+        return {'partial_r2':float(1-rss/tss), 'f_classic':float(classic),
+                'f_robust':float(wald/df1)}
+    Q = [a+b for a,b in zip(C,Z)]
+    Ehat = multiply(Q,least_squares(Q,E))
+    X, Xhat = [a+b for a,b in zip(C,E)], [a+b for a,b in zip(C,Ehat)]
+    actual_first, actual_conditional = diag._first_stage_suite(
+        e, c, z, vce='robust', df_absorbed=dfabs)
+    for j in range(k):
+        dep = [[row[j]] for row in E]
+        target = len(C[0])+j
+        Xm = [[x for h,x in enumerate(row) if h!=target] for row in X]
+        Xhm = [[x for h,x in enumerate(row) if h!=target] for row in Xhat]
+        b = least_squares(Xhm,dep)
+        ap, sw = difference(dep,multiply(Xhm,b)), difference(dep,multiply(Xm,b))
+        for got, expected in ((actual_first[j],stage(dep,q)),
+                              (actual_conditional[j]['ap'],stage(ap,q-k+1)),
+                              (actual_conditional[j]['sw'],stage(sw,q-k+1))):
+            for key in expected:
+                np.testing.assert_allclose(got[key],expected[key],rtol=5e-11,atol=5e-12)
