@@ -19,6 +19,7 @@ INNOVATION_REGISTRY = Path("docs/technical/innovation-registry.json")
 INNOVATION_AUDIT = Path("docs/technical/innovation-audit.md")
 ERROR_REPORT_TEMPLATE = Path("docs/development/ERROR_REPORT_TEMPLATE.md")
 PLANNER_REPORT_TEMPLATE = Path("docs/development/PLANNER_REPORT_TEMPLATE.md")
+RELEASE_CLOSEOUT = Path("docs/release/history/RELEASE_CLOSEOUT.md")
 ARCH_MAP = Path("docs/development/architecture-map")
 ARCH_FILES = tuple(ARCH_MAP / name for name in ("architecture.json", "architecture.md", "architecture.html"))
 REAL_WORLD_BENCHMARK_FILES = (
@@ -121,7 +122,7 @@ def main() -> None:
             zf.extractall(b)
         skill_name = f"econhdfe-skill-v{VERSION}.zip"
         required = {
-            Path("README.md"), Path("RELEASE_CLOSEOUT.md"), Path("TODO.md"), Path("docs/release/execution.json"), Path("CHANGELOG.md"), Path("LICENSE"), Path("NOTICE.md"),
+            Path("README.md"), Path("README.zh-CN.md"), RELEASE_CLOSEOUT, Path("TODO.md"), Path("docs/release/execution.json"), Path("CHANGELOG.md"), Path("LICENSE"), Path("NOTICE.md"),
             Path("docs/README.md"), Path("docs/development/architecture.md"), ERROR_REPORT_TEMPLATE, PLANNER_REPORT_TEMPLATE, *ARCH_FILES,
             Path("docs/release/versioning.md"), MAINTENANCE, INNOVATION_REGISTRY, INNOVATION_AUDIT,
             *registered_manuscripts(ROOT), *REAL_WORLD_BENCHMARK_FILES,
@@ -142,7 +143,7 @@ def main() -> None:
         with zipfile.ZipFile(b / skill_name) as zf:
             zf.extractall(skill_dir)
         src = src_dir / f"econhdfe-{VERSION}"
-        for rel in (Path("TODO.md"), Path("RELEASE_CLOSEOUT.md"), Path("docs/release/execution.json")):
+        for rel in (Path("TODO.md"), RELEASE_CLOSEOUT, Path("docs/release/execution.json")):
             if not (src / rel).is_file() or digest(src / rel) != digest(b / rel):
                 raise SystemExit(f"bundle/source execution-roadmap mismatch: {rel}")
         # Candidate validity is intentionally weaker than formal authorization.

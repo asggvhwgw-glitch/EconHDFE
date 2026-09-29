@@ -5410,9 +5410,9 @@
     },
     {
       "name": "docs",
-      "files": 90,
+      "files": 100,
       "python_files": 1,
-      "markdown_files": 57
+      "markdown_files": 67
     },
     {
       "name": "scripts",

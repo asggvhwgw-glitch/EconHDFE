@@ -10,11 +10,11 @@
 \usepackage{listings}
 \usepackage{fancyhdr}
 
-\hypersetup{pdftitle={Exact Partition-Refinement Canonicalization and Structural Design Reduction for HDFE Models},pdfauthor={Anonymous technical manuscript}}
+\hypersetup{pdftitle={Exact Partition-Refinement Canonicalization and Structural Design Reduction for HDFE Models},pdfauthor={EconHDFE Project}}
 \pagestyle{fancy}
 \fancyhf{}
 \fancyhead[L]{Exact Structural Design Reduction for HDFE}
-\fancyhead[R]{Technical Note}
+\fancyhead[R]{EconHDFE Project Technical Documentation}
 \fancyfoot[C]{\thepage}
 \setlength{\headheight}{14pt}
 
@@ -34,18 +34,18 @@
 
 \title{\textbf{Exact Partition-Refinement Canonicalization and Structural Design Reduction for High-Dimensional Fixed-Effect Models}\\
 \large Functional-dependency certificates before dense dummy materialization}
-\author{Anonymous technical manuscript\\[2pt]\small Implementation reference: \texttt{econhdfe/hdfe/structure.py} and \texttt{econhdfe/design\_structure.py}}
+\author{EconHDFE Project\\[2pt]\small Project Technical Documentation\\[2pt]\small Implementation reference: \texttt{econhdfe/hdfe/structure.py} and \texttt{econhdfe/design\_structure.py}}
 \date{September 2026}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-Empirical specifications with high-dimensional fixed effects (HDFEs), categorical factors, and factor interactions often contain exact linear dependencies that are obvious from the partition structure of the categorical variables but expensive to discover after dense dummy expansion. This note develops an exact structural-reduction framework based on partition refinement and functional-dependency certificates. If categorical partition $Q$ refines partition $P$, then the dummy column space of $P$ is contained in that of $Q$. This elementary identity yields two complementary operations. First, redundant absorbed fixed-effect partitions can be removed from the numerical HDFE system without changing its column space. Second, categorical and factor-interaction regressor blocks can be reduced before materialization: blocks spanned by absorbed effects can be removed entirely, and a fine full-dummy block can drop one basis column per fully represented coarse cell while preserving the joint span. The same results extend to factor-slope blocks sharing a common continuous monomial. Exact component-level functional dependencies are stored in a directed refinement graph; transitive closure allows certified dependencies among higher-order interactions to be inferred without repeated full-data scans. Sampling is used only to reject false candidates; every data-derived direct edge is certified on the full estimation sample. We prove the column-space identities, establish invariance of the fitted model under the reductions, describe the singleton-pruning recertification rule, and map the results to the \texttt{econhdfe} implementation and tests. Partition refinement and functional dependencies are established concepts; the technical contribution is their theorem-backed integration into an HDFE-specific canonicalization and pre-materialization design planner with auditable proof traces.
+Empirical specifications with high-dimensional fixed effects (HDFEs), categorical factors, and factor interactions often contain exact linear dependencies that are obvious from the partition structure of the categorical variables but expensive to discover after dense dummy expansion. This technical document develops an exact structural-reduction framework based on partition refinement and functional-dependency certificates. If categorical partition $Q$ refines partition $P$, then the dummy column space of $P$ is contained in that of $Q$. This elementary identity yields two complementary operations. First, redundant absorbed fixed-effect partitions can be removed from the numerical HDFE system without changing its column space. Second, categorical and factor-interaction regressor blocks can be reduced before materialization: blocks spanned by absorbed effects can be removed entirely, and a fine full-dummy block can drop one basis column per fully represented coarse cell while preserving the joint span. The same results extend to factor-slope blocks sharing a common continuous monomial. Exact component-level functional dependencies are stored in a directed refinement graph; transitive closure allows certified dependencies among higher-order interactions to be inferred without repeated full-data scans. Sampling is used only to reject false candidates; every data-derived direct edge is certified on the full estimation sample. We prove the column-space identities, establish invariance of the fitted model under the reductions, describe the singleton-pruning recertification rule, and map the results to the \texttt{econhdfe} implementation and tests. Partition refinement and functional dependencies are established concepts; the technical contribution is their theorem-backed integration into an HDFE-specific canonicalization and pre-materialization design planner with auditable proof traces.
 \end{abstract}
 
-\paragraph{Formal verification and priority boundary (September 2026).}
-The core mathematical statements in this note are mapped to an independent
+\paragraph{Document status and verification boundary (September 2026).}
+The core mathematical statements in this technical document are mapped to an independent
 Lean~4 proof library and have passed complete compilation and per-theorem axiom
 audit under the assumptions recorded in
 \texttt{formal/mathematical-coverage.md}. This machine-checked status concerns

@@ -1,87 +1,73 @@
-# 0.6.1 correctness review
+# EconHDFE Documentation
 
-- [Mathematical proofs, applications, counterexamples and scope](technical/mathematical-review-0.6.1.md)
-- [Local validation and outstanding external checks](development/test-status.md)
-- [Migration from 0.6.0](release/migration.md)
+The documentation is organized by **current behavior**, **mathematical/technical foundations**, **development/validation**, and **release history**. Historical checkpoints are retained for provenance but are not the source of truth for current behavior.
 
-# econhdfe documentation
+## Start here
 
-The repository keeps runtime code, technical evidence, and release governance separate.
-
-## GitHub / technical entry points
-
+- [Project README](../README.md) / [中文首页](../README.zh-CN.md)
 - [Technical overview](technical/overview.md) — end-to-end econometric and computational contract.
-- [Performance architecture](technical/performance-architecture.md) — large-data bottlenecks, modular performance strategy and benchmark interpretation.
-- [Identified categorical fixed effects](technical/identified-fixed-effects.md) — FE recovery, identification, normalization, singleton/separation diagnostics and block salvage.
-- [Technical documentation index](technical/README.md) — formal manuscripts, numerical notes and innovation policy.
-- [Machine-checked mathematical verification](technical/formal-verification.md) — Lean scope, manuscript mapping, audit boundary and evidence.
-- [Economics-first architecture](development/architecture.md) — module ownership and dependency boundaries.
-- [Economic problem map](development/economic-module-map.md) — every runtime module mapped to the empirical/econometric problem it serves.
-- [Generated architecture map](development/architecture-map/architecture.md) — AST-backed code dependency view.
-- [Release validation status](development/test-status.md) — current regression, parity and release-gate evidence.
+- [Testing and validation status](development/test-status.md) — current local and CI validation boundaries.
+- [Unified roadmap](../TODO.md) — current priorities and open work.
 
-## Documentation policy
+## Empirical users
 
-The repository distinguishes three kinds of claims:
+- [Post-estimation and prediction (0.7 development)](development/postestimation-0.7.md) — frozen design, prediction targets, identification and inference boundaries.
 
-1. **econometric behavior** — what estimator/specification/inference is implemented;
-2. **engineering behavior** — how data, designs, FE projection, caching and execution are accelerated without changing the requested model;
-3. **technical originality** — only items registered in `technical/innovation-registry.json`, each backed by a formal manuscript and prior-art boundary.
+- [Identified categorical fixed effects](technical/identified-fixed-effects.md) — FE recovery, identification and normalization.
+- [Testing guide](development/testing.md) — how behavior and numerical parity are checked.
+- [Migration notes](release/migration.md) — changes between public releases.
+- `skills/econhdfe/` — installation, empirical use, diagnostics, advanced settings and developer guidance for agents.
 
-Repository-local benchmark timings are development evidence unless an external comparison explicitly states its package versions, hardware, workload and parity checks.
+## Mathematical theory and formal verification
 
-## User-facing entry points
+- [Technical documentation index](technical/README.md) — theorem-backed project technical documents and technical-policy boundaries.
+- [Machine-checked mathematical verification](technical/formal-verification.md) — Lean scope, proof assumptions and audit boundary.
+- [Lean proof library](../formal/README.md) — reproducible formal proof environment.
+- [Mathematical coverage table](../formal/mathematical-coverage.md) — theorem-by-theorem mapping.
 
-- `README.md`: package overview and public examples.
-- `skills/econhdfe/`: portable agent skill with installation, configuration, empirical, validation, and developer references.
-- `docs/release/migration.md`: migration notes between public releases.
+## Architecture and performance
 
-## Technical documentation
+- [Economics-first architecture](development/architecture.md)
+- [Economic problem map](development/economic-module-map.md)
+- [Generated architecture map](development/architecture-map/architecture.md)
+- [Execution planner](development/execution-planner.md)
+- [Data layer](development/data-layer.md)
+- [Performance architecture](technical/performance-architecture.md)
+- [Benchmark documentation](development/benchmarks.md)
 
-- `docs/technical/README.md`: package-wide technical-innovation policy and source-of-truth registry.
-- `docs/technical/innovation-audit.md`: complete novelty audit distinguishing technical innovation from established methods and engineering.
-- `docs/technical/overview.md`: end-to-end technical contract from estimator semantics through execution planning to validation boundaries.
-- `docs/technical/performance-architecture.md`: where HDFE runtime is spent and why removing repeated work precedes kernel optimization.
-- `docs/technical/identified-fixed-effects.md`: fixed-effect recovery, realized-sample identification and normalization.
-- `docs/technical/hdfe/`: HDFE mathematics, formal innovation manuscripts, numerical solver design, implementation correspondence, and performance evidence.
-- `docs/technical/structural-design/`: formal manuscript for exact partition-refinement HDFE structural design reduction.
-- `docs/development/architecture.md`: economics-first package architecture, dependency boundaries and module ownership.
-- `docs/development/execution-planner.md`: unified certificate → cost/resource → execution policy and its current calibration boundary.
-- `docs/development/economic-module-map.md`: every runtime module mapped to the economic/econometric problem it serves and its computational responsibility.
-- `docs/development/architecture-map/`: generated AST-backed Markdown/JSON plus an interactive HTML architecture map.
-- `docs/development/benchmarks.md`: benchmark index and interpretation rules.
-- `docs/development/test-status.md`: local versus external validation status.
-- `docs/development/ERROR_REPORT_TEMPLATE.md`: canonical privacy-minimized, parameter-only crash/mismatch/bug report returned by users or agents to developers; it intentionally excludes data reconstruction and raw artifacts.
-- `docs/development/external-validation.md`: tests that require licensed/reference hardware or software.
-- `docs/development/upstream-references.md`: upstream implementations and literature used for compatibility work.
+## Inference and specialized technical notes
+
+- [IV correctness closeout](development/iv-correctness-closeout.md) — identification checks, sensitive solves and weighted/fixed-kappa inference.
+
+- [Cluster inference](technical/cluster-inference.md)
+- [Heterogeneous specification optimization](technical/heterogeneous-specification-optimization.md)
+- [Partitioned WLS](technical/partitioned-wls.md)
+- [HDFE technical documents](technical/hdfe/)
+
+## Validation and external references
+
+- [Planner/performance report template](development/PLANNER_REPORT_TEMPLATE.md) — privacy-minimized execution feedback.
+- `econhdfe.support_reports` / `econhdfe-report` — installed scalar/counter support reports; real-data benchmarking requires separate authorization.
+
+- [Test environment](development/test-environment.md)
+- [External validation](development/external-validation.md)
+- [Statistical parity](development/statistical-parity.md)
+- [Upstream references](development/upstream-references.md)
+- [Validation harness](../validation/README.md)
+
+Repository-local tests and benchmarks are not a substitute for licensed-Stata or upstream external-corpus certification.
 
 ## Release engineering
 
-- `docs/release/versioning.md`: version policy and mandatory closeout workflow.
-- `docs/release/checklist.md`: human-readable release checklist.
-- `docs/release/maintenance.json`: machine-readable release-impact review consumed by the release gate.
-- `docs/release/manifest.md`: current release manifest.
-- `docs/release/performance-release.md`: performance-release notes.
+- [Versioning](release/versioning.md)
+- [Release checklist](release/checklist.md)
+- [Execution acceptance](release/acceptance.md)
+- [Release manifest](release/manifest.md)
+- [Publishing](release/publishing.md)
+- [Performance release notes](release/performance-release.md)
 
 ## Historical material
 
-`docs/legacy/` is retained for provenance only. It is not the canonical source for current behavior.
+Historical development checkpoints are under [development/history/](development/history/), historical technical reviews under [technical/history/](technical/history/), and release closeout records under [release/history/](release/history/). Older pre-current architecture material remains under [legacy/](legacy/).
 
-- `technical/cluster-inference.md` — CRV1/resampling/advanced-cluster-inference boundary and v0.4.6 scope.
-
-- [`development/statistical-parity.md`](development/statistical-parity.md): parity audit for secondary/main reported model statistics and reference-package conventions.
-
-- [Planner/performance developer report template](development/PLANNER_REPORT_TEMPLATE.md) — privacy-minimized feedback for automatic threading and execution-planner anomalies.
-
-- `econhdfe.support_reports` / `econhdfe-report`: installed privacy-safe support-report helpers; error extraction is scalar/counter allowlist only, while real-data benchmark authorization remains separate.
-
-## Current maintenance entry points
-
-- [Unified TODO / roadmap](../TODO.md)
-- [Execution acceptance, distinct from review](release/acceptance.md)
-- [Functional versus benchmark test environment](development/test-environment.md)
-- [0.6.3 measured performance](release/performance-0.6.3.md)
-
-Release publication mechanics: [release/publishing.md](release/publishing.md).
-
-- [0.7 后估计开发契约](development/postestimation-0.7.md) — 预测目标、冻结设计、识别和推断范围。
+Historical files are kept for provenance. They do not override current API, architecture, mathematical coverage, or release documentation.

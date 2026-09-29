@@ -1,10 +1,12 @@
 # econhdfe
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 **High-performance high-dimensional fixed-effect econometrics for modern empirical research.**
 
 `econhdfe` is a Python package for OLS-HDFE, linear IV-HDFE, PPML-HDFE, and IV-PPML-HDFE. It is designed for empirical work with large datasets, high-cardinality fixed effects, clustered inference, rich interactions, and many closely related specifications.
 
-The project is currently **alpha research software**. The repository contains the unreleased 0.6.5 development line, while the latest published release is v0.6.3. Repository-local validation is extensive, but licensed-Stata and complete upstream external certification remain separate validation boundaries.
+The project is currently **alpha research software**. The repository contains the unreleased 0.7.0.dev0 development line, while the latest published release is v0.6.3. Repository-local validation is extensive, but licensed-Stata and complete upstream external certification remain separate validation boundaries.
 
 ## Performance at a glance
 
@@ -191,7 +193,7 @@ That distinction matters because numerical simplification and econometric rank a
 
 The project currently tracks two other theorem-backed pieces of work. An exact residual-core reduction can eliminate eligible parts of the multiway FE incidence structure before the expensive numerical solve and reconstruct them afterwards while preserving the target projection. An exact partition-refinement reduction can detect nested and redundant categorical structure before full materialization, allowing the same requested column space to be represented by a smaller exact basis.
 
-Formal statements, assumptions, implementation mappings, tests, and prior-art boundaries are maintained separately in the [technical documentation](docs/technical/README.md). A theorem-backed result is not automatically described as historically novel: mathematical correctness, implementation correctness, and independent originality are treated as different claims.
+The core mathematical statements of these three theorem-backed lines are now machine-checked in Lean 4 under their documented assumptions. Formal statements, proof coverage, implementation mappings, tests, and prior-art boundaries are maintained separately in the [technical documentation](docs/technical/README.md) and [formal verification status](docs/technical/formal-verification.md). This does not amount to formal verification of the Python implementation, floating-point execution, benchmark claims, or historical originality: mathematical correctness, implementation correctness, numerical validation, and independent priority are treated as different claims.
 
 ## Main capabilities
 
@@ -219,6 +221,21 @@ CI covers Linux, Windows, and macOS across supported Python versions, together w
 The claim boundary remains explicit. Extensive repository-local testing is not equivalent to complete licensed-Stata or upstream external-corpus certification, and those external checks are not claimed merely because the internal suite is large.
 
 See [Testing](docs/development/testing.md) and the [validation status](docs/development/test-status.md) for details.
+
+## Post-estimation and prediction
+
+The unreleased 0.7 development line provides `linear_combination()` and `wald()`,
+plus chunked predictions for standard OLS and linear IV. `result.predict()`
+returns fitted values for the estimation sample; `restore_sample=True` restores
+original row positions. New-data `kind="xb"` uses the frozen design, while
+`kind="stdp"` includes beta covariance only, not fixed-effect uncertainty.
+New-data `response` and `fe` require supported categorical fixed effects saved
+explicitly with `save_fe=True`; unknown levels and unidentified combinations
+are rejected. PPML/IV-PPML prediction, varying-slope or group+individual FE
+prediction, margins and AME are not supported in this candidate.
+See the [post-estimation contract](docs/development/postestimation-0.7.md).
+Installing the published PyPI release does not imply these development features
+are included.
 
 ## Fixed-effect recovery
 
@@ -260,10 +277,3 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and the [developer guide](skills/econhdfe
 ## License
 
 BSD licensed. See [LICENSE](LICENSE).
-
-### 后估计开发版（0.7.0.dev0，未发布）
-
-`RegressionResult.predict()` 读取最终样本拟合值；`predict(newdata, kind="xb")` 和
-`kind="stdp"` 使用冻结设计及 beta 协方差。样本外含 FE 预测要求标准 OLS/IV 拟合时
-`save_fe=True`；未知类别和不可识别组合默认报错，`unknown="nan"` 可逐行标记。
-参见 [后估计契约与限制](docs/development/postestimation-0.7.md)。PyPI 安装不代表已包含这些开发功能。

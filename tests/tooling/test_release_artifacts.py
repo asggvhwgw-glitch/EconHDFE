@@ -38,10 +38,11 @@ def test_closeout_document_is_identical_in_outer_bundle_and_source(tmp_path, mon
     # Synthetic archive fixture tests packaging only, not numerical acceptance.
     m = script('assemble_release')
     root = tmp_path / 'source'
-    (root / 'docs').mkdir(parents=True)
+    (root / 'docs/release/history').mkdir(parents=True)
     (root / 'skills/econhdfe').mkdir(parents=True)
     payload = '# Release closeout\nCandidate only.\n'
-    (root / 'RELEASE_CLOSEOUT.md').write_bytes(payload.encode('utf-8'))
+    closeout = Path('docs/release/history/RELEASE_CLOSEOUT.md')
+    (root / closeout).write_bytes(payload.encode('utf-8'))
     wheel = tmp_path / 'fixture.whl'
     wheel.write_bytes(b'synthetic packaging fixture')
     out = tmp_path / 'out'
@@ -49,11 +50,11 @@ def test_closeout_document_is_identical_in_outer_bundle_and_source(tmp_path, mon
                                     '--wheel', str(wheel), '--out-dir', str(out)])
     m.main()
     with zipfile.ZipFile(out / f'econhdfe-v{m.VERSION}-release-bundle.zip') as bundle:
-        assert bundle.read('RELEASE_CLOSEOUT.md') == payload.encode()
+        assert bundle.read(closeout.as_posix()) == payload.encode()
         raw_source = bundle.read(f'econhdfe-v{m.VERSION}-source.zip')
         with zipfile.ZipFile(io.BytesIO(raw_source)) as source:
-            assert source.read(f'econhdfe-{m.VERSION}/RELEASE_CLOSEOUT.md') == payload.encode()
-        assert 'RELEASE_CLOSEOUT.md' in bundle.read('SHA256SUMS.txt').decode()
+            assert source.read(f'econhdfe-{m.VERSION}/{closeout.as_posix()}') == payload.encode()
+        assert closeout.as_posix() in bundle.read('SHA256SUMS.txt').decode()
 
 
 @pytest.mark.parametrize("mode", ["original", "public", "tampered", "missing", "extra", "unsafe", "malformed", "no_fallback"])

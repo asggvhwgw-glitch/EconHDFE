@@ -1,7 +1,7 @@
 # EconHDFE 统一 TODO / ROADMAP
 
 更新：2026-09-29。开发基线：`main@06cd0a5efe34de50c52d8b7c0db68c240b9d2673`。
-目标：**0.6.5 已合并并完成主分支跨平台验收，尚未发布**。任务完成、代码审阅、本机执行和跨平台验收分开登记；本文件不承诺发布日期或尚未分配的 Owner。
+目标：**当前开发线为 0.7.0.dev0，整合 IV 正确性、后估计与预测功能，尚未发布**。0.6.5 的验收记录作为历史证据保留。任务完成、代码审阅、本机执行和跨平台验收分开登记；本文件不承诺发布日期或尚未分配的 Owner。
 
 ## 0.6.3 已完成与保留边界
 
@@ -13,7 +13,7 @@ PERF-01 与 QA-01 已合入。发布工作流已泛化，后续发布仍需明�
 
 来源：[0.6.3 Release](https://github.com/asggvhwgw-glitch/EconHDFE/releases/tag/v0.6.3)、
 [基线 CI](https://github.com/asggvhwgw-glitch/EconHDFE/actions/runs/36299787125)。
-旧发布维护记录 `RELEASE_CLOSEOUT.md` 保留为历史，不改写旧测试、哈希或数学文稿。
+旧发布维护记录 `docs/release/history/RELEASE_CLOSEOUT.md` 保留为历史，不改写旧测试、哈希或数学文稿。
 **旧版本通过不等于 0.6.5 通过**；新版本必须重新取得全部必要执行证据。
 VAL-01 的 licensed-Stata/upstream 外部认证仍未完成；alpha 声明保持，不以普通发行冒充外部认证。
 
@@ -32,7 +32,7 @@ VAL-01 的 licensed-Stata/upstream 外部认证仍未完成；alpha 声明保持
 | MATH-01 | P1 | 数学理论形式化已完成 | 三项 theorem-backed 工作的核心数学命题已映射到 Lean 4，并通过整库编译、逐定理公理审计与附录引用检查；软件实现、浮点行为和算法资源管理不属于本项完成标准 |
 | VAL-01 | 按声明 | 并行待验收 | 独立数值 oracle 不等于 Stata 认证；保留参考版本、样本、权重、DoF/修正与差异分类 |
 
-本轮实现说明及复现入口：`docs/development/maintenance-0.6.4.md`。
+本轮实现说明及复现入口：`docs/development/history/maintenance-0.6.4.md`。
 
 ## B. 0.6.5 主分支验收与发布边界
 
@@ -40,7 +40,7 @@ REL-01/02/03/04 是可重复的门禁职责，不另造同义 ID。0.6.5 已完�
 
 0.6.5 **尚未发布**：没有创建 tag、GitHub Release 或 PyPI 发布，也没有把普通 CI 候选制品冒充正式 detached release binding。若未来决定发布 0.6.5，仍需按发布流程冻结提交、绑定最终制品哈希并取得明确发布授权。
 
-## C. 0.7 后估计开发（0.7.0.dev0，尚未合并/发布）
+## C. 0.7 后估计开发（0.7.0.dev0，尚未发布）
 
 | ID | 范围 | 进入条件 |
 |---|---|---|
@@ -80,4 +80,4 @@ core 只用于日常开发，所有平台与 source archive 继续跑 full。
 
 ## E. 数学形式化收尾（2026-09-29）
 
-三项 theorem-backed 工作的数学理论形式化已经在 `dev/lean-foundations` 完成收口。完成标准仅覆盖数学命题及其明确假设，不包含 Python/Numba 程序验证、浮点收敛、资源预算、外部软件 parity 或历史原创性。权威映射见 `formal/mathematical-coverage.md`；三篇手稿的 Lean 附录片段位于 `formal/appendices/`。形式化工作并不改变 0.6.5 的未发布状态，也不触发 tag、GitHub Release 或 PyPI。
+三项 theorem-backed 工作的数学理论形式化已经合入 `main` 并完成收口。完成标准仅覆盖数学命题及其明确假设，不包含 Python/Numba 程序验证、浮点收敛、资源预算、外部软件 parity 或历史原创性。权威映射见 `formal/mathematical-coverage.md`；三篇手稿的 Lean 附录片段位于 `formal/appendices/`。形式化工作并不改变 0.6.5 的未发布状态，也不触发 tag、GitHub Release 或 PyPI。
