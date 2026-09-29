@@ -1,5 +1,8 @@
 # Heterogeneous-specification optimization
 
+> **Document status:** Current EconHDFE project technical documentation.
+
+
 ## Purpose
 
 This is an internal performance layer for empirical specifications that request many explicit heterogeneous coefficients, especially factor interactions and group-specific slopes. Typical examples include event-study expansions, cohort-by-event-time terms, industry-specific slopes, region-specific policy effects, and related interaction-rich specifications.
