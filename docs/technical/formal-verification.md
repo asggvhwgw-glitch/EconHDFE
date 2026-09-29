@@ -35,7 +35,7 @@ The Lean appendix fragments target the corrected 2026-09-28 project technical do
 ## Compiled technical-document artifacts
 
 The corrected sources and integrated Lean appendices are compiled by the dedicated
-`Technical manuscript PDFs` workflow (workflow name retained for compatibility). The final closeout build produced:
+`Technical document PDFs` workflow. The final closeout build produced:
 
 - exact multiway rank/DoF: 17 pages;
 - residual-core reduction: 8 pages;
