@@ -1,6 +1,6 @@
 # EconHDFE 统一 TODO / ROADMAP
 
-更新：2026-09-29。开发基线：`main@06cd0a5efe34de50c52d8b7c0db68c240b9d2673`。
+更新：2026-09-30。维护审查基线：`main@e738333ad8a4c07fa15e3587238e4997ba21c19f`。
 目标：**当前源码版本为 0.7.0，整合 IV 正确性、后估计与预测功能；公开发布以 GitHub Release/PyPI 记录为准**。0.6.5 的验收记录作为历史证据保留。任务完成、代码审阅、本机执行和跨平台验收分开登记；本文件不承诺发布日期或尚未分配的 Owner。
 
 ## 0.6.3 已完成与保留边界
@@ -81,3 +81,15 @@ core 只用于日常开发，所有平台与 source archive 继续跑 full。
 ## E. 数学形式化收尾（2026-09-29）
 
 三项 theorem-backed 工作的数学理论形式化已经合入 `main` 并完成收口。完成标准仅覆盖数学命题及其明确假设，不包含 Python/Numba 程序验证、浮点收敛、资源预算、外部软件 parity 或历史原创性。权威映射见 `formal/mathematical-coverage.md`；三篇手稿的 Lean 附录片段位于 `formal/appendices/`。形式化工作并不改变 0.6.5 的未发布状态，也不触发 tag、GitHub Release 或 PyPI。
+
+## 0.7 维护审查后续
+
+见 [架构审查](docs/development/architecture-review-0.7.md)。
+
+| 项目 | 状态 | 后续验收要求 |
+| --- | --- | --- |
+| README/API 与当前文档入口 | 本轮修正 | `wald_test` 名称、版本/发布区别、有效历史路径 |
+| FE 图连接核重复实现 | 本轮合并复用 | FE recovery、预测、独立 exact oracle 和完整回归 |
+| PPML/IV-PPML plan 刷新重复 | 已定位，待独立重构 | 数据修改/行数变化/缓存模式与失效边界覆盖 |
+| OLS/IV 长入口与配置优先级 | 已定位，保留公共接口 | 先建立冲突参数和 group/array/DataFrame 路径契约，再抽内部阶段 |
+| sessions/design/pipeline 职责规模 | 已定位，按职责渐进拆分 | 不增加新的公共配置或与旧状态平行的数据表示 |

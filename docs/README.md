@@ -11,12 +11,12 @@ The documentation is organized by **current behavior**, **mathematical/technical
 
 ## Empirical users
 
-- [Post-estimation and prediction (0.7 development)](development/postestimation-0.7.md) — frozen design, prediction targets, identification and inference boundaries.
+- [Post-estimation and prediction (0.7)](development/postestimation-0.7.md) — frozen design, prediction targets, identification and inference boundaries.
 
 - [Identified categorical fixed effects](technical/identified-fixed-effects.md) — FE recovery, identification and normalization.
 - [Testing guide](development/testing.md) — how behavior and numerical parity are checked.
 - [Migration notes](release/migration.md) — changes between public releases.
-- `skills/econhdfe/` — installation, empirical use, diagnostics, advanced settings and developer guidance for agents.
+- [Agent Skill](../skills/econhdfe/SKILL.md) — installation, empirical use, diagnostics, advanced settings and developer guidance for agents.
 
 ## Mathematical theory and formal verification
 
@@ -28,6 +28,7 @@ The documentation is organized by **current behavior**, **mathematical/technical
 ## Architecture and performance
 
 - [Economics-first architecture](development/architecture.md)
+- [0.7 architecture review](development/architecture-review-0.7.md) — duplication, API complexity and ownership decisions.
 - [Economic problem map](development/economic-module-map.md)
 - [Generated architecture map](development/architecture-map/architecture.md)
 - [Execution planner](development/execution-planner.md)

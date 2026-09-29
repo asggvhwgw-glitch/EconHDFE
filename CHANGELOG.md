@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — 0.7 maintenance
+
+- Correct README Wald API naming, source/publication status, migration and validation entrypoints; preserve older records under history.
+- Clarify prediction/state/FE-certificate ownership and record concrete interface/duplication follow-ups.
+- Reuse the existing HDFE union-find kernel for FE topology; no estimator, public signature, default, or statistical tolerance change.
+
 ## 0.7.0 — Post/Prediction、IV 正确性与双语文档
 
 - 标准 OLS/线性 IV 的冻结状态支持 predict(response/xb/fe/stdp)，分块重建；stdp 仅包含
@@ -343,8 +349,6 @@ Version 0.5.0 is the architecture/performance milestone that integrates the hete
 - Dependency curves attach to node boundaries instead of card centers, reducing line-through-text artifacts.
 - Added visual layer bands and a sparse semantic `Overview` as the default interactive mode; the complete AST graph remains available on demand.
 - Hardened the detail pane for long paths and added regression tests for node bounds, title wrapping and visual-generation semantics.
-
-# Changelog
 
 ## 0.4.4.2 — architecture visualization tooling
 

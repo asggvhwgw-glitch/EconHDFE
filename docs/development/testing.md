@@ -1,10 +1,10 @@
 # 测试设计：以当前契约组织，而非以历史版本堆积
 
-## 实施方案与边界
+## 当前范围与历史来源
 
-本轮基线是 `main@34d5138aa771f707ebd300bed34aa2ccad32c478`（0.6.5 开发基线）。
-只调整测试、测试入口、CI 和对应文档；不修改 `econhdfe/` 或 `pyreghdfe/` 的运行代码，
-不改估计公式、默认精度、公共参数或结果字段，本轮版本提升至 0.6.5；不发布。
+本页说明 0.7 的测试入口与职责。分层结构在 0.6.5 开发阶段建立，
+历史迁移过程见 [迁移记录](history/test-migration-0.6.5.md)。
+当前已纳入 Post/Prediction、IV 识别与数值修复；实际执行状态见 [test-status.md](test-status.md)。
 
 测试首先回答：功能是否实现，调用入口是否对齐，同一经济计量对象的语义是否稳定。
 “调用没有报错”“Monte Carlo 系数大致接近真值”“源码包含某字符串”不能替代这些验收。
@@ -35,7 +35,7 @@ python scripts/run_tests.py -- tests/behavior/test_sample_semantics.py -q
 ```
 
 `core` = contracts + behavior。`full` = 整个 tests 目录，包含数值及发布工具守卫。
-无路径的 `pytest` 默认行为在本轮发生变化，不能再把它的通过数登记为“完整测试”。
+无路径的 `pytest` 默认行为自 0.6.5 起发生变化，不能再把它的通过数登记为“完整测试”。
 CI 的 12 个 OS/Python 组合、4 个最低依赖组合，以及源码制品重测均明确选择 `full`。
 保留线程要求 `NUMBA_NUM_THREADS>=3`（通常设 4），不偷偷跳过并行测试。
 
@@ -52,6 +52,7 @@ CI 的 12 个 OS/Python 组合、4 个最低依赖组合，以及源码制品重
 | 聚类与推断 | 单向/多向、校正、cluster 数、弱 IV 诊断有独立参照 | 单 cluster、非正推断自由度、秩亏结果不伪装有效 | behavior/test_cluster_inference.py、numerics/test_inference_boundaries.py |
 | 重复回归 | 换 y/控制项/FE 的结果及拟合统计量与独立拟合一致 | 数值列、FE、权重等变化不可读到旧缓存 | behavior/test_sessions.py、test_data_layer.py、test_weight_updates.py |
 | PPML / IV-PPML | eta/mu、offset/exposure、dense/block、矩条件结果一致 | separation/refit、极端数值、未收敛和标准化常数有明确语义 | behavior/test_ppml*.py、test_ivppml*.py、numerics/test_nonlinear_oracles.py |
+| Post/Prediction | 线性组合/Wald、分块 xb/response/fe/stdp 与独立 dummy/WLS 对照一致 | 未知类别、样本映射、未识别/嵌套 FE 组合与 beta-only 不确定性 | behavior/test_postestimation.py、test_prediction.py |
 | FE recovery | 重建贡献、归一化和可识别分量匹配 | 不可识别系数用明确状态/NaN；关闭诊断不改变求解结果 | behavior/test_effects_recovery.py、numerics/test_inference_boundaries.py |
 | 资源限制 | 在可行范围内与独立 oracle 一致 | 达到预算只能明确失败，不能将模秩下界当 exact | numerics/test_native_rank_budget.py、test_resource_boundaries.py |
 | 安装与发布 | wheel 来自独立 target，源码外执行真实契约与数值子集 | 旧证据、错误哈希、缺失制品和歧义路径拒绝 | scripts/verify_installed_numerics.py、tests/tooling/ |
@@ -64,7 +65,7 @@ PPML 与 IV-PPML 的 weight_type 支持不同；线性 `.params` 数组与非线
 
 已将原 67 个平铺、经常按版本命名的文件迁移为按职责命名的四层目录。
 40 个冗余或陈旧测试函数由更强的当前检查覆盖；10 个矩阵减少重复随机种子、恒等尺度
-或改用显式代表组合，原保留案例的断言和容差不放宽。详见 [逐项迁移表](test-migration-0.6.5.md)。
+或改用显式代表组合，原保留案例的断言和容差不放宽。详见 [逐项迁移表](history/test-migration-0.6.5.md)。
 
 组合缩减不是穷尽检验：两两组合覆盖不能保证所有三因素相互作用。为此单独保留
 空矩阵、只读/非连续输入、极端单位、近秩亏、坏素数、整数资源耗尽、分离和缓存失效等反例。

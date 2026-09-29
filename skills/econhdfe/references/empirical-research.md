@@ -272,9 +272,9 @@ Unexpected automatic omissions can change the estimand or identified dynamic eff
 When PPML runtime is unexpectedly high, first distinguish separation from IRLS. In v0.4.5+ inspect `result.diagnostics["separation_seconds"]` and `result.diagnostics["projection_resources"]`. Keep the full requested separation policy for formal estimates; treat FE-only separation as a labelled sensitivity/performance decomposition rather than silently changing the estimator workflow.
 
 
-## 0.7 开发版后估计
+## 0.7 后估计与预测
 
-先核实版本：以下在 0.7.0.dev0 开发线可用。res.predict() 返回最终样本 fitted；
+先核实已安装版本：以下在 0.7.0 源码及相应版本制品中可用；PyPI 发布状态需单独核实。res.predict() 返回最终样本 fitted；
 restore_sample=True 按物理行补 NaN。predict(newdata, kind="xb") 使用冻结保留系数设计；
 stdp 仅为 beta 部分标准误，不是完整预测区间或 FE 不确定性。标准 OLS/IV 的新数据含 FE
 预测需拟合时 save_fe=True；FE 必须为命名 categorical intercept。未知 level、未见

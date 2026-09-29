@@ -1,3 +1,30 @@
+# Migration guide
+
+## Published 0.6.3 → 0.7 source and corresponding artifacts
+
+The intervening 0.6.4/0.6.5 entries describe development checkpoints. Check
+[publication status](../development/test-status.md) before requesting 0.7 from a
+package index. Existing estimator signatures remain available.
+
+- Linear results add optional frozen `prediction_state`, `predict()`,
+  `linear_combination()` and `wald_test()`. Use the
+  [prediction contract](../development/postestimation-0.7.md) for supported inputs.
+- Old persistent result caches invalidate safely under `linear-session-result-3`;
+  within-transformation cache ABI is unchanged. Serializers assuming an exact
+  result-field set must account for the optional new field.
+- New-data FE prediction needs supported named categorical effects saved with
+  `save_fe=True`. Unknown levels and unidentified combinations are rejected;
+  `stdp` is beta-only and is not a full prediction interval.
+- Recompute affected linear-IV results when relying on weighted first-stage
+  fitted values or fixed-k covariance. Deficient cross moments and unsafe
+  numerical rank now fail explicitly. See [IV corrections](../development/iv-correctness-closeout.md).
+- Full acceptance uses `python scripts/run_tests.py --suite full -- -q`;
+  bare pytest runs the daily core. No runtime dependency floor is changed.
+
+No margins/AME, PPML/IV-PPML prediction or full FE uncertainty is introduced.
+
+## Historical migration notes
+
 # Migrating from 0.6.1 to 0.6.2
 
 No top-level estimator signature, public dataclass field, default model, default
@@ -24,7 +51,7 @@ failure/reporting semantics change where 0.6.1 was incorrect:
   covariance bread. It is NOT the exact categorical FE rank/DoF.
 
 References, scope and local evidence:
-`docs/technical/nonlinear-and-resource-review-0.6.2.md`,
+`docs/technical/history/nonlinear-and-resource-review-0.6.2.md`,
 `docs/development/test-status.md`, `docs/release/performance-0.6.2.md`.
 
 ---

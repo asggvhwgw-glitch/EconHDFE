@@ -1,42 +1,42 @@
-> 本文件是 2026-09-14 的历史执行记录，以下计数不是当前默认或完整套件。
-> 0.6.5 的新测试结构及命令见 [testing.md](testing.md)，迁移见 [test-migration-0.6.5.md](test-migration-0.6.5.md)。
+# Validation status — 0.7
 
-# econhdfe 0.6.3 local candidate validation — 2026-09-14
+## Frozen 0.7.0 source, checked 2026-09-30
 
-**Executed local result: 906 passed / 0 failed / 0 skipped**, with 10 existing omission warnings. The installed-host subset has **350 passed / 0 failed / 0 skipped**.
+This record describes commit `e738333ad8a4c07fa15e3587238e4997ba21c19f`, not every later commit carrying version 0.7.0.
 
-This release integrates PERF-01 only plus roadmap/release-test tooling. Actual
-results are in `../release/evidence/0.6.3/validation-summary.json` and the accompanying
-outer evidence archive. A required threshold is not itself a successful run.
+| Evidence | Actual result | Scope |
+| --- | --- | --- |
+| [CI 36613096958](https://github.com/asggvhwgw-glitch/EconHDFE/actions/runs/36613096958) | 16 environments and bundle succeeded | Linux/macOS/Windows × Python 3.10–3.13; four feasible minimum-dependency jobs |
+| Source suite in that CI | 1067 passed, 1 skipped per environment | Full contracts/behavior/numerics/tooling suite; optional exact-backend skip is not a pass |
+| Frozen bundle installed-wheel numerical check | 338 passed, 1 skipped | Tests run outside the source import path |
+| Isolated build and fresh dependency installs | Passed | Executed by matrix and bundle jobs, separate from host-dependency checks |
+| Local full suite with optional exact backend | 1068 passed | Python 3.12/macOS task environment; not a clean dependency-install claim |
 
-Unchanged 0.6.2 was rerun: 807 passed, 0 failed, 0 skipped. The candidate adds
-52 reduction/projection/weight/stopping tests and 47 execution-gate/thread-launcher
-checks, so a complete run contains 906 cases. All 63 previous test files are
-retained without changing assertions or marking xfail.
+The candidate artifact is `11054856349`, archive SHA256
+`ff92a24671b51b611fd361a7eab5f3b186bca319565898d3c022d438d1a34e19`.
+A detached local acceptance record was completed for those frozen bytes. It is
+not embedded in the bundle and does not certify subsequent PR changes.
 
-The first integrated run had 905 passed and one stale architecture inventory
-failure: execution/performance documents were added after the generated map.
-The original failure log is retained. Final packaging freezes the inventory
-before re-testing. No numerical assertion was weakened to fix that failure.
+At this checkpoint the latest public release was **v0.6.3**; preparing and
+validating 0.7.0 had not yet created its tag, GitHub Release or PyPI upload.
+Check [GitHub Releases](https://github.com/asggvhwgw-glitch/EconHDFE/releases) and
+[PyPI](https://pypi.org/project/econhdfe/) for the current publication state.
 
-The installed-wheel suite remains the previous five independent suites (298
-cases) plus an explicit `--extra-test test_weighted_colsum_fusion.py` (52 cases).
-Those 350 tests run outside the source tree and validate import provenance;
-they use HOST dependencies and do not certify clean dependency installation.
+## Current checkout or PR
 
-Runtime/validation fingerprint and evidence-file SHA256 links are separate from
-maintenance REVIEW entries. The shipped execution record stays a candidate;
-formal authorization requires missing environment results and detached final
-artifact/commit identity. Synthetic tests of a fully passed manifest are not
-real external validation evidence.
+Use [testing.md](testing.md) for commands and the Actions run attached to the
+exact commit for execution results. A version string, historical green run,
+maintenance review, or generated map is not a substitute for testing that commit.
+A changed runtime/validation fingerprint requires fresh evidence;
+[formal publication](../release/acceptance.md) additionally binds final artifacts.
 
-Environment: Linux x86_64 / Python 3.13.5 / NumPy 2.3.5 / SciPy 1.17.0 /
-Numba 0.65.1 / pandas 2.2.3 / statsmodels 0.14.6 / SymPy 1.14.0 / pytest 9.0.2.
-Functional tests use a Numba maximum >=3 (this run 4), separate from single-thread
-benchmark processes. Existing omission warnings remain. Current coverage is not
-remeasured; the 0.6.2 coverage percentages are historical, not new claims.
+Internal numerical oracles do not establish complete licensed-Stata/upstream
+certification. Optional GPU/IO/backends and target-scale benchmarks require their
+own executed evidence. Lean verifies stated mathematics, not Python/Numba software.
 
-See the per-release performance document for the two fresh-process rounds per
-version/case, all timed repetition medians and scope limits. No 10M/GPU/remote
-matrix, full external parity or third-party mathematics/originality certification
-is inferred from these local tests. Prior mathematical TEX/PDF files are unchanged.
+## History
+
+The prior [0.6.3 local candidate record](history/test-status-0.6.3.md) is retained
+verbatim. Its older counts, environment and source-relative references describe
+that checkpoint only. [0.6.5 test migration](history/test-migration-0.6.5.md)
+explains the reorganized suite; historical counts are not current suite sizes.

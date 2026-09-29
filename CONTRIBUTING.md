@@ -6,7 +6,7 @@ Plain `python -m pytest -q` now selects this core subset, NOT the full release s
 Before submitting a PR run `python scripts/run_tests.py --suite full -- -q`,
 `python scripts/version.py gate`, and `python scripts/generate_architecture_map.py --check`.
 See `docs/development/testing.md` for contracts/behavior/numerics/tooling responsibilities
-and `test-migration-0.6.5.md` for every retired test's replacement.
+and [the historical test migration](docs/development/history/test-migration-0.6.5.md) for every retired test's replacement.
 For predictable CPU use, set OPENBLAS_NUM_THREADS=1, OMP_NUM_THREADS=1 and
 NUMBA_NUM_THREADS=4 (tests exercise explicit two- and three-thread settings).
 
@@ -15,7 +15,7 @@ unit/column permutation checks, and failure-path tests. Do not weaken a regressi
 assertion to make a change pass. New mathematical claims require explicit
 assumptions, a proof or a clearly marked conjecture, implementation mapping, and
 adversarial examples. A passed test is not a proof or a priority certification.
-See `docs/technical/mathematical-review-0.6.1.md`.
+See [the mathematical review](docs/technical/history/mathematical-review-0.6.1.md).
 
 Register new runtime files in the economics-facing module map. Review both the
 root API and `econhdfe.effects`, record intentional compatibility changes, then
@@ -31,5 +31,8 @@ a clean dependency-resolution validation.
 
 Use the parameter-only support templates. Do not post confidential observations,
 identifiers, credentials, local file paths, or unredacted tracebacks in an issue.
-No remote repository URL is hard-coded in this source distribution; maintainers
-should add the canonical project/issue links when the repository is created.
+Use the [project repository](https://github.com/asggvhwgw-glitch/EconHDFE) and
+[issue tracker](https://github.com/asggvhwgw-glitch/EconHDFE/issues). For architecture
+changes, consult [module ownership and audit findings](docs/development/architecture-review-0.7.md).
+A PR is not publication: see [publishing](docs/release/publishing.md) for the
+separate frozen-candidate, detached-acceptance and Trusted Publishing steps.
