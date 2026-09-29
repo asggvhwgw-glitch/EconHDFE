@@ -1,5 +1,10 @@
 # Performance architecture: removing repeated work before making kernels faster
 
+> **Status:** Current project technical documentation.  
+> **Scope:** Performance architecture, workload decomposition, reuse, and execution policy.  
+> **Boundary:** Benchmark evidence is workload-specific and does not change econometric semantics.
+
+
 `econhdfe` is designed for empirical workloads in which data movement, representation and repeated transformations can cost more than the final coefficient solve. The package's performance strategy is therefore broader than "use a faster HDFE algorithm."
 
 This document describes where time and memory are spent, which layer owns each optimization, and what the benchmark evidence does—and does not—support.
