@@ -1,16 +1,25 @@
-# Exact multiway HDFE structural DoF manuscript
+# Exact multiway HDFE structural DoF
 
-This directory is the repository copy of the technical manuscript **Exact Structural Degrees of Freedom for Multiway High-Dimensional Categorical Fixed Effects**.
+**Status:** EconHDFE Project Technical Documentation  
+**Verification:** Core mathematical statements are machine-checked in Lean 4 under the assumptions mapped in `formal/mathematical-coverage.md`.  
+**Claim boundary:** Mathematical correctness, implementation correctness, numerical behavior, and historical originality are separate claims.
 
-Files:
+This directory contains the project technical document **Exact Structural Degrees of Freedom for Multiway High-Dimensional Categorical Fixed Effects**.
 
-- `exact_multiway_hdfe_dof.tex`: canonical LaTeX source.
-- `exact_multiway_hdfe_dof.pdf`: compiled manuscript distributed with source/release artifacts for auditability.
+## Artifacts
 
-Implementation mapping:
+- `exact_multiway_hdfe_dof.tex` — canonical LaTeX source.
+- `exact_multiway_hdfe_dof.pdf` — compiled project technical document.
+- `formal/appendices/exact-rank.tex` — machine-checked mathematics appendix included by the source.
+
+## Implementation and evidence
 
 - structural rank engine: `econhdfe/hdfe/rank.py`;
 - absorbed-DoF integration: `econhdfe/hdfe/dof.py`;
 - exact-rank benchmark evidence: `benchmarks/hdfe/exact_rank.json`.
 
-Artifact policy: the manuscript is included in the source archive and release bundle but intentionally excluded from the wheel. `pip install econhdfe` therefore remains a runtime-code installation rather than a documentation distribution.
+The document concerns characteristic-zero rank of the requested categorical FE design. It does not certify numerical convergence, heterogeneous slopes, group-individual multi-membership, cluster finite-sample conventions, or the production exact-rank backend as a formally verified program.
+
+## Distribution
+
+The TeX/PDF technical document is included in source/release artifacts for auditability and intentionally excluded from the runtime wheel.

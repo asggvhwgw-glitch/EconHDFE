@@ -1,35 +1,42 @@
-# Technical documentation and innovation policy
+# EconHDFE technical documentation
 
-This directory contains mathematical/algorithmic documentation, implementation notes and the package-wide technical-innovation audit.
+**Status:** Current project technical documentation  
+**Scope:** Econometric contracts, mathematical foundations, numerical architecture, implementation correspondence, validation boundaries, and technical-claim governance.  
+**Claim policy:** Mathematical correctness, software correctness, numerical evidence, and historical originality are tracked separately.
 
-## Technical overview documents
+## Start here
 
-- [`overview.md`](overview.md) — end-to-end technical contract: estimator semantics, HDFE absorption, data layer, structural compilation, execution planning, repeated workflows, fixed-effect recovery and validation boundaries.
-- [`performance-architecture.md`](performance-architecture.md) — where large HDFE workloads actually spend time, and how repeated data preparation, design construction and projection work is removed before any kernel is optimized.
-- [`identified-fixed-effects.md`](identified-fixed-effects.md) — fixed-effect recovery: realized-sample identification, connected components, normalization, singleton/separation diagnostics and partial-block salvage.
+- [Technical overview](overview.md) — end-to-end econometric and computational contract.
+- [Performance architecture](performance-architecture.md) — where large HDFE workloads spend time and how repeated work is removed.
+- [Identified fixed effects](identified-fixed-effects.md) — identification, normalization, singleton/separation diagnostics, and recovery boundaries.
+- [Machine-checked mathematical verification](formal-verification.md) — Lean scope, theorem mapping, audit boundary, and evidence.
 
-## Innovation source of truth
+## Mathematical foundations
 
-- `innovation-audit.md` — complete package audit distinguishing genuine technical innovation from established methods and engineering.
-- `innovation-registry.json` — machine-readable release contract. Every item classified as `technical_innovation` must have a formal `.tex` manuscript and compiled `.pdf`, plus implementation/test/evidence mappings.
+Three theorem-backed project technical documents are maintained as the current mathematical core:
 
-The current registered innovations are:
+1. [Exact arbitrary-G categorical HDFE structural rank / absorbed DoF](hdfe/exact-multiway-dof/)
+2. [Exact arbitrary-G residual-core reduction](hdfe/numerical-residual-core/)
+3. [Exact partition-refinement structural design reduction](structural-design/)
 
-1. exact arbitrary-G categorical HDFE structural rank / absorbed DoF;
-2. exact arbitrary-G numerical residual-core reduction;
-3. exact partition-refinement HDFE canonicalization and structural design reduction.
+Each directory contains canonical TeX, a compiled PDF, implementation/evidence mapping, and a Lean appendix. The independent Lean library lives under [`formal/`](../../formal/README.md), with theorem-by-theorem coverage in [`formal/mathematical-coverage.md`](../../formal/mathematical-coverage.md).
 
-No other current feature should be described as an original econhdfe technical contribution without updating the audit, literature boundary, registry and formal manuscript in the same release.
+Machine-checked status applies only to explicitly mapped mathematical statements and assumptions. It does not certify Python/Numba control flow, floating-point convergence, benchmark performance, external Stata parity, or historical novelty.
 
-## Machine-checked mathematical verification
+## Numerical and inference documentation
 
-The three registered theorem-backed contributions now have a separate Lean 4 proof library under [`formal/`](../../formal/README.md). The canonical coverage table is [`formal/mathematical-coverage.md`](../../formal/mathematical-coverage.md), with manuscript-ready appendix fragments under [`formal/appendices/`](../../formal/appendices/).
+- [HDFE documentation](hdfe/) — exact rank/DoF, residual-core projection, solver notes, and exact-rank backends.
+- [Cluster inference](cluster-inference.md) — CRV/WCR behavior and support boundaries.
+- [Partitioned WLS](partitioned-wls.md) — structured least-squares design and numerical scope.
+- [Heterogeneous specification optimization](heterogeneous-specification-optimization.md) — interaction-rich specification acceleration and fallback boundaries.
 
-The verification scope is deliberately mathematical only: explicitly mapped theorem statements, assumptions, and corollaries are machine-checked. Python/Numba implementation correctness, floating-point convergence, benchmark performance, external Stata parity, and historical originality remain separate claims. See [formal verification status](formal-verification.md).
+## Technical-claim governance
 
-## Domain documentation
+- [Innovation audit](innovation-audit.md) — distinguishes theorem-backed contributions from established methods and engineering.
+- `innovation-registry.json` — machine-readable source of truth for registered technical contributions and required artifacts.
 
-- `hdfe/` — exact rank/DoF mathematics, exact residual-core projection, solver implementation notes and exact-rank backends.
-- `structural-design/` — exact partition-refinement / dependency-DAG design reduction manuscript.
-- `cluster-inference.md` — established CRV/WCR cluster-inference behavior and support boundaries; this is technical documentation, not an originality claim.
-- [`heterogeneous-specification-optimization.md`](heterogeneous-specification-optimization.md): internal acceleration for interaction-rich and heterogeneous-coefficient empirical specifications, including model integration and dense-fallback boundaries.
+The current registry contains the same three theorem-backed lines listed above. A machine-checked theorem is **not** automatically a novelty claim. `originality_status` remains independent and must be supported by separate prior-art review.
+
+## Historical technical reviews
+
+Version-specific reviews and superseded technical assessments are archival material rather than current specifications. They are indexed from the documentation history after repository cleanup.

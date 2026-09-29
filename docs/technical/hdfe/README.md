@@ -1,42 +1,43 @@
 # HDFE technical documentation
 
-HDFE technical material is split by mathematical target. This separation is deliberate: numerical rewrites must not silently change inference conventions.
+**Status:** Current project technical documentation  
+**Scope:** HDFE mathematics, projection, exact rank/DoF, numerical solver design, and exact-arithmetic backends.  
+**Claim boundary:** Requested inference topology and mathematical targets remain separate from numerical execution choices.
 
-## Structural rank and absorbed degrees of freedom
+## Exact structural rank and absorbed DoF
 
-`exact-multiway-dof/` contains the technical manuscript for exact structural DoF with three or more intercept-only categorical fixed-effect partitions. The implementation correspondence is:
+[`exact-multiway-dof/`](exact-multiway-dof/) contains the EconHDFE Project Technical Documentation for exact structural DoF with arbitrary finite numbers of intercept-only categorical fixed-effect partitions.
 
 ```text
 exact-multiway-dof/exact_multiway_hdfe_dof.{tex,pdf}
         -> econhdfe/hdfe/rank.py
         -> econhdfe/hdfe/dof.py
-        -> exact-rank / DoF regression tests
+        -> exact-rank / DoF tests
         -> benchmarks/hdfe/exact_rank.json
 ```
 
-The manuscript concerns characteristic-zero rank of the requested categorical FE design. It does not certify numerical convergence, heterogeneous slopes, group-individual multi-membership, or cluster finite-sample conventions.
+The mathematical core is machine-checked in Lean 4. It concerns the actual characteristic-zero rank of the requested categorical FE design; it does not certify heterogeneous slopes, group-individual multi-membership, cluster finite-sample conventions, or the production backend as formally verified software.
 
-## Exact numerical residual-core reduction
+## Exact residual-core reduction
 
-`numerical-residual-core/` contains the formal manuscript for the solver-side technical contribution that passes the package-wide novelty audit: exact arbitrary-G hypergraph leaf elimination for categorical HDFE projection. Its implementation correspondence is:
+[`numerical-residual-core/`](numerical-residual-core/) contains the EconHDFE Project Technical Documentation for exact arbitrary-G categorical residual-core reduction.
 
 ```text
 numerical-residual-core/exact_multiway_hdfe_residual_core.{tex,pdf}
         -> econhdfe/hdfe/numerical_core.py
         -> econhdfe/hdfe/absorber.py
-        -> tests/test_hdfe_multiway_solver_opt.py
-        -> tests/test_hdfe_complex_fe_corpus.py
+        -> residual-core numerical tests
         -> benchmarks/hdfe/solver_v044_integration.json
 ```
 
-The novelty claim is deliberately narrow. Degree-one pruning already appears in two-way graph-based HDFE work; the registered result is the exact arbitrary-G categorical-hypergraph projection theorem, recursive zero-residual reconstruction, and the positive/zero-weight topology conditions.
+Degree-one graph pruning is established prior art. The project document records the exact arbitrary-G projection theorem, reconstruction rule, and positive-weight validity conditions.
 
 ## Numerical solver implementation notes
 
-`solver/` documents the broader numerical absorption layer introduced through the 0.4 line. Adaptive MAP/CG selection, fused weighted multi-RHS projection, buffer reuse, memory planning and backend routing are retained as engineering implementation notes rather than separate originality claims.
+[`solver/`](solver/) documents the broader absorption implementation: MAP/CG routing, fused weighted multi-RHS projection, buffer reuse, memory planning, and backend selection. These are engineering implementation notes rather than separate mathematical originality claims.
 
-Numerical canonicalization/core reduction operates on execution state only. Requested FE topology remains the source of truth for DoF, nesting, reporting, and inference.
+Numerical canonicalization and core reduction operate on execution state only. Requested FE topology remains the source of truth for structural DoF, nesting, reporting, and inference.
 
 ## Exact rank backends
 
-`rank-backends.md` describes optional exact-arithmetic backends and the dependency-free certification/fallback path used by `rank.py`.
+[`rank-backends.md`](rank-backends.md) documents optional exact-arithmetic backends and the dependency-free certification/fallback path.
