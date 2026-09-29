@@ -45,4 +45,4 @@ __all__ = [
     "OmittedVariableWarning", "FEPlan", "CategoricalRankInfo", "RankBackend", "available_rank_backends",
     "categorical_rank", "categorical_prefix_ranks", "OLSHDFESession", "IVHDFESession", "OLSSpec", "IVSpec", "PPMLHDFE", "PPMLConfig", "PPMLResult", "IVPPMLHDFE", "IVPPMLConfig", "IVPPMLResult", "SPJPanel", "SPJResult", "ivppml_spj", "SPJBootstrapResult", "ivppml_spj_bootstrap", "stock_yogo_critical_values",
 ]
-__version__ = "0.7.0.dev0"
+__version__ = "0.7.0"

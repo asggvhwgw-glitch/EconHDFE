@@ -6,7 +6,7 @@
 
 `econhdfe` is a Python package for OLS-HDFE, linear IV-HDFE, PPML-HDFE, and IV-PPML-HDFE. It is designed for empirical work with large datasets, high-cardinality fixed effects, clustered inference, rich interactions, and many closely related specifications.
 
-The project is currently **alpha research software**. The repository contains the unreleased 0.7.0.dev0 development line, while the latest published release is v0.6.3. Repository-local validation is extensive, but licensed-Stata and complete upstream external certification remain separate validation boundaries.
+The project is currently **alpha research software**. This source tree is version 0.7.0, including Post/Prediction and IV correctness fixes. Repository-local validation is extensive, but licensed-Stata and complete upstream external certification remain separate validation boundaries.
 
 ## Performance at a glance
 
@@ -205,7 +205,7 @@ The core mathematical statements of these three theorem-backed lines are now mac
 | IV-PPML-HDFE | Additive-moment IV-PPML on the shared weighted HDFE infrastructure |
 | Fixed effects | Multiway categorical FE, interactions, heterogeneous slopes, optional exact structural rank/DoF |
 | Repeated specifications | Reusable OLS and linear-IV sessions with FE/sample-aware invalidation |
-| Post-estimation | Publication results, linear contrasts/Wald, chunked OLS/IV predictions and explicitly saved categorical FE (0.7 development line) |
+| Post-estimation | Publication results, linear contrasts/Wald, chunked OLS/IV predictions and explicitly saved categorical FE (0.7.0) |
 | Execution | Projected data access, memory budgets, structured representations, bounded parallelism and automatic HDFE thread selection |
 | Compatibility | `reghdfe`, `ivreghdfe`, and legacy `pyreghdfe` entry points |
 | Agent interface | Native `econhdfe` Skill for agent-driven empirical and development workflows |
@@ -224,7 +224,7 @@ See [Testing](docs/development/testing.md) and the [validation status](docs/deve
 
 ## Post-estimation and prediction
 
-The unreleased 0.7 development line provides `linear_combination()` and `wald()`,
+Version 0.7.0 provides `linear_combination()` and `wald()`,
 plus chunked predictions for standard OLS and linear IV. `result.predict()`
 returns fitted values for the estimation sample; `restore_sample=True` restores
 original row positions. New-data `kind="xb"` uses the frozen design, while
@@ -232,10 +232,9 @@ original row positions. New-data `kind="xb"` uses the frozen design, while
 New-data `response` and `fe` require supported categorical fixed effects saved
 explicitly with `save_fe=True`; unknown levels and unidentified combinations
 are rejected. PPML/IV-PPML prediction, varying-slope or group+individual FE
-prediction, margins and AME are not supported in this candidate.
+prediction, margins and AME are not supported in this version.
 See the [post-estimation contract](docs/development/postestimation-0.7.md).
-Installing the published PyPI release does not imply these development features
-are included.
+Use `pip install --upgrade "econhdfe>=0.7.0"` to obtain these features; earlier releases do not include them.
 
 ## Fixed-effect recovery
 

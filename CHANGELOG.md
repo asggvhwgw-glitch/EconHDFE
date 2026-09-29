@@ -1,6 +1,6 @@
-# 0.6.2 — nonlinear and resource-boundary validation candidate
+# Changelog
 
-## 0.7.0.dev0 — 后估计开发版，未发布
+## 0.7.0 — Post/Prediction、IV 正确性与双语文档
 
 - 标准 OLS/线性 IV 的冻结状态支持 predict(response/xb/fe/stdp)，分块重建；stdp 仅包含
   beta 协方差。样本恢复按原始行位置，不保留 DataFrame。
@@ -8,9 +8,9 @@
   拒绝未知类别、跨分量、extra-nullity 或违反训练嵌套关系的新组合，不默认置零。
 - 结果缓存 ABI 更新，旧结果安全失效；within 数值缓存 ABI 不变。
 - 线性组合/Wald 补齐非有限、负方差、秩亏和零方差保护。
-- 0.7 审阅和执行证据独立登记，0.6.5 快照不变；尚未正式发布，不新增外部认证声明。
+- 0.7 审阅和执行证据独立登记，0.6.5 快照不变；由独立发布流程绑定冻结制品，不新增外部认证声明。
 
-## Unreleased — IV correctness closeout
+### IV correctness closeout
 
 - Reject deficient IV cross moments with `UnderidentifiedError` and numerically
   unsafe moment systems or solver rank loss with `NumericalError`. This is a

@@ -1,81 +1,81 @@
 {
   "schema_version": 1,
-  "release_version": "0.7.0.dev0",
-  "previous_version": "0.6.5",
+  "release_version": "0.7.0",
+  "previous_version": "0.7.0.dev0",
   "checks": {
     "frontend_api": {
-      "status": "changed",
-      "evidence": "增加 RegressionResult.predict 薄转发；拟合签名和默认 save_fe 不变。目标及拒绝语义见 postestimation-0.7.md。",
+      "status": "reviewed",
+      "evidence": "0.7.0.dev0→0.7.0 契约差异为空；0.6.x→0.7 增加 prediction_state/predict 及线性后估计；原拟合签名保持。",
       "description": "Public call signatures, exports, aliases, CLI/front-end validation and compatibility."
     },
     "backend_compute": {
       "status": "reviewed",
-      "evidence": "未改变估计公式、HDFE 投影或容差；save_fe 后复用 native exact rank，资源失败只禁用新行 FE 预测。",
+      "evidence": "沿用已合并 #14：矩条件识别守卫、压缩 QR/SVD、weighted first-stage 坐标、fixed-k VCE 与有界调用内缓存；本次收口不改运行算法。",
       "description": "Solver/compute/cache/backend contracts, numerical defaults and resource controls."
     },
     "errors": {
-      "status": "changed",
-      "evidence": "预测使用既有异常家族及 postestimation stage；未知、形状、状态、识别和负方差代码有行为测试，不输出原始数据。",
+      "status": "reviewed",
+      "evidence": "保留识别、数值秩亏与预测未知类别/未识别组合的显式错误；不放宽失败路径。",
       "description": "Structured exception classes, codes, stages, suggestions and public error boundaries."
     },
     "public_contract": {
-      "status": "changed",
-      "evidence": "有意增加 prediction_state 默认 None；相对不可改写 0.6.5 进行精确审批，0.7.0.dev0 当前快照另存。",
+      "status": "reviewed",
+      "evidence": "控制 bump 从 0.7.0.dev0 升为 0.7.0；diff 为空，新建当前版本快照，保留所有历史快照。",
       "description": "Public exports/signatures, result/config schemas and stable structured-error compatibility."
     },
     "skill": {
-      "status": "changed",
-      "evidence": "经验研究与开发指南明确预测目标、beta-only 标准误、未支持范围及测试入口。",
+      "status": "reviewed",
+      "evidence": "现有 Skill 包含后估计/预测边界、隐私支持与发布流程；复核不扩张外部认证声明。",
       "description": "Agent skill commands, examples, decision rules and newly exposed controls."
     },
     "linked_modules": {
-      "status": "changed",
-      "evidence": "设计状态、内部 FE metadata、OLS/IV 适配器、结果/序列化联动；两个新模块登记经济职责并重新生成架构。",
+      "status": "reviewed",
+      "evidence": "本次仅版本、快照与文档，无模块依赖变化；生成架构门禁复验。",
       "description": "Cross-module imports, shared schemas, adapters, compatibility shims and downstream consumers."
     },
     "results_reporting": {
-      "status": "changed",
-      "evidence": "predict 不改变已有 params/V/fitted/publication_output；保存 FE 配对 beta，不提供完整预测区间。",
+      "status": "reviewed",
+      "evidence": "保留线性组合/Wald、chunked response/xb/fe/stdp；stdp 只包含 beta 协方差。",
       "description": "Result fields, publication output, diagnostics metadata and serialization-facing schemas."
     },
     "config_defaults": {
       "status": "reviewed",
-      "evidence": "拟合参数和 HDFE/推断/执行 config 默认不变；预测参数独立，未知类别默认拒绝。",
+      "evidence": "不更改拟合/推断/执行默认；save_fe 仍需显式开启，新类别默认拒绝。",
       "description": "Config objects, defaults, deprecations, aliases and backwards-compatible behavior."
     },
     "cache_state": {
-      "status": "changed",
-      "evidence": "结果 ABI 为 linear-session-result-3；within ABI 不变；允许列表式 JSON/NPY，已添加 saved-FE roundtrip 测试。",
+      "status": "reviewed",
+      "evidence": "保留 linear-session-result-3 和 within ABI；版本收口不改变缓存状态语义。",
       "description": "Reusable state/cache invalidation, fingerprints, lifecycle semantics and stale-state hazards."
     },
     "tests_validation": {
-      "status": "changed",
-      "evidence": "增加 OLS/IV、block、文件/缓存、物理行、未知/嵌套/断开/extra-nullity 以及独立 dummy/WLS 检查；执行证据独立登记。",
+      "status": "reviewed",
+      "evidence": "冻结 0.7.0 指纹后重新执行完整本地测试及16环境 CI，证据登记于 detached manifest；此审阅不是执行证明。",
       "description": "Regression tests, install smoke tests, golden/parity coverage and failure-path tests."
     },
     "performance": {
       "status": "reviewed",
-      "evidence": "默认拟合不新增原始设计或 FE 识别；save_fe 显式承担 level/识别成本。预测按 chunk_size×K 分块，不承诺未经测量的提速。",
+      "evidence": "保留历史 benchmark 和 #14 调用内缓存；不新增全流程内存或普遍提速承诺。",
       "description": "Representative benchmark/resource regressions for code paths materially changed by the release."
     },
     "docs_migration": {
-      "status": "changed",
-      "evidence": "README/TODO/CHANGELOG/后估计说明及 Skill 同步；0.6.5 快照与历史证据保留。",
+      "status": "reviewed",
+      "evidence": "中英文 README、CHANGELOG、TODO、后估计契约及双语发布说明同步 0.7.0；历史证据不改写。",
       "description": "README/architecture/changelog/migration/versioning documentation and user-visible examples."
     },
     "packaging_dependencies": {
       "status": "reviewed",
-      "evidence": "不新增运行依赖，不改 Python/依赖下限；wheel 安装与跨平台执行分开记录。",
+      "evidence": "Python 3.10–3.13、运行依赖下限与包内容规则不变；由16环境与bundle实际验证。",
       "description": "Python/dependency matrix, optional extras, wheel/source contents and build metadata."
     },
     "external_validation": {
       "status": "reviewed",
-      "evidence": "未新增 licensed-Stata/upstream parity 声明；内部 oracle 不等于外部认证。",
+      "evidence": "Alpha 研究发布；未新增 licensed-Stata/upstream 外部认证、浮点形式验证或历史原创性证明。",
       "description": "Licensed/reference-environment parity gates and explicitly deferred external certification."
     },
     "release_artifacts": {
-      "status": "changed",
-      "evidence": "经 version.py bump 登记 0.7.0.dev0，重置本轮审阅/执行；不 tag、不合并、不发布。",
+      "status": "reviewed",
+      "evidence": "用户已明确授权标签/Release/PyPI；使用同一冻结 CI 制品、detached 正式验收和既有 OIDC 工作流，不覆盖已有发布。",
       "description": "Version consistency, source/wheel parity, hashes, clean install and reproducible bundle contents."
     }
   }

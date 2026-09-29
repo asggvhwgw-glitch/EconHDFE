@@ -6,7 +6,7 @@
 
 `econhdfe` 是一个用于 OLS-HDFE、线性 IV-HDFE、PPML-HDFE 和 IV-PPML-HDFE 的 Python 包，面向大规模数据、高基数固定效应、聚类推断、复杂交互项以及大量相近规格的实证工作流。
 
-项目目前仍属于 **alpha 阶段研究软件**。仓库中的开发线为尚未正式发布的 0.7.0.dev0，最近一次公开发布版本是 v0.6.3。仓库内已经进行了较广泛的验证，但 licensed Stata 对照和完整 upstream external certification 仍属于独立的外部验证边界。
+项目目前仍属于 **alpha 阶段研究软件**。本源码版本为 0.7.0，包含后估计、预测与 IV 正确性修复。仓库内已经进行了较广泛的验证，但 licensed Stata 对照和完整 upstream external certification 仍属于独立的外部验证边界。
 
 ## 性能概览
 
@@ -230,7 +230,7 @@ $$\operatorname{DoF}_{\mathrm{FE}} = \operatorname{rank}(D_{\mathrm{FE}}).$$
 | IV-PPML-HDFE | 基于共享 weighted-HDFE infrastructure 的 additive-moment IV-PPML |
 | Fixed effects | 多维分类 FE、交互项、heterogeneous slopes、可选 exact structural rank/DoF |
 | 重复规格 | 可复用的 OLS 和 linear-IV session，并带 FE/sample-aware invalidation |
-| Post-estimation | 论文结果输出、线性组合/Wald、分块 OLS/IV 预测，以及显式保存的分类 FE（0.7 开发线） |
+| Post-estimation | 论文结果输出、线性组合/Wald、分块 OLS/IV 预测，以及显式保存的分类 FE（0.7.0） |
 | Execution | projected data access、memory budgets、structured representations、bounded parallelism、automatic HDFE thread selection |
 | Compatibility | `reghdfe`、`ivreghdfe` 与 legacy `pyreghdfe` 入口 |
 | Agent interface | 项目原生 `econhdfe` Skill，用于 agent-driven empirical 与 development workflow |
@@ -259,16 +259,15 @@ CI 覆盖 Linux、Windows 和 macOS，以及支持的 Python 版本和可行的�
 
 ## 后估计与预测
 
-尚未发布的 0.7 开发线提供 `linear_combination()`、`wald()`，以及标准 OLS 和线性 IV
+0.7.0 提供 `linear_combination()`、`wald()`，以及标准 OLS 和线性 IV
 的分块预测。`result.predict()` 返回最终估计样本的拟合值；`restore_sample=True`
 按原始物理行位置恢复结果。新数据的 `kind="xb"` 使用冻结设计；`kind="stdp"`
 只包含 beta 协方差，不包含固定效应的不确定性。
 
 新数据的 `response` 和 `fe` 要求通过 `save_fe=True` 显式保存受支持的分类固定效应；
-未知水平和未识别的新组合会被拒绝。本候选不支持 PPML/IV-PPML 预测、varying-slope
+未知水平和未识别的新组合会被拒绝。本版本不支持 PPML/IV-PPML 预测、varying-slope
 或 group+individual FE 样本外预测，也不包含 margins 和 AME。
-详见[后估计契约](docs/development/postestimation-0.7.md)。安装已发布的 PyPI 版本
-不代表已包含这些开发功能。
+详见[后估计契约](docs/development/postestimation-0.7.md)。使用 `pip install --upgrade "econhdfe>=0.7.0"` 获取这些功能；更早版本不包含它们。
 
 ## 固定效应恢复
 
