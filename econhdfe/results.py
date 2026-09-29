@@ -150,7 +150,22 @@ class RegressionResult:
         tab = self.coef_table(level)
         return tab[["ci_low", "ci_high"]].to_numpy()
 
-    def linear_combination(self, weights, *, value: float = 0.0,\n                           level: float | None = None):\n        """Estimate and test one linear combination of reported coefficients."""\n        return _linear_combination(\n            self.params, self.vcov, weights, names=self.names, value=value,\n            df=self.df_resid, level=self.confidence_level if level is None else level,\n        )\n\n    def wald_test(self, restrictions=None, *, values=None, distribution: str = "F"):\n        """Test one or more linear restrictions R @ beta = values."""\n        return _wald_test(\n            self.params, self.vcov, restrictions, values=values, names=self.names,\n            df_resid=self.df_resid, distribution=distribution,\n        )\n\n    def model_stats(self) -> dict[str, Any]:
+    def linear_combination(self, weights, *, value: float = 0.0,
+                           level: float | None = None):
+        """Estimate and test one linear combination of reported coefficients."""
+        return _linear_combination(
+            self.params, self.vcov, weights, names=self.names, value=value,
+            df=self.df_resid, level=self.confidence_level if level is None else level,
+        )
+
+    def wald_test(self, restrictions=None, *, values=None, distribution: str = "F"):
+        """Test one or more linear restrictions R @ beta = values."""
+        return _wald_test(
+            self.params, self.vcov, restrictions, values=values, names=self.names,
+            df_resid=self.df_resid, distribution=distribution,
+        )
+
+    def model_stats(self) -> dict[str, Any]:
         out: dict[str, Any] = {
             "estimator": self.estimator,
             "nobs": int(self.nobs),
