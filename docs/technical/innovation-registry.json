@@ -3,8 +3,8 @@
   "policy": {
     "technical_innovation_definition": "A novelty claim requires an independently supported prior-art comparison; a theorem-backed framework can be registered without certifying originality.",
     "required_artifacts": [
-      "technical_document_tex",
-      "technical_document_pdf",
+      "formal_tex",
+      "compiled_pdf",
       "implementation_map",
       "tests",
       "evidence",
