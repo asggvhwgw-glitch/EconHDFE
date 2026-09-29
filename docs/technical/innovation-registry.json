@@ -3,8 +3,8 @@
   "policy": {
     "technical_innovation_definition": "A novelty claim requires an independently supported prior-art comparison; a theorem-backed framework can be registered without certifying originality.",
     "required_artifacts": [
-      "formal_tex",
-      "compiled_pdf",
+      "technical_document_tex",
+      "technical_document_pdf",
       "implementation_map",
       "tests",
       "evidence",
@@ -37,7 +37,7 @@
         "benchmarks/hdfe/exact_rank.json"
       ],
       "originality_status": "not_independently_established",
-      "mathematical_review": "docs/technical/mathematical-review-0.6.1.md",
+      "mathematical_review": "docs/technical/history/mathematical-review-0.6.1.md",
       "review_status": "mathematical_theory_machine_checked_implementation_separately_reviewed",
       "formal_verification": {
         "status": "core_mathematical_claims_machine_checked",
@@ -71,7 +71,7 @@
         "benchmarks/hdfe/solver_v044_integration.json"
       ],
       "originality_status": "not_independently_established",
-      "mathematical_review": "docs/technical/mathematical-review-0.6.1.md",
+      "mathematical_review": "docs/technical/history/mathematical-review-0.6.1.md",
       "review_status": "mathematical_theory_machine_checked_implementation_separately_reviewed",
       "formal_verification": {
         "status": "core_mathematical_claims_machine_checked",
@@ -107,7 +107,7 @@
         "benchmarks/bench_dependency_dag.py"
       ],
       "originality_status": "not_independently_established",
-      "mathematical_review": "docs/technical/mathematical-review-0.6.1.md",
+      "mathematical_review": "docs/technical/history/mathematical-review-0.6.1.md",
       "review_status": "mathematical_theory_machine_checked_implementation_separately_reviewed",
       "formal_verification": {
         "status": "core_mathematical_claims_machine_checked",
