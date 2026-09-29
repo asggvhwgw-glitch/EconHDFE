@@ -1,5 +1,8 @@
 # HDFE solver benchmark evidence
 
+> **Document status:** Current EconHDFE project technical documentation.
+
+
 Canonical machine-readable evidence lives outside the documentation tree so it can be consumed by tests and release tooling:
 
 - `benchmarks/hdfe/solver_v044_integration.json`: v0.4.3 versus v0.4.4 solver-opt2 integration benchmark.
