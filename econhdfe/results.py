@@ -4,6 +4,7 @@ from typing import Any
 import numpy as np
 from .reporting import inference_table, reproducibility_dict
 from .postestimation import linear_combination as _linear_combination, wald_test as _wald_test
+from .prediction import PredictionState
 
 
 @dataclass(slots=True)
@@ -121,6 +122,7 @@ class RegressionResult:
     profile: dict | None = None
     reproducibility: dict | None = None
     diagnostics_mode: str = "off"
+    prediction_state: PredictionState | None = None
 
     @property
     def tvalues(self) -> np.ndarray:
