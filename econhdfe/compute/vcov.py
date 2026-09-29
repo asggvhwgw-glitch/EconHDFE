@@ -443,18 +443,29 @@ def ols_vcov(Xw, ew, bread, *, kind="iid", clusters=None, k_total=None, nested_a
 def kclass_vcov(
     Xw, Zw, ew, bread, *, kind="iid", clusters=None, k_total=None,
     nested_adj=0, time=None, panel=None, bandwidth=None, kernel="bartlett",
-    effective_n=None, score_scale=None,
+    effective_n=None, score_scale=None, kappa=1.0,
 ):
-    """Covariance for 2SLS/LIML/k-class estimators."""
+    """Sandwich using H=(1-kappa)X+kappa Pz X for fixed k-class.
+
+    The default retains the conventional IV/LIML covariance path. Explicit
+    fixed k-class callers pass their kappa; kappa=0 then reduces to OLS.
+    """
     n, k = Xw.shape
     n_eff = float(n if effective_n is None else effective_n)
     k_total = k if k_total is None else int(k_total)
-    if kind in (None, "iid", "unadjusted", "homoskedastic"):
+    if kind in (None, "iid", "unadjusted", "homoskedastic") and kappa in (0.0, 1.0):
         df = max(n_eff - k_total, 1)
         return bread * (float(ew @ ew) / df)
-    zz_inv = _sym_inv(Zw.T @ Zw)
-    gamma = zz_inv @ (Zw.T @ Xw)
-    xhat = Zw @ gamma
+    if kappa == 0.0:
+        xhat = Xw
+    else:
+        gamma = _sym_inv(Zw.T @ Zw) @ (Zw.T @ Xw)
+        xhat = Zw @ gamma
+        if kappa != 1.0:
+            xhat = (1.0 - kappa) * Xw + kappa * xhat
+    if kind in (None, "iid", "unadjusted", "homoskedastic"):
+        sigma2 = float(ew @ ew) / max(n_eff - k_total, 1)
+        return sigma2 * (bread @ (xhat.T @ xhat) @ bread.T)
     scores = xhat * ew[:, None]
     meat = score_covariance(
         scores, kind=kind, clusters=clusters, k_total=k_total,

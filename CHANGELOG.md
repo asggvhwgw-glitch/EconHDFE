@@ -1,5 +1,21 @@
 # 0.6.2 — nonlinear and resource-boundary validation candidate
 
+## Unreleased — IV correctness closeout
+
+- Reject deficient IV cross moments with `UnderidentifiedError` and numerically
+  unsafe moment systems or solver rank loss with `NumericalError`. This is a
+  numerical identification policy, not a weak-instrument F-test.
+- Use a compressed instrument-coordinate QR/SVD solve for sensitive 2SLS
+  systems; do not silently truncate projected coefficient directions.
+- Report weighted first-stage fitted endogenous values in unweighted within
+  coordinates consistently across dense, block and two-step GMM paths.
+- Fixed k-class covariance now uses H=(1-kappa)X+kappa PzX scores; kappa=0
+  matches OLS. This treats kappa as fixed, retains conventional LIML inference,
+  and does not assert consistency for arbitrary kappa with endogenous X.
+- Avoid a redundant joint instrument materialization for exactly identified
+  block overidentification diagnostics. End-to-end memory budgeting and the
+  full-score KP fallback remain open; this is not an out-of-core implementation.
+
 ## 0.6.5 — unreleased
 
 - Reorganize tests around current contracts, behavior, numerical oracles and release
