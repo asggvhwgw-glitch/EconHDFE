@@ -1,5 +1,10 @@
 # Cluster inference boundary
 
+> **Status:** Current project technical documentation.  
+> **Scope:** Cluster covariance, diagnostics, and advanced resampling boundaries.  
+> **Boundary:** Established inference methods and package support boundaries; not a technical-originality claim.
+
+
 `econhdfe` separates three concerns:
 
 - `compute/vcov.py`: standard sandwich covariance, including one-/multi-way CRV1 and finite-sample/nesting conventions.
