@@ -1,5 +1,8 @@
 # Row-partitioned HDFE weighted least squares: implementation note
 
+> **Document status:** Current EconHDFE project technical documentation.
+
+
 ## Status and originality boundary
 
 This note documents an **established numerical method adapted to econhdfe's structural execution layer**. It is not registered in `innovation-registry.json` as a new technical contribution.
