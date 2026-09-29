@@ -1,5 +1,8 @@
 # Technical overview
 
+> **Document status:** Current EconHDFE project technical documentation.
+
+
 This document explains the technical contract of `econhdfe` without conflating three different things:
 
 1. the **econometric model** the researcher requests;
