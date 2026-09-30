@@ -184,7 +184,7 @@ The package also separates execution policy from econometric semantics. Memory b
 One example is the absorbed degrees of freedom associated with three or more categorical fixed-effect dimensions. If \(D_{FE}\) denotes the combined fixed-effect design matrix, the relevant quantity is
 
 \[
-\mathrm{DoF}_{FE} = \operatorname{rank}(D_{FE}).
+\mathrm{DoF}_{FE} = \mathrm{rank}(D_{FE}).
 \]
 
 For one or two FE dimensions, redundancy has familiar graph-based structure. For general multiway fixed effects, exact structural rank is substantially more difficult. `econhdfe` contains a theorem-backed framework for computing the exact structural rank and absorbed DoF of arbitrary-`G` categorical FE designs within its documented assumptions and resource bounds.
@@ -224,7 +224,7 @@ See [Testing](docs/development/testing.md) and the [validation status](docs/deve
 
 ## Post-estimation and prediction
 
-Version 0.7.0 provides `linear_combination()` and `wald()`,
+Version 0.7.0 provides `linear_combination()` and `wald_test()`,
 plus chunked predictions for standard OLS and linear IV. `result.predict()`
 returns fitted values for the estimation sample; `restore_sample=True` restores
 original row positions. New-data `kind="xb"` uses the frozen design, while
@@ -234,7 +234,7 @@ explicitly with `save_fe=True`; unknown levels and unidentified combinations
 are rejected. PPML/IV-PPML prediction, varying-slope or group+individual FE
 prediction, margins and AME are not supported in this version.
 See the [post-estimation contract](docs/development/postestimation-0.7.md).
-Use `pip install --upgrade "econhdfe>=0.7.0"` to obtain these features; earlier releases do not include them.
+These features require 0.7.0. Check `python -c "import econhdfe; print(econhdfe.__version__)"` after installation. Use a published 0.7.0 wheel when available, or run `python -m pip install .` from this source checkout; the package index may still serve an earlier release. See [release status and validation](docs/development/test-status.md).
 
 ## Fixed-effect recovery
 

@@ -4,26 +4,7 @@ from dataclasses import dataclass
 import numpy as np
 from numba import njit
 
-from ..hdfe.rank import categorical_rank
-
-
-@njit(cache=True, nogil=True)
-def _union_pairs(parent, size, left, right):
-    for k in range(left.size):
-        x = int(left[k])
-        y = int(right[k])
-        while parent[x] != x:
-            parent[x] = parent[parent[x]]
-            x = parent[x]
-        while parent[y] != y:
-            parent[y] = parent[parent[y]]
-            y = parent[y]
-        if x == y:
-            continue
-        if size[x] < size[y]:
-            x, y = y, x
-        parent[y] = x
-        size[x] += size[y]
+from ..hdfe.rank import categorical_rank, _union_edge_pairs as _union_pairs
 
 
 @njit(cache=True, nogil=True)

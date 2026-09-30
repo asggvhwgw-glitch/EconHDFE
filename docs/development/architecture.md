@@ -1,4 +1,4 @@
-# econhdfe architecture — 0.6.0
+# econhdfe architecture — 0.7
 
 `econhdfe` is organized around **econometric responsibilities**, not around numerical algorithms or Stata command names. The data layer first ensures that only variables required by the empirical specification enter the runtime; HDFE is the shared solution to nuisance high-dimensional heterogeneity; IV is the shared solution to exclusion-restriction/endogeneity mechanics; outcome-model implementations live under `models`; the compute layer exists only to execute these econometric objects efficiently.
 
@@ -18,7 +18,7 @@ A detailed module-by-module economics-facing map is maintained in [`economic-mod
 | Event studies and group-specific slopes with many explicit heterogeneous coefficients | Heterogeneous-specification optimization preserves the requested coefficients but avoids materializing structural zeros when exact and worthwhile | `design.py`, `compute/design_plan.py`, `compute/block_design.py`, `compute/partitioned_lstsq.py`, model `heterogeneous.py` consumers |
 | Correlated shocks and few/unbalanced clusters | Shared covariance plus cluster diagnostics/wild-cluster procedures provide inference at the economic dependence level | `compute/vcov.py`, `inference/cluster/` |
 | Regression-table robustness exercises | Session/cache infrastructure reuses FE/sample work across specifications without reusing invalid specification-specific diagnostics | `sessions.py`, `compute/context.py` |
-| Post-estimation of fitted linear models | Coefficient restrictions and future predictions reuse the exact reported parameter order, realized sample and frozen design/FE semantics rather than reconstructing them from mutable estimator internals | `postestimation.py`, `prediction.py`, `results.py` |
+| Post-estimation of fitted linear models | Coefficient restrictions and implemented chunked linear predictions reuse the exact reported parameter order, realized sample and frozen design/FE semantics rather than reconstructing them from mutable estimator internals | `postestimation.py`, `prediction.py`, `prediction_api.py`, `effects/prediction.py`, `results.py` |
 | Large-sample feasibility | A shared execution planner separates exactness certificates from memory/representation/thread policy, then compute/HDFE kernels execute the chosen plan without changing the estimand | `planner/`, `compute/`, `hdfe/projection.py` |
 
 The architecture therefore follows the sequence **economic specification → data requirements/sample state → canonical design and nuisance structure → estimator → inference**. A separate execution-planner layer acts across data, HDFE and compute stages: certificates answer whether an optimization is exact, while cost/resource policy answers whether an exact optimization is worthwhile. Numerical objects such as QR, MAP, PCG, TSQR or sparse/block storage are implementation mechanisms, not top-level package concepts.
@@ -62,9 +62,11 @@ The direction is strict:
 - `models` owns estimating equations and may compose `hdfe`, `iv`, and `compute`.
 - `resampling` is outcome-model agnostic and must not import `models`, `hdfe`, or `iv`; model-specific bootstrap definitions call into it.
 - `frontend` provides cheap role-aware input checks and structured reports; `errors` provides the public failure taxonomy.
-- root-level `pipeline`, `design`, `results`, `postestimation`, `prediction`, and `collinearity` are thin orchestration/shared-interface modules; root `bootstrap.py` is compatibility-only.
+- `results` exposes thin result methods; `postestimation` owns coefficient inference, `prediction` owns frozen state, `prediction_api` owns new-row reconstruction/evaluation, and `effects/prediction` builds fit-time FE certificates. These are distinct responsibilities.
+- Root-level `pipeline` and `design` are substantial orchestration/compilation modules, not thin wrappers; `collinearity` owns active-column policy. Root `bootstrap.py` is compatibility-only.
+- See the [0.7 architecture review](architecture-review-0.7.md) for measured complexity and scoped follow-up work.
 
-The stronger IV rule is deliberate: endogeneity is not a synonym for linear 2SLS. Linear IV and future IV-PPML should consume the same instrument/moment/weighted-2SLS primitives without depending on one another.
+The stronger IV rule is deliberate: endogeneity is not a synonym for linear 2SLS. Linear IV and IV-PPML should consume the same instrument/moment/weighted-2SLS primitives without depending on one another.
 
 ## Package layout
 
@@ -73,7 +75,7 @@ econhdfe/
   api.py
   pipeline.py
   results.py
-  postestimation.py / prediction.py
+  postestimation.py / prediction.py / prediction_api.py
   design.py / design_structure.py
   collinearity.py
   errors.py

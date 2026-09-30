@@ -4,7 +4,12 @@ Use this guide for package installation, optional extras, skill installation and
 
 ## Python requirements
 
-The source package declares Python 3.10+ and core dependencies on NumPy, SciPy, pandas, Numba, Joblib and threadpoolctl. Install the exact release artifact supplied with the project when reproducibility matters.
+The metadata permits Python 3.10+; the tested support matrix is Python 3.10–3.13. Newer interpreters are not implied to be validated. Core dependencies are NumPy, SciPy, pandas, Numba, Joblib and threadpoolctl. Install the exact release artifact supplied with the project when reproducibility matters.
+
+The repository version and package-index version may differ. Check the published
+[releases](https://github.com/asggvhwgw-glitch/EconHDFE/releases) or
+[PyPI](https://pypi.org/project/econhdfe/) and verify `econhdfe.__version__` after installation.
+Post/Prediction requires 0.7.0; installing an older release does not enable it.
 
 ### Install a release wheel
 

@@ -191,7 +191,7 @@ OLS、线性 IV、PPML 和 IV-PPML 共用同一套 HDFE 基础设施，包括编
 
 一个典型问题是三维及以上分类固定效应的 absorbed degrees of freedom。若 $D_{\mathrm{FE}}$ 是组合固定效应设计矩阵，则核心目标是：
 
-$$\operatorname{DoF}_{\mathrm{FE}} = \operatorname{rank}(D_{\mathrm{FE}}).$$
+$$\mathrm{DoF}_{\mathrm{FE}} = \mathrm{rank}(D_{\mathrm{FE}}).$$
 
 对于一维和二维 FE，冗余具有熟悉的图结构。到了任意多维 FE，精确结构秩问题更加复杂。项目中已经有一个 theorem-backed 框架，在明确假设和资源边界下计算任意有限维 categorical FE 的 exact structural rank 和 absorbed DoF。
 
@@ -259,7 +259,7 @@ CI 覆盖 Linux、Windows 和 macOS，以及支持的 Python 版本和可行的�
 
 ## 后估计与预测
 
-0.7.0 提供 `linear_combination()`、`wald()`，以及标准 OLS 和线性 IV
+0.7.0 提供 `linear_combination()`、`wald_test()`，以及标准 OLS 和线性 IV
 的分块预测。`result.predict()` 返回最终估计样本的拟合值；`restore_sample=True`
 按原始物理行位置恢复结果。新数据的 `kind="xb"` 使用冻结设计；`kind="stdp"`
 只包含 beta 协方差，不包含固定效应的不确定性。
@@ -267,7 +267,7 @@ CI 覆盖 Linux、Windows 和 macOS，以及支持的 Python 版本和可行的�
 新数据的 `response` 和 `fe` 要求通过 `save_fe=True` 显式保存受支持的分类固定效应；
 未知水平和未识别的新组合会被拒绝。本版本不支持 PPML/IV-PPML 预测、varying-slope
 或 group+individual FE 样本外预测，也不包含 margins 和 AME。
-详见[后估计契约](docs/development/postestimation-0.7.md)。使用 `pip install --upgrade "econhdfe>=0.7.0"` 获取这些功能；更早版本不包含它们。
+详见[后估计契约](docs/development/postestimation-0.7.md)。这些功能要求 0.7.0。安装后用 `python -c "import econhdfe; print(econhdfe.__version__)"` 核对版本。0.7.0 wheel 公开后可安装对应版本；此前可在本源码目录运行 `python -m pip install .`。包索引可能仍提供旧版，见[发布状态与验证](docs/development/test-status.md)。
 
 ## 固定效应恢复
 

@@ -10,7 +10,7 @@
     },
     "backend_compute": {
       "status": "reviewed",
-      "evidence": "沿用已合并 #14：矩条件识别守卫、压缩 QR/SVD、weighted first-stage 坐标、fixed-k VCE 与有界调用内缓存；本次收口不改运行算法。",
+      "evidence": "0.7 维护：effects 拓扑复用 hdfe.rank 已有同体 union-find 内核，无数值公式/容差/公开签名变化；完整回归另登记。",
       "description": "Solver/compute/cache/backend contracts, numerical defaults and resource controls."
     },
     "errors": {
@@ -30,7 +30,7 @@
     },
     "linked_modules": {
       "status": "reviewed",
-      "evidence": "本次仅版本、快照与文档，无模块依赖变化；生成架构门禁复验。",
+      "evidence": "effects 原已依赖 hdfe.rank，复用其私有 union-find 不增加反向层次依赖；生成图同步。",
       "description": "Cross-module imports, shared schemas, adapters, compatibility shims and downstream consumers."
     },
     "results_reporting": {
@@ -59,8 +59,8 @@
       "description": "Representative benchmark/resource regressions for code paths materially changed by the release."
     },
     "docs_migration": {
-      "status": "reviewed",
-      "evidence": "中英文 README、CHANGELOG、TODO、后估计契约及双语发布说明同步 0.7.0；历史证据不改写。",
+      "status": "changed",
+      "evidence": "修正 README wald_test、版本/发布区别、迁移、当前验证/制品入口；保留历史记录；新增0.7架构审查及职责边界。",
       "description": "README/architecture/changelog/migration/versioning documentation and user-visible examples."
     },
     "packaging_dependencies": {
@@ -75,7 +75,7 @@
     },
     "release_artifacts": {
       "status": "reviewed",
-      "evidence": "用户已明确授权标签/Release/PyPI；使用同一冻结 CI 制品、detached 正式验收和既有 OIDC 工作流，不覆盖已有发布。",
+      "evidence": "本轮仅提交维护PR，改变指纹后候选执行记录已重置；不得复用 e738333 冻结发布制品或detached验收，不自动合并/发布本PR。",
       "description": "Version consistency, source/wheel parity, hashes, clean install and reproducible bundle contents."
     }
   }
