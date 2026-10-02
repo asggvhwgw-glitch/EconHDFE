@@ -40,6 +40,11 @@ ivreghdfe y w (xcopy=z1 z2), absorb(t) cluster(bsid) gmm2s
 matrix b=e(b)
 matrix v=e(V)
 post result ("omitted") (b[1,1]) (b[1,2]) (v[1,1]) (v[1,2]) (v[2,2]) (e(rss)) (e(rmse)) (e(j)) (e(N)) (e(N_clust)) (e(df_r)) (e(sdofminus))
+gen byte few=mod(_n-1,3)
+ivreghdfe y w (x1=z1 z2), absorb(t) cluster(few) gmm2s
+matrix b=e(b)
+matrix v=e(V)
+post result ("fewclusters") (b[1,1]) (b[1,2]) (v[1,1]) (v[1,2]) (v[2,2]) (e(rss)) (e(rmse)) (e(j)) (e(N)) (e(N_clust)) (e(df_r)) (e(sdofminus))
 postclose result
 display "ORACLE_OK"
 exit, clear

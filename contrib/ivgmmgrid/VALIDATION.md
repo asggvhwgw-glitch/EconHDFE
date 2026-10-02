@@ -1,6 +1,6 @@
 # Python migration validation — 2026-10-02
 
-Windows, Python 3.12, NumPy 2.5.3, SciPy 1.18.1. 16 contract checks pass, including independent pinned Stata results for ordinary, nested-FE and omitted-control cases; sample differences, row permutation, unit changes, singletons, rank failures and selector ties. EconHDFE 0.7.0 full suite: 1,068 passed with all three companion distributions installed. Stata is absent from Python runtime imports and wheel dependencies.
+Windows, Python 3.12, NumPy 2.5.3, SciPy 1.18.1. 18 contract checks pass, including independent pinned Stata results for ordinary, nested-FE, omitted-control and full-rank equal-cluster/instrument-count cases; sample differences, row permutation, unit changes, singletons, rank failures and selector ties. EconHDFE 0.7.0 full suite: 1,068 passed with all three companion distributions installed. Stata is absent from Python runtime imports and wheel dependencies.
 
 ## Real Do–Jacoby water data
 

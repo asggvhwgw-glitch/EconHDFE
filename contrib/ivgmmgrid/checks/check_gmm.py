@@ -19,10 +19,11 @@ def args(d):
 
 
 @pytest.mark.parametrize('engine',['cached','reference'])
-@pytest.mark.parametrize('case',['base','nested','omitted'])
+@pytest.mark.parametrize('case',['base','nested','omitted','fewclusters'])
 def test_external_native_oracle(data,engine,case):
     a=args(data);a[2]=data['w'] if case=='omitted' else data['x1']
     if case=='nested': a[4]=data['bsid']
+    if case=='fewclusters': a[5]=np.arange(len(a[0]))%3
     m=fit_grid(*a,engine=engine).models[0]
     r=next(r for r in json.loads((FIXTURES/'native_contract.json').read_text()) if r['model']==case)
     np.testing.assert_allclose(m.coefficients,[r['b1'],r['b2']],rtol=1e-9,atol=1e-11)
@@ -34,6 +35,7 @@ def test_external_native_oracle(data,engine,case):
 
 def test_cache_reference_and_permutation(data):
     a=args(data); result=fit_grid(*a,verify=True)
+    assert result.sample_groups==fit_grid(*a,engine='reference').sample_groups==1
     perm=np.random.default_rng(13).permutation(len(a[0]))
     reordered=fit_grid(*[x[perm] for x in a],verify=True)
     np.testing.assert_allclose(result.coefficients,reordered.coefficients,rtol=1e-10,atol=1e-12)

@@ -118,8 +118,8 @@ def _estimate(y, x, z, cluster, sample, absorbed_df, rank_tol, moments=None):
     g = int(cluster.max()) + 1
     if q < k:
         raise IdentificationError("fewer independent instruments than regressors")
-    if g <= q:
-        raise IdentificationError("cluster moment covariance needs more clusters than instruments")
+    if g < 2 or g < q:
+        raise IdentificationError("cluster moment covariance needs at least two clusters and enough independent cluster scores")
     residual_df = n - k - absorbed_df
     if residual_df <= 0:
         raise IdentificationError("non-positive residual degrees of freedom")
@@ -232,7 +232,8 @@ def fit_grid(y, exog, candidates, instruments, absorb, cluster, *, mask=None,
             cols = [1 + e.shape[1] + local, *range(1, 1 + e.shape[1])]
             moments = None if cache is None else (cache[:, :, 0], cache[:, :, cols])
             results[j] = _estimate(b[:, 0], b[:, cols], zw, g, ids, absorbed_df, rank_tol, moments)
-    result = GridResult(tuple(results), len(partitions), engine)
+    distinct_samples = len({m.sample_indices.tobytes() for m in results})
+    result = GridResult(tuple(results), distinct_samples, engine)
     if verify and engine == "cached":
         ref = fit_grid(y, e, c, z, fe, cl, mask=mask, engine="reference", rank_tol=rank_tol)
         for actual, expected in zip(result.models, ref.models):
