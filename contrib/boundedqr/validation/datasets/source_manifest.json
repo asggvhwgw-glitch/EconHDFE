@@ -1,0 +1,23 @@
+{
+  "csv_pca.zip": {
+    "url": "https://www2.census.gov/programs-surveys/acs/data/pums/2024/1-Year/csv_pca.zip",
+    "sha256": "fa3e473e13b09bb6d9f915c7f5c58b8405a8e48d22c43f30d43055a8a6c52882",
+    "bytes": 70114146,
+    "retrieved_utc": "2026-09-14T18:41:43.503397+00:00",
+    "local_file": "raw/csv_pca.zip"
+  },
+  "PUMS_Data_Dictionary_2024.txt": {
+    "url": "https://www2.census.gov/programs-surveys/acs/tech_docs/pums/data_dict/PUMS_Data_Dictionary_2024.txt",
+    "sha256": "9a98282277aa7f2dafb12b0bdf38b258689d3a1a9c2abbd9b5e2c1ddde6f7b32",
+    "bytes": 306867,
+    "retrieved_utc": "2026-09-14T18:41:44.729395+00:00",
+    "local_file": "raw/PUMS_Data_Dictionary_2024.txt"
+  },
+  "2020_Census_Tract_to_2020_PUMA.txt": {
+    "url": "https://www2.census.gov/geo/docs/maps-data/data/rel2020/2020_Census_Tract_to_2020_PUMA.txt",
+    "sha256": "5262f460b2c8dbe86b00549e916317b1791fdc595c9af72ab18f6f6a67040531",
+    "bytes": 1709076,
+    "retrieved_utc": "2026-09-14T18:41:46.931433+00:00",
+    "local_file": "raw/2020_Census_Tract_to_2020_PUMA.txt"
+  }
+}

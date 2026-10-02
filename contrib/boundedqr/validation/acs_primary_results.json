@@ -1,0 +1,26 @@
+{
+  "fixture": "acs_ca_p112_b19",
+  "shape": [
+    133122,
+    112,
+    19
+  ],
+  "tau": 0.5,
+  "threads": 1,
+  "seconds": 8.650924899993697,
+  "retained_draws": 19,
+  "finite_radius_count": 0,
+  "infinite_radius_count": 19,
+  "all_draws_finite": true,
+  "max_coefficient_abs_difference": 0.009027312781177903,
+  "max_standard_error_abs_difference": 0.0014885014138583917,
+  "max_standard_error_relative_difference": 0.15195895721350988,
+  "input_sha256": {
+    "x.npy": "b83211646cc5117b6efd2020b28e49b8a3d4c98aa16420b14f9a25bedb8d5759",
+    "y.npy": "50f401e1bfdd2a0dafc3ea97f87bb88669665de94a9a00f2ad37ffb0f7f742c5",
+    "W.npy": "9563d6c8adc62e71c03590c88e2faf5c780324ecd6693cdb3381adbd106461ad",
+    "base_beta.npy": "fabfa180a61f07110d28de0f96d11f6ca4d21351b3211521c37a8bee937d603e"
+  },
+  "reference_sha256": "3c5bc339f6a71f2b377117fd5f3b9c5f0a27c71dbfc990ac1a9bda15f53c3cc5",
+  "scope": "fixed-W perturbation solver only; excludes baseline, score construction and data loading"
+}

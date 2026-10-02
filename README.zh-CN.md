@@ -257,6 +257,10 @@ CI 覆盖 Linux、Windows 和 macOS，以及支持的 Python 版本和可行的�
 
 详见 [Testing](docs/development/testing.md) 和 [validation status](docs/development/test-status.md)。
 
+## 可选 Python 分位数回归工具
+
+[BoundedQR](contrib/boundedqr/README.md) 补充分位数回归与聚类自助推断，单独安装：`python -m pip install ./contrib/boundedqr`。它使用显式设计矩阵，不自动吸收高维固定效应。主体不需要 R；保留的 R 接口单独位于 [compat/boundedqr-r](compat/boundedqr-r/README.md)。此配套项目采用 GPL-3.0-or-later。实证使用前请阅读 [ACS 数据上仍存在的数值限制](contrib/boundedqr/VALIDATION.md)。
+
 ## 后估计与预测
 
 0.7.0 提供 `linear_combination()`、`wald_test()`，以及标准 OLS 和线性 IV
@@ -330,4 +334,4 @@ import pyreghdfe
 
 ## 许可证
 
-BSD 许可证。见 [LICENSE](LICENSE)。
+EconHDFE 主包采用 BSD 许可证，见 [LICENSE](LICENSE)。可选配套项目及数据验证材料按各自目录中声明的许可证提供。
