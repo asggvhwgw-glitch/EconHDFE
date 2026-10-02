@@ -173,6 +173,10 @@ results = session.fit_many_y(
 
 Agent 只是软件的一个接口，不属于估计器本身。样本、系数、固定效应、收敛规则、推断方法和数值容差仍由与人工调用相同的、经过测试的公开 API 控制。
 
+## 可选 Python 协方差工具
+
+[FastSandwich](contrib/fastsandwich/README.md) 补充 Bartlett HAC 和聚类得分协方差计算，并提供 statsmodels、linearmodels 使用示例。它作为独立工具配合主包使用，不改变主包默认结果。安装：`python -m pip install ./contrib/fastsandwich`。采用 BSD-3-Clause；详见[真实数据验证及适用范围](contrib/fastsandwich/VALIDATION.md)。
+
 ## econhdfe 与普通实现有什么不同？
 
 项目面向的是**完整实证工作流**，而不是一个孤立 solver。
@@ -330,4 +334,4 @@ import pyreghdfe
 
 ## 许可证
 
-BSD 许可证。见 [LICENSE](LICENSE)。
+EconHDFE 主包采用 BSD 许可证，见 [LICENSE](LICENSE)。可选配套项目及数据验证材料按各自目录中声明的许可证提供。

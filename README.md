@@ -167,6 +167,10 @@ A researcher using a coding agent can start with the following prompt:
 
 The agent is an interface to the software, not part of the estimator. Samples, coefficients, fixed effects, convergence rules, inference, and numerical tolerances remain controlled by the same tested public API used by human callers.
 
+## Optional Python covariance companion
+
+[FastSandwich](contrib/fastsandwich/README.md) adds standalone Bartlett HAC and clustered-score covariance tools, plus statsmodels and opt-in linearmodels examples. It complements the main estimators and does not change their defaults. Install separately with `python -m pip install ./contrib/fastsandwich`. BSD-3-Clause; see its [real-data validation and limits](contrib/fastsandwich/VALIDATION.md).
+
 ## What econhdfe does differently
 
 The package is designed around the full empirical workflow rather than one isolated solver. File-backed data sources can expose only the columns required by a specification; categorical identifiers can be encoded once and reused where valid; symbolic design information can be simplified before unnecessary dense matrices are created; and the execution planner can choose among certified representations according to the actual workload and resource budget.
@@ -275,4 +279,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and the [developer guide](skills/econhdfe
 
 ## License
 
-BSD licensed. See [LICENSE](LICENSE).
+The EconHDFE core is BSD licensed; see [LICENSE](LICENSE). Optional companion packages and data fixtures carry the licenses declared in their own directories.
