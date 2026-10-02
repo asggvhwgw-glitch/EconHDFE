@@ -279,6 +279,10 @@ CI 覆盖 Linux、Windows 和 macOS，以及支持的 Python 版本和可行的�
 
 详见 [Identified categorical fixed effects](docs/technical/identified-fixed-effects.md)。
 
+## 可选 Python IV-GMM 网格工具
+
+[ivgmmgrid](contrib/ivgmmgrid/README.md) 补充重复两步聚类 IV-GMM 估计，每次拟合含一个内生候选变量、一个吸收固定效应。计算及公开数据复现均使用 Python：`python -m pip install ./contrib/ivgmmgrid`。它适用于批量候选模型，有独立的协方差口径，不替代主包通用 IV 接口。采用 GPL-3.0-only；Stata 文件仅用于可选验证。详见[真实数据对照及适用范围](contrib/ivgmmgrid/VALIDATION.md)。
+
 ## 兼容接口
 
 新的 Python 代码通常应直接从 `econhdfe` 导入：
@@ -330,4 +334,4 @@ import pyreghdfe
 
 ## 许可证
 
-BSD 许可证。见 [LICENSE](LICENSE)。
+EconHDFE 主包采用 BSD 许可证，见 [LICENSE](LICENSE)。可选配套项目及数据验证材料按各自目录中声明的许可证提供。

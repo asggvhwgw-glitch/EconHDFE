@@ -244,6 +244,10 @@ Some applications need fixed effects as economic objects rather than nuisance pa
 
 See [Identified categorical fixed effects](docs/technical/identified-fixed-effects.md).
 
+## Optional Python IV-GMM grid companion
+
+[ivgmmgrid](contrib/ivgmmgrid/README.md) evaluates repeated two-step clustered IV-GMM specifications with one absorbed fixed effect and one endogenous candidate per fit. Its computation and public-data replay run entirely in Python: `python -m pip install ./contrib/ivgmmgrid`. It is a focused grid-search companion, with a distinct covariance convention, rather than a replacement for the main IV API. GPL-3.0-only; Stata scripts are optional validation aids only. See [real-data parity and scope](contrib/ivgmmgrid/VALIDATION.md).
+
 ## Compatibility
 
 New Python code should normally import directly from `econhdfe`:
@@ -275,4 +279,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and the [developer guide](skills/econhdfe
 
 ## License
 
-BSD licensed. See [LICENSE](LICENSE).
+The EconHDFE core is BSD licensed; see [LICENSE](LICENSE). Optional companion packages and data fixtures carry the licenses declared in their own directories.

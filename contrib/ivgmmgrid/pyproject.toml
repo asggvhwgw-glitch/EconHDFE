@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ivgmmgrid"
+version = "0.2.0"
+description = "Python two-step clustered IV-GMM candidate grids with one absorbed fixed effect"
+requires-python = ">=3.10"
+license = "GPL-3.0-only"
+dependencies = ["numpy>=1.24", "scipy>=1.10"]
+
+[project.optional-dependencies]
+test = ["pytest>=7", "pandas>=2", "threadpoolctl>=3"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["checks"]
+python_files = ["check_*.py"]

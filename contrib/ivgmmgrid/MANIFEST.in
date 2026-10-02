@@ -1,0 +1,6 @@
+include README.md LICENSE METHODS.md VALIDATION.md THIRD_PARTY_NOTICES.md
+graft checks
+graft examples
+graft validation
+prune .cache
+global-exclude __pycache__ *.py[cod]
