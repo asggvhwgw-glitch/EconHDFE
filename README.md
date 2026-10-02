@@ -222,6 +222,10 @@ The claim boundary remains explicit. Extensive repository-local testing is not e
 
 See [Testing](docs/development/testing.md) and the [validation status](docs/development/test-status.md) for details.
 
+## Optional Python quantile-regression companion
+
+[BoundedQR](contrib/boundedqr/README.md) adds linear quantile regression and clustered wild-gradient bootstrap in a separately installed Python package: `python -m pip install ./contrib/boundedqr`. It uses an explicit design matrix and does not absorb high-dimensional fixed effects. The Python package needs no R; the optional R bridge is kept separately in [compat/boundedqr-r](compat/boundedqr-r/README.md). GPL-3.0-or-later applies to this companion. Read the [ACS numerical limitations](contrib/boundedqr/VALIDATION.md) before empirical use.
+
 ## Post-estimation and prediction
 
 Version 0.7.0 provides `linear_combination()` and `wald_test()`,
@@ -275,4 +279,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and the [developer guide](skills/econhdfe
 
 ## License
 
-BSD licensed. See [LICENSE](LICENSE).
+The EconHDFE core is BSD licensed; see [LICENSE](LICENSE). Optional companion packages and data fixtures carry the licenses declared in their own directories.
