@@ -464,7 +464,7 @@ def test_persistent_session_reuses_columns_and_within_across_new_sessions(tmp_pa
     assert not np.allclose(r1.params, got.params)
 
 
-def test_persistent_session_completed_ols_result_resumes_without_residualization(tmp_path):
+def test_persistent_session_completed_ols_result_resumes_without_residualization(tmp_path, monkeypatch):
     from econhdfe import OLSHDFESession
     from econhdfe.data import CSVSource
     rng = np.random.default_rng(8802)
@@ -488,6 +488,22 @@ def test_persistent_session_completed_ols_result_resumes_without_residualization
     )
     assert b.persistent_cache_info()["result_hits"] == 1
     assert b.cache_info()["residualize_calls"] == 0
+
+    # Pre-0.8.1 caches must not bypass the scale-aware absorption correction.
+    from econhdfe.data import persistent
+    legacy_cache = tmp_path / "legacy-cache"
+    with monkeypatch.context() as patch:
+        patch.setattr(persistent, "PERSISTENT_NUMERICAL_ABI", "linear-session-1")
+        legacy = OLSHDFESession(CSVSource(path), drop_singletons=False).enable_persistent_cache(legacy_cache)
+        legacy.fit(y="y", x=["x"], absorb=["firm", "year"])
+    fresh = OLSHDFESession(CSVSource(path), drop_singletons=False).enable_persistent_cache(legacy_cache)
+    recomputed = fresh.fit(y="y", x=["x"], absorb=["firm", "year"])
+    info = fresh.persistent_cache_info()
+    assert info["column_hits"] == 4
+    assert info["result_hits"] == info["within_hits"] == 0
+    assert fresh.cache_info()["residualized_columns"] == 2
+    np.testing.assert_allclose(recomputed.params, ref.params, rtol=1e-11, atol=1e-11)
+    np.testing.assert_allclose(recomputed.vcov, ref.vcov, rtol=1e-10, atol=1e-11)
 
 
 def test_persistent_session_source_content_change_invalidates_cache(tmp_path):

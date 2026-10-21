@@ -288,7 +288,10 @@ def ivreghdfe_model_statistics(
     rss = float(np.sum(w * e ** 2))
     tss_within = float(np.sum(w * yw ** 2))
     n_eff = float(len(yw) if effective_n is None else effective_n)
-    df_fit = n_eff - float(df_absorbed) - float(df_nested) - float(rank)
+    # ivreg2-small excludes nested FE from the fit denominator; ivreghdfe
+    # retains one absorbed intercept when all FE are nested (df_a == 0).
+    iv_df = max(float(df_absorbed), float(df_nested > 0))
+    df_fit = n_eff - iv_df - float(rank)
     rmse = (float(np.sqrt(rss / df_fit))
             if rss >= 0 and np.isfinite(df_fit) and df_fit > 0 else float("nan"))
     infer_df = float("nan") if df_resid_inference is None else float(df_resid_inference)

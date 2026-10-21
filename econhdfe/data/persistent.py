@@ -25,8 +25,9 @@ from .source import DataFrameSource, DataSource, as_data_source
 
 
 PERSISTENT_CACHE_FORMAT = 1
-PERSISTENT_NUMERICAL_ABI = "linear-session-1"
-PERSISTENT_RESULT_ABI = "linear-session-result-3"
+# Scale-aware FE stopping changes cached within columns and derived results.
+PERSISTENT_NUMERICAL_ABI = "linear-session-2"
+PERSISTENT_RESULT_ABI = "linear-session-result-4"
 
 _PREDICTION_STATE_TYPES = {
     cls.__name__: cls

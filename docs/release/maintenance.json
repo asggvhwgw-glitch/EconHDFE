@@ -1,81 +1,81 @@
 {
   "schema_version": 1,
-  "release_version": "0.7.0",
-  "previous_version": "0.7.0.dev0",
+  "release_version": "0.8.1",
+  "previous_version": "0.8.0",
   "checks": {
     "frontend_api": {
       "status": "reviewed",
-      "evidence": "0.7.0.dev0→0.7.0 契约差异为空；0.6.x→0.7 增加 prediction_state/predict 及线性后估计；原拟合签名保持。",
+      "evidence": "0.8.0基线兼容性diff为空；保留main中IV公开接口，本次FE参数和返回类型未改。",
       "description": "Public call signatures, exports, aliases, CLI/front-end validation and compatibility."
     },
     "backend_compute": {
-      "status": "reviewed",
-      "evidence": "0.7 维护：effects 拓扑复用 hdfe.rank 已有同体 union-find 内核，无数值公式/容差/公开签名变化；完整回归另登记。",
+      "status": "changed",
+      "evidence": "两轮MAP后续接CG；投影布局、2–10列核和宽矩阵分块、向量融合、相对能量停止与列单位归一化。定向FE回归26项；合并未改变已验收FE计算核。",
       "description": "Solver/compute/cache/backend contracts, numerical defaults and resource controls."
     },
     "errors": {
       "status": "reviewed",
-      "evidence": "保留识别、数值秩亏与预测未知类别/未识别组合的显式错误；不放宽失败路径。",
+      "evidence": "保留非有限值/下溢/曲率失败，显式预算不足使用现有SpecificationError；错误目录兼容性无变化。",
       "description": "Structured exception classes, codes, stages, suggestions and public error boundaries."
     },
     "public_contract": {
       "status": "reviewed",
-      "evidence": "控制 bump 从 0.7.0.dev0 升为 0.7.0；diff 为空，新建当前版本快照，保留所有历史快照。",
+      "evidence": "version.py受控升级0.8.0至0.8.1；compatibility diff无变化，新增0.8.1快照，历史基线未改。",
       "description": "Public exports/signatures, result/config schemas and stable structured-error compatibility."
     },
     "skill": {
       "status": "reviewed",
-      "evidence": "现有 Skill 包含后估计/预测边界、隐私支持与发布流程；复核不扩张外部认证声明。",
+      "evidence": "共享FE优化不新增公开配置或命令；已有Skill路由与配置入口适用，version gate检查同步模板。",
       "description": "Agent skill commands, examples, decision rules and newly exposed controls."
     },
     "linked_modules": {
       "status": "reviewed",
-      "evidence": "effects 原已依赖 hdfe.rank，复用其私有 union-find 不增加反向层次依赖；生成图同步。",
+      "evidence": "线程/资源规划、吸收核及公共OLS路径保持模块边界；合并main后重新生成架构图，无第二套FE实现。",
       "description": "Cross-module imports, shared schemas, adapters, compatibility shims and downstream consumers."
     },
     "results_reporting": {
       "status": "reviewed",
-      "evidence": "保留线性组合/Wald、chunked response/xb/fe/stdp；stdp 只包含 beta 协方差。",
+      "evidence": "公共结果schema不变；内部profile提供分阶段计时，不以不同口径的迭代数宣称速度。",
       "description": "Result fields, publication output, diagnostics metadata and serialization-facing schemas."
     },
     "config_defaults": {
       "status": "reviewed",
-      "evidence": "不更改拟合/推断/执行默认；save_fe 仍需显式开启，新类别默认拒绝。",
+      "evidence": "公开配置默认值未改；显式pool和低内存预算现在严格检查，迁移指南披露行为收紧。",
       "description": "Config objects, defaults, deprecations, aliases and backwards-compatible behavior."
     },
     "cache_state": {
-      "status": "reviewed",
-      "evidence": "保留 linear-session-result-3 和 within ABI；版本收口不改变缓存状态语义。",
+      "status": "changed",
+      "evidence": "数值ABI升级linear-session-2，同时使旧within和完整结果缓存失效；原始编码列继续复用。扩展现有持久缓存测试验证重算和系数/VCE。",
       "description": "Reusable state/cache invalidation, fingerprints, lifecycle semantics and stale-state hazards."
     },
     "tests_validation": {
       "status": "reviewed",
-      "evidence": "冻结 0.7.0 指纹后重新执行完整本地测试及16环境 CI，证据登记于 detached manifest；此审阅不是执行证明。",
+      "evidence": "整合0.8.0后research全套1122通过（10条预期变量省略警告），持久缓存定向1项通过；保留26项FE回归并扩展原有缓存测试，无新增开发矩阵。最终头跨平台与候选构建由CI验证。",
       "description": "Regression tests, install smoke tests, golden/parity coverage and failure-path tests."
     },
     "performance": {
       "status": "reviewed",
-      "evidence": "保留历史 benchmark 和 #14 调用内缓存；不新增全流程内存或普遍提速承诺。",
+      "evidence": "仅纳入已采用执行优化；本次版本整合不新增大样本benchmark。最终尺度修复未重计大样本耗时，不将历史快照速度当成本提交实测。",
       "description": "Representative benchmark/resource regressions for code paths materially changed by the release."
     },
     "docs_migration": {
       "status": "changed",
-      "evidence": "修正 README wald_test、版本/发布区别、迁移、当前验证/制品入口；保留历史记录；新增0.7架构审查及职责边界。",
+      "evidence": "CHANGELOG及migration增加0.8.1、严格预算、小尺度修正、缓存失效；保留0.8.0说明与main的IV文档。",
       "description": "README/architecture/changelog/migration/versioning documentation and user-visible examples."
     },
     "packaging_dependencies": {
-      "status": "reviewed",
-      "evidence": "Python 3.10–3.13、运行依赖下限与包内容规则不变；由16环境与bundle实际验证。",
+      "status": "changed",
+      "evidence": "版本入口同步pyproject/runtime；新增psutil>=5.9及最低约束5.9.4；原PR跨平台/最低依赖CI通过，更新头重新验证。",
       "description": "Python/dependency matrix, optional extras, wheel/source contents and build metadata."
     },
     "external_validation": {
       "status": "reviewed",
-      "evidence": "Alpha 研究发布；未新增 licensed-Stata/upstream 外部认证、浮点形式验证或历史原创性证明。",
+      "evidence": "本轮未重跑Stata/GPU或新外部认证；不以源码测试替代参考软件结果验证。",
       "description": "Licensed/reference-environment parity gates and explicitly deferred external certification."
     },
     "release_artifacts": {
       "status": "reviewed",
-      "evidence": "本轮仅提交维护PR，改变指纹后候选执行记录已重置；不得复用 e738333 冻结发布制品或detached验收，不自动合并/发布本PR。",
+      "evidence": "重置0.8.1执行验收，不沿用旧成功记录或制品哈希。CI候选构建/干净安装另行核验；合并与升版不等同发布，不创建tag或上传发行制品。",
       "description": "Version consistency, source/wheel parity, hashes, clean install and reproducible bundle contents."
     }
   }

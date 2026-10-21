@@ -141,6 +141,7 @@ def resolve_collinearity(
     tolerance: float = 1e-10,
     protected_basis: np.ndarray | None = None,
     protected_names=(),
+    _gram=None,
 ) -> CollinearityPlan:
     """Order-preserving rank resolution using small weighted Gram matrices.
 
@@ -182,7 +183,8 @@ def resolve_collinearity(
             P = P[:, None]
     if P is not None and int(P.shape[0]) != int(X.shape[0]):
         raise ValueError("protected basis row count must match design")
-    G, p = _joint_gram(P, X, weights)
+    # Recursive original-design checks can reuse their already formed Gram.
+    G, p = _joint_gram(P, X, weights) if _gram is None else (_gram, 0)
     B = _gram_coordinates(G)
     if B.shape[0] < G.shape[0] and not isinstance(X, BlockDesign) and not isinstance(P, BlockDesign):
         # Normal equations square the condition number. A small Gram eigenvalue
@@ -200,7 +202,8 @@ def resolve_collinearity(
             B = la.qr(np.vstack((B, block)), mode="r", check_finite=False)[0][:A.shape[1]]
         norms = np.linalg.norm(B, axis=0)
         B /= np.where(norms > 0, norms, 1.0)
-    orig_diag = np.diag(_weighted_gram(orig, weights))
+    original_gram = G[p:, p:] if original is None else _weighted_gram(orig, weights)
+    orig_diag = np.diag(original_gram)
     within_diag = np.diag(G)[p:]
 
     tol = float(tolerance)
@@ -221,7 +224,7 @@ def resolve_collinearity(
     original_omissions = {}
     if original is not None:
         original_plan = resolve_collinearity(
-            orig, names=names, role=role, weights=weights, tolerance=tol,
+            orig, names=names, role=role, weights=weights, tolerance=tol, _gram=original_gram,
         )
         original_omissions = {
             o.index: o for o in original_plan.omitted

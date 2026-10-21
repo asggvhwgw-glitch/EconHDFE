@@ -1,6 +1,6 @@
 # Migration guide
 
-## Unreleased: CG execution and workspace enforcement
+## 0.8.0 → 0.8.1 candidate — FE absorption
 
 Explicit thread counts now reach the inner grouped-projection kernels and the
 standard two-way OLS absorber. Runtime may change even when the outer metadata
@@ -21,6 +21,38 @@ auto/plain MAP normalize column units before iterating. Small-unit inputs that
 previously stopped too early may return corrected estimates. The configured
 tolerance is unchanged. The final numerical fix has not been rebenchmarked at
 large sample sizes.
+
+Persistent within and full-result caches use numerical ABI `linear-session-2`.
+Older numerical caches are recomputed so they cannot bypass the stopping-rule
+correction; encoded input columns remain reusable.
+
+## 0.7.0 → 0.8.0 candidate — linear IV
+
+Existing estimation calls remain valid. This MINOR adds optional parameters and
+IV computation reuse; it is not a publication or external-certification claim.
+
+- `InferenceConfig.iv_advanced_statistics=True` is a new trailing field. The
+  default retains full diagnostic computation. Set it to `False` to skip Shea,
+  AP/SW, CD and Stock–Yogo; ordinary first-stage F, partial R², KP, overidentification
+  and necessary rank/identification checks remain. `diagnostics` controls display
+  only. Consumers enforcing an exact config field set must accept the added field.
+- `ivhdfe`, its `ivreghdfe` alias and `IVHDFESession` accept `on_stage=None`.
+  Opt-in callbacks synchronously receive independent estimation / first_stage /
+  diagnostics / complete snapshots, without observation-sized work arrays.
+  Callback exceptions propagate; the final result type is unchanged. Persistent
+  cache hits emit complete only.
+- Full session result caches invalidate under `linear-session-result-4`; the
+  within-transformation cache is unchanged. The diagnostics option is part of
+  result-cache identity. Recompute affected nested-cluster small-sample/RMSE and
+  efficient-GMM overidentification results. The retained numerical regressions cover these corrections.
+- No new execution-budget option is introduced. Binding IV workspaces to
+  `memory_budget_mb` remains TODO PERF-07.
+
+The six recorded public-contract changes are the config field (schema,
+exported dataclass and constructor) and the three callback signatures. The
+0.7.0 snapshot is immutable; 0.8.0 has its own snapshot. Review-gate approval
+does not replace isolated build, clean install, support-matrix or final-artifact
+acceptance under [the release policy](acceptance.md).
 
 ## Published 0.6.3 → 0.7 source and corresponding artifacts
 

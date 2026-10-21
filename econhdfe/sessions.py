@@ -24,6 +24,7 @@ from .hdfe.specs import Interaction
 from .factorvars import FactorVariableExpression
 from .models.ols import _fit_ols
 from .models.linear_iv.estimators import fit_iv_gmm2s, fit_iv_kclass
+from .models.linear_iv.stages import bind_callback, completed, validate_callback
 from .pipeline import (
     _absorb_metadata,
     _check_absorption,
@@ -808,12 +809,15 @@ class OLSHDFESession(_LinearHDFESessionBase):
 class IVHDFESession(_LinearHDFESessionBase):
     """Repeated linear-IV HDFE specifications with FE/within-column caching."""
 
-    def __init__(self, *args, estimator="2sls", kappa=None, fuller=0.0, gmm_center=False, **kwargs):
+    def __init__(self, *args, estimator="2sls", kappa=None, fuller=0.0, gmm_center=False,
+                 on_stage=None, **kwargs):
+        validate_callback(on_stage)
         super().__init__(*args, **kwargs)
         self.estimator = str(estimator).lower()
         self.kappa = kappa
         self.fuller = float(fuller)
         self.gmm_center = bool(gmm_center)
+        self.on_stage = on_stage
 
     @error_boundary("session")
     def fit(self, *, y: str, exog=(), endog=(), instruments=(), absorb=()) -> RegressionResult:
@@ -865,6 +869,8 @@ class IVHDFESession(_LinearHDFESessionBase):
             self._ensure_within(entry, cols)
         out = []
         for i, s in enumerate(parsed):
+            if i in cached:
+                completed(self.on_stage, cached[i], outcome=s.y, cached=True)
             out.append(cached[i] if i in cached else self._fit_spec(s, prewarmed=True))
         return out
 
@@ -884,6 +890,7 @@ class IVHDFESession(_LinearHDFESessionBase):
         if result_key is not None:
             cached = self._persistent_store.load_result(result_key)
             if cached is not None:
+                completed(self.on_stage, cached, outcome=spec.y, cached=True)
                 return cached
         entry = self._get_entry(spec.absorb)
         cols = (spec.y, *spec.exog, *spec.endog, *spec.instruments)
@@ -912,12 +919,16 @@ class IVHDFESession(_LinearHDFESessionBase):
         if self.estimator == "gmm2s":
             beta, V, resid, rank, df_resid, first, diagnostics, meta = fit_iv_gmm2s(
                 yw, Cw, Ew, Zw, weights=entry.weights, weight_info=entry.winfo,
+                advanced_statistics=self.inference.iv_advanced_statistics,
+                on_stage=bind_callback(self.on_stage, cn + en, spec.y, df_absorbed=entry.dof.df_absorbed),
                 vce=vce_kind, clusters=entry.clusters, df_absorbed=entry.dof.df_absorbed,
                 nested_adj=int(entry.dof.nested > 0), center=self.gmm_center,
             )
         else:
             beta, V, resid, rank, df_resid, first, diagnostics, meta = fit_iv_kclass(
                 yw, Cw, Ew, Zw, weights=entry.weights, weight_info=entry.winfo,
+                advanced_statistics=self.inference.iv_advanced_statistics,
+                on_stage=bind_callback(self.on_stage, cn + en, spec.y, df_absorbed=entry.dof.df_absorbed),
                 vce=vce_kind, clusters=entry.clusters, df_absorbed=entry.dof.df_absorbed,
                 nested_adj=int(entry.dof.nested > 0), estimator=self.estimator,
                 kappa=self.kappa, fuller=self.fuller,
@@ -1000,4 +1011,5 @@ class IVHDFESession(_LinearHDFESessionBase):
             }
         if result_key is not None:
             self._persistent_store.save_result(result_key, result)
+        completed(self.on_stage, result, outcome=spec.y)
         return result

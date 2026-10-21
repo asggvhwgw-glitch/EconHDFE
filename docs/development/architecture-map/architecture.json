@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "econhdfe",
-  "version": "0.7.0",
+  "version": "0.8.1",
   "evidence": {
     "topology": "Python AST import analysis; package __init__ re-export imports excluded from aggregated dependency counts.",
     "execution_flows": "Explicit semantic overlays reviewed against estimator orchestration modules; not presented as import edges."
@@ -187,9 +187,11 @@
         "econhdfe/models/linear_iv/api.py",
         "econhdfe/models/linear_iv/diagnostics.py",
         "econhdfe/models/linear_iv/estimators.py",
+        "econhdfe/models/linear_iv/solve.py",
+        "econhdfe/models/linear_iv/stages.py",
         "econhdfe/models/linear_iv/stock_yogo.py"
       ],
-      "module_count": 5
+      "module_count": 7
     },
     {
       "id": "ppml",
@@ -663,10 +665,11 @@
     {
       "source": "interface",
       "target": "linear_iv",
-      "count": 2,
+      "count": 3,
       "examples": [
         "econhdfe.api → econhdfe.models.linear_iv.api",
-        "econhdfe.sessions → econhdfe.models.linear_iv.estimators"
+        "econhdfe.sessions → econhdfe.models.linear_iv.estimators",
+        "econhdfe.sessions → econhdfe.models.linear_iv.stages"
       ]
     },
     {
@@ -725,7 +728,7 @@
     {
       "source": "linear_iv",
       "target": "compute",
-      "count": 12,
+      "count": 13,
       "examples": [
         "econhdfe.models.linear_iv.api → econhdfe.compute.weights",
         "econhdfe.models.linear_iv.api → econhdfe.compute.block_design",
@@ -737,7 +740,7 @@
     {
       "source": "linear_iv",
       "target": "contracts",
-      "count": 6,
+      "count": 7,
       "examples": [
         "econhdfe.models.linear_iv.api → econhdfe.errors",
         "econhdfe.models.linear_iv.api → econhdfe.config",
@@ -786,10 +789,11 @@
     {
       "source": "linear_iv",
       "target": "iv",
-      "count": 2,
+      "count": 3,
       "examples": [
         "econhdfe.models.linear_iv.estimators → econhdfe.iv.design",
-        "econhdfe.models.linear_iv.estimators → econhdfe.iv.solve"
+        "econhdfe.models.linear_iv.estimators → econhdfe.iv.solve",
+        "econhdfe.models.linear_iv.solve → econhdfe.iv.solve"
       ]
     },
     {
@@ -2645,6 +2649,14 @@
       "source_module": "econhdfe.models.linear_iv.api",
       "source_path": "econhdfe/models/linear_iv/api.py",
       "source_group": "linear_iv",
+      "target_module": "econhdfe.models.linear_iv.stages",
+      "target_group": "linear_iv",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.linear_iv.api",
+      "source_path": "econhdfe/models/linear_iv/api.py",
+      "source_group": "linear_iv",
       "target_module": "econhdfe.compute.block_design",
       "target_group": "compute",
       "reexport_surface": false
@@ -2813,6 +2825,22 @@
       "source_module": "econhdfe.models.linear_iv.estimators",
       "source_path": "econhdfe/models/linear_iv/estimators.py",
       "source_group": "linear_iv",
+      "target_module": "econhdfe.models.linear_iv.solve",
+      "target_group": "linear_iv",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.linear_iv.estimators",
+      "source_path": "econhdfe/models/linear_iv/estimators.py",
+      "source_group": "linear_iv",
+      "target_module": "econhdfe.models.linear_iv.stages",
+      "target_group": "linear_iv",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.linear_iv.estimators",
+      "source_path": "econhdfe/models/linear_iv/estimators.py",
+      "source_group": "linear_iv",
       "target_module": "econhdfe.models.linear_iv.diagnostics",
       "target_group": "linear_iv",
       "reexport_surface": false
@@ -2823,6 +2851,30 @@
       "source_group": "linear_iv",
       "target_module": "econhdfe.compute.vcov",
       "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.linear_iv.solve",
+      "source_path": "econhdfe/models/linear_iv/solve.py",
+      "source_group": "linear_iv",
+      "target_module": "econhdfe.compute.stable_linalg",
+      "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.linear_iv.solve",
+      "source_path": "econhdfe/models/linear_iv/solve.py",
+      "source_group": "linear_iv",
+      "target_module": "econhdfe.iv.solve",
+      "target_group": "iv",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.linear_iv.stages",
+      "source_path": "econhdfe/models/linear_iv/stages.py",
+      "source_group": "linear_iv",
+      "target_module": "econhdfe.errors",
+      "target_group": "contracts",
       "reexport_surface": false
     },
     {
@@ -4749,6 +4801,14 @@
       "source_module": "econhdfe.sessions",
       "source_path": "econhdfe/sessions.py",
       "source_group": "interface",
+      "target_module": "econhdfe.models.linear_iv.stages",
+      "target_group": "linear_iv",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.sessions",
+      "source_path": "econhdfe/sessions.py",
+      "source_group": "interface",
       "target_module": "econhdfe.pipeline",
       "target_group": "interface",
       "reexport_surface": false
@@ -5405,8 +5465,8 @@
   "repo_areas": [
     {
       "name": "econhdfe",
-      "files": 124,
-      "python_files": 122,
+      "files": 126,
+      "python_files": 124,
       "markdown_files": 2
     },
     {
@@ -5417,8 +5477,8 @@
     },
     {
       "name": "tests",
-      "files": 84,
-      "python_files": 84,
+      "files": 86,
+      "python_files": 86,
       "markdown_files": 0
     },
     {
@@ -5435,9 +5495,9 @@
     },
     {
       "name": "docs",
-      "files": 104,
+      "files": 107,
       "python_files": 1,
-      "markdown_files": 71
+      "markdown_files": 74
     },
     {
       "name": "scripts",
@@ -5453,7 +5513,7 @@
     },
     {
       "name": "compatibility",
-      "files": 27,
+      "files": 29,
       "python_files": 0,
       "markdown_files": 0
     }
