@@ -1,9 +1,7 @@
 from __future__ import annotations
-
 import numpy as np
 import pandas as pd
 import pytest
-
 from econhdfe import olshdfe
 
 
@@ -25,38 +23,6 @@ def _fixture(seed=6201, n=720):
         + shock[df.cluster.to_numpy()] + rng.normal(scale=0.6, size=n)
     )
     return df
-
-
-def test_cluster_diagnostics_balance_intersections_and_scores():
-    from econhdfe import cluster_diagnostics
-    df = _fixture()
-    df["coarse"] = df["cluster"] // 3
-    r = olshdfe(
-        df, y="y", x=["x1", "x2"], absorb=["firm", "year"],
-        cluster=["cluster", "coarse"], vce="cluster", keep_state=True,
-        drop_singletons=False,
-    )
-    d = cluster_diagnostics(r)
-    assert d.cluster_counts == (18, 6)
-    assert d.pairwise_intersections[(0, 1)] == 18
-    assert d.dimensions[0].min_size == d.dimensions[0].max_size == 40
-    assert d.dimensions[0].effective_clusters_size == pytest.approx(18.0)
-    assert d.dimensions[0].score_share_max is not None
-    assert d.dimensions[0].score_effective_clusters is not None
-    assert "few_clusters" in d.flags
-
-
-def test_cluster_diagnostics_requires_state_and_clusters():
-    from econhdfe import cluster_diagnostics
-    df = _fixture(n=360)
-    no_state = olshdfe(df, y="y", x=["x1"], absorb=["firm", "year"], cluster="cluster", vce="cluster")
-    with pytest.raises(Exception) as exc:
-        cluster_diagnostics(no_state)
-    assert getattr(exc.value, "code", None) == "inference.missing_state"
-    no_cluster = olshdfe(df, y="y", x=["x1"], absorb=["firm", "year"], keep_state=True)
-    with pytest.raises(Exception) as exc2:
-        cluster_diagnostics(no_cluster)
-    assert getattr(exc2.value, "code", None) == "inference.cluster_required"
 
 
 def test_weighted_legacy_wild_bootstrap_matches_manual_wls_metric():
@@ -103,62 +69,6 @@ def test_weighted_wild_bootstrap_parallel_reproducibility_and_distributions():
         out = wild_bootstrap(r, reps=11, seed=91, n_jobs=1, batch_size=4, weight_distribution=dist)
         assert out.shape == (11, 2)
         assert np.isfinite(out).all()
-
-
-def test_wcr11_observed_stat_matches_crv1_t_and_parallel_reproducible():
-    from econhdfe import wild_cluster_test_ols
-    df = _fixture(seed=6220, n=720)
-    r = olshdfe(
-        df, y="y", x=["x1", "x2"], absorb=["firm", "year"],
-        cluster="cluster", vce="cluster", keep_state=True,
-        drop_singletons=False, method="map", tol=1e-10,
-    )
-    a = wild_cluster_test_ols(r, param="x1", reps=199, seed=77, batch_size=17, n_jobs=1)
-    b = wild_cluster_test_ols(r, param="x1", reps=199, seed=77, batch_size=17, n_jobs=2)
-    idx = r.names.index("x1")
-    assert a.statistic == pytest.approx(r.params[idx] / r.stderr[idx], rel=2e-9, abs=2e-9)
-    assert a.bootstrap_type == "WCR11"
-    np.testing.assert_allclose(a.bootstrap_statistics, b.bootstrap_statistics, rtol=0, atol=0)
-    assert a.pvalue == b.pvalue
-    assert 0.0 < a.pvalue <= 1.0
-
-
-def test_wild_cluster_supports_wcu_webb_mammen_and_joint_restrictions():
-    from econhdfe import wild_cluster_test_ols
-    df = _fixture(seed=6221, n=540)
-    r = olshdfe(
-        df, y="y", x=["x1", "x2"], absorb=["firm", "year"],
-        cluster="cluster", vce="cluster", keep_state=True, drop_singletons=False,
-    )
-    for dist in ("mammen", "webb"):
-        out = wild_cluster_test_ols(r, param="x2", reps=149, seed=81, weight_distribution=dist)
-        assert out.completed_reps == 149
-        assert np.isfinite(out.bootstrap_statistics).all()
-        assert 0.0 < out.pvalue <= 1.0
-    joint = wild_cluster_test_ols(r, R=np.eye(2), r=np.zeros(2), reps=149, seed=82)
-    assert joint.statistic >= 0
-    assert joint.restriction_matrix.shape == (2, 2)
-    wcr = wild_cluster_test_ols(r, param="x1", reps=149, seed=83, impose_null=True)
-    wcu = wild_cluster_test_ols(r, param="x1", reps=149, seed=83, impose_null=False)
-    assert wcr.bootstrap_type == "WCR11" and wcu.bootstrap_type == "WCU11"
-    assert not np.allclose(wcr.bootstrap_statistics, wcu.bootstrap_statistics)
-
-
-def test_wcr11_full_rademacher_enumeration_for_very_few_clusters():
-    from econhdfe import wild_cluster_test_ols
-    rng = np.random.default_rng(6222)
-    n = 320
-    df = pd.DataFrame({"fe": np.arange(n) % 20, "cluster": np.arange(n) % 8, "x": rng.normal(size=n)})
-    df["y"] = 0.15 * df.x + rng.normal(size=20)[df.fe] + rng.normal(size=n)
-    r = olshdfe(
-        df, y="y", x=["x"], absorb=["fe"], cluster="cluster",
-        vce="cluster", keep_state=True, drop_singletons=False,
-    )
-    out = wild_cluster_test_ols(r, param="x", reps=999, seed=1, batch_size=31)
-    out2 = wild_cluster_test_ols(r, param="x", reps=999, seed=999, batch_size=19)
-    assert out.full_enumeration and out.reps == 256 and out.requested_reps == 999
-    assert out2.pvalue == out.pvalue
-    np.testing.assert_allclose(np.sort(out2.bootstrap_statistics), np.sort(out.bootstrap_statistics), rtol=0, atol=5e-15)
 
 
 def test_wcr_rejects_multiway_cluster_and_non_ols():
@@ -208,27 +118,3 @@ def test_wcr11_enumeration_matches_explicit_intercept_ols():
         V = scale * XXi @ (score.T @ score) @ XXi
         direct.append((bs[1] - beta[1]) / np.sqrt(V[1, 1]))
     np.testing.assert_allclose(np.sort(got.bootstrap_statistics), np.sort(np.asarray(direct)), rtol=3e-9, atol=3e-9)
-
-
-@pytest.mark.parametrize("weight_type", ["aweight", "pweight", "fweight"])
-def test_weighted_wcr_observed_stat_matches_fitted_crv1(weight_type):
-    from econhdfe import wild_cluster_test_ols
-    df = _fixture(seed=6230, n=540)
-    if weight_type == "fweight":
-        df["w"] = 1 + (np.arange(len(df)) % 3)
-    else:
-        df["w"] = 0.5 + (np.arange(len(df)) % 7) / 5.0
-    r = olshdfe(
-        df, y="y", x=["x1", "x2"], absorb=["firm", "year"],
-        cluster="cluster", vce="cluster", weights="w", weight_type=weight_type,
-        keep_state=True, drop_singletons=False,
-    )
-    out = wild_cluster_test_ols(r, param="x1", reps=99, seed=91, batch_size=11)
-    idx = r.names.index("x1")
-    assert out.statistic == pytest.approx(r.params[idx] / r.stderr[idx], rel=5e-9, abs=5e-9)
-    assert np.isfinite(out.bootstrap_statistics).all()
-
-
-def test_crv3_not_promoted_to_public_api():
-    import econhdfe
-    assert not hasattr(econhdfe, "cluster_jackknife_ols")

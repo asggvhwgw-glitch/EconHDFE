@@ -1,4 +1,32 @@
-# Validation status — 0.7
+# Validation status
+
+## Current source: 0.8.3
+
+The 0.8.3 candidate upgrades the package version and carries the compact suite
+and documentation in [PR #21](https://github.com/asggvhwgw-glitch/EconHDFE/pull/21).
+Its final head requires fresh full CI; no earlier green run is transferred to it.
+
+The integrated 0.8.1 baseline is `main@b8890a7`, merged from PR #20. Its tested PR head
+is `d41432f`; [CI 39573323752](https://github.com/asggvhwgw-glitch/EconHDFE/actions/runs/39573323752)
+completed all 16 OS/Python/dependency jobs and the bundle job successfully.
+These records describe that frozen tree, not later maintenance edits.
+
+The current peripheral cleanup adopts a compact **205-case** regression suite.
+It retains independent estimator references and selected statistical/failure
+contracts; it intentionally narrows the broader 916-case checkpoint. The source
+implementation and public API are unchanged by this test reduction. Run `python scripts/run_tests.py --suite full -- -q`
+for all four layers; plain pytest runs only contracts + behavior. A local pass
+for the cleanup does not extend the baseline CI result to a new commit.
+
+Source version 0.8.3 alone is not evidence of a tag, GitHub Release, PyPI upload
+or final artifact acceptance. Check [GitHub Releases](https://github.com/asggvhwgw-glitch/EconHDFE/releases)
+and [PyPI](https://pypi.org/project/econhdfe/) for publication, and use
+[testing.md](testing.md) for the current execution workflow.
+
+## Historical 0.7 evidence
+
+The following checkpoint is retained for provenance and does not describe the
+current suite size or validate 0.8.1.
 
 ## Frozen 0.7.0 source, checked 2026-09-30
 

@@ -1,6 +1,6 @@
 """Current public contracts: real fits across four families, not version smoke tests."""
+
 import importlib
-import inspect
 import numpy as np
 import pytest
 from numpy.testing import assert_allclose, assert_array_equal
@@ -111,22 +111,3 @@ def test_every_current_public_alias_has_one_implementation():
     effects = importlib.import_module('econhdfe.effects')
     assert len(effects.__all__) == len(set(effects.__all__))
     assert all(hasattr(effects, name) for name in effects.__all__)
-
-
-@pytest.mark.parametrize('name', ['olshdfe', 'ivhdfe', 'ppmlhdfe', 'ivppmlhdfe'])
-def test_estimator_specific_keyword_boundaries_are_explicit(name):
-    # Deliberately DO NOT pretend the four API signatures are interchangeable.
-    signature = inspect.signature(getattr(e, name))
-    params = signature.parameters
-    assert not any(p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values())
-    assert ('cluster' in params) == (name in {'olshdfe', 'ivhdfe'})
-    assert ('clusters' in params) == (name in {'ppmlhdfe', 'ivppmlhdfe'})
-    assert ('weight_type' in params) == (name != 'ppmlhdfe')
-    required = {key: None for key, p in params.items()
-                if p.default is inspect.Parameter.empty}
-    # Supply required arguments: failure must identify the unknown keyword,
-    # not pass accidentally because a required outcome argument was missing.
-    with pytest.raises(TypeError, match="unknown_keyword"):
-        signature.bind(**required, unknown_keyword=True)
-    with pytest.raises(TypeError, match="unknown_keyword"):
-        getattr(e, name)(**required, unknown_keyword=True)

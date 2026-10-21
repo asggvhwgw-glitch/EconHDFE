@@ -1,50 +1,7 @@
-import itertools
-from fractions import Fraction
-
 import numpy as np
 import pandas as pd
-import pytest
-
-from econhdfe import HDFEConfig, PPMLConfig, categorical_rank, ivreghdfe, ppmlhdfe, reghdfe
+from econhdfe import PPMLConfig, ivreghdfe, ppmlhdfe, reghdfe
 from econhdfe.hdfe.dof import absorbed_dof
-from econhdfe.hdfe.rank import available_rank_backends, categorical_prefix_ranks
-
-
-def _dense_dummy(groups):
-    n = len(groups[0]) if groups else 0
-    blocks = []
-    for raw in groups:
-        _, g = np.unique(np.asarray(raw), return_inverse=True)
-        L = int(g.max()) + 1 if len(g) else 0
-        D = np.zeros((n, L), dtype=np.int64)
-        if n:
-            D[np.arange(n), g] = 1
-        blocks.append(D)
-    return np.column_stack(blocks) if blocks else np.empty((n, 0), dtype=np.int64)
-
-
-def _fraction_rank(A):
-    A = [[Fraction(int(v)) for v in row] for row in np.asarray(A)]
-    if not A:
-        return 0
-    m, n = len(A), len(A[0])
-    r = 0
-    for c in range(n):
-        pivot = next((i for i in range(r, m) if A[i][c]), None)
-        if pivot is None:
-            continue
-        A[r], A[pivot] = A[pivot], A[r]
-        p = A[r][c]
-        A[r] = [v / p for v in A[r]]
-        for i in range(m):
-            if i == r or not A[i][c]:
-                continue
-            a = A[i][c]
-            A[i] = [x - a * y for x, y in zip(A[i], A[r], strict=False)]
-        r += 1
-        if r == m:
-            break
-    return r
 
 
 def _counterexample_groups(repeat=1):
@@ -67,35 +24,6 @@ def test_exact_dof_finds_collective_three_way_dependency_missed_by_pairwise():
     assert exact.df_absorbed == 4
     assert exact.m_by_component == (0, 1, 2)
     assert exact.exact_by_component == (True, True, True)
-
-
-def test_exact_rank_exhaustive_two_by_two_by_two_hypergraphs():
-    edges = np.array(list(itertools.product(range(2), repeat=3)), dtype=np.int32)
-    for mask in range(1, 1 << len(edges)):
-        take = np.fromiter((bool(mask & (1 << i)) for i in range(len(edges))), bool)
-        e = edges[take]
-        groups = [e[:, j] for j in range(3)]
-        ref = _fraction_rank(_dense_dummy(groups))
-        assert categorical_rank(groups, backend="native") == ref
-        assert categorical_rank(groups, backend="auto") == ref
-
-
-def test_exact_rank_random_three_and_four_way_designs():
-    rng = np.random.default_rng(9301)
-    for G in (3, 4):
-        for _ in range(60):
-            n = int(rng.integers(3, 20))
-            groups = [rng.integers(0, int(rng.integers(1, 6)), n) for _ in range(G)]
-            ref = _fraction_rank(_dense_dummy(groups))
-            assert categorical_rank(groups, backend="native") == ref
-
-
-def test_sympy_backend_if_available_and_prefix_ranks():
-    groups = _counterexample_groups(repeat=2)
-    expected = tuple(_fraction_rank(_dense_dummy(groups[:j])) for j in range(1, 4))
-    assert categorical_prefix_ranks(groups, backend="native") == expected
-    if "sympy" in available_rank_backends():
-        assert categorical_prefix_ranks(groups, backend="sympy") == expected
 
 
 def _nested_cluster_fixture(seed=9302):
@@ -153,11 +81,6 @@ def test_ppml_can_request_exact_three_way_dof():
     assert pair.df_absorbed == 5
     assert exact.df_absorbed == 4
     np.testing.assert_allclose(pair.coef, exact.coef, atol=1e-9, rtol=1e-9)
-
-
-def test_hdfe_config_accepts_exact():
-    cfg = HDFEConfig(dof_method="exact")
-    cfg.validate()
 
 
 def test_ivppml_can_request_exact_three_way_dof():

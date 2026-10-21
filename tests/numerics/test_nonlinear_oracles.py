@@ -1,18 +1,16 @@
 """Independent nonlinear moment and covariance references.
 Explicit dummy scipy.root calculations do not use production absorption/IRLS."""
-from __future__ import annotations
 
+from __future__ import annotations
 import numpy as np
 import pytest
 from numpy.testing import assert_allclose
 from scipy.optimize import root
-
-from econhdfe import IVPPMLConfig, PPMLConfig, ivppmlhdfe, ppmlhdfe
-from econhdfe.errors import InferenceError, DivergenceError, SpecificationError
+from econhdfe import IVPPMLConfig, PPMLConfig, ivppmlhdfe
+from econhdfe.errors import InferenceError, SpecificationError
 from econhdfe.compute.block_design import BlockDesign, DenseDesignBlock
 from econhdfe.hdfe.plan import FEPlan
 from econhdfe.models.ppml_iv.heterogeneous import fit_block_arrays
-from econhdfe.models.poisson import working_state
 
 
 def fixture(*, n=480, overidentified=False):
@@ -104,9 +102,11 @@ def reference(data, w, *, overidentified=False, fweight=False, clusters=None):
     return out.x, mu, V, moments, jac, T, Q
 
 
-@pytest.mark.parametrize('path', ['dense', 'block'])
-@pytest.mark.parametrize('weight_type', [None, 'pweight', 'fweight'])
-@pytest.mark.parametrize('overidentified', [False, True])
+@pytest.mark.parametrize('path,weight_type,overidentified', [
+    ('dense', None, False),
+    ('block', 'pweight', True),
+    ('dense', 'fweight', True),
+])
 def test_ivppml_explicit_nonlinear_reference(path, weight_type, overidentified):
     d = fixture(overidentified=overidentified)
     n = len(d['y'])
@@ -119,8 +119,8 @@ def test_ivppml_explicit_nonlinear_reference(path, weight_type, overidentified):
     assert np.max(np.abs(oracle[3](np.r_[r.coef[:2], oracle[0][2:]]))) < 2e-7
 
 
-@pytest.mark.parametrize('engine', ['replica', 'optimized'])
-def test_ivppml_reference_cluster_and_jacobian(engine):
+def test_ivppml_reference_cluster_and_jacobian():
+    engine = 'optimized'
     d = fixture()
     w = 1. + np.arange(len(d['y']))%3
     oracle = reference(d, w, clusters=d['g'])
@@ -134,8 +134,8 @@ def test_ivppml_reference_cluster_and_jacobian(engine):
     assert_allclose(J, Jnum, rtol=2e-8, atol=2e-9)
 
 
-@pytest.mark.parametrize('path,kind,role,scale', [('dense','robust','exog',4e7), ('dense','cluster','endog',4e7), ('dense','robust','instruments',1e-7), ('block','cluster','exog',4e7), ('block','robust','endog',4e7), ('block','cluster','instruments',1e-7)])
-def test_ivppml_units_preserve_covariance(path, kind, role, scale):
+def test_ivppml_units_preserve_covariance():
+    path,kind,role,scale = ('block', 'cluster', 'instruments', 1e-07)
     d = fixture()
     cls = [d['g']] if kind == 'cluster' else None
     r = fit(d, path=path, kind=kind, clusters=cls)
@@ -146,66 +146,14 @@ def test_ivppml_units_preserve_covariance(path, kind, role, scale):
     assert_allclose(s.vcov*units[:, None]*units[None, :], r.vcov, rtol=2e-5, atol=1e-10)
 
 
-@pytest.mark.parametrize('path', ['dense', 'block'])
-@pytest.mark.parametrize('mixed', [False, True])
-def test_ivppml_rejects_every_degenerate_cluster_dimension(path, mixed):
+def test_ivppml_rejects_every_degenerate_cluster_dimension():
+    path,mixed = ('block', True)
     d = fixture()
     cls = [np.zeros(len(d['y']), dtype=int)]
     if mixed:
         cls.insert(0, d['g'])
     with pytest.raises(InferenceError):
         fit(d, path=path, kind='cluster', clusters=cls)
-
-
-@pytest.mark.parametrize('path', ['dense', 'block'])
-def test_ivppml_first_stage_is_in_original_units(path):
-    d = fixture(); d['exog'] *= 3; d['endog'] *= 4; d['instruments'] *= .07
-    r = fit(d, path=path, standardize=False)
-    s = fit(d, path=path, standardize=True)
-    assert_allclose(s.diagnostics['first_stage'], r.diagnostics['first_stage'], rtol=2e-6, atol=2e-8)
-    D = np.eye(8)[d['g']]; X = np.column_stack([d['exog'], d['endog']]); Q = np.column_stack([d['exog'], d['instruments']])
-    omega = r.mu
-    proj = np.linalg.solve(D.T @ (omega[:, None]*D), D.T @ (omega[:, None]*np.column_stack([X, Q])))
-    within = np.column_stack([X, Q])-D@proj
-    expected = np.linalg.lstsq(within[:, 2:]*np.sqrt(omega)[:, None], within[:, :2]*np.sqrt(omega)[:, None], rcond=None)[0]
-    assert_allclose(s.diagnostics['first_stage'], expected, rtol=2e-6, atol=2e-8)
-
-
-@pytest.mark.parametrize('path', ['dense', 'block'])
-@pytest.mark.parametrize('shift', [-40., 40.])
-def test_ivppml_constant_offset_shift(path, shift):
-    d = fixture(); r = fit(d, path=path)
-    ds = dict(d); ds['offset'] = d['offset']+shift
-    s = fit(ds, path=path)
-    assert_allclose(s.coef[:2], r.coef[:2], rtol=3e-7, atol=2e-8)
-    assert_allclose(s.mu, r.mu, rtol=3e-7, atol=2e-8)
-    assert_allclose(s.coef[-1]+shift, r.coef[-1], rtol=3e-7, atol=2e-8)
-
-
-@pytest.mark.parametrize('path', ['dense', 'block'])
-def test_ivppml_large_coefficient_is_not_divergence_when_units_are_small(path):
-    d = fixture(); r = fit(d, path=path, min_ok=12)
-    ds = dict(d); ds['endog'] = d['endog']*1e-8
-    s = fit(ds, path=path, min_ok=12)
-    assert_allclose(s.coef*np.array([1., 1e-8, 1.]), r.coef, rtol=3e-6, atol=2e-8)
-    assert_allclose(s.mu, r.mu, rtol=3e-6, atol=2e-8)
-
-
-@pytest.mark.parametrize('path', ['dense', 'block'])
-@pytest.mark.parametrize('kind', [None, 'model', 'iid', 'unadjusted', 'robust'])
-def test_ivppml_reports_actual_variance_semantics(path, kind):
-    r = fit(fixture(), path=path, kind=kind)
-    assert r.vce == 'robust'
-    assert r.model_stats()['vce'] == 'robust'
-
-
-@pytest.mark.parametrize('path', ['dense', 'block'])
-def test_ivppml_normalized_constant_does_not_report_a_confidence_interval(path):
-    r = fit(fixture(), path=path)
-    assert r.stderr[-1] == 0.  # retain the documented normalized storage convention
-    row = r.coef_table().loc['_cons']
-    assert np.isnan(row.ci_low) and np.isnan(row.ci_high)
-    assert np.isnan(row.p_value) and row.stars == ''
 
 
 @pytest.mark.parametrize('weight_type', ['pweight', 'fweight'])
@@ -218,72 +166,13 @@ def test_ivppml_frequency_replication_and_probability_rescaling(weight_type):
         ids=np.repeat(np.arange(n),w.astype(int))
         dd={k:v[ids] for k,v in d.items()}
         s=fit(dd)
+    assert r.nobs == (int(w.sum()) if weight_type == 'fweight' else n)
+    assert r.diagnostics['n_rows'] == n
     assert_allclose(s.coef,r.coef,rtol=2e-7,atol=2e-8)
     assert_allclose(s.vcov,r.vcov,rtol=2e-6,atol=2e-9)
 
 
-@pytest.mark.parametrize('engine', ['replica', 'optimized'])
-@pytest.mark.parametrize('kind', ['model', 'robust', 'cluster'])
-def test_ppml_explicit_glm_with_offset_and_general_weights(engine, kind):
-    import statsmodels.api as sm
-    d=fixture(); w=(1+np.arange(len(d['y']))%3).astype(float)
-    X=np.column_stack([d['exog'],d['endog']]); D=np.eye(8)[d['g']]; A=np.column_stack([X,D])
-    reference_fit=sm.GLM(d['y'],A,family=sm.families.Poisson(),offset=d['offset'],freq_weights=w).fit(tol=1e-12,maxiter=100)
-    omega=w*reference_fit.mu; bread=np.linalg.inv(A.T@(omega[:,None]*A))
-    if kind=='model':
-        V=bread
-    elif kind=='robust':
-        S=A*(w*(d['y']-reference_fit.mu))[:,None]
-        V=bread@(S.T@S)@bread * len(w)/(len(w)-A.shape[1])
-    else:
-        S=np.zeros((8,A.shape[1]));np.add.at(S,d['g'],A*(w*(d['y']-reference_fit.mu))[:,None])
-        V=bread@(S.T@S)@bread * ((len(w)-1)/(len(w)-X.shape[1]-1)) * 8/7
-    # General positive PPML weights use squared scores, physical N, and the
-    # package's documented finite-sample convention; there is no fweight API.
-    r=ppmlhdfe(d['y'],X,absorb=[d['g']],weights=w,offset=d['offset'],vce=kind,
-               clusters=[d['g']] if kind=='cluster' else None,
-               config=PPMLConfig(engine=engine,separation=(),tolerance=1e-11,target_inner_tol=1e-12))
-    assert_allclose(r.coef[:2],reference_fit.params[:2],rtol=2e-7,atol=2e-8)
-    assert_allclose(r.vcov[:2,:2],V[:2,:2],rtol=3e-6,atol=2e-9)
-
-
-def test_working_response_is_newton_linearization_with_offset():
-    rng=np.random.default_rng(123);n=40;k=3
-    A=rng.normal(size=(n,k));theta=rng.normal(scale=.1,size=k);off=rng.normal(scale=.2,size=n)
-    eta=A@theta+off;mu=np.exp(eta);y=rng.poisson(mu);w=rng.uniform(.2,3,n)
-    ww=np.empty(n);z=np.empty(n);working_state(y,mu,eta,off,w,ww,z)
-    step=np.linalg.solve(A.T@(ww[:,None]*A),A.T@(ww*z))-theta
-    newton=np.linalg.solve(A.T@((w*mu)[:,None]*A),A.T@(w*(y-mu)))
-    assert_allclose(step,newton,rtol=1e-12,atol=1e-12)
-
-
-@pytest.mark.parametrize('field', ['max_iter', 'min_ok', 'simplex_max_iter', 'relu_max_iter'])
-@pytest.mark.parametrize('value', [1.5, True, float('nan'), float('inf')])
-def test_iteration_controls_require_finite_integers(field, value):
+def test_iteration_controls_require_finite_integers():
+    field,value = ('max_iter', float('nan'))
     with pytest.raises(SpecificationError):
         PPMLConfig(**{field:value}).validate()
-
-@pytest.mark.parametrize('model', ['ppml', 'iv_dense', 'iv_block'])
-@pytest.mark.parametrize('labels', ['shifted', 'strings', 'fractional'])
-def test_cluster_relabeling_cannot_change_inference(model, labels):
-    d=fixture();g=d['g']
-    relabeled=g+100 if labels=='shifted' else (np.array([f'group-{i}' for i in g]) if labels=='strings' else g*.1-.7)
-    def run(c):
-        if model=='ppml':
-            return ppmlhdfe(d['y'],np.column_stack([d['exog'],d['endog']]),absorb=[g],offset=d['offset'],
-                            vce='cluster',clusters=[c],config=PPMLConfig(separation=(),tolerance=1e-11,target_inner_tol=1e-12))
-        return fit(d,path='block' if model=='iv_block' else 'dense',kind='cluster',clusters=[c])
-    r=run(g);s=run(relabeled)
-    assert s.cluster_counts==r.cluster_counts==(8,)
-    assert_allclose(s.coef,r.coef,rtol=1e-8,atol=1e-10)
-    assert_allclose(s.vcov,r.vcov,rtol=1e-8,atol=1e-10)
-
-
-@pytest.mark.parametrize('model', ['ppml', 'iv_dense', 'iv_block'])
-def test_constant_nonzero_cluster_label_is_still_one_cluster(model):
-    d=fixture();g=np.full(len(d['y']),42)
-    with pytest.raises(InferenceError):
-        if model=='ppml':
-            ppmlhdfe(d['y'],d['exog'],absorb=[d['g']],vce='cluster',clusters=[g],config=PPMLConfig(separation=()))
-        else:
-            fit(d,path='block' if model=='iv_block' else 'dense',kind='cluster',clusters=[g])

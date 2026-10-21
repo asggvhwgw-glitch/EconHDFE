@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.8.3 — unreleased candidate
+
+- Advance from 0.8.1 through the controlled version workflow; freeze a new public-contract snapshot without API changes, reset execution acceptance, and retain prior snapshots. This source candidate does not create a tag or publish packages.
+
+- Reduce the regular suite from the intermediate 916-case checkpoint to 205 focused cases; archive the wider tests outside the source tree and document the narrower coverage. Preserve retained assertions/tolerances and installed-wheel provenance checks.
+
+- Replace redundant parameter products with explicit representative cases and retire smoke checks covered by independent numerical oracles; keep statistical failure regressions, tolerances and the full CI matrix.
+- Remove obsolete audit JSON side effects and architecture-rendering string checks; retain package provenance, generated-map freshness and release integrity checks.
+- Synchronize both READMEs, contributor/test instructions and the roadmap with the 0.8.3 source; distinguish current source, historical validation and published packages.
+
 ## 0.8.1 — unreleased candidate
 
 - Optimize FE absorption with adaptive MAP-to-CG continuation, pooled projection kernels and CG vector fusion.

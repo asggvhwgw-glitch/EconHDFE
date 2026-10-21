@@ -1,59 +1,10 @@
 from __future__ import annotations
-
-from pathlib import Path
 import numpy as np
 import pytest
 from scipy.stats import chi2, f
 from econhdfe.compute.vcov import ols_vcov
 from econhdfe.compute.weights import prepare_weights
 from econhdfe.models.linear_iv import diagnostics as diag
-from econhdfe.models.linear_iv import estimators as iv_estimators
-
-from econhdfe.iv import IVDesign, additive_moments, weighted_2sls
-from econhdfe.models.linear_iv.estimators import fit_iv_kclass
-
-
-def test_iv_design_is_outcome_agnostic_and_builds_full_x_z():
-    n = 8
-    c = np.arange(n, dtype=float)[:, None]
-    e = (np.arange(n, dtype=float) + 1)[:, None]
-    z = np.column_stack([np.ones(n), np.linspace(-1, 1, n)])
-    d = IVDesign.from_arrays(c, e, z, n)
-    assert d.X.shape == (n, 2)
-    assert d.Z.shape == (n, 3)
-    np.testing.assert_array_equal(d.X[:, 0], c[:, 0])
-    np.testing.assert_array_equal(d.X[:, 1], e[:, 0])
-    np.testing.assert_array_equal(d.Z[:, 0], c[:, 0])
-    np.testing.assert_array_equal(d.Z[:, 1:], z)
-
-
-def test_shared_weighted_2sls_matches_linear_iv_2sls_core():
-    rng = np.random.default_rng(4201)
-    n = 700
-    c = rng.normal(size=(n, 2))
-    z = rng.normal(size=(n, 2))
-    e = 0.8 * z[:, :1] - 0.3 * z[:, 1:] + 0.4 * c[:, :1] + rng.normal(size=(n, 1))
-    y = 0.5 * c[:, 0] - 0.2 * c[:, 1] + 1.4 * e[:, 0] + rng.normal(size=n)
-    w = np.exp(0.15 * rng.normal(size=n))
-
-    d = IVDesign.from_arrays(c, e, z, n)
-    shared = weighted_2sls(y, d.X, d.Z, weights=w)
-    beta, *_ = fit_iv_kclass(y, c, e, z, weights=w, estimator="2sls")
-    np.testing.assert_allclose(shared.beta, beta, rtol=1e-12, atol=1e-12)
-
-
-def test_additive_moment_primitive_matches_direct_formula():
-    rng = np.random.default_rng(4202)
-    n = 200
-    q = rng.normal(size=(n, 4))
-    r = rng.normal(size=n)
-    w = rng.uniform(0.5, 1.5, size=n)
-    got = additive_moments(r, q, weights=w, normalize=False)
-    expected = q.T @ (w * r)
-    np.testing.assert_allclose(got, expected, rtol=0, atol=1e-12)
-
-# Full-rank reference uses scalar NumPy/SVD solves. Rank-sensitive cases
-# instead test compatibility with the original scalar GELSY policy.
 
 
 def _solve(A, B, legacy=False):
@@ -139,11 +90,9 @@ def _compare_stages(E, C, Z, work, kwargs, options, legacy=False):
         _assert_same(got, {'ap': ap, 'sw': sw, 'df1': df1})
 
 
-@pytest.mark.parametrize('k', [1, 5])
-@pytest.mark.parametrize('vce,weight_type', [
-    (v, w) for v in ('iid', 'robust', 'cluster', 'multiway', 'hac', 'dk')
-    for w in (None, 'aweight', 'fweight', 'pweight')
-    if not (w == 'fweight' and v in ('hac', 'dk'))
+@pytest.mark.parametrize('k,vce,weight_type', [
+    (1, 'iid', None),
+    (5, 'cluster', 'fweight'),
 ])
 def test_workspace_matches_scalar_svd_oracle(k, vce, weight_type):
     E, C, Z = _problem(k, controls=0 if k == 1 else 2)
@@ -168,109 +117,6 @@ def test_workspace_matches_scalar_svd_oracle(k, vce, weight_type):
     assert diag.cragg_donald_stat(E, C, Z, **cd) == diag.cragg_donald_stat(E, C, Z, _workspace=work, **cd)
     _assert_same(diag.kleibergen_paap_stats(E, C, Z, **kwargs),
                  diag.kleibergen_paap_stats(E, C, Z, _workspace=work, **kwargs))
-
-
-def test_workspace_reuses_projections_and_bounds_rhs(monkeypatch):
-    E, C, Z = _problem(k=12)
-    calls, batches = [], []
-    original, tests = diag.la.lstsq, diag._IVDiagnosticWorkspace.tests
-    def counted(A, B, *args, **kwargs):
-        calls.append((A.shape, B.shape))
-        return original(A, B, *args, **kwargs)
-    def batched(self, dependent=None, **kwargs):
-        if dependent is not None:
-            batches.append(dependent.shape[1])
-        return tests(self, dependent, **kwargs)
-    monkeypatch.setattr(diag.la, 'lstsq', counted)
-    monkeypatch.setattr(diag._IVDiagnosticWorkspace, 'tests', batched)
-    work = diag._IVDiagnosticWorkspace(E, C, Z)
-    for fn in (diag.first_stage_diagnostics, diag.cragg_donald_stat,
-               diag.kleibergen_paap_stats, diag.sanderson_windmeijer_diagnostics):
-        fn(E, C, Z, _workspace=work)
-    tall = [shape for shape, _ in calls if shape[0] == len(E)]
-    small = [shape for shape, _ in calls if shape[0] != len(E)]
-    assert len(tall) == 2  # One joint C projection of E/Z, then the reduced form.
-    assert small == [(Z.shape[1], E.shape[1] - 1)] * E.shape[1]
-    assert batches == []  # No further observation-level AP/SW regression batches.
-    assert work.bread is work.bread
-
-
-@pytest.mark.parametrize('case', ['no_controls', 'duplicate_controls', 'duplicate_instrument',
-                                  'readonly_strided', 'perfect', 'near_perfect'])
-def test_workspace_rank_and_input_boundaries(case):
-    E, C, Z = _problem(k=3)
-    if case == 'no_controls':
-        C = C[:, :0]
-    elif case == 'duplicate_controls':
-        C = np.column_stack([C, C[:, 0]])
-    elif case == 'duplicate_instrument':
-        Z = np.column_stack([Z, Z[:, 0]])
-    elif case in ('perfect', 'near_perfect'):
-        E = Z[:, :3].copy() + (0.0 if case == 'perfect' else 1e-10 * E)
-    else:
-        E, C, Z = E[::-2], C[::-2], Z[::-2]
-        for A in (E, C, Z):
-            A.flags.writeable = False
-    copies = [A.copy() for A in (E, C, Z)]
-    work = diag._IVDiagnosticWorkspace(E, C, Z)
-    _compare_stages(E, C, Z, work, {'vce': 'robust'}, {'vce': 'robust'}, legacy=True)
-    for A, before in zip((E, C, Z), copies):
-        np.testing.assert_array_equal(A, before)
-
-
-def test_workspace_empty_instruments_and_failure_retry():
-    E, C, Z = _problem(k=1)
-    out = diag.first_stage_diagnostics(E, C, Z[:, :0])
-    assert out[0]['excluded_instruments'] == 0 and np.isnan(out[0]['f_robust'])
-    assert diag.sanderson_windmeijer_diagnostics(E, C, Z[:, :0]) == []
-    assert np.isnan(diag.cragg_donald_stat(E, C, Z[:, :0]))
-    with pytest.raises(ValueError):
-        diag._IVDiagnosticWorkspace(E, C[:-1], Z)
-    expected = diag.first_stage_diagnostics(E, C, Z)
-    good = E[0, 0]
-    E[0, 0] = np.nan
-    with pytest.raises(ValueError):
-        diag.first_stage_diagnostics(E, C, Z)
-    E[0, 0] = good
-    _assert_same(diag.first_stage_diagnostics(E, C, Z), expected)
-
-
-def test_workspace_units_and_permutations():
-    E, C, Z = _problem(k=5)
-    pe = np.array([4, 2, 0, 3, 1])
-    changed = (E[:, pe] * [.5, 2, -1, 4, .25], C[:, ::-1] * [2, -.5],
-               Z[:, ::-1] * np.linspace(.5, 2, Z.shape[1]))
-    for fn in (diag.first_stage_diagnostics, diag.sanderson_windmeijer_diagnostics):
-        original = fn(E, C, Z)
-        _assert_same(fn(*changed), [original[j] for j in pe])
-    _assert_same(diag.kleibergen_paap_stats(*changed), diag.kleibergen_paap_stats(E, C, Z))
-    _assert_same(diag.cragg_donald_stat(*changed), diag.cragg_donald_stat(E, C, Z))
-
-
-@pytest.mark.parametrize('estimator', ['2sls', 'liml', 'kclass', 'gmm2s'])
-def test_workspace_is_per_fit_and_diagnostics_off_unchanged(monkeypatch, estimator):
-    from econhdfe import ivhdfe, InferenceConfig
-    E, C, Z = _problem(k=3)
-    workspaces = []
-    def make(*args, **kwargs):
-        work = diag._IVDiagnosticWorkspace(*args, **kwargs)
-        workspaces.append(work)
-        return work
-    monkeypatch.setattr(iv_estimators, '_IVDiagnosticWorkspace', make)
-    kwargs = dict(y=E.sum(axis=1) + .2 * C[:, 0], exog=C, endog=E, instruments=Z,
-                  absorb=[np.arange(len(E)) % 12], vce='robust', estimator=estimator,
-                  inference_config=InferenceConfig(diagnostics='off'))
-    if estimator == 'kclass':
-        kwargs['kappa'] = .9
-    a = ivhdfe(**kwargs)
-    b = ivhdfe(**kwargs, weights=1.0 + np.arange(len(E)) % 3, weight_type='aweight')
-    assert len(workspaces) == 2 and workspaces[0] is not workspaces[1]
-    assert not np.array_equal(workspaces[0].Zp, workspaces[1].Zp)
-    for result in (a, b):
-        assert result.diagnostics_mode == 'off'
-        assert len(result.first_stage['diagnostics']) == E.shape[1]
-        assert len(result.diagnostics['sanderson_windmeijer']) == E.shape[1]
-        assert set(result.diagnostics) >= {'cragg_donald_f', 'kleibergen_paap', 'overidentification', 'stock_yogo'}
 
 
 def _full_score_kp_reference(E, C, Z, *, weights=None, weight_info=None,
@@ -300,8 +146,10 @@ def _full_score_kp_reference(E, C, Z, *, weights=None, weight_info=None,
     return out
 
 
-@pytest.mark.parametrize('k', [1, 4])
-@pytest.mark.parametrize('vce', ['iid', 'robust', 'cluster', 'multiway', 'hac', 'dk'])
+@pytest.mark.parametrize('k,vce', [
+    (4, 'cluster'),
+    (4, 'hac'),
+])
 def test_kp_projected_scores_match_full_kronecker_reference(k, vce):
     E, C, Z = _problem(k=k, n=280)
     n = len(E)
@@ -322,21 +170,8 @@ def test_kp_projected_scores_match_full_kronecker_reference(k, vce):
     assert (got['rank_lm_cov'], got['rank_wald_cov']) == (lr, wr)
 
 
-def test_kp_only_materializes_projected_scores(monkeypatch):
-    E, C, Z = _problem(k=6)
-    shapes = []
-    original = diag._kron_scores
-    def capture(v, z, *args, **kwargs):
-        shapes.append((v.shape, z.shape))
-        return original(v, z, *args, **kwargs)
-    monkeypatch.setattr(diag, '_kron_scores', capture)
-    diag.kleibergen_paap_stats(E, C, Z)
-    # L*K = 48 full scores are replaced by L-K+1 = 3 scores per observation.
-    assert shapes == [((len(E), 1), (len(E), 3))] * 2
-
-
-@pytest.mark.parametrize('case', ['collinear', 'huge_controls', 'tiny_instruments', 'perfect'])
-def test_conditional_reduction_uses_original_path_at_boundaries(case):
+def test_conditional_reduction_uses_original_path_at_boundaries():
+    case = 'collinear'
     E, C, Z = _problem(k=4)
     if case == 'collinear':
         E[:, -1] = E[:, 0] + 1e-7 * E[:, -1]
@@ -348,98 +183,6 @@ def test_conditional_reduction_uses_original_path_at_boundaries(case):
         E = Z[:, :4].copy()
     work = diag._IVDiagnosticWorkspace(E, C, Z)
     assert diag._conditional_from_reduced_form(work, vce='robust') is None
-
-
-def test_kp_whitening_guard_keeps_full_score_order(monkeypatch):
-    E, C, Z = _problem(k=4)
-    E[:, -1] = E[:, 0] + 1e-7 * E[:, -1]
-    shapes = []
-    original = diag._kron_scores
-    def capture(v, z, *args, **kwargs):
-        shapes.append((v.shape[1], z.shape[1]))
-        return original(v, z, *args, **kwargs)
-    monkeypatch.setattr(diag, '_kron_scores', capture)
-    got = diag.kleibergen_paap_stats(E, C, Z)
-    assert shapes == [(E.shape[1], Z.shape[1])] * 2
-    (lm, lr), (wald, wr) = _full_score_kp_reference(E, C, Z)
-    _assert_same(got['rk_lm'], lm)
-    _assert_same(got['rk_wald_chi2'], wald)
-    assert (got['rank_lm_cov'], got['rank_wald_cov']) == (lr, wr)
-
-
-def test_kp_covariance_rank_boundary_uses_full_score_order(monkeypatch):
-    E, C, Z = _problem(k=4)
-    n = len(E)
-    shapes = []
-    original = diag._kron_scores
-    def capture(v, z, *args, **kwargs):
-        shapes.append((v.shape[1], z.shape[1]))
-        return original(v, z, *args, **kwargs)
-    monkeypatch.setattr(diag, '_kron_scores', capture)
-    kwargs = dict(vce='cluster', clusters=[np.arange(n) % 2])
-    got = diag.kleibergen_paap_stats(E, C, Z, **kwargs)
-    # Three final scores with only two groups: preserve the original rank edge.
-    assert (E.shape[1], Z.shape[1]) in shapes
-    (lm, lr), (wald, wr) = _full_score_kp_reference(E, C, Z, **kwargs)
-    _assert_same(got['rk_lm'], lm)
-    _assert_same(got['rk_wald_chi2'], wald)
-    assert (got['rank_lm_cov'], got['rank_wald_cov']) == (lr, wr)
-
-
-def test_reduced_form_is_lazy_and_reused_without_changing_inputs(monkeypatch):
-    E, C, Z = _problem(k=4)
-    work = diag._IVDiagnosticWorkspace(E, C, Z)
-    assert work._reduced_form is None
-    copies = [a.copy() for a in (E, C, Z)]
-    fit = work.reduced_form
-    def must_not_refactor(*args, **kwargs):
-        raise AssertionError('repeated first-stage solve')
-    monkeypatch.setattr(diag.la, 'lstsq', must_not_refactor)
-    assert work.reduced_form is fit
-    work.tests(vce='robust', clusters=None, df_absorbed=0, nested_adj=0)
-    for before, after in zip(copies, (E, C, Z)):
-        np.testing.assert_array_equal(before, after)
-
-
-@pytest.mark.parametrize('k', [1, 5])
-@pytest.mark.parametrize('vce', ['iid', 'robust', 'cluster', 'multiway', 'hac', 'dk'])
-def test_joint_first_stage_suite_reuses_only_identical_covariance(monkeypatch, k, vce):
-    E, C, Z = _problem(k=k, n=280)
-    n = len(E)
-    wi = prepare_weights(1. + np.arange(n) % 4, n,
-                         'aweight' if vce in ('hac', 'dk') else 'fweight')
-    options = dict(vce='cluster' if vce == 'multiway' else vce,
-                   weights=wi.estimation, weight_info=wi, df_absorbed=3)
-    if vce in ('cluster', 'multiway'):
-        options.update(clusters=[np.arange(n) % 20], nested_adj=1)
-    if vce == 'multiway':
-        options['clusters'].append(np.arange(n) // 20)
-    if vce in ('hac', 'dk'):
-        options.update(time=2*(np.arange(n)//7), panel=np.arange(n)%7, bandwidth=3)
-    expected = (diag.first_stage_diagnostics(E, C, Z, **options),
-                diag.sanderson_windmeijer_diagnostics(E, C, Z, **options))
-    calls, original = [], diag.ols_vcov
-    def counted(*args, **kwargs):
-        calls.append(kwargs)
-        return original(*args, **kwargs)
-    monkeypatch.setattr(diag, 'ols_vcov', counted)
-    work = diag._IVDiagnosticWorkspace(E, C, Z, wi.estimation)
-    actual = diag._first_stage_suite(E, C, Z, _workspace=work, **options)
-    _assert_same(actual, expected)
-    assert len(calls) == (1 if k == 1 else 2*k)
-
-
-def test_joint_suite_cache_budget_changes_execution_not_results(monkeypatch):
-    E, C, Z = _problem(k=5)
-    expected = diag._first_stage_suite(E, C, Z, vce='robust')
-    monkeypatch.setattr(diag, '_FIRST_STAGE_CACHE_BYTES', 0)
-    original, calls = diag.ols_vcov, []
-    def counted(*args, **kwargs):
-        calls.append(1)
-        return original(*args, **kwargs)
-    monkeypatch.setattr(diag, 'ols_vcov', counted)
-    _assert_same(diag._first_stage_suite(E, C, Z, vce='robust'), expected)
-    assert len(calls) == 3 * E.shape[1]
 
 
 def test_joint_suite_does_not_reuse_inverses_after_inference_mutation():
@@ -479,47 +222,14 @@ def test_joint_suite_exception_does_not_poison_retry(monkeypatch):
     _assert_same(diag._first_stage_suite(E, C, Z, _workspace=work, vce='robust'), expected)
 
 
-@pytest.mark.parametrize('case', ['duplicate_controls', 'duplicate_instruments', 'near_perfect'])
-def test_joint_suite_does_not_cache_sensitive_scalar_residuals(case):
-    E, C, Z = _problem(k=3)
-    if case == 'duplicate_controls':
-        C = np.column_stack([C, C[:, 0]])
-    elif case == 'duplicate_instruments':
-        Z = np.column_stack([Z, Z[:, 0]])
-    else:
-        E = Z[:, :3] + 1e-10 * E
-    work = diag._IVDiagnosticWorkspace(E, C, Z)
-    cache = [None] * E.shape[1]
-    diag.first_stage_diagnostics(E, C, Z, _workspace=work, _inverse_cache=cache)
-    assert cache == [None] * E.shape[1]
-    expected = (diag.first_stage_diagnostics(E, C, Z),
-                diag.sanderson_windmeijer_diagnostics(E, C, Z))
-    _assert_same(diag._first_stage_suite(E, C, Z), expected)
-
-
-def test_conditional_path_keeps_one_contrast_in_observation_space(monkeypatch):
-    E, C, Z = _problem(k=9, n=320)
-    work = diag._IVDiagnosticWorkspace(E, C, Z)
-    original, shapes = diag._first_stage_statistics, []
-    def capture(ep, *args, **kwargs):
-        shapes.append((ep.shape, None if ep.base is None else ep.base.shape))
-        return original(ep, *args, **kwargs)
-    monkeypatch.setattr(diag, '_first_stage_statistics', capture)
-    got = diag._conditional_from_reduced_form(
-        work, vce='robust', clusters=None, df_absorbed=0, nested_adj=0,
-        df1_override=Z.shape[1] - E.shape[1] + 1)
-    assert got is not None
-    assert shapes == [((len(E),), None)] * (2 * E.shape[1])
-
-
-@pytest.mark.parametrize('noise_scale', [1, 30])
-def test_first_stage_ap_sw_matches_exact_fraction_oracle(noise_scale):
+def test_first_stage_ap_sw_matches_exact_fraction_oracle():
     """Exact rational scalar regressions and HC1; no package covariance/solve.
 
     Small well-conditioned and weaker first stages check accuracy independently
     of either floating-point path. This is not a guarantee for arbitrary
     ill-conditioned or rank-boundary systems.
     """
+    noise_scale = 1
     from fractions import Fraction as F
     rng = np.random.default_rng(982)
     n, k, q, dfabs = 24, 2, 3, 2

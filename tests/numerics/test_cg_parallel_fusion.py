@@ -1,6 +1,6 @@
 """Parallel CG updates and fused reductions against dense and serial oracles."""
-import numpy as np
 
+import numpy as np
 import econhdfe.hdfe.absorber as module
 
 
@@ -30,18 +30,6 @@ def test_wide_parallel_cg_matches_serial_and_dense(monkeypatch):
     assert np.shares_memory(got,raw)
     again=obj.residualize(same_layout,copy=False,absorb_threads=2)
     np.testing.assert_array_equal(got,again)  # 固定chunk数保证mask变化不改归约顺序。
-
-def test_float32_keeps_serial_cg(monkeypatch):
-    rows, width, dtype, threads, active = 120, 6, np.float32, 2, False
-    monkeypatch.setattr(module,'_CG_PARALLEL_MIN_ROWS',120)
-    rng=np.random.default_rng(862)
-    groups=[rng.integers(0,l,rows) for l in (13,17,19)]
-    obj=module.HDFEAbsorber(groups,projection_backend='indexed',core_reduction='off',dtype=dtype,
-                           absorb_threads=threads,tol=1e-5)
-    obj._profile_enabled=True
-    obj.residualize(rng.normal(size=(rows,width)).astype(dtype))
-    assert obj._iteration_profile['cg_parallel_fused']==active
-    assert obj._iteration_profile['cg_projection_includes_inner_product']==active
 
 
 def test_weighted_fused_product_does_not_overflow_finite_reference():

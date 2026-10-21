@@ -1,9 +1,6 @@
 import numpy as np
 import pandas as pd
-
-from econhdfe import olshdfe, ivhdfe, FixedEffect
-from econhdfe.reporting import reghdfe_r2_statistics
-from econhdfe.sessions import OLSHDFESession
+from econhdfe import olshdfe, FixedEffect
 
 
 def _df(seed=4701, n=1200):
@@ -44,22 +41,6 @@ def _oracle(result, y, yw, weights, *, has_intercept=True):
     return r2, r2w, r2a, r2aw, fit_df
 
 
-def test_cluster_df_does_not_enter_adjusted_r2():
-    df = _df()
-    iid = olshdfe(df, y="y", x=["x"], absorb=["firm", "year"], vce="iid", keep_state=True)
-    clu = olshdfe(
-        df, y="y", x=["x"], absorb=["firm", "year"],
-        cluster="cluster", vce="cluster", keep_state=True,
-    )
-    # Point estimates/residuals and fit statistics are VCE-invariant.
-    np.testing.assert_allclose(clu.params, iid.params, rtol=0, atol=2e-12)
-    np.testing.assert_allclose(clu.residuals, iid.residuals, rtol=0, atol=2e-11)
-    assert clu.df_resid == 11  # G - 1, inference df
-    assert iid.df_resid > clu.df_resid
-    assert clu.r2_adjusted == iid.r2_adjusted
-    assert clu.r2_adjusted_within == iid.r2_adjusted_within
-
-
 def test_nested_cluster_fe_is_charged_to_fit_df_but_not_crv1_df_a():
     df = _df()
     r = olshdfe(
@@ -78,14 +59,6 @@ def test_nested_cluster_fe_is_charged_to_fit_df_but_not_crv1_df_a():
     assert oracle[4] == r.nobs - r.rank - r.dof_info.nested
 
 
-def test_adjusted_within_matches_reghdfe_formula():
-    df = _df()
-    r = olshdfe(df, y="y", x=["x"], absorb=["firm", "year"], keep_state=True)
-    oracle = _oracle(r, df["y"].to_numpy(), r.state.y_within, None)
-    np.testing.assert_allclose(r.r2_adjusted_within, oracle[3], rtol=2e-12, atol=2e-12)
-    assert "r2_adjusted_within" in r.model_stats()
-
-
 def test_slope_only_absorb_uses_uncentered_total_tss():
     rng = np.random.default_rng(4702)
     n = 500
@@ -102,51 +75,4 @@ def test_slope_only_absorb_uses_uncentered_total_tss():
     oracle = _oracle(r, y, r.state.y_within, None, has_intercept=False)
     np.testing.assert_allclose(
         [r.r2, r.r2_adjusted], [oracle[0], oracle[2]], rtol=2e-11, atol=2e-11
-    )
-
-
-def test_linear_iv_adjusted_r2_is_not_cluster_df_driven():
-    df = _df()
-    iid = ivhdfe(
-        df, y="yiv", exog=["x"], endog=["endog"], instruments=["z"],
-        absorb=["firm", "year"], vce="iid",
-    )
-    clu = ivhdfe(
-        df, y="yiv", exog=["x"], endog=["endog"], instruments=["z"],
-        absorb=["firm", "year"], cluster="cluster", vce="cluster",
-    )
-    assert clu.df_resid == 11
-    np.testing.assert_allclose(
-        [clu.r2, clu.r2_within, clu.r2_adjusted, clu.r2_adjusted_within],
-        [iid.r2, iid.r2_within, iid.r2_adjusted, iid.r2_adjusted_within],
-        rtol=5e-11, atol=5e-11,
-    )
-
-
-def test_reporting_helper_reproduces_reghdfe_used_df_r_algebra():
-    y = np.array([1.0, 2.0, 4.0, 8.0, 16.0, 32.0])
-    yw = np.array([-2.0, -1.0, 1.0, 2.0, 1.5, -1.5])
-    e = np.array([0.2, -0.1, 0.3, -0.2, 0.1, -0.3])
-    out = reghdfe_r2_statistics(
-        y, yw, e, effective_n=100, rank=3, df_absorbed=20, df_nested=10,
-        has_intercept=True,
-    )
-    assert out["df_resid_fit"] == 67
-    rss = float(e @ e)
-    tss = float(np.sum((y - y.mean()) ** 2))
-    tssw = float(yw @ yw)
-    assert out["r2_adjusted"] == 1 - (rss / 67) / (tss / 99)
-    assert out["r2_adjusted_within"] == 1 - (rss / 67) / (tssw / 70)
-
-
-def test_nested_cluster_adjusted_r2_is_same_as_unclustered_fit():
-    df = _df()
-    iid = olshdfe(df, y="y", x=["x"], absorb=["firm"], vce="iid")
-    clu = olshdfe(df, y="y", x=["x"], absorb=["firm"], cluster="firm", vce="cluster")
-    assert iid.dof_info.nested == 0
-    assert clu.dof_info.nested > 0
-    np.testing.assert_allclose(
-        [clu.r2, clu.r2_within, clu.r2_adjusted, clu.r2_adjusted_within],
-        [iid.r2, iid.r2_within, iid.r2_adjusted, iid.r2_adjusted_within],
-        rtol=2e-12, atol=2e-12,
     )

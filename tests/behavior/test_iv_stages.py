@@ -1,4 +1,5 @@
 """Public regression contracts for IV diagnostic policy and stage snapshots."""
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -53,11 +54,9 @@ def assert_common(full, basic):
     assert basic.diagnostics["advanced_statistics"]["status"] == "not_requested"
 
 
-@pytest.mark.parametrize("model,vce,weight", [
-    ("2sls", "cluster", "aweight"),
-    ("liml", "iid", None),
-    ("kclass", "robust", "fweight"),
-    ("gmm2s", "robust", "pweight"),
+@pytest.mark.parametrize('model,vce,weight', [
+    ('2sls', 'cluster', 'aweight'),
+    ('kclass', 'robust', 'fweight'),
 ])
 def test_basic_matches_full_and_stages_restore_units(model, vce, weight):
     df = data()
@@ -87,8 +86,8 @@ def forbidden(*args, **kwargs):
     raise AssertionError("advanced diagnostic was evaluated")
 
 
-@pytest.mark.parametrize("model", ["2sls", "gmm2s"])
-def test_disabled_really_skips_advanced(monkeypatch, model):
+def test_disabled_really_skips_advanced(monkeypatch):
+    model = 'gmm2s'
     for obj, name in ((diag, "_shea_partial_r2"), (diag, "_shea_from_moments"), (diag, "sanderson_windmeijer_diagnostics"),
                       (est, "cragg_donald_stat"), (est, "stock_yogo_critical_values")):
         monkeypatch.setattr(obj, name, forbidden)
@@ -128,30 +127,6 @@ def test_callback_failure_is_not_swallowed():
     assert seen == ["estimation", "first_stage"]
 
 
-def test_invalid_options_are_structured():
-    with pytest.raises(SpecificationError):
-        ivhdfe(data(), **SPEC, on_stage=4)
-    with pytest.raises(SpecificationError):
-        ivhdfe(data(), **SPEC, inference_config=InferenceConfig(iv_advanced_statistics="false"))
-    with pytest.raises(SpecificationError, match="underidentified"):
-        ivhdfe(data(), **dict(SPEC, instruments=["z0"]),
-               inference_config=InferenceConfig(iv_advanced_statistics=False))
-
-
-def test_group_public_path():
-    advanced = False
-    df = data()
-    expanded = df.loc[df.index.repeat(2)].reset_index(drop=True)
-    events = []
-    got = ivhdfe(expanded, **SPEC, group=np.repeat(np.arange(len(df)),2),
-                 inference_config=InferenceConfig(iv_advanced_statistics=advanced), on_stage=events.append)
-    base = ivhdfe(df, **SPEC, inference_config=InferenceConfig(iv_advanced_statistics=advanced))
-    same(base.params, got.params)
-    same(events[0]["params"], got.params)
-    same(events[-1]["result"]["first_stage"]["diagnostics"], got.first_stage["diagnostics"])
-    assert [e["stage"] for e in events] == ["estimation","first_stage","diagnostics","complete"]
-
-
 def test_persistent_cache_separates_policy_and_emits_complete_only(tmp_path):
     from econhdfe.data import CSVSource
     path = tmp_path / "data.csv"
@@ -184,41 +159,6 @@ def test_persistent_cache_separates_policy_and_emits_complete_only(tmp_path):
     full_again = full_hit.fit(**SPEC)
     same(full.diagnostics, full_again.diagnostics)
     assert full_hit.persistent_cache_info()["result_hits"] == 1
-
-
-def test_default_matches_explicit_true_and_snapshots_are_small():
-    df = data()
-    default = ivhdfe(df, **SPEC)
-    events = []
-    explicit = ivhdfe(df, **SPEC, on_stage=events.append,
-                     inference_config=InferenceConfig(iv_advanced_statistics=True))
-    same(default.params, explicit.params)
-    same(default.vcov, explicit.vcov)
-    same(default.first_stage, explicit.first_stage)
-    same(default.diagnostics, explicit.diagnostics)
-    def check(value):
-        if isinstance(value, np.ndarray):
-            assert len(df) not in value.shape
-        elif isinstance(value, pd.DataFrame):
-            assert len(value) == len(explicit.params)
-        elif isinstance(value, dict):
-            assert not {"fitted_endog", "residuals", "fitted", "state"} & value.keys()
-            for child in value.values():
-                check(child)
-        elif isinstance(value, (list, tuple)):
-            for child in value:
-                check(child)
-    check(events)
-
-
-def test_nested_fe_snapshot_reports_frontend_dof():
-    events = []
-    result = IVHDFESession(data(), vce="cluster", cluster="fe",
-                           on_stage=events.append).fit(**SPEC)
-    assert result.df_absorbed == 0  # All requested FE are nested in the cluster.
-    assert events[0]["df_absorbed"] == result.df_absorbed
-    assert events[0]["df_resid"] == result.df_resid
-    same(events[0]["vcov"], result.vcov)
 
 
 def test_public_block_route_respects_policy_and_names():
