@@ -23,6 +23,7 @@ from ..compute.wls import weighted_arrays
 from ..compute.stable_linalg import equilibrated_lstsq, equilibrated_gram_inverse
 from ..compute.vcov import ols_vcov, sandwich_vcov_block_xe
 from ..compute.block_design import BlockDesign
+from ..compute.execution import _check_allocation_headroom
 from ..compute.partitioned_lstsq import partitioned_weighted_lstsq
 from ..hdfe.block_projection import BlockWeightedFEProjector
 from ..hdfe.plan import FEPlan
@@ -261,6 +262,9 @@ def olshdfe(
         method, groups, slopes, intercepts, backend=backend
     )
     acceleration_resolved = _resolve_acceleration(method_resolved, acceleration)
+    if _t0 is not None:
+        _stage_start = perf_counter()
+        _stage_times = {"data_and_fe_seconds": _stage_start - _t0}
     # Compile the regressor design only on the final estimation sample and
     # only after FE canonicalization. This lets structural factor/interaction
     # dependencies be removed before N x K dummy columns are materialized.
@@ -303,6 +307,10 @@ def olshdfe(
     absorber = None
     block_projector = None
     block = None
+    if _t0 is not None:
+        _stage_end = perf_counter()
+        _stage_times["design_seconds"] = _stage_end - _stage_start
+        _stage_start = _stage_end
     if block_native:
         fe_exec_plan = FEPlan.from_arrays(groups)
         block_projector = BlockWeightedFEProjector.from_design(
@@ -312,6 +320,10 @@ def olshdfe(
             projection_memory_budget_mb=memory_budget_mb,
         )
         wproj = np.ones(len(y1), dtype=np.float64) if w1 is None else w1
+        if _t0 is not None:
+            _stage_end = perf_counter()
+            _stage_times["absorber_setup_seconds"] = _stage_end - _stage_start
+            _stage_start = _stage_end
         projected = block_projector.residualize_response_design(
             y1, X1, wproj, tol=tol,
         )
@@ -326,13 +338,23 @@ def olshdfe(
             preconditioner=preconditioner, projection_backend=projection_backend,
             absorb_threads=absorb_threads, memory_budget_mb=memory_budget_mb,
         )
+        _check_allocation_headroom(len(y1) * (X1.shape[1] + 1) * 8)
         block = np.column_stack([y1, X1])
+        if _t0 is not None:
+            _stage_end = perf_counter()
+            _stage_times["absorber_setup_seconds"] = _stage_end - _stage_start
+            _stage_start = _stage_end
         within, info = _residualize_blocks(
             absorber, block, pool_size, memory_budget_mb,
             adaptive_auto=(str(method).lower() == "auto" and str(acceleration).lower() == "auto"),
+            profile=_t0 is not None,
         )
         _check_absorption(info, allow_nonconverged=allow_nonconverged)
         yw, Xw = within[:, 0], within[:, 1:]
+    if _t0 is not None:
+        _stage_end = perf_counter()
+        _stage_times["absorption_seconds"] = _stage_end - _stage_start
+        _stage_start = _stage_end
     # Cluster/time/panel metadata does not participate in FE absorption. Delay
     # encoding until the large within transform is complete to lower peak RSS.
     clusters = _cluster_arrays(data, cluster, mask)
@@ -342,11 +364,19 @@ def olshdfe(
         Xw, X1, xdesign.names, weights=w1, tolerance=collinear_tol, mode=collinearity,
         structural_plan=xdesign.structural_plan,
     )
+    if _t0 is not None:
+        _stage_end = perf_counter()
+        _stage_times["clusters_and_collinearity_seconds"] = _stage_end - _stage_start
+        _stage_start = _stage_end
     dof = absorbed_dof(
         inference_fe.groups, slopes=inference_fe.slopes, intercepts=inference_fe.intercepts,
         clusters=clusters, method=dof_method, adjust_nested=bool(clusters),
         adjust_continuous=True, groups_are_dense=True,
     )
+    if _t0 is not None:
+        _stage_end = perf_counter()
+        _stage_times["dof_seconds"] = _stage_end - _stage_start
+        _stage_start = _stage_end
     vce_kind = resolve_vce_for_weights(vce, winfo, has_clusters=bool(clusters))
     if isinstance(Xw, BlockDesign):
         beta, V, resid, rank, df_resid, lsinfo = _fit_ols_block(
@@ -359,6 +389,10 @@ def olshdfe(
             df_absorbed=dof.df_absorbed, nested_adj=int(dof.nested > 0),
             time=time1, panel=panel1, bandwidth=bandwidth, kernel=kernel,
         )
+    if _t0 is not None:
+        _stage_end = perf_counter()
+        _stage_times["ols_and_vce_seconds"] = _stage_end - _stage_start
+        _stage_start = _stage_end
     fitted = y1 - resid
     fixed_effects = None
     if save_fe:
@@ -467,6 +501,10 @@ def olshdfe(
     )
     if _t0 is not None:
         result.profile = {"total_seconds": perf_counter() - _t0, "mode": execution_config.profile}
+        _stage_times["results_seconds"] = perf_counter() - _stage_start
+        result.profile["stages"] = _stage_times
+        if absorber is not None:
+            result.profile["absorption"] = getattr(absorber, "execution_profile", None)
         if data_plan is not None:
             result.profile["data_ingestion"] = data_plan.as_dict()
         result.profile["sample"] = sample_state.summary()

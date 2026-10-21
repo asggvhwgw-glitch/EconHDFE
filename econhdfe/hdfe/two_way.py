@@ -278,18 +278,19 @@ class TwoWayFEAbsorber:
             self._right_index = build_group_index(self.right, self.n_right)
             self.index_bytes += int(self._left_index.nbytes + self._right_index.nbytes)
 
-    def _group_sums(self, data, side):
+    def _group_sums(self, data, side, *, threads=None):
         if side == "left":
             codes, levels, index = self.left, self.n_left, self._left_index
         elif side == "right":
             codes, levels, index = self.right, self.n_right, self._right_index
         else:
             raise ValueError("side must be left/right")
-        if self.absorb_threads > 1:
+        nthreads = self.absorb_threads if threads is None else threads
+        if nthreads > 1:
             self._ensure_group_indexes()
             index = self._left_index if side == "left" else self._right_index
             return group_sums_indexed_weighted(
-                data, index, self.weights, threads=self.absorb_threads
+                data, index, self.weights, threads=nthreads
             )
         out = np.empty((levels, data.shape[1]), dtype=np.float64)
         weighted = self.weights
@@ -297,10 +298,10 @@ class TwoWayFEAbsorber:
             out[:, j] = np.bincount(codes, weights=weighted * data[:, j], minlength=levels)
         return out
 
-    def _solve(self, data):
+    def _solve(self, data, *, threads=None):
         Y = np.asarray(data, dtype=np.float64)
-        ba = self._group_sums(Y, "left")
-        bb = self._group_sums(Y, "right")
+        ba = self._group_sums(Y, "left", threads=threads)
+        bb = self._group_sums(Y, "right", threads=threads)
         rhs = bb - self.cross.T @ (ba / self.denom_left[:, None])
         gamma = np.zeros((self.n_right, Y.shape[1]), dtype=np.float64)
         sol, converged, worst_it, worst_metric = self._pcg_multi(np.asarray(rhs)[self.keep_right, :])
@@ -315,8 +316,9 @@ class TwoWayFEAbsorber:
         if a.shape[0] != self.nobs:
             raise ValueError("data row count does not match fixed effects")
         out = a.copy() if copy else a
-        alpha, gamma, info = self._solve(a)
-        with numba_thread_limit(self.absorb_threads):
+        nthreads = self.absorb_threads if absorb_threads is None else resolve_threads(absorb_threads, nobs=self.nobs)
+        with numba_thread_limit(nthreads):
+            alpha, gamma, info = self._solve(a, threads=nthreads)
             _subtract_effects_inplace(out, self.left, self.right, alpha, gamma)
         result = out[:, 0] if one_dim else out
         return (result, info) if return_info else result

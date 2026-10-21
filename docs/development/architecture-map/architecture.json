@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "econhdfe",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "evidence": {
     "topology": "Python AST import analysis; package __init__ re-export imports excluded from aggregated dependency counts.",
     "execution_flows": "Explicit semantic overlays reviewed against estimator orchestration modules; not presented as import edges."
@@ -473,10 +473,11 @@
     {
       "source": "compute",
       "target": "contracts",
-      "count": 5,
+      "count": 6,
       "examples": [
         "econhdfe.compute.clusters → econhdfe.errors",
         "econhdfe.compute.context → econhdfe.config",
+        "econhdfe.compute.execution → econhdfe.errors",
         "econhdfe.compute.vcov → econhdfe.errors",
         "econhdfe.compute.weights → econhdfe.errors"
       ]
@@ -652,7 +653,7 @@
     {
       "source": "interface",
       "target": "hdfe",
-      "count": 10,
+      "count": 11,
       "examples": [
         "econhdfe.pipeline → econhdfe.hdfe.absorber",
         "econhdfe.pipeline → econhdfe.hdfe.two_way",
@@ -815,7 +816,7 @@
     {
       "source": "ols",
       "target": "compute",
-      "count": 7,
+      "count": 8,
       "examples": [
         "econhdfe.models.ols → econhdfe.compute.weights",
         "econhdfe.models.ols → econhdfe.compute.wls",
@@ -1362,6 +1363,14 @@
       "source_group": "compute",
       "target_module": "econhdfe.compute.design_plan",
       "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.compute.execution",
+      "source_path": "econhdfe/compute/execution.py",
+      "source_group": "compute",
+      "target_module": "econhdfe.errors",
+      "target_group": "contracts",
       "reexport_surface": false
     },
     {
@@ -2968,6 +2977,14 @@
       "source_module": "econhdfe.models.ols",
       "source_path": "econhdfe/models/ols.py",
       "source_group": "ols",
+      "target_module": "econhdfe.compute.execution",
+      "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ols",
+      "source_path": "econhdfe/models/ols.py",
+      "source_group": "ols",
       "target_module": "econhdfe.compute.partitioned_lstsq",
       "target_group": "compute",
       "reexport_surface": false
@@ -4432,6 +4449,14 @@
       "source_module": "econhdfe.pipeline",
       "source_path": "econhdfe/pipeline.py",
       "source_group": "interface",
+      "target_module": "econhdfe.hdfe.projection",
+      "target_group": "hdfe",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.pipeline",
+      "source_path": "econhdfe/pipeline.py",
+      "source_group": "interface",
       "target_module": "econhdfe.compute.weights",
       "target_group": "compute",
       "reexport_surface": false
@@ -5452,8 +5477,8 @@
     },
     {
       "name": "tests",
-      "files": 80,
-      "python_files": 80,
+      "files": 86,
+      "python_files": 86,
       "markdown_files": 0
     },
     {
@@ -5488,7 +5513,7 @@
     },
     {
       "name": "compatibility",
-      "files": 28,
+      "files": 29,
       "python_files": 0,
       "markdown_files": 0
     }

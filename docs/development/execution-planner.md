@@ -27,6 +27,19 @@ The planner now unifies four execution responsibilities that were previously dis
 
 Explicit integer thread counts always override calibration. Calibration controls only execution resources; it cannot change the model, sample, FE, instruments, weights, clustering, covariance formula, or convergence criterion.
 
+HDFE hot kernels now inherit the resolved outer thread context; they do not
+perform another calibration lookup per FE sweep. Two-way standard factories
+also propagate the requested thread policy.
+
+Runtime headroom combines psutil host availability (including macOS) with
+Linux cgroup limits when readable. An unavailable host counter leaves cgroup
+information intact. Memory values describe the effective planning envelope,
+not process RSS. Pooled HDFE charges known resident solver state plus
+conservative per-column scratch to the user budget, while already-resident
+state is not charged twice against live headroom. Explicit pools are validated;
+automatic planning fails if even one column cannot fit. See
+[solver execution and budget details](../technical/hdfe/solver/design.md).
+
 ## Why calibration is deliberately bounded
 
 Thread scaling for HDFE is usually memory-bandwidth limited. The maximum logical CPU count is therefore not a reliable default. At the same time, microbenchmarks are noisy and cannot guarantee the exact optimum for every topology/operator mix. The auto policy is consequently designed to find a **stable near-saturation region**, not to promise the globally fastest thread count for every regression.

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.1 — unreleased candidate
+
+- Optimize FE absorption with adaptive MAP-to-CG continuation, pooled projection kernels and CG vector fusion.
+- Enforce solver workspace budgets and effective thread counts; add host-memory accounting via psutil.
+- Correct small-scale false convergence with relative CG energy thresholds and MAP column normalization.
+- Invalidate persistent numerical caches with ABI 2; retain encoded-column reuse.
+- Retain 26 focused FE regressions and extend the existing cache-resume regression; public contracts are unchanged from 0.8.0. No new large-sample or external-certification claim.
+
 ## 0.8.0 — unreleased candidate
 
 - Reuse linear-IV matrix products, residuals and cluster aggregates; retain numerical rank safeguards.

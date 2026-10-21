@@ -1,19 +1,21 @@
 from __future__ import annotations
 from dataclasses import dataclass
+from time import perf_counter
+from threading import RLock
 import numpy as np
-from numba import njit
+from numba import get_num_threads, njit, prange
 from scipy.sparse.linalg import LinearOperator, lsmr
 from ..compute.backend import get_array_module
 from ..errors import ConvergenceError
 from .numerical_core import build_numerical_core
 from .projection import (
-    build_group_index, estimate_index_bytes, max_relative_update, numba_thread_limit,
-    project_indexed_inplace, resolve_threads,
+    build_group_index, estimate_index_bytes, numba_thread_limit,
+    _project_indexed_inplace_current, _max_relative_update_parallel, resolve_threads,
 )
 
 
 @njit(cache=True, nogil=True)
-def _project_intercept_matrix_unweighted(a, codes, denom):
+def _project_intercept_matrix_unweighted(a, codes, denom, sums):
     """Fused intercept-only FE projection for many RHS columns.
 
     Scans FE codes once for aggregation and once for write-back instead of
@@ -22,7 +24,7 @@ def _project_intercept_matrix_unweighted(a, codes, denom):
     """
     n, k = a.shape
     L = denom.shape[0]
-    sums = np.zeros((L, k), dtype=np.float64)
+    sums[:, :] = 0.0
     for i in range(n):
         g = int(codes[i])
         for j in range(k):
@@ -36,11 +38,11 @@ def _project_intercept_matrix_unweighted(a, codes, denom):
 
 
 @njit(cache=True, nogil=True)
-def _project_intercept_matrix_weighted(a, codes, weights, denom):
+def _project_intercept_matrix_weighted(a, codes, weights, denom, sums):
     """Fused bounded-RHS weighted intercept projection."""
     n, k = a.shape
     L = denom.shape[0]
-    sums = np.zeros((L, k), dtype=np.float64)
+    sums[:, :] = 0.0
     for i in range(n):
         g = int(codes[i])
         wi = weights[i]
@@ -62,6 +64,73 @@ class AbsorbInfo:
     max_update: float
     criterion: str = "relative_update"
 
+
+@njit(cache=True, nogil=True)
+def _cg_update_residuals(a, r, u, v, alpha):
+    """Fuse two CG updates without N x RHS multiplication temporaries."""
+    for i in range(a.shape[0]):
+        for j in range(a.shape[1]):
+            a[i, j] -= u[i, j] * alpha[j]
+            r[i, j] -= v[i, j] * alpha[j]
+
+
+@njit(cache=True, nogil=True)
+def _cg_update_direction(u, r, beta):
+    for i in range(u.shape[0]):
+        for j in range(u.shape[1]):
+            u[i, j] = r[i, j] + u[i, j] * beta[j]
+
+
+# Fixed reduction chunks make the reduction order independent of thread masks.
+# Large CPU float64 blocks use the parallel path with fixed-size reduction chunks.
+_CG_REDUCTION_CHUNKS = 16
+_CG_PARALLEL_MIN_ROWS = 100_000
+
+
+@njit(cache=True, nogil=True, parallel=True)
+def _cg_update_direction_parallel(u, r, beta):
+    for i in prange(u.shape[0]):
+        for j in range(u.shape[1]):
+            u[i, j] = r[i, j] + u[i, j] * beta[j]
+
+@njit(cache=True, nogil=True, parallel=True)
+def _cg_update_residuals_and_norm(a, r, u, v, alpha, weights):
+    n, k = a.shape
+    parts = np.zeros((_CG_REDUCTION_CHUNKS, k), dtype=np.float64)
+    span = (n + _CG_REDUCTION_CHUNKS - 1) // _CG_REDUCTION_CHUNKS
+    for chunk in prange(_CG_REDUCTION_CHUNKS):
+        for i in range(chunk * span, min(n, (chunk + 1) * span)):
+            for j in range(k):
+                a[i, j] -= u[i, j] * alpha[j]
+                r[i, j] -= v[i, j] * alpha[j]
+                if weights is None:
+                    parts[chunk, j] += r[i, j] * r[i, j]
+                else:
+                    parts[chunk, j] += weights[i] * r[i, j] * r[i, j]
+    sums = np.zeros(k, dtype=np.float64)
+    for chunk in range(_CG_REDUCTION_CHUNKS):
+        for j in range(k):
+            sums[j] += parts[chunk, j]
+    return sums
+
+@njit(cache=True, nogil=True, parallel=True)
+def _cg_subtract_and_inner_product(a, z, weights):
+    n, k = a.shape
+    parts = np.zeros((_CG_REDUCTION_CHUNKS, k), dtype=np.float64)
+    span = (n + _CG_REDUCTION_CHUNKS - 1) // _CG_REDUCTION_CHUNKS
+    for chunk in prange(_CG_REDUCTION_CHUNKS):
+        for i in range(chunk * span, min(n, (chunk + 1) * span)):
+            for j in range(k):
+                z[i, j] = a[i, j] - z[i, j]
+                if weights is None:
+                    parts[chunk, j] += a[i, j] * z[i, j]
+                else:
+                    parts[chunk, j] += weights[i] * a[i, j] * z[i, j]
+    sums = np.zeros(k, dtype=np.float64)
+    for chunk in range(_CG_REDUCTION_CHUNKS):
+        for j in range(k):
+            sums[j] += parts[chunk, j]
+    return sums
 
 @dataclass(slots=True)
 class _TermProjector:
@@ -197,6 +266,12 @@ class HDFEAbsorber:
         self._auto_probe_iterations = 2
         self._auto_contraction_threshold = 0.02
         self.fused_rhs_memory_mb = float(fused_rhs_memory_mb)
+        self._projection_scratch = np.empty(0, dtype=np.float64)
+        # Scratch belongs to this reusable absorber. Protect same-instance
+        # calls even on OpenMP/TBB, where the global workqueue guard is absent.
+        self._execution_lock = RLock()
+        self._profile_enabled = False
+        self._iteration_profile = {}
 
         # Group count/weight sums are invariant across sweeps and reused by
         # intercept projections and slope centering.
@@ -347,23 +422,22 @@ class HDFEAbsorber:
             bytes_per_col = max(1, L) * 8
             budget = max(1, int(self.fused_rhs_memory_mb * (1024**2)))
             fused_block = max(1, min(a.shape[1], budget // bytes_per_col))
-            # Indexed projection wins for small RHS blocks; a fused group-sum
-            # matrix becomes faster once enough RHS columns amortize each row
-            # scan.  Require at least eight columns in one bounded block before
-            # bypassing an already-compiled index.
-            use_fused_many_rhs = a.shape[1] >= 8 and fused_block >= 8
-            if index is not None and not use_fused_many_rhs:
-                project_indexed_inplace(
-                    a, index, weights=w, denom=proj.denom, threads=None
-                )
+            # Keep the compiled backend and inherit the caller's thread mask.
+            # Scalar accumulators avoid tile/scratch overhead for narrow pools.
+            if index is not None:
+                _project_indexed_inplace_current(a, index, w, proj.denom)
                 return
-            if a.shape[1] > 1:
+            if a.shape[1] > 0:
                 for lo in range(0, a.shape[1], fused_block):
                     hi = min(a.shape[1], lo + fused_block)
+                    size = L * (hi - lo)
+                    if self._projection_scratch.size < size:
+                        self._projection_scratch = np.empty(size, dtype=np.float64)
+                    sums = self._projection_scratch[:size].reshape(L, hi - lo)
                     if w is None:
-                        _project_intercept_matrix_unweighted(a[:, lo:hi], codes, proj.denom)
+                        _project_intercept_matrix_unweighted(a[:, lo:hi], codes, proj.denom, sums)
                     else:
-                        _project_intercept_matrix_weighted(a[:, lo:hi], codes, w, proj.denom)
+                        _project_intercept_matrix_weighted(a[:, lo:hi], codes, w, proj.denom, sums)
                 return
 
         for col in range(a.shape[1]):
@@ -513,6 +587,7 @@ class HDFEAbsorber:
         return self
 
     def residualize(self, data, *, copy=True, return_info=False, absorb_threads=None):
+        self._iteration_profile = {}
         xp = self.xp
         a = xp.asarray(data, dtype=self.dtype)
         one_dim = a.ndim == 1
@@ -532,9 +607,11 @@ class HDFEAbsorber:
                 # N x RHS allocation on the large-data execution path.
                 core_input = np.asarray(a)[idx]
                 core_absorber = self._ensure_core_absorber()
+                core_absorber._profile_enabled = self._profile_enabled
                 core_out, core_info = core_absorber.residualize(
                     core_input, copy=False, return_info=True, absorb_threads=absorb_threads
                 )
+                self._iteration_profile = dict(core_absorber._iteration_profile)
                 # Core CG solves can be checked cheaply because peeling already
                 # reduced the system.  Keep strict weighted/core accuracy here
                 # without charging every no-core multiway solve for a full FE
@@ -545,12 +622,14 @@ class HDFEAbsorber:
                 ):
                     err = core_absorber.fe_orthogonality_error(core_out)
                     if err > self.tol and core_info.iterations < self.max_iter:
-                        polish = core_absorber._polish_orthogonality(
-                            core_out, min(
-                                self.auto_polish_limit,
-                                self.max_iter - core_info.iterations,
+                        nthreads = core_absorber.absorb_threads if absorb_threads is None else resolve_threads(absorb_threads)
+                        with core_absorber._execution_lock, numba_thread_limit(nthreads):
+                            polish = core_absorber._polish_orthogonality(
+                                core_out, min(
+                                    self.auto_polish_limit,
+                                    self.max_iter - core_info.iterations,
+                                )
                             )
-                        )
                         core_info = AbsorbInfo(
                             polish.converged,
                             core_info.iterations + polish.iterations,
@@ -571,7 +650,7 @@ class HDFEAbsorber:
 
         if self.backend == "numpy" and self.method == "map":
             nthreads = self.absorb_threads if absorb_threads is None else resolve_threads(absorb_threads, nobs=self.nobs, calibration_min_nobs=self.projection_min_nobs)
-            with numba_thread_limit(nthreads):
+            with self._execution_lock, numba_thread_limit(nthreads):
                 a, info = self._residualize_map(a)
         elif self.method == "lsmr":
             a, info = self._residualize_lsmr(np.asarray(a))
@@ -584,16 +663,36 @@ class HDFEAbsorber:
         return (out, info) if return_info else out
 
     def _residualize_map(self, a):
+        self._iteration_profile = {}
         if len(self.groups) == 1:
             if self.backend == "numpy":
                 self._project_inplace_numpy(a, 0)
             else:
                 self._project_inplace_gpu(a, 0)
             return a, AbsorbInfo(True, 1, 0.0)
-        if self.acceleration == "auto":
-            info = self._auto_map(a)
+        if self.acceleration == "cg":
+            info = self._cg(a)
         else:
-            info = self._cg(a) if self.acceleration == "cg" else self._iterate(a)
+            xp = self.xp
+            # MAP uses an absolute/relative update metric. Work in per-column
+            # units for both auto probes and subsequent plain-MAP pools.
+            # Two reductions avoid an N x RHS absolute-value temporary.
+            scale = xp.maximum(xp.abs(xp.max(a, axis=0)), xp.abs(xp.min(a, axis=0)))
+            scale = xp.where(scale > 0, scale, 1.0)
+            a /= scale
+            try:
+                if self.acceleration == "auto":
+                    info = self._auto_map(a)
+                else:
+                    started = perf_counter() if self._profile_enabled else None
+                    info = self._iterate(a)
+                    if self._profile_enabled:
+                        self._iteration_profile.update(
+                            plain_seconds=perf_counter() - started,
+                            plain_iterations=info.iterations,
+                        )
+            finally:
+                a *= scale
         return a, info
 
     @property
@@ -653,7 +752,7 @@ class HDFEAbsorber:
         done = 0
         target = min(self.max_iter, max(1, int(initial_iterations)))
         err = float('inf')
-        with numba_thread_limit(nthreads):
+        with self._execution_lock, numba_thread_limit(nthreads):
             while True:
                 for _ in range(target - done):
                     self._sweep(a, range(g))
@@ -703,7 +802,7 @@ class HDFEAbsorber:
         g = len(self.groups)
         done = 0
         target = max(1, int(iterations))
-        with numba_thread_limit(nthreads):
+        with self._execution_lock, numba_thread_limit(nthreads):
             while True:
                 need = target - done
                 for _ in range(max(0, need)):
@@ -881,55 +980,131 @@ class HDFEAbsorber:
             return xp.sum(a*b, axis=0)
         return xp.sum(self._gpu_weights[:, None]*a*b, axis=0)
 
-    def _sym_projection(self, a):
-        z = a.copy()
+    def _sym_projection(self, a, out=None):
+        z = a.copy() if out is None else out
+        if out is not None:
+            z[...] = a
         g = len(self.groups)
         self._sweep(z, range(g))
         self._sweep(z, range(g-2, -1, -1))
-        return a - z
+        self.xp.subtract(a, z, out=z)
+        return z
 
-    def _cg(self, a):
+    def _sym_projection_with_inner_product(self, a, out):
+        out[...] = a
+        g = len(self.groups)
+        self._sweep(out, range(g))
+        self._sweep(out, range(g-2, -1, -1))
+        return out, _cg_subtract_and_inner_product(a, out, self.weights)
+
+    def _cg(self, a, *, max_iter=None):
         """Symmetric-Kaczmarz CG with reghdfe-style Hestenes stopping rule."""
         xp = self.xp
         eps = xp.finfo(a.dtype).eps
-        eps_threshold = 1e-15
+        limit = self.max_iter if max_iter is None else min(self.max_iter, max_iter)
+        # Use fused reductions for large CPU float64 blocks with multiple columns.
+        parallel_cg = (
+            self.backend == "numpy" and a.dtype == np.float64
+            and a.shape[0] >= _CG_PARALLEL_MIN_ROWS
+            and a.shape[1] >= 2
+            and get_num_threads() > 1
+        )
+        timed = self._profile_enabled
+        started = perf_counter() if timed else None
+        projection_seconds = 0.0
 
         # Hestenes/Stiefel stopping rule used by reghdfe: compare the most
         # recent objective improvement with the remaining improvement
         # potential, rather than requiring the raw Krylov residual itself to
         # become tiny.  This avoids false non-convergence once the absorbed
         # variables are already numerically accurate.
-        improvement_potential = self._weighted_colsum(a, a)
+        initial_energy = self._weighted_colsum(a, a)
+        improvement_potential = initial_energy.copy()
+        # Preserve units: all stopping denominators scale with each RHS energy.
+        # Reject unrepresentable norms instead of reporting a zero-step success.
+        if not bool(xp.all(xp.isfinite(initial_energy))):
+            return AbsorbInfo(False, 0, float("inf"), "cg_breakdown")
+        for j in range(a.shape[1]):
+            if initial_energy[j] == 0:
+                values = a[:, j]
+                nonzero = values != 0
+                if self.weights is not None:
+                    nonzero &= (self._gpu_weights if self.backend == "cupy" else self.weights) > 0
+                if bool(xp.any(nonzero)):
+                    return AbsorbInfo(False, 0, float("inf"), "cg_breakdown")
+        energy_floor = float(eps) * initial_energy
+        # Squared machine precision is a per-column roundoff threshold, not
+        # an absolute floor in the user's units. It prevents CG from amplifying
+        # projection noise after an exact/near-exact FE removal.
+        roundoff_floor = float(eps) * energy_floor
+        floor_host = xp.asnumpy(energy_floor) if self.backend == "cupy" else np.asarray(energy_floor)
+        projection_start = perf_counter() if timed else None
         r = self._sym_projection(a)
+        if timed:
+            projection_seconds += perf_counter() - projection_start
         u = r.copy()
+        v = xp.empty_like(a)
         rr = self._weighted_colsum(r, r)
         max_update = float("inf")
 
-        for it in range(1, self.max_iter + 1):
-            v = self._sym_projection(u)
-            uv = self._weighted_colsum(u, v)
-            alpha = xp.divide(rr, uv, out=xp.zeros_like(rr), where=xp.abs(uv) > eps)
+        converged = False
+        criterion = "hestenes"
+        for it in range(1, limit + 1):
+            projection_start = perf_counter() if timed else None
+            if parallel_cg:
+                _, uv = self._sym_projection_with_inner_product(u, out=v)
+            else:
+                self._sym_projection(u, out=v)
+            if timed:
+                projection_seconds += perf_counter() - projection_start
+            if not parallel_cg:
+                uv = self._weighted_colsum(u, v)
+            active = rr > roundoff_floor
+            if not bool(xp.all(xp.isfinite(uv) & xp.isfinite(rr) & (rr >= 0) & ((uv > 0) | ~active))):
+                criterion = "cg_breakdown"
+                max_update = float("inf")
+                break
+            alpha = xp.divide(rr, uv, out=xp.zeros_like(rr), where=active & (uv > 0))
             recent = alpha * rr
             improvement_potential = improvement_potential - recent
-            a -= u * alpha[None, :]
-            r -= v * alpha[None, :]
+            if parallel_cg:
+                rr_new = _cg_update_residuals_and_norm(a, r, u, v, alpha, self.weights)
+            elif self.backend == "numpy":
+                _cg_update_residuals(a, r, u, v, alpha)
+            else:
+                a -= u * alpha[None, :]
+                r -= v * alpha[None, :]
 
             recent_host = xp.asnumpy(recent) if self.backend == "cupy" else np.asarray(recent)
             pot_host = xp.asnumpy(improvement_potential) if self.backend == "cupy" else np.asarray(improvement_potential)
-            if np.all(recent_host < eps_threshold):
-                max_update = 0.0
-            else:
-                num = np.maximum(recent_host, 0.0)
-                den = np.maximum(pot_host, float(eps))
-                max_update = float(np.sqrt(np.max(num / den)))
+            num = np.maximum(recent_host, 0.0)
+            den = np.maximum(pot_host, floor_host)
+            ratio = np.divide(num, den, out=np.zeros_like(num), where=den > 0)
+            max_update = float(np.sqrt(np.max(ratio)))
             if max_update <= self.tol:
-                return AbsorbInfo(True, it, max_update, "hestenes")
+                converged = True
+                break
 
-            rr_new = self._weighted_colsum(r, r)
-            beta = xp.divide(rr_new, rr, out=xp.zeros_like(rr), where=xp.abs(rr) > eps)
-            u = r + u * beta[None, :]
+            if not parallel_cg:
+                rr_new = self._weighted_colsum(r, r)
+            beta = xp.divide(rr_new, rr, out=xp.zeros_like(rr), where=active & (rr > 0))
+            if parallel_cg:
+                _cg_update_direction_parallel(u, r, beta)
+            elif self.backend == "numpy":
+                _cg_update_direction(u, r, beta)
+            else:
+                u = r + u * beta[None, :]
             rr = rr_new
-        return AbsorbInfo(False, self.max_iter, max_update, "hestenes")
+        if timed:
+            elapsed = perf_counter() - started
+            self._iteration_profile.update(
+                cg_seconds=elapsed, cg_iterations=it,
+                cg_projection_seconds=projection_seconds,
+                cg_algebra_seconds=elapsed - projection_seconds,
+                cg_parallel_fused=parallel_cg,
+                cg_projection_includes_inner_product=parallel_cg,
+            )
+        return AbsorbInfo(converged, it, max_update, criterion)
 
     def _iterate_limit(self, a, limit):
         xp = self.xp
@@ -942,7 +1117,7 @@ class HDFEAbsorber:
             self._sweep(a, range(g))
             self._sweep(a, range(g - 2, -1, -1))
             if self.backend == "numpy":
-                max_update_f = max_relative_update(a, last, float(eps), threads=None)
+                max_update_f = float(_max_relative_update_parallel(a, last, float(eps)))
             else:
                 scale = xp.maximum(1.0, xp.abs(last))
                 max_update_f = float(xp.max(xp.abs(a-last)/(scale+eps)))
@@ -969,7 +1144,7 @@ class HDFEAbsorber:
             self._sweep(a, range(g))
             self._sweep(a, range(g - 2, -1, -1))
             if self.backend == "numpy":
-                upd = max_relative_update(a, last, eps, threads=None)
+                upd = float(_max_relative_update_parallel(a, last, eps))
             else:
                 scale = xp.maximum(1.0, xp.abs(last))
                 upd = float(xp.max(xp.abs(a - last) / (scale + eps)))
@@ -999,33 +1174,46 @@ class HDFEAbsorber:
 
     def _auto_map(self, a):
         """Two-sweep warmup; continue plain MAP only for fast contractions."""
+        timed = self._profile_enabled
+        started = perf_counter() if timed else None
         warm, ratio = self._auto_warmup(a)
+        if timed:
+            self._iteration_profile.update(
+                probe_seconds=perf_counter() - started,
+                probe_iterations=warm.iterations, contraction_ratio=ratio,
+            )
         if warm.converged or warm.iterations >= self.max_iter:
             return warm
 
         total = warm.iterations
         if ratio <= self._auto_contraction_threshold:
-            remain = max(0, self.auto_plain_limit - total)
+            remain = max(0, min(self.auto_plain_limit, self.max_iter) - total)
             if remain:
+                started = perf_counter() if timed else None
                 first = self._iterate_limit(a, remain)
+                if timed:
+                    self._iteration_profile.update(
+                        plain_seconds=perf_counter() - started,
+                        plain_iterations=first.iterations,
+                    )
                 total += first.iterations
                 if first.converged or total >= self.max_iter:
                     return AbsorbInfo(
                         first.converged, total, first.max_update, "auto_plain"
                     )
             # Safety valve for a rare optimistic contraction classification.
-            cg = self._cg(a)
+            cg = self._cg(a, max_iter=self.max_iter - total)
             total += cg.iterations
         else:
             # Hard spectrum.  The two warmup sweeps are useful preconditioning,
             # so CG starts from the partially residualized block rather than
             # restarting from the raw RHS.
-            cg = self._cg(a)
+            cg = self._cg(a, max_iter=self.max_iter - total)
             total += cg.iterations
 
-        # Preserve the established v0.4.0 direct-CG stopping semantics.  FE
-        # orthogonality remains available as an explicit diagnostic/test, but
-        # the default solver does not pay another full FE x RHS scan after CG.
+        # Use the same CG stopping rule as direct calls. FE orthogonality is
+        # an explicit diagnostic; default no-core solves need no extra full
+        # FE x RHS scan after CG.
         return AbsorbInfo(cg.converged, total, cg.max_update, "auto_cg")
 
     def _iterate(self, a):
@@ -1045,9 +1233,7 @@ class HDFEAbsorber:
             elif self.transform != "kaczmarz":
                 raise ValueError("transform must be 'kaczmarz' or 'symmetric'")
             if self.backend == "numpy":
-                max_update_f = max_relative_update(
-                    a, last, float(eps), threads=None
-                )
+                max_update_f = float(_max_relative_update_parallel(a, last, float(eps)))
             else:
                 max_update_f = 0.0
                 for lo in range(0, a.shape[0], check_rows):

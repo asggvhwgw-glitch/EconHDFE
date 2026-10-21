@@ -1,81 +1,81 @@
 {
   "schema_version": 1,
-  "release_version": "0.8.0",
-  "previous_version": "0.7.0",
+  "release_version": "0.8.1",
+  "previous_version": "0.8.0",
   "checks": {
     "frontend_api": {
-      "status": "changed",
-      "evidence": "ivhdfe/ivreghdfe/IVHDFESession新增可选on_stage=None；原调用与最终返回保持；tests/behavior/test_iv_stages.py覆盖公开入口。",
+      "status": "reviewed",
+      "evidence": "0.8.0基线兼容性diff为空；保留main中IV公开接口，本次FE参数和返回类型未改。",
       "description": "Public call signatures, exports, aliases, CLI/front-end validation and compatibility."
     },
     "backend_compute": {
-      "status": "reviewed",
-      "evidence": "审阅IV矩乘积、角色化QR及聚类复用；不改变统计定义与秩容差，保留必要病态回退；数值回归见test_iv_reuse.py和test_iv_correctness_closeout.py。",
+      "status": "changed",
+      "evidence": "两轮MAP后续接CG；投影布局、2–10列核和宽矩阵分块、向量融合、相对能量停止与列单位归一化。定向FE回归26项；合并未改变已验收FE计算核。",
       "description": "Solver/compute/cache/backend contracts, numerical defaults and resource controls."
     },
     "errors": {
       "status": "reviewed",
-      "evidence": "契约diff未改变结构化错误目录；必要识别检查保留，非法开关与回调异常传播有正式回归覆盖。",
+      "evidence": "保留非有限值/下溢/曲率失败，显式预算不足使用现有SpecificationError；错误目录兼容性无变化。",
       "description": "Structured exception classes, codes, stages, suggestions and public error boundaries."
     },
     "public_contract": {
-      "status": "changed",
-      "evidence": "按用户指定通过控制脚本从0.7.0升MINOR至0.8.0；六项兼容差异逐项登记理由，新建0.8.0快照，历史快照不改。",
+      "status": "reviewed",
+      "evidence": "version.py受控升级0.8.0至0.8.1；compatibility diff无变化，新增0.8.1快照，历史基线未改。",
       "description": "Public exports/signatures, result/config schemas and stable structured-error compatibility."
     },
     "skill": {
       "status": "reviewed",
-      "evidence": "skills/econhdfe/references/configuration.md已记录高级诊断开关、KP保留及同步阶段语义；不增加外部认证声明。",
+      "evidence": "共享FE优化不新增公开配置或命令；已有Skill路由与配置入口适用，version gate检查同步模板。",
       "description": "Agent skill commands, examples, decision rules and newly exposed controls."
     },
     "linked_modules": {
       "status": "reviewed",
-      "evidence": "沿用frontend/config、IV计算、inference与results边界；架构图检查保留，不新增重复FE实现。",
+      "evidence": "线程/资源规划、吸收核及公共OLS路径保持模块边界；合并main后重新生成架构图，无第二套FE实现。",
       "description": "Cross-module imports, shared schemas, adapters, compatibility shims and downstream consumers."
     },
     "results_reporting": {
-      "status": "changed",
-      "evidence": "阶段快照独立且不携带逐观测工作区；最终结果类型保持，关闭高级诊断保留F、partial R²、KP和overID。",
+      "status": "reviewed",
+      "evidence": "公共结果schema不变；内部profile提供分阶段计时，不以不同口径的迭代数宣称速度。",
       "description": "Result fields, publication output, diagnostics metadata and serialization-facing schemas."
     },
     "config_defaults": {
-      "status": "changed",
-      "evidence": "InferenceConfig尾部增加iv_advanced_statistics=True，默认仍计算高级统计；diagnostics仅控制显示；迁移指南提示严格schema消费者。",
+      "status": "reviewed",
+      "evidence": "公开配置默认值未改；显式pool和低内存预算现在严格检查，迁移指南披露行为收紧。",
       "description": "Config objects, defaults, deprecations, aliases and backwards-compatible behavior."
     },
     "cache_state": {
       "status": "changed",
-      "evidence": "完整线性会话结果缓存ABI为linear-session-result-4；开关进入缓存指纹，旧结果失效；within缓存不变，命中仅发complete。",
+      "evidence": "数值ABI升级linear-session-2，同时使旧within和完整结果缓存失效；原始编码列继续复用。扩展现有持久缓存测试验证重算和系数/VCE。",
       "description": "Reusable state/cache invalidation, fingerprints, lifecycle semantics and stale-state hazards."
     },
     "tests_validation": {
       "status": "reviewed",
-      "evidence": "保留28项新增接口/数值回归；本次不增删测试，不放宽两项契约断言。完整套件按testing.md重跑；本地日志不上传，远端CI及正式制品验收另行绑定。",
+      "evidence": "整合0.8.0后research全套1122通过（10条预期变量省略警告），持久缓存定向1项通过；保留26项FE回归并扩展原有缓存测试，无新增开发矩阵。最终头跨平台与候选构建由CI验证。",
       "description": "Regression tests, install smoke tests, golden/parity coverage and failure-path tests."
     },
     "performance": {
       "status": "reviewed",
-      "evidence": "本轮仅版本/兼容性收尾，不改估计算法、不新增性能承诺；既有复用优化保留，资源预算接入仍为PERF-07。",
+      "evidence": "仅纳入已采用执行优化；本次版本整合不新增大样本benchmark。最终尺度修复未重计大样本耗时，不将历史快照速度当成本提交实测。",
       "description": "Representative benchmark/resource regressions for code paths materially changed by the release."
     },
     "docs_migration": {
       "status": "changed",
-      "evidence": "CHANGELOG与migration补充0.8.0参数、阶段、严格schema、缓存及数值修正；明确候选审阅不等于正式发布。",
+      "evidence": "CHANGELOG及migration增加0.8.1、严格预算、小尺度修正、缓存失效；保留0.8.0说明与main的IV文档。",
       "description": "README/architecture/changelog/migration/versioning documentation and user-visible examples."
     },
     "packaging_dependencies": {
-      "status": "reviewed",
-      "evidence": "控制脚本同步pyproject/runtime版本；Python及依赖范围、包布局不变。隔离构建/干净安装与矩阵未以本地源码测试替代。",
+      "status": "changed",
+      "evidence": "版本入口同步pyproject/runtime；新增psutil>=5.9及最低约束5.9.4；原PR跨平台/最低依赖CI通过，更新头重新验证。",
       "description": "Python/dependency matrix, optional extras, wheel/source contents and build metadata."
     },
     "external_validation": {
       "status": "reviewed",
-      "evidence": "本轮未执行新增licensed-Stata/upstream认证、GPU或完整性能矩阵；不沿用历史冻结制品结果证明当前候选。",
+      "evidence": "本轮未重跑Stata/GPU或新外部认证；不以源码测试替代参考软件结果验证。",
       "description": "Licensed/reference-environment parity gates and explicitly deferred external certification."
     },
     "release_artifacts": {
       "status": "reviewed",
-      "evidence": "仅更新草稿PR；执行记录重置为新版本待验收状态。未构建或发布0.8.0制品，不复用历史hash/通过记录；正式发布需独立验收。",
+      "evidence": "重置0.8.1执行验收，不沿用旧成功记录或制品哈希。CI候选构建/干净安装另行核验；合并与升版不等同发布，不创建tag或上传发行制品。",
       "description": "Version consistency, source/wheel parity, hashes, clean install and reproducible bundle contents."
     }
   }
