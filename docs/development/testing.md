@@ -1,95 +1,85 @@
-# 测试设计：以当前契约组织，而非以历史版本堆积
+# 测试指南
 
-## 当前范围与历史来源
+当前源码为 0.8.1。测试按公开契约、统计行为、数值参照和工具职责组织，
+不按修复日期或历史版本堆积。当前采用约200项的精简回归集；精确提交的执行结果见 [验证状态](test-status.md)；
+历史迁移见 [0.6.5 记录](history/test-migration-0.6.5.md)。
 
-本页说明 0.7 的测试入口与职责。分层结构在 0.6.5 开发阶段建立，
-历史迁移过程见 [迁移记录](history/test-migration-0.6.5.md)。
-当前已纳入 Post/Prediction、IV 识别与数值修复；实际执行状态见 [test-status.md](test-status.md)。
+## 入口与职责
 
-测试首先回答：功能是否实现，调用入口是否对齐，同一经济计量对象的语义是否稳定。
-“调用没有报错”“Monte Carlo 系数大致接近真值”“源码包含某字符串”不能替代这些验收。
-文档模板及命令声明等本身就是文本契约的检查仍保留；模块依赖改用 AST 解析。
-
-## 四层测试与运行入口
-
-| 层 | 职责 | 典型检查 |
-|---|---|---|
-| `tests/contracts/` | 对研究者和调用端的承诺 | 根 API/兼容别名、参数边界、命名数据/数组/复用入口、结果和错误、隐私 |
-| `tests/behavior/` | 功能与统计语义 | OLS/IV/PPML/IV-PPML、样本/权重/FE、VCE 与 DoF、遗漏变量、separation、session/SPJ |
-| `tests/numerics/` | 不能以接口烟雾测试替代的独立守卫 | 稠密 dummy/SVD/Fraction oracle、坏素数、秩亏、尺度、资源拒绝、block/solver |
-| `tests/tooling/` | 开发和制品完整性 | 当前公共契约快照、架构/注册表、候选与正式门禁、来源和哈希、安装验证入口 |
+| 层 | 用例数 | 检查内容 |
+| --- | ---: | --- |
+| `tests/contracts/` | 24 | 公共 API/兼容入口、配置、错误、因子语法、结果协议和隐私 |
+| `tests/behavior/` | 92 | 四类估计器的样本、权重、FE、DoF/VCE、遗漏、预测、session 与缓存语义 |
+| `tests/numerics/` | 72 | 独立 dummy/WLS/GLM、SVD/Fraction/moment oracle，秩、尺度、收敛及资源边界 |
+| `tests/tooling/` | 17 | 公共契约快照、架构/注册表、发布门禁、制品哈希、安装及来源检查 |
 
 ```bash
-# 日常开发：当前公共行为，不等于完整发布验收
+# 日常公共行为；plain pytest 也只运行这一部分
 python scripts/run_tests.py --suite core -- -q
-# 无路径的 pytest 也默认只运行 core
-python -m pytest -q
 
-# 数值核修改：定向检查之后必须跑完整集
+# 数值核或发布工具的定向检查
 python scripts/run_tests.py --suite numerics -- -q
 python scripts/run_tests.py --suite tooling -- -q
-python scripts/run_tests.py --suite full -- -q
 
-# 单项复现继续使用正常 pytest 节点，不需专用 DSL
+# PR 与发布前：完整四层测试
+python scripts/run_tests.py --suite full -- -q
+python scripts/version.py gate
+python scripts/generate_architecture_map.py --check
+
+# 单项复现直接使用 pytest 节点
 python scripts/run_tests.py -- tests/behavior/test_sample_semantics.py -q
 ```
 
-`core` = contracts + behavior。`full` = 整个 tests 目录，包含数值及发布工具守卫。
-无路径的 `pytest` 默认行为自 0.6.5 起发生变化，不能再把它的通过数登记为“完整测试”。
-CI 的 12 个 OS/Python 组合、4 个最低依赖组合，以及源码制品重测均明确选择 `full`。
-保留线程要求 `NUMBA_NUM_THREADS>=3`（通常设 4），不偷偷跳过并行测试。
+`core` 为 contracts + behavior；`full` 为整个 `tests/`。
+CI 的 Linux/macOS/Windows × Python 3.10–3.13，以及四个最低依赖组合全部运行 `full`；
+源码制品重测也运行 `full`。禁止将 core 的通过数登记为完整验收。
+Numba 最大线程池须至少为 3，通常设 `NUMBA_NUM_THREADS=4`，
+BLAS/OMP/MKL 各设 1。详见[测试环境](test-environment.md)。
 
-## 当前公共能力矩阵
+## 保留哪些测试
 
-| 功能 | 成功结果的判据 | 拒绝/特殊语义 | 主要位置 |
-|---|---|---|---|
-| 四类模型与入口 | 同一规格的命名数据、数组、可复用对象得到相同系数/VCE/样本 | 不强行统一模型本来不同的参数和字段 | contracts/test_public_workflows.py |
-| 回归表输出 | 系数/SE/统计量/p/CI/星号及模型量按名称和次序对齐 | 诊断默认隐藏；IV 首阶段不输出巨型观测矩阵；归一化常数不报告假精度 | contracts/test_public_workflows.py |
-| 样本 | 明确最终保留行；递归 singleton 与显式子样本一致 | singleton、分离和外部 DataFrame index 不混淆 | behavior/test_sample_semantics.py、test_effects_diagnostics.py、numerics/test_separation_corpus.py |
-| 权重 | fweight 与真实展开样本等价；a/pweight 和通用权重按各自契约 | 非整数频数、非有限值和非法质量明确失败 | behavior/test_weights_and_effects.py、numerics/test_estimator_oracles.py |
-| FE 与 DoF | 请求的 FE/推断拓扑与数值简化分离；独立秩对照 | 嵌套 FE 的拟合自由度不混用 cluster 推断自由度 | behavior/test_fit_degrees_of_freedom.py、numerics/test_exact_oracles.py |
-| 因子与遗漏项 | 明确 reference、交互、保留系数名称及顺序 | 默认告知遗漏，显式 drop/raise 语义独立 | contracts/test_factor_variables.py、behavior/test_*omissions.py |
-| 聚类与推断 | 单向/多向、校正、cluster 数、弱 IV 诊断有独立参照 | 单 cluster、非正推断自由度、秩亏结果不伪装有效 | behavior/test_cluster_inference.py、numerics/test_inference_boundaries.py |
-| 重复回归 | 换 y/控制项/FE 的结果及拟合统计量与独立拟合一致 | 数值列、FE、权重等变化不可读到旧缓存 | behavior/test_sessions.py、test_data_layer.py、test_weight_updates.py |
-| PPML / IV-PPML | eta/mu、offset/exposure、dense/block、矩条件结果一致 | separation/refit、极端数值、未收敛和标准化常数有明确语义 | behavior/test_ppml*.py、test_ivppml*.py、numerics/test_nonlinear_oracles.py |
-| Post/Prediction | 线性组合/Wald、分块 xb/response/fe/stdp 与独立 dummy/WLS 对照一致 | 未知类别、样本映射、未识别/嵌套 FE 组合与 beta-only 不确定性 | behavior/test_postestimation.py、test_prediction.py |
-| FE recovery | 重建贡献、归一化和可识别分量匹配 | 不可识别系数用明确状态/NaN；关闭诊断不改变求解结果 | behavior/test_effects_recovery.py、numerics/test_inference_boundaries.py |
-| 资源限制 | 在可行范围内与独立 oracle 一致 | 达到预算只能明确失败，不能将模秩下界当 exact | numerics/test_native_rank_budget.py、test_resource_boundaries.py |
-| 安装与发布 | wheel 来自独立 target，源码外执行真实契约与数值子集 | 旧证据、错误哈希、缺失制品和歧义路径拒绝 | scripts/verify_installed_numerics.py、tests/tooling/ |
+每个独立风险由最接近职责的测试负责。新增修复优先扩展已有案例，
+避免重复执行相同准备、公式和随机 DGP。重点位置如下：
 
-这里的“入口对齐”不等于改 API：线性模型使用 `cluster`，非线性模型使用 `clusters`；
-PPML 与 IV-PPML 的 weight_type 支持不同；线性 `.params` 数组与非线性 `.coef` 数组也不伪装成同一结构。
-这些差异应被测试明确约束，未来有意更改时再走公共兼容性流程。
+| 风险 | 主要测试 |
+| --- | --- |
+| 四模型入口与论文表协议 | `contracts/test_public_workflows.py` |
+| 频数展开、权重语义与拟合统计量 | `behavior/test_weights_and_effects.py`、`test_fit_statistics.py`、`test_fit_degrees_of_freedom.py` |
+| 识别、固定 k-class、IV 首阶段和分阶段策略 | `numerics/test_iv_correctness_closeout.py`、`test_iv_primitives.py`、`behavior/test_iv_stages.py` |
+| 非线性矩条件、GLM 与 sandwich | `numerics/test_nonlinear_oracles.py`、`test_estimator_oracles.py` |
+| 精确秩与结构/数值 FE 拓扑 | `numerics/test_exact_oracles.py`、`test_exact_multiway.py`、`test_fe_canonicalization.py` |
+| 投影尺度、预算与线程 | `numerics/test_cg_scale_contract.py`、`test_native_rank_budget.py`、`behavior/test_cg_resource_execution.py` |
+| 后估计线性组合/Wald、样本、预测、FE 识别与缓存失效 | `behavior/test_postestimation.py`、`test_sample_semantics.py`、`test_prediction.py`、`test_effects_recovery.py`、`test_data_layer.py`、`test_sessions.py` |
 
-## 压缩规则与任务清单
+“能运行”或“随机系数接近真值”不能替代独立参照。发布模板等文本契约可以核对内容；
+模块依赖按 AST 检查，不以源码出现某词代替行为验证。
 
-已将原 67 个平铺、经常按版本命名的文件迁移为按职责命名的四层目录。
-40 个冗余或陈旧测试函数由更强的当前检查覆盖；10 个矩阵减少重复随机种子、恒等尺度
-或改用显式代表组合，原保留案例的断言和容差不放宽。详见 [逐项迁移表](history/test-migration-0.6.5.md)。
+## 精简范围与维护原则
 
-组合缩减不是穷尽检验：两两组合覆盖不能保证所有三因素相互作用。为此单独保留
-空矩阵、只读/非连续输入、极端单位、近秩亏、坏素数、整数资源耗尽、分离和缓存失效等反例。
-4095 子集的独立 Fraction 秩穷举与既有 separation corpus 不以“数量多”为理由删掉。
-不将大量案例塞进不可定位的循环，也不通过 xfail/skip 把错误隐藏。
+当前完整集为 **205项**，由59个模块中的174个测试函数组成；相比上一轮916项，
+已实际删除退出常驻集的函数、空模块及不再使用的辅助代码。默认core与full的入口没有变化。
+本次不追求与旧矩阵等价覆盖：常驻集聚焦四模型公开工作流、独立数值参照、
+样本/权重/DoF、预测与后估计、缓存失效，以及尺度、识别、收敛和预算的关键失败。
 
-实施任务：审计与旧→新映射；当前公共工作流测试；重复函数/组合压缩；运行/安装/CI 入口联动；
-完整执行、逐行/逐分支迁移核查、定向故障注入；最后重新生成架构图与重置新候选执行记录。
-新的验证报告独立保存，历史报告和已发布兼容基线不改写。
+- 四模型的具名/数组/复用入口与论文输出协议保留；统计计算优先用dummy/WLS/GLM、SVD、Fraction或显式矩条件验证。
+- 参数组合保留明确代表；单一固定情形直接写在函数内。保留函数中的原断言与容差不放宽，不用skip/xfail或收集筛选隐藏旧用例。
+- 独立Fraction的2×2×3全部4,095非空子集及结构列空间有限穷举继续作为数学oracle。原分离语料只保留公开反例与关键FE/ReLU/mu路径，其余常规组合、随机种子及精细内部边界退出常驻集。
+- FE执行保留14项重点数值/线程/预算回归；原26项中的布局探测、浮点资格、缓存工作区和profile等专项收缩。改动这些细节时，应恢复对应旧专项或增加有针对性的回归。
+- 发布门禁、公共契约、实际依赖方向、架构图新鲜度、制品哈希和工作队列子进程仍检查；完整旧工具负面矩阵不再逐项常驻。
+- 测试结果交给pytest/JUnit；基准与开发审计显式运行。新增功能优先扩展职责最接近的用例，并说明新增案例对应的独立风险。
 
-## CI 与安装集
+原始Git历史仍保留上游测试；本次工作区还将上一轮916项及对应补丁完整归档在源码仓库外。
+本页记录当前测试策略，历史报告只对应各自冻结版本。代表集合不能穷尽全部模型×VCE×权重×布局交互，
+也不再常驻覆盖所有可选IO后端、低精度/布局资格、重采样分布和发布元数据畸形输入。
 
-分支 push 不再和同一 PR 触发两套相同矩阵；只保留 main push、PR 和手动触发。
-同一 PR 的过期运行可取消，main 与 PR 的并发组不同，不互相冒充验证结果。
-本轮不缩小 OS/Python/最低依赖支持面，也不以 core 替换原有完整 CI。
+## 安装集与验证边界
 
-installed-wheel 测试保持独立目录和 import provenance 检查，复制新的分层文件以及共享 fixture，
-纳入四模型公共工作流及样本测试。`--extra-test` 仍接受唯一 basename；歧义、路径逃逸或缺失应失败。
-例如 `--extra-test test_weighted_reductions.py`。该测试仍使用 HOST 依赖，不等于干净依赖解析。
+`verify_installed_numerics.py` 将独立参照、公共工作流、样本语义及共享 fixture 复制到
+源码之外，并检查 wheel 的 import provenance。它复用 HOST 依赖；
+干净环境安装由 `verify_clean_install.py` 单独验证。
+`--extra-test` 接受唯一 basename，例如 `test_weighted_reductions.py`；
+缺失、歧义、路径逃逸与符号链接不能绕过选择检查。
 
-## 验收证据与限制
-
-基线来源、完整/核心计数、逐行逐分支覆盖变化、独立进程计时、故障注入和制品检查
-见本轮随附证据。测试数量不是质量指标；保留关键失败语义比追求一个整数目标重要。
-覆盖率也不是正确性证明：本轮逐项检查丢失行/分支，并以故意引入错误验证关键测试确实会失败。
-六种定向错误被捕获不等于系统性 mutation score=100%。
-本机验证不替代新的 16 格 CI，HOST 构建不替代隔离构建，内部 oracle 不替代 licensed-Stata 认证。
+本机完整测试不替代跨平台 CI、隔离构建或最终制品验收；内部 oracle 不等于
+licensed-Stata/upstream 全部外部认证。历史 benchmark 与 Lean 证明也分别只支持
+其记录的工作负载和数学命题。发布流程见[执行验收](../release/acceptance.md)。

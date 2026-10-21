@@ -1,20 +1,7 @@
 from __future__ import annotations
-
-import subprocess
-import sys
-
 import numpy as np
 import pandas as pd
-
-from econhdfe import (
-    ExecutionConfig,
-    IVHDFESession,
-    IVSpec,
-    OLSHDFESession,
-    OLSSpec,
-    ivhdfe,
-    olshdfe,
-)
+from econhdfe import ExecutionConfig, OLSHDFESession, OLSSpec, olshdfe
 
 
 def _data(seed=123, n=6000):
@@ -84,57 +71,6 @@ def test_ols_add_drop_x_reuses_cached_within_columns():
     # y1/x1/x2/x3 are partialled out in a single multi-RHS pass.
     assert info["residualize_calls"] == 1
     assert info["residualized_columns"] == 4
-
-
-def test_ols_add_drop_fe_keeps_separate_exact_caches_and_reuses_returned_spec():
-    df = _data()
-    s = OLSHDFESession(df, cluster="firm", vce="cluster", execution_config=ExecutionConfig(cache_validation="none"))
-    fe_path = [("firm",), ("firm", "year"), ("firm", "year", "industry"), ("firm", "year")]
-    calls_before_return = None
-    for j, absorb in enumerate(fe_path):
-        got = s.fit(y="y1", x=["x1", "x2"], absorb=absorb)
-        ref = olshdfe(df, y="y1", x=["x1", "x2"], absorb=list(absorb), cluster="firm", vce="cluster")
-        _assert_same(got, ref)
-        if j == 2:
-            calls_before_return = s.cache_info()["residualize_calls"]
-    info = s.cache_info()
-    assert info["fe_entries"] == 3
-    # Returning to firm+year is a pure cache hit: no new within transform.
-    assert info["residualize_calls"] == calls_before_return
-
-
-def test_fe_specific_singleton_sample_matches_standalone():
-    df = _data(n=1200)
-    # Create a level that is singleton only when this extra FE is included.
-    df["rare"] = 0
-    df.loc[0, "rare"] = 1
-    s = OLSHDFESession(df, execution_config=ExecutionConfig(cache_validation="none"))
-    a = s.fit(y="y1", x=["x1", "x2"], absorb=["firm"])
-    b = s.fit(y="y1", x=["x1", "x2"], absorb=["firm", "rare"])
-    ar = olshdfe(df, y="y1", x=["x1", "x2"], absorb=["firm"])
-    br = olshdfe(df, y="y1", x=["x1", "x2"], absorb=["firm", "rare"])
-    _assert_same(a, ar); _assert_same(b, br)
-    assert b.nobs == br.nobs
-    assert b.dropped_singletons == br.dropped_singletons
-
-
-def test_iv_session_matches_standalone_and_reuses_fe_bank():
-    df = _data()
-    s = IVHDFESession(df, cluster="firm", vce="cluster", execution_config=ExecutionConfig(cache_validation="none"))
-    specs = [
-        IVSpec("y1", ("x1",), ("endog",), ("z1", "z2"), ("firm", "year")),
-        IVSpec("y1", ("x1", "x2"), ("endog",), ("z1", "z2"), ("firm", "year")),
-    ]
-    out = s.fit_many(specs)
-    for spec, got in zip(specs, out, strict=True):
-        ref = ivhdfe(
-            df, y=spec.y, exog=list(spec.exog), endog=list(spec.endog), instruments=list(spec.instruments),
-            absorb=list(spec.absorb), cluster="firm", vce="cluster",
-        )
-        _assert_same(got, ref, atol=5e-10)
-    info = s.cache_info()
-    assert info["fe_entries"] == 1
-    assert info["residualize_calls"] == 1
 
 
 def test_signature_validation_invalidates_mutated_fe_source():

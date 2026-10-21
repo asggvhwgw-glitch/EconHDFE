@@ -1,6 +1,6 @@
 """Independent scale-invariance contracts against dense FWL."""
-import numpy as np
 
+import numpy as np
 import econhdfe.hdfe.absorber as module
 from econhdfe import ExecutionConfig, HDFEConfig, olshdfe
 from econhdfe.hdfe.absorber import HDFEAbsorber

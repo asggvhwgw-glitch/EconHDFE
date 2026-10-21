@@ -454,7 +454,7 @@ flowchart LR
 | --- | ---: | ---: | ---: |
 | `econhdfe/` | 126 | 124 | 2 |
 | `pyreghdfe/` | 2 | 2 | 0 |
-| `tests/` | 86 | 86 | 0 |
+| `tests/` | 60 | 60 | 0 |
 | `validation/` | 25 | 8 | 3 |
 | `benchmarks/` | 116 | 29 | 8 |
 | `docs/` | 107 | 1 | 74 |

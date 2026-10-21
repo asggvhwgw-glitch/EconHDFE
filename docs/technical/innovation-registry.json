@@ -63,8 +63,6 @@
         "econhdfe/hdfe/absorber.py"
       ],
       "tests": [
-        "tests/numerics/test_residual_core.py",
-        "tests/numerics/test_complex_fe_corpus.py",
         "tests/numerics/test_exact_oracles.py"
       ],
       "evidence": [

@@ -1,10 +1,12 @@
 """The current package is the contract target; old snapshots are immutable history."""
+
 import json
 import subprocess
 import sys
 from pathlib import Path
 import econhdfe
 from scripts import compatibility
+
 
 ROOT = Path(__file__).resolve().parents[2]
 

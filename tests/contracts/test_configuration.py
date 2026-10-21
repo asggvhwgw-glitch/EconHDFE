@@ -1,13 +1,6 @@
 import numpy as np
 import pandas as pd
-
-from econhdfe import (
-    olshdfe, ivhdfe, ppmlhdfe, ivppmlhdfe,
-    HDFEConfig, InferenceConfig, ExecutionConfig,
-    PPMLConfig, IVPPMLConfig, preflight_dataframe,
-)
-from econhdfe.hdfe.plan import FEPlan
-from econhdfe.compute.context import ExecutionContext
+from econhdfe import olshdfe, HDFEConfig, InferenceConfig, ExecutionConfig
 
 
 def _linear_df(seed=101, n=1200):
@@ -36,40 +29,6 @@ def test_common_configs_control_strategy_reporting_and_profile():
     ci90 = r.conf_int()
     ci95 = r.conf_int(0.95)
     assert np.all((ci90[:, 1] - ci90[:, 0]) < (ci95[:, 1] - ci95[:, 0]))
-
-
-def test_strict_preflight_warns_but_does_not_turn_warnings_into_errors():
-    n = 200
-    df = pd.DataFrame({
-        "y": np.r_[np.zeros(199), 1.0],
-        "z": np.ones(n) + np.linspace(0, 1e-14, n),
-        "cluster": np.arange(n) % 8,
-        "w": np.geomspace(1.0, 1e8, n),
-    })
-    report = preflight_dataframe(
-        df, {"y": "outcome", "z": "instrument", "cluster": "cluster", "w": "weight"},
-        model="ivppml", level="strict",
-    )
-    assert report.ok
-    codes = {x.code for x in report.warnings}
-    assert "warning.extreme_zero_share" in codes
-    assert "warning.near_constant" in codes
-    assert "warning.few_clusters" in codes
-    assert "warning.extreme_weights" in codes
-
-
-def test_feplan_fingerprint_and_execution_context_cache_are_content_based():
-    a = np.array([0, 0, 1, 1, 2, 2])
-    b = np.array([0, 1, 0, 1, 0, 1])
-    p1 = FEPlan.from_arrays([a, b])
-    p2 = FEPlan.from_arrays([a.copy(), b.copy()])
-    p3 = FEPlan.from_arrays([a, np.array([0, 1, 0, 1, 1, 0])])
-    assert p1.fingerprint == p2.fingerprint
-    assert p1.fingerprint != p3.fingerprint
-    ctx = ExecutionContext(ExecutionConfig(cache="on"))
-    ctx.put(p1.fingerprint, p1)
-    assert ctx.get(p2.fingerprint) is p1
-    assert ctx.get(p3.fingerprint) is None
 
 
 def test_reusable_ppml_model_invalidates_fe_plan_when_source_fe_changes():

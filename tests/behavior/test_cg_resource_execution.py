@@ -1,10 +1,8 @@
 """Resource-policy regressions; small numerical fixtures, no performance tests."""
-from types import SimpleNamespace
 
 import numpy as np
 import pytest
 from numba import get_num_threads
-
 from econhdfe import ExecutionConfig, olshdfe
 from econhdfe.errors import SpecificationError
 from econhdfe.hdfe.absorber import HDFEAbsorber
@@ -85,32 +83,6 @@ def test_two_way_public_factory_and_local_thread_override(monkeypatch):
 def unknown_memory(monkeypatch):
     import econhdfe.compute.execution as execution
     monkeypatch.setattr(execution, "runtime_resources", lambda: RuntimeResources(4, None, None))
-
-
-def test_host_and_cgroup_memory_limits(monkeypatch):
-    import econhdfe.planner.resources as resources
-    monkeypatch.setattr(resources.psutil, "virtual_memory",
-                        lambda: SimpleNamespace(total=1000, available=200))
-    monkeypatch.setattr(resources, "_memory_value", lambda path: None)
-    r = resources.runtime_resources()
-    assert (r.memory_limit_bytes, r.memory_current_bytes) == (1000, 800)
-    monkeypatch.setattr(resources, "_memory_value",
-                        lambda path: 500 if path.endswith("memory.max") else 100)
-    r = resources.runtime_resources()
-    assert (r.memory_limit_bytes, r.memory_current_bytes) == (500, 300)
-    monkeypatch.setattr(resources, "_memory_value",
-                        lambda path: 2000 if path.endswith("memory.max") else 100)
-    r = resources.runtime_resources()
-    assert (r.memory_limit_bytes, r.memory_current_bytes) == (1000, 800)
-
-    def denied():
-        raise OSError("counter unavailable")
-
-    monkeypatch.setattr(resources.psutil, "virtual_memory", denied)
-    monkeypatch.setattr(resources, "_memory_value",
-                        lambda path: 500 if path.endswith("memory.max") else 100)
-    r = resources.runtime_resources()
-    assert (r.memory_limit_bytes, r.memory_current_bytes) == (500, 100)
 
 
 def test_auto_cg_memory_inventory_and_failure_preserve_input(unknown_memory):

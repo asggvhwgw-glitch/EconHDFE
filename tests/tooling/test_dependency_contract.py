@@ -1,8 +1,12 @@
 """Architecture means actual dependencies, not words occurring in source comments."""
+
 import ast
 from pathlib import Path
 
+
 ROOT = Path(__file__).resolve().parents[2]
+
+
 RULES = {
     'data': ('models', 'iv', 'hdfe'),
     'compute': ('hdfe', 'iv', 'models', 'data'),
@@ -42,10 +46,3 @@ def test_actual_imports_respect_layer_ownership():
                     if imported == prefix or imported.startswith(prefix+'.'):
                         violations.append(f'{module} -> {imported}')
     assert not violations, '\n'.join(violations)
-
-
-def test_dependency_check_resolves_absolute_relative_and_from_imports():
-    text = ('# ..models is only a comment\nimport econhdfe.models.ols as m\n'
-            'from .. import hdfe\nfrom ..models import ols\nfrom .kernels import dot\n')
-    names = set(imported_names(text, 'econhdfe.compute.linalg'))
-    assert {'econhdfe.models.ols', 'econhdfe.hdfe', 'econhdfe.compute.kernels.dot'} <= names

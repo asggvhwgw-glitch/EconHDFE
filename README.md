@@ -6,7 +6,13 @@
 
 `econhdfe` is a Python package for OLS-HDFE, linear IV-HDFE, PPML-HDFE, and IV-PPML-HDFE. It is designed for empirical work with large datasets, high-cardinality fixed effects, clustered inference, rich interactions, and many closely related specifications.
 
-The project is currently **alpha research software**. This source tree is version 0.7.0, including Post/Prediction and IV correctness fixes. Repository-local validation is extensive, but licensed-Stata and complete upstream external certification remain separate validation boundaries.
+The project is currently **alpha research software**. This source tree is version **0.8.1**. Source integration and package publication are separate; check the installed version and the [release status](docs/development/test-status.md). Repository-local validation is extensive, but licensed-Stata and complete upstream external certification remain separate validation boundaries.
+
+## Current source: 0.8.1
+
+- **Linear IV:** reuse work within a fit; optionally receive synchronous `on_stage` snapshots or skip advanced diagnostics with `InferenceConfig(iv_advanced_statistics=False)`. KP, ordinary first-stage F, overidentification and identification checks remain. See [IV stages and diagnostics](docs/development/iv-staged-diagnostics.md).
+- **FE absorption:** improve projection and CG execution, honor explicit threads and solver-workspace budgets, and correct false convergence for small-unit columns. Persistent numerical caches from before the correction are recomputed. See [migration notes](docs/release/migration.md).
+- **Validation:** retain focused regression cases and independent numerical references; CI still runs the full suite across all supported environments. Historical timing results below are workload-specific evidence, not new 0.8.1 measurements.
 
 ## Performance at a glance
 
@@ -79,8 +85,14 @@ The econometric model remains the constraint. Execution choices may change how t
 Python 3.10–3.13 is supported.
 
 ```bash
-pip install econhdfe
+python -m pip install econhdfe
+python -c "import econhdfe; print(econhdfe.__version__)"
 ```
+
+To use this checkout, run `python -m pip install .` from its root. The package
+index may serve a different version. Optional extras are `.[io]` for file-format
+backends and `.[gpu]` for the CUDA 12 CuPy backend; they do not guarantee local
+hardware availability.
 
 A standard OLS-HDFE specification can be written directly against a pandas DataFrame:
 
@@ -214,11 +226,11 @@ The core mathematical statements of these three theorem-backed lines are now mac
 
 Performance is not useful if an optimization silently changes the model. `econhdfe` therefore separates public-interface testing, statistical behavior, independent numerical checks, and release engineering.
 
-The current test suite is organized around **contracts, behavior, numerics, and tooling** rather than historical version numbers. Statistical tests cover realized samples, weights, singleton handling, FE semantics, omitted variables, clustering, DoF, PPML separation, result semantics, and cache invalidation. Critical numerical paths are additionally checked against independent constructions such as dense dummy matrices, SVD-based references, exact rational arithmetic, deliberately difficult rank cases, extreme scales, rank deficiency, and resource-boundary failures.
+The current compact regression suite is organized around **contracts, behavior, numerics, and tooling**. Its scope and the cases retired from regular execution are documented in [the testing guide](docs/development/testing.md). Statistical tests cover realized samples, weights, singleton handling, FE semantics, omitted variables, clustering, DoF, PPML separation, result semantics, and cache invalidation. Critical numerical paths are additionally checked against independent constructions such as dense dummy matrices, SVD-based references, exact rational arithmetic, deliberately difficult rank cases, extreme scales, rank deficiency, and resource-boundary failures.
 
 CI covers Linux, Windows, and macOS across supported Python versions, together with feasible minimum dependency environments. Source archives and installed wheels are also tested outside the ordinary development import path.
 
-The claim boundary remains explicit. Extensive repository-local testing is not equivalent to complete licensed-Stata or upstream external-corpus certification, and those external checks are not claimed merely because the internal suite is large.
+The claim boundary remains explicit. Repository-local regression tests do not establish complete licensed-Stata or upstream external-corpus certification. Representative cases also do not exhaust every supported option combination.
 
 See [Testing](docs/development/testing.md) and the [validation status](docs/development/test-status.md) for details.
 
@@ -234,7 +246,7 @@ explicitly with `save_fe=True`; unknown levels and unidentified combinations
 are rejected. PPML/IV-PPML prediction, varying-slope or group+individual FE
 prediction, margins and AME are not supported in this version.
 See the [post-estimation contract](docs/development/postestimation-0.7.md).
-These features require 0.7.0. Check `python -c "import econhdfe; print(econhdfe.__version__)"` after installation. Use a published 0.7.0 wheel when available, or run `python -m pip install .` from this source checkout; the package index may still serve an earlier release. See [release status and validation](docs/development/test-status.md).
+These features were introduced in 0.7.0 and remain available in 0.8.1; use the installation instructions above to select and check the source or published package you need.
 
 ## Fixed-effect recovery
 

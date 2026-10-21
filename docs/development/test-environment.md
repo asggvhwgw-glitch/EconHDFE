@@ -1,10 +1,11 @@
 # Functional tests and performance measurements
 
-Use `python scripts/run_tests.py -- -q --junitxml=results.xml` for the full suite.
+Use `python scripts/run_tests.py --suite full -- -q --junitxml=results.xml`
+for the full suite. Without `--suite full`, the default is the daily core only.
 The launcher defaults Numba's maximum thread pool to four, and BLAS/OMP/MKL to
 one when those variables are absent. Explicit caller settings are retained.
-An explicit Numba cap below three is rejected before importing Numba: four
-existing functionality tests request real 2–3-thread execution. None is skipped.
+An explicit Numba cap below three is rejected before importing Numba: the
+functional suite exercises real 2–3-thread execution. None is skipped.
 A single-thread performance cap is therefore NOT a functional-test environment.
 
 `python scripts/run_tests.py --preflight` inspects those prerequisites without

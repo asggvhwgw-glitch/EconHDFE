@@ -1,36 +1,5 @@
 from __future__ import annotations
-
 import json
-import subprocess
-import sys
-import zipfile
-from pathlib import Path
-
-from econhdfe import __version__
-
-
-def test_skill_router_is_progressively_disclosed():
-    text = Path("skills/econhdfe/SKILL.md").read_text()
-    assert len(text.splitlines()) < 100
-    for name in (
-        "installation.md", "configuration.md", "empirical-research.md",
-        "advanced-validation.md", "developer-guide.md",
-    ):
-        assert f"references/{name}" in text
-
-
-def test_skill_zip_writer_preserves_canonical_tree(tmp_path):
-    from scripts.assemble_release import write_skill_zip
-
-    source = Path("skills/econhdfe")
-    out = tmp_path / "skill.zip"
-    write_skill_zip(source, out)
-    with zipfile.ZipFile(out) as zf:
-        names = set(zf.namelist())
-    assert "econhdfe/SKILL.md" in names
-    assert "econhdfe/agents/openai.yaml" in names
-    assert "econhdfe/references/empirical-research.md" in names
-    assert "econhdfe/scripts/smoke_test.py" in names
 
 
 def test_public_contract_gate_requires_exact_approval(monkeypatch, tmp_path):

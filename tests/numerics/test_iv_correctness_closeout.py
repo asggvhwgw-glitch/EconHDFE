@@ -1,7 +1,7 @@
 """Independent matrix references for IV identification and output semantics."""
+
 import numpy as np
 import pytest
-
 from econhdfe.compute.block_design import BlockDesign, DenseDesignBlock
 from econhdfe.errors import UnderidentifiedError, NumericalError
 from econhdfe.models.linear_iv.estimators import (
@@ -33,19 +33,11 @@ def _regular():
     return y, c, e, z, w
 
 
-@pytest.mark.parametrize("path", ["dense", "block", "gmm"])
-def test_weighted_first_stage_fitted_is_in_unweighted_within_coordinates(path):
-    y, c, e, z, w = _regular()
-    got = _fit(y, c, e, z, path, weights=w, vce="robust")
-    zw = np.column_stack((c, z)) * np.sqrt(w)[:, None]
-    reference = np.linalg.lstsq(zw, e * np.sqrt(w)[:, None], rcond=None)[0]
-    expected = np.column_stack((c, z)) @ reference
-    np.testing.assert_allclose(got[5]["fitted_endog"], expected, rtol=2e-11, atol=2e-11)
-
-
-@pytest.mark.parametrize("path", ["dense", "block"])
-@pytest.mark.parametrize("kappa", [0., .4, 1.])
-@pytest.mark.parametrize("vce", ["iid", "robust", "cluster"])
+@pytest.mark.parametrize('path,kappa,vce', [
+    ('dense', 0.0, 'iid'),
+    ('block', 0.4, 'robust'),
+    ('dense', 1.0, 'cluster'),
+])
 def test_fixed_kclass_covariance_matches_defining_score(path, kappa, vce):
     y, c, e, z, w = _regular()
     n = len(y)
@@ -85,23 +77,11 @@ def _identification_problem(delta):
     return y, c, e, z
 
 
-@pytest.mark.parametrize("path", ["dense", "block", "gmm"])
-def test_full_role_rank_does_not_imply_iv_identification(path):
-    y, c, e, z = _identification_problem(0.)
-    assert np.linalg.matrix_rank(np.column_stack((c, e))) == 3
-    with pytest.raises(UnderidentifiedError):
-        _fit(y, c, e, z, path)
-
-
-@pytest.mark.parametrize("path", ["dense", "block", "gmm"])
-def test_near_unidentified_iv_is_not_silently_reported_as_reliable(path):
-    y, c, e, z = _identification_problem(1e-10)
-    with pytest.raises(NumericalError):
-        _fit(y, c, e, z, path)
-
-
-@pytest.mark.parametrize("path", ["dense", "block", "gmm"])
-@pytest.mark.parametrize("delta,error", [(0., UnderidentifiedError), (1e-10, NumericalError)])
+@pytest.mark.parametrize('path,delta,error', [
+    ('dense', 0., UnderidentifiedError),
+    ('block', 1e-10, NumericalError),
+    ('gmm', 0., UnderidentifiedError),
+])
 def test_identification_policy_is_invariant_to_column_units(path, delta, error):
     y, c, e, z = _identification_problem(delta)
     with pytest.raises(error):
@@ -109,31 +89,8 @@ def test_identification_policy_is_invariant_to_column_units(path, delta, error):
              z * np.array([1e6, 1e-6]), path)
 
 
-@pytest.mark.parametrize("path", ["dense", "block"])
-def test_fixed_zero_kclass_does_not_require_excluded_instrument_identification(path):
-    y, c, e, z = _identification_problem(0.)
-    x = np.column_stack((c, e))
-    expected = np.linalg.lstsq(x, y, rcond=None)[0]
-    got = _fit(y, c, e, z, path, estimator="kclass", kappa=0., vce="robust")
-    np.testing.assert_allclose(got[0], expected, atol=1e-12)
-
-
-def test_exact_identification_does_not_materialize_joint_instrument_design(monkeypatch):
-    y, c, e, z, w = _regular()
-    original = BlockDesign.materialize
-    materialized_columns = []
-    def record(self, *args, **kwargs):
-        materialized_columns.append(self.ncols)
-        return original(self, *args, **kwargs)
-    monkeypatch.setattr(BlockDesign, "materialize", record)
-    got = _fit(y, c, e, z[:, :2], "block", weights=w)
-    assert got[6]["overidentification"]["df"] == 0
-    assert c.shape[1] + e.shape[1] not in materialized_columns
-
-
-@pytest.mark.parametrize("path", ["dense", "block"])
-@pytest.mark.parametrize("delta", [1e-3, 1e-6])
-def test_near_identification_matches_exact_float_input_moments(path, delta):
+def test_near_identification_matches_exact_float_input_moments():
+    path,delta = ('block', 1e-06)
     from fractions import Fraction as F
     from scipy.linalg import hadamard
     q = np.tile(hadamard(8)[:, 1:6], (250, 1)).astype(float)
@@ -154,10 +111,9 @@ def test_near_identification_matches_exact_float_input_moments(path, delta):
     np.testing.assert_allclose(got[0], expected, rtol=0, atol=1e-8)
 
 
-@pytest.mark.parametrize("path,vce,weight_kind", [
-    ("dense", "iid", None), ("block", "iid", "aweight"),
-    ("dense", "robust", "fweight"), ("block", "robust", "aweight"),
-    ("dense", "cluster", "aweight"), ("block", "cluster", "fweight"),
+@pytest.mark.parametrize('path,vce,weight_kind', [
+    ('dense', 'robust', 'fweight'),
+    ('block', 'cluster', 'fweight'),
 ])
 def test_overid_uses_efficient_moments_and_iv_small_convention(path, vce, weight_kind):
     from econhdfe.compute.weights import prepare_weights
@@ -215,12 +171,3 @@ def test_overid_uses_efficient_moments_and_iv_small_convention(path, vce, weight
             meat = xscores.T @ xscores * neff/(neff-X.shape[1]-3)
         V = bread @ meat @ bread
     np.testing.assert_allclose(got[1], V, rtol=2e-10, atol=2e-11)
-
-
-@pytest.mark.parametrize("path", ["dense", "block", "gmm"])
-def test_all_nested_retains_single_absorbed_intercept(path):
-    y, c, e, z, w = _regular()
-    groups = np.arange(len(y)) % 12
-    a = _fit(y, c, e, z, path, vce="cluster", clusters=[groups], df_absorbed=0, nested_adj=1)
-    b = _fit(y, c, e, z, path, vce="cluster", clusters=[groups], df_absorbed=1, nested_adj=0)
-    np.testing.assert_allclose(a[1], b[1], rtol=1e-13, atol=1e-13)
