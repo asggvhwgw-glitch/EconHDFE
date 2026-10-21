@@ -1,6 +1,7 @@
 from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
+from time import perf_counter
 import warnings
 import numpy as np
 from .hdfe.absorber import HDFEAbsorber, HDFEConvergenceError, iterative_singleton_mask
@@ -19,7 +20,8 @@ from .factorvars import FactorVariableExpression
 from .design import build_design, Factor, RegressorInteraction, _compile_execution_design
 from .compute.block_design import BlockDesign
 from .collinearity import resolve_collinearity, OmittedVariableWarning, format_omission_warning
-from .compute.execution import plan_workspace, should_probe_plain_map, ReusableRHSWorkspace
+from .compute.execution import _plan_workspace, should_probe_plain_map, ReusableRHSWorkspace
+from .hdfe.projection import estimate_index_bytes
 from .compute.weights import normalize_weight_type, prepare_weights, resolve_vce_for_weights
 from .frontend.validate import require_numeric, require_identifier
 from .frontend.roles import VariableRole
@@ -248,40 +250,99 @@ def _masked_array(data, spec, mask):
 
 
 def _resolve_pool_size(absorber, ncols, pool_size, memory_budget_mb):
-    if pool_size not in (None, "auto"):
-        return max(1, min(int(pool_size), ncols))
-    # Count *additional* per-RHS scratch arrays, not the input matrix that is
-    # already resident. Plain MAP needs only the previous-iterate buffer; CG
-    # carries several Krylov vectors. This lets indexed/fused multi-RHS kernels
-    # use wider pools at 10M+ rows without understating peak scratch memory.
-    work_arrays = 4 if absorber.acceleration == "cg" else 1
-    if absorber.method in {"lsmr", "lsqr"}:
-        work_arrays = 2
-    budget = max(float(memory_budget_mb), 64.0) * (1024**2)
-    bytes_per_col = max(absorber.nobs * 8 * work_arrays, 1)
-    return max(1, min(ncols, int(budget // bytes_per_col)))
+    # Report the actual execution plan, rather than running a second,
+    # inconsistent memory heuristic after absorption.
+    if hasattr(absorber, "execution_plan"):
+        return absorber.execution_plan.pool_size
+    resident, per_col = _absorption_workspace_cost(absorber)
+    return _plan_workspace(
+        nobs=absorber.nobs, ncols=ncols, pool_size=pool_size,
+        memory_budget_mb=memory_budget_mb, bytes_per_column=per_col,
+        resident_solver_bytes=resident,
+        requested_threads=getattr(absorber, "absorb_threads", "auto"),
+    ).pool_size
+
+
+def _absorption_workspace_cost(absorber):
+    """Conservative byte inventory for pooled CPU absorption, excluding input."""
+    arrays = {}
+
+    def add(a):
+        if isinstance(a, np.ndarray):
+            arrays[id(a)] = a.nbytes
+
+    for name in ("groups", "slopes", "_denoms"):
+        for a in getattr(absorber, name, ()) or ():
+            add(a)
+    for name in ("weights", "_projection_scratch", "left", "right",
+                 "denom_left", "denom_right", "_diag", "_precond_diag", "keep_right"):
+        add(getattr(absorber, name, None))
+    for proj in getattr(absorber, "_projectors", ()):
+        for name in ("denom", "slope_means", "slope_gram_inv", "slope_inv_ss"):
+            add(getattr(proj, name))
+    fixed = int(getattr(absorber, "index_bytes", 0)) + sum(arrays.values())
+    n = int(absorber.nobs)
+    if absorber.method == "twoway":
+        # Includes the lazy group indexes and bounded coefficient-space PCG
+        # arrays/advanced-indexing temporaries, not an N x FE dummy matrix.
+        if absorber.absorb_threads > 1 and absorber._left_index is None:
+            fixed += estimate_index_bytes(n, [absorber.n_left, absorber.n_right])
+        per_col = 8 * (n + 4 * absorber.n_left + 20 * absorber.n_right)
+    else:
+        vectors = 4 if absorber.acceleration in ("cg", "auto") else 2
+        per_col = 8 * n * vectors
+        if absorber.acceleration in ("cg", "auto") and absorber.absorb_threads > 1:
+            # At most 16 partial reductions plus their per-column result.
+            per_col += 17 * 8
+        indexes = getattr(absorber, "_group_indexes", ())
+        levels = getattr(absorber, "levels", ())
+        # Fused fallback accumulators are reused across FE, so reserve only
+        # the largest group matrix. This also bounds one-column bincount work.
+        unindexed = [L for i, L in enumerate(levels) if not indexes or indexes[i] is None]
+        if unindexed:
+            per_col += 8 * max(unindexed) * 3
+        if any(s is not None for s in getattr(absorber, "slopes", ())):
+            per_col += 8 * n * 4
+        core = getattr(absorber, "_core_plan", None)
+        if core is not None:
+            fixed += core.core_index.nbytes + sum(g.nbytes for g in core.core_groups)
+            core_levels = [int(g.max()) + 1 if g.size else 0 for g in core.core_groups]
+            fixed += estimate_index_bytes(core.core_nobs, core_levels) + 8 * sum(core_levels)
+            per_col += 8 * core.core_nobs
+    return int(fixed), max(1, int(per_col))
 
 
 def _residualize_blocks(
-    absorber, matrix, pool_size, memory_budget_mb=512, *, adaptive_auto=False
+    absorber, matrix, pool_size, memory_budget_mb=512, *, adaptive_auto=False,
+    profile=False,
 ):
     """Residualize columns with one reusable contiguous workspace.
 
     Execution policy is deliberately separate from the absorber mathematics.
     For very large wide MAP problems requested through ``method="auto"``,
-    the first *real* pool is a bounded plain-MAP probe. If it converges quickly
-    the remaining pools stay on plain MAP; otherwise that same pool is reset
-    from its source and the executor falls back to CG. No extra full-data probe
-    pass is introduced.
+    the first real pool uses the absorber's contraction probe. Fast contraction
+    keeps plain MAP; hard systems continue CG on the partially transformed pool.
+    Later pools retain the first pool's choice without repeating the probe.
     """
     ncols = int(matrix.shape[1])
-    scratch = 4 if absorber.acceleration == "cg" else 2
-    plan = plan_workspace(
+    resident, per_col = _absorption_workspace_cost(absorber)
+    plan = _plan_workspace(
         nobs=absorber.nobs, ncols=ncols, pool_size=pool_size,
-        memory_budget_mb=memory_budget_mb, scratch_arrays_per_rhs=scratch,
+        memory_budget_mb=memory_budget_mb, bytes_per_column=per_col,
+        resident_solver_bytes=resident,
         requested_threads=getattr(absorber, "absorb_threads", "auto"),
     )
     absorber.execution_plan = plan
+    absorber.execution_memory = {
+        "scope": "resident_solver_state_and_pooled_workspace",
+        "input_matrix_bytes": int(matrix.nbytes),
+        "resident_solver_bytes": resident,
+        "workspace_bytes_per_column": per_col,
+        "estimated_solver_bytes": resident + per_col * plan.pool_size,
+        "budget_bytes": int(float(memory_budget_mb) * 1024**2),
+    }
+    absorber._profile_enabled = bool(profile)
+    absorber.execution_profile = {"pools": []} if profile else None
     thread_kwargs = {"absorb_threads": plan.threads} if hasattr(absorber, "absorb_threads") else {}
 
     adaptive = bool(adaptive_auto and should_probe_plain_map(
@@ -291,55 +352,62 @@ def _residualize_blocks(
 
     # Small/full-width problems keep the zero-copy in-place fast path.
     if plan.pool_size >= ncols and not adaptive:
+        started = perf_counter() if profile else None
         out, info = absorber.residualize(matrix, copy=False, return_info=True, **thread_kwargs)
         if out is not matrix:
             matrix[...] = out
+        if profile:
+            absorber.execution_profile["pools"].append({
+                "columns": ncols, "seconds": perf_counter() - started,
+                "iterations": int(info.iterations), "criterion": getattr(info, "criterion", "unknown"),
+                "converged": bool(info.converged),
+                "stages": dict(getattr(absorber, "_iteration_profile", {})),
+            })
         return matrix, info
 
     workspace = ReusableRHSWorkspace(absorber.nobs, plan.pool_size, dtype=matrix.dtype)
     infos = []
     original_accel = absorber.acceleration
-    original_max_iter = absorber.max_iter
+    original_plain_limit = getattr(absorber, "auto_plain_limit", None)
     chosen_accel = original_accel
 
     try:
         for pool_idx, lo in enumerate(range(0, ncols, plan.pool_size)):
             hi = min(ncols, lo + plan.pool_size)
             work = workspace.load(matrix, lo, hi)
+            started = perf_counter() if profile else None
 
             if adaptive and pool_idx == 0:
-                # The first required RHS pool doubles as the solver probe.
-                absorber.acceleration = "none"
-                absorber.max_iter = min(original_max_iter, 64)
+                # Keep the previous allowance for easy, fast-contracting
+                # systems (some need >8 sweeps), but reject hard ones after
+                # the shared two-sweep probe without throwing away its work.
+                absorber.acceleration = "auto"
+                absorber.auto_plain_limit = max(original_plain_limit, 64)
                 res, info = absorber.residualize(
                     work, copy=False, return_info=True, **thread_kwargs
                 )
-                if info.converged:
-                    chosen_accel = "none"
-                else:
-                    # Restore the original pool and fall back to the robust CG
-                    # path without accepting a partially converged probe.
-                    work = workspace.load(matrix, lo, hi)
-                    absorber.acceleration = original_accel
-                    absorber.max_iter = original_max_iter
-                    res, info = absorber.residualize(
-                        work, copy=False, return_info=True, **thread_kwargs
-                    )
-                    chosen_accel = original_accel
+                chosen_accel = "cg" if "cg" in info.criterion else "none"
                 absorber.acceleration = chosen_accel
-                absorber.max_iter = original_max_iter
+                absorber.auto_plain_limit = original_plain_limit
             else:
                 absorber.acceleration = chosen_accel
-                absorber.max_iter = original_max_iter
                 res, info = absorber.residualize(
                     work, copy=False, return_info=True, **thread_kwargs
                 )
 
+            if profile:
+                absorber.execution_profile["pools"].append({
+                    "columns": hi - lo, "seconds": perf_counter() - started,
+                    "iterations": int(info.iterations), "criterion": getattr(info, "criterion", "unknown"),
+                    "converged": bool(info.converged),
+                    "stages": dict(getattr(absorber, "_iteration_profile", {})),
+                })
             workspace.write(matrix, lo, hi, res)
             infos.append(info)
     finally:
         absorber.acceleration = chosen_accel
-        absorber.max_iter = original_max_iter
+        if original_plain_limit is not None:
+            absorber.auto_plain_limit = original_plain_limit
 
     worst = max(infos, key=lambda z: (not z.converged, z.iterations, z.max_update))
     return matrix, worst
@@ -407,6 +475,8 @@ def _absorb_metadata(plan, absorber, info, pool_size, solver_selection=None):
         out["solver_selection"] = dict(solver_selection)
     if hasattr(absorber, "execution_plan"):
         out["execution_plan"] = absorber.execution_plan.as_dict()
+    if hasattr(absorber, "execution_memory"):
+        out["execution_memory"] = dict(absorber.execution_memory)
     if hasattr(absorber, "solve_info"):
         si = absorber.solve_info
         out["two_way"] = {
@@ -773,7 +843,9 @@ def _make_standard_absorber(
                 "method='twoway' requires exactly two intercept-only fixed effects "
                 "after FE canonicalization"
             )
-        return TwoWayFEAbsorber(groups, weights=weights, tol=tol, max_iter=max_iter)
+        return TwoWayFEAbsorber(
+            groups, weights=weights, tol=tol, max_iter=max_iter
+        )._configure_execution(absorb_threads=absorb_threads)
     return HDFEAbsorber(
         groups, slopes=slopes, intercepts=intercepts, weights=weights,
         tol=tol, max_iter=max_iter, backend=backend, method=method,

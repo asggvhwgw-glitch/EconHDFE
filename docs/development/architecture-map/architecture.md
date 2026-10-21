@@ -31,7 +31,7 @@ flowchart TB
   n_compat -->|"1 imports"| n_compute
   n_compat -->|"1 imports"| n_linear_iv
   n_compat -->|"1 imports"| n_ols
-  n_compute -->|"5 imports"| n_contracts
+  n_compute -->|"6 imports"| n_contracts
   n_compute -->|"3 imports"| n_planner
   n_contracts -->|"1 imports"| n_interface
   n_data -->|"7 imports"| n_contracts
@@ -49,7 +49,7 @@ flowchart TB
   n_interface -->|"11 imports"| n_contracts
   n_interface -->|"3 imports"| n_data
   n_interface -->|"7 imports"| n_frontend
-  n_interface -->|"10 imports"| n_hdfe
+  n_interface -->|"11 imports"| n_hdfe
   n_interface -->|"2 imports"| n_linear_iv
   n_interface -->|"3 imports"| n_ols
   n_interface -->|"1 imports"| n_ppml
@@ -66,7 +66,7 @@ flowchart TB
   n_linear_iv -->|"2 imports"| n_iv
   n_model_shared -->|"4 imports"| n_contracts
   n_model_shared -->|"2 imports"| n_frontend
-  n_ols -->|"7 imports"| n_compute
+  n_ols -->|"8 imports"| n_compute
   n_ols -->|"6 imports"| n_contracts
   n_ols -->|"1 imports"| n_data
   n_ols -->|"2 imports"| n_frontend
@@ -222,7 +222,7 @@ Files/modules: 17. econhdfe/compute/__init__.py, econhdfe/compute/backend.py, ec
 | Compatibility shim | Compute/runtime kernels | 1 | `pyreghdfe.linear → econhdfe.compute.wls` |
 | Compatibility shim | Linear IV model | 1 | `pyreghdfe.linear → econhdfe.models.linear_iv.estimators` |
 | Compatibility shim | OLS model | 1 | `pyreghdfe.linear → econhdfe.models.ols` |
-| Compute/runtime kernels | Shared contracts | 5 | `econhdfe.compute.clusters → econhdfe.errors`<br>`econhdfe.compute.context → econhdfe.config`<br>`econhdfe.compute.vcov → econhdfe.errors`<br>`econhdfe.compute.weights → econhdfe.errors` |
+| Compute/runtime kernels | Shared contracts | 6 | `econhdfe.compute.clusters → econhdfe.errors`<br>`econhdfe.compute.context → econhdfe.config`<br>`econhdfe.compute.execution → econhdfe.errors`<br>`econhdfe.compute.vcov → econhdfe.errors`<br>`econhdfe.compute.weights → econhdfe.errors` |
 | Compute/runtime kernels | Execution planner | 3 | `econhdfe.compute.execution → econhdfe.planner`<br>`econhdfe.compute.partitioned_lstsq → econhdfe.planner`<br>`econhdfe.compute.runtime → econhdfe.planner.resources` |
 | Shared contracts | Public interface & orchestration | 1 | `econhdfe.support_reports → econhdfe` |
 | Econometric data layer | Shared contracts | 7 | `econhdfe.data.dataset → econhdfe.errors`<br>`econhdfe.data.encoding → econhdfe.errors`<br>`econhdfe.data.persistent → econhdfe.errors`<br>`econhdfe.data.persistent → econhdfe.results`<br>`econhdfe.data.persistent → econhdfe.prediction` |
@@ -240,7 +240,7 @@ Files/modules: 17. econhdfe/compute/__init__.py, econhdfe/compute/backend.py, ec
 | Public interface & orchestration | Shared contracts | 11 | `econhdfe.api → econhdfe.config`<br>`econhdfe.api → econhdfe.reporting`<br>`econhdfe.design → econhdfe.prediction`<br>`econhdfe.design → econhdfe.errors`<br>`econhdfe.factorvars → econhdfe.errors` |
 | Public interface & orchestration | Econometric data layer | 3 | `econhdfe.sessions → econhdfe.data.dataset`<br>`econhdfe.sessions → econhdfe.data.persistent`<br>`econhdfe.sessions → econhdfe.data.source` |
 | Public interface & orchestration | Frontend validation | 7 | `econhdfe.design → econhdfe.frontend.validate`<br>`econhdfe.design → econhdfe.frontend.roles`<br>`econhdfe.pipeline → econhdfe.frontend.validate`<br>`econhdfe.pipeline → econhdfe.frontend.roles`<br>`econhdfe.sessions → econhdfe.frontend.columns` |
-| Public interface & orchestration | HDFE infrastructure | 10 | `econhdfe.pipeline → econhdfe.hdfe.absorber`<br>`econhdfe.pipeline → econhdfe.hdfe.two_way`<br>`econhdfe.pipeline → econhdfe.hdfe.group_individual`<br>`econhdfe.pipeline → econhdfe.hdfe.dof`<br>`econhdfe.pipeline → econhdfe.hdfe.structure` |
+| Public interface & orchestration | HDFE infrastructure | 11 | `econhdfe.pipeline → econhdfe.hdfe.absorber`<br>`econhdfe.pipeline → econhdfe.hdfe.two_way`<br>`econhdfe.pipeline → econhdfe.hdfe.group_individual`<br>`econhdfe.pipeline → econhdfe.hdfe.dof`<br>`econhdfe.pipeline → econhdfe.hdfe.structure` |
 | Public interface & orchestration | Linear IV model | 2 | `econhdfe.api → econhdfe.models.linear_iv.api`<br>`econhdfe.sessions → econhdfe.models.linear_iv.estimators` |
 | Public interface & orchestration | OLS model | 3 | `econhdfe.api → econhdfe.models.ols`<br>`econhdfe.bootstrap → econhdfe.models.ols_bootstrap`<br>`econhdfe.sessions → econhdfe.models.ols` |
 | Public interface & orchestration | PPML model | 1 | `econhdfe.api → econhdfe.models.ppml` |
@@ -257,7 +257,7 @@ Files/modules: 17. econhdfe/compute/__init__.py, econhdfe/compute/backend.py, ec
 | Linear IV model | Generic IV primitives | 2 | `econhdfe.models.linear_iv.estimators → econhdfe.iv.design`<br>`econhdfe.models.linear_iv.estimators → econhdfe.iv.solve` |
 | Shared model primitives | Shared contracts | 4 | `econhdfe.models.poisson → econhdfe.errors` |
 | Shared model primitives | Frontend validation | 2 | `econhdfe.models.poisson → econhdfe.frontend.validate`<br>`econhdfe.models.poisson → econhdfe.frontend.roles` |
-| OLS model | Compute/runtime kernels | 7 | `econhdfe.models.ols → econhdfe.compute.weights`<br>`econhdfe.models.ols → econhdfe.compute.wls`<br>`econhdfe.models.ols → econhdfe.compute.stable_linalg`<br>`econhdfe.models.ols → econhdfe.compute.vcov`<br>`econhdfe.models.ols → econhdfe.compute.block_design` |
+| OLS model | Compute/runtime kernels | 8 | `econhdfe.models.ols → econhdfe.compute.weights`<br>`econhdfe.models.ols → econhdfe.compute.wls`<br>`econhdfe.models.ols → econhdfe.compute.stable_linalg`<br>`econhdfe.models.ols → econhdfe.compute.vcov`<br>`econhdfe.models.ols → econhdfe.compute.block_design` |
 | OLS model | Shared contracts | 6 | `econhdfe.models.ols → econhdfe.errors`<br>`econhdfe.models.ols → econhdfe.config`<br>`econhdfe.models.ols → econhdfe.results`<br>`econhdfe.models.ols → econhdfe.prediction`<br>`econhdfe.models.ols → econhdfe.reporting` |
 | OLS model | Econometric data layer | 1 | `econhdfe.models.ols → econhdfe.data` |
 | OLS model | Frontend validation | 2 | `econhdfe.models.ols → econhdfe.frontend.validate`<br>`econhdfe.models.ols → econhdfe.frontend.roles` |
@@ -454,7 +454,7 @@ flowchart LR
 | --- | ---: | ---: | ---: |
 | `econhdfe/` | 124 | 122 | 2 |
 | `pyreghdfe/` | 2 | 2 | 0 |
-| `tests/` | 78 | 78 | 0 |
+| `tests/` | 84 | 84 | 0 |
 | `validation/` | 25 | 8 | 3 |
 | `benchmarks/` | 116 | 29 | 8 |
 | `docs/` | 104 | 1 | 71 |

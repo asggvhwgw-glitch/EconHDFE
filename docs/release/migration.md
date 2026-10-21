@@ -1,5 +1,27 @@
 # Migration guide
 
+## Unreleased: CG execution and workspace enforcement
+
+Explicit thread counts now reach the inner grouped-projection kernels and the
+standard two-way OLS absorber. Runtime may change even when the outer metadata
+previously reported the same count.
+
+An explicit `pool_size` that exceeds the estimated solver-workspace budget now
+raises `SpecificationError`. Use `pool_size="auto"` to choose a fitting width;
+if one column cannot fit, increase the budget or free memory. Budgets below
+64 MiB are no longer silently raised to 64 MiB. The budget includes resident
+solver state and pool scratch, but is not a cap on input/design storage or
+total process RSS. Dense standard OLS checks live headroom before its stacked
+design allocation.
+
+`psutil>=5.9` is now a runtime dependency for host-memory availability. These
+changes preserve the requested FE specification and CG recurrence. CG stopping
+now uses per-column relative energy floors instead of absolute epsilon guards;
+auto/plain MAP normalize column units before iterating. Small-unit inputs that
+previously stopped too early may return corrected estimates. The configured
+tolerance is unchanged. The final numerical fix has not been rebenchmarked at
+large sample sizes.
+
 ## Published 0.6.3 → 0.7 source and corresponding artifacts
 
 The intervening 0.6.4/0.6.5 entries describe development checkpoints. Check
