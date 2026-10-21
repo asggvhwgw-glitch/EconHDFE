@@ -5,7 +5,7 @@ from ...compute.wls import as_2d
 import scipy.linalg as la
 from scipy.stats import chi2, f
 from ...compute.encoding import factorize_interaction
-from ...compute.vcov import ols_vcov, score_covariance
+from ...compute.vcov import ols_vcov, score_covariance, _cluster_meat_xe, _cluster_kron_meat
 
 
 # Only the joint first-stage/AP call owns this cache; never persist it in a
@@ -34,6 +34,30 @@ def _weighted_triplet(endog, exog, instruments, weights=None):
     return E, C, Z
 
 
+def _partial_from_solver(E, C, Z, qr):
+    """Use the small QR only away from conditioning/cancellation boundaries."""
+    A = np.column_stack([E, Z])
+    if qr is None or not C.shape[1]:
+        return _residualize_small(A, C)
+    R, zs, es = qr.R, qr.zscale, qr.escale
+    kc, ke, l = C.shape[1], E.shape[1], len(zs)
+    rz = R[:l, :l] * zs
+    singular = la.svdvals(rz)
+    if singular[-1] <= 1e-3 * singular[0]:
+        return _residualize_small(A, C)
+    energy = np.sum((R[:, l:l+ke] * es) ** 2, axis=0)
+    noise = np.sum((R[l:, l:l+ke] * es) ** 2, axis=0)
+    if np.any(noise <= np.sqrt(np.finfo(float).eps) * energy):
+        return _residualize_small(A, C)
+    rhs = np.column_stack([R[:kc, l:l+ke] * es, rz[:kc, kc:]])
+    coef = la.solve_triangular(rz[:kc, :kc], rhs, lower=False, check_finite=False)
+    partial = A - C @ coef
+    if np.any(np.sum(partial ** 2, axis=0) <=
+              np.sqrt(np.finfo(float).eps) * np.sum(A ** 2, axis=0)):
+        return _residualize_small(A, C)
+    return partial
+
+
 class _IVDiagnosticWorkspace:
     """Per-fit weighted roles and shared control projection; never session state.
 
@@ -42,11 +66,16 @@ class _IVDiagnosticWorkspace:
     shared. Callers must construct a new workspace after sample/weight changes.
     """
 
-    def __init__(self, endog, exog, instruments, weights=None):
+    def __init__(self, endog, exog, instruments, weights=None, *, _qr=None, _moments=None):
         self.E, self.C, self.Z = _weighted_triplet(endog, exog, instruments, weights)
         # Preserve the canonical/CD projection layout and rank-boundary behavior.
-        self.Ep = _residualize_small(self.E, self.C)
-        self.Zp = _residualize_small(self.Z, self.C)
+        # One GELSY factorization of the controls for both right-hand sides.
+        partial = _partial_from_solver(self.E, self.C, self.Z, _qr)
+        self._solver_R = (None if _qr is None else
+                          _qr.R[:len(_qr.zscale), :len(_qr.zscale)] * _qr.zscale)
+        self._moments = _moments
+        self.Ep = partial[:, :self.E.shape[1]]
+        self.Zp = partial[:, self.E.shape[1]:]
         self.zz = self.Zp.T @ self.Zp
         # Conservative execution guard only: this Gram rank does NOT select
         # model columns, change GELSY's cutoff, or supply a reported rank.
@@ -67,7 +96,8 @@ class _IVDiagnosticWorkspace:
     @property
     def shea(self):
         if self._shea is None:
-            self._shea = _shea_partial_r2(self.E, self.C, self.Z)
+            self._shea = (_shea_partial_r2(self.E, self.C, self.Z) if self._moments is None
+                          else _shea_from_moments(*self._moments, self.C.shape[1]))
         return self._shea
 
     @property
@@ -186,24 +216,25 @@ def _first_stage_statistics(ep, zp, b, resid, bread, ccols, *, vce, clusters,
     }
 
 
+def _shea_from_moments(xx, zz, xz, n_exog):
+    xx_inv = np.linalg.pinv(xx, hermitian=True)
+    zz_inv = np.linalg.pinv(zz, hermitian=True)
+    iv_bread = np.linalg.pinv(xz @ zz_inv @ xz.T, hermitian=True)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        return np.clip(np.diag(xx_inv)[n_exog:] / np.diag(iv_bread)[n_exog:], 0., 1.)
+
+
 def _shea_partial_r2(E, C, Z):
     X = np.column_stack([C, E])
     Q = np.column_stack([C, Z])
-    xx_inv = np.linalg.pinv(X.T @ X, hermitian=True)
-    q_inv = np.linalg.pinv(Q.T @ Q, hermitian=True)
-    xpzx = X.T @ Q @ q_inv @ Q.T @ X
-    iv_bread = np.linalg.pinv(xpzx, hermitian=True)
-    start = C.shape[1]
-    num = np.diag(xx_inv)[start:]
-    den = np.diag(iv_bread)[start:]
-    with np.errstate(divide="ignore", invalid="ignore"):
-        out = num / den
-    return np.clip(out, 0.0, 1.0)
+    # Reassociate the product in small matrices; no K x N intermediate.
+    return _shea_from_moments(X.T @ X, Q.T @ Q, X.T @ Q, C.shape[1])
 
 
 def first_stage_diagnostics(endog, exog, instruments, *, weights=None, weight_info=None, vce="robust",
                             clusters=None, df_absorbed=0, nested_adj=0, time=None, panel=None,
-                            bandwidth=None, kernel="bartlett", _workspace=None, _inverse_cache=None):
+                            bandwidth=None, kernel="bartlett", _workspace=None, _inverse_cache=None,
+                            _include_shea=True):
     work = _workspace or _IVDiagnosticWorkspace(endog, exog, instruments, weights)
     E, C, Z = work.E, work.C, work.Z
     n_eff = float(len(E) if weight_info is None else weight_info.effective_n)
@@ -215,12 +246,14 @@ def first_stage_diagnostics(endog, exog, instruments, *, weights=None, weight_in
         nested_adj=nested_adj, time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
         effective_n=n_eff, score_scale=score_scale,
     )
-    for j, d in enumerate(out):
-        d["shea_partial_r2"] = float(work.shea[j])
+    if _include_shea:
+        for j, d in enumerate(out):
+            d["shea_partial_r2"] = float(work.shea[j])
     return out
 
 
-def _first_stage_suite(endog, exog, instruments, *, _workspace=None, **inference):
+def _first_stage_suite(endog, exog, instruments, *, _workspace=None,
+                       _advanced_statistics=True, **inference):
     """Evaluate ordinary and conditional tests with one call-local VCE cache.
 
     The two consumers receive the exact same inference options. No array-id
@@ -231,13 +264,15 @@ def _first_stage_suite(endog, exog, instruments, *, _workspace=None, **inference
         endog, exog, instruments, inference.get("weights"),
     )
     k, q = work.E.shape[1], work.Z.shape[1]
-    cache = [None] * k if k * q * q * 8 <= _FIRST_STAGE_CACHE_BYTES else None
+    cache = ([None] * k
+             if _advanced_statistics and k * q * q * 8 <= _FIRST_STAGE_CACHE_BYTES else None)
     first = first_stage_diagnostics(
-        endog, exog, instruments, _workspace=work, _inverse_cache=cache, **inference,
+        endog, exog, instruments, _workspace=work, _inverse_cache=cache,
+        _include_shea=_advanced_statistics, **inference,
     )
     conditional = sanderson_windmeijer_diagnostics(
         endog, exog, instruments, _workspace=work, _inverse_cache=cache, **inference,
-    )
+    ) if _advanced_statistics else []
     return first, conditional
 
 
@@ -258,7 +293,9 @@ def _conditional_from_reduced_form(work, *, _inverse_cache=None, **inference):
         return None
     # Guard the original [C,Z] scale as well as the conditional fitted span.
     # This 1e3 condition cap only selects execution; it is NOT a rank cutoff.
-    R = la.qr(np.column_stack([work.C, work.Z]), mode="raw")[1]
+    R = work._solver_R
+    if R is None:
+        R = la.qr(np.column_stack([work.C, work.Z]), mode="raw")[1]
     singular = la.svdvals(R)
     if singular[-1] <= 1e-3 * singular[0]:
         return None
@@ -482,21 +519,25 @@ def kleibergen_paap_stats(endog, exog, instruments, *, weights=None, weight_info
 
     def stat_for(Vhat, *, full=False):
         reduced = compressed and not full
-        scores = _kron_scores(Vhat @ v_loading, projected_z) if reduced else _kron_scores(Vhat, Zp)
-        if kind in {"iid", "unadjusted", "homoskedastic"}:
-            shat = (scores.T @ scores) / n_eff
+        if kind == "cluster" and not full and (reduced or k1 == 1):
+            left, right = (Vhat @ v_loading, projected_z) if reduced else (Vhat, Zp)
+            shat = _cluster_kron_meat(left, right, clusters) / n_eff
         else:
-            # Keep ranktest's Bartlett convention and the existing raw-score
-            # engine, including multiway inclusion-exclusion BEFORE any repair.
-            kp_kernel = "bartlett" if kind in {
-                "hac", "newey_west", "neweywest",
-                "dkraay", "driscoll_kraay", "dk"
-            } else kernel
-            shat = score_covariance(
-                scores, kind=kind, clusters=clusters, k_total=0,
-                small_sample=False, time=time, panel=panel, bandwidth=bandwidth, kernel=kp_kernel,
-                effective_n=n_eff, score_scale=score_scale,
-            ) / n_eff
+            scores = _kron_scores(Vhat @ v_loading, projected_z) if reduced else _kron_scores(Vhat, Zp)
+            if kind in {"iid", "unadjusted", "homoskedastic"}:
+                shat = (scores.T @ scores) / n_eff
+            else:
+                # Keep ranktest's Bartlett convention and the existing raw-score
+                # engine, including multiway inclusion-exclusion BEFORE any repair.
+                kp_kernel = "bartlett" if kind in {
+                    "hac", "newey_west", "neweywest",
+                    "dkraay", "driscoll_kraay", "dk"
+                } else kernel
+                shat = score_covariance(
+                    scores, kind=kind, clusters=clusters, k_total=0,
+                    small_sample=False, time=time, panel=panel, bandwidth=bandwidth, kernel=kp_kernel,
+                    effective_n=n_eff, score_scale=score_scale,
+                ) / n_eff
         if not reduced:
             transform = np.kron(iryy.T, irzz.T)
             return _kp_stat(theta, transform @ shat @ transform.T, n_eff)
@@ -549,18 +590,23 @@ def cragg_donald_stat(endog, exog, instruments, *, weights=None, df_absorbed=0, 
     return float(max(n_eff - L - int(df_absorbed), 0) / max(L1, 1) * cdev)
 
 
-def overid_test(resid, Z, *, X_cols: int, kind="robust", clusters=None, center=False,
-                time=None, panel=None, bandwidth=None, kernel="bartlett", effective_n=None, score_scale=None):
+def overid_test(resid, Z, *, X, kind="robust", clusters=None, center=False,
+                time=None, panel=None, bandwidth=None, kernel="bartlett", effective_n=None, score_scale=None,
+                _xz=None, _meat=None):
     resid = np.asarray(resid, dtype=np.float64)
     Z = np.asarray(Z, dtype=np.float64)
-    df = int(Z.shape[1] - X_cols)
+    df = int(Z.shape[1] - X.shape[1])
     n_eff = float(len(resid) if effective_n is None else effective_n)
     if df <= 0:
         return {"stat": np.nan, "df": 0, "pvalue": np.nan}
     g = Z.T @ resid
     if kind in (None, "iid", "unadjusted", "homoskedastic"):
-        sigma2 = float(resid @ resid) / max(n_eff - X_cols, 1)
+        # Sargan uses the uncorrected residual variance, not HC1/fit DoF.
+        sigma2 = float(resid @ resid) / n_eff
         S = sigma2 * (Z.T @ Z)
+    elif kind == 'cluster' and not center:
+        S = (_cluster_meat_xe(Z, resid, clusters, score_scale)[0]
+             if _meat is None else _meat)
     else:
         S = score_covariance(
             Z * resid[:, None], kind=kind, clusters=clusters,
@@ -568,5 +614,13 @@ def overid_test(resid, Z, *, X_cols: int, kind="robust", clusters=None, center=F
             time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
             effective_n=n_eff, score_scale=score_scale,
         )
-    stat = float(g.T @ np.linalg.pinv(S, hermitian=True) @ g)
+    W = np.linalg.pinv(S, hermitian=True)
+    if kind not in (None, "iid", "unadjusted", "homoskedastic"):
+        # The reported coefficient remains 2SLS/k-class. Hansen J, however,
+        # uses the efficient second-step moments under this fixed S (ivreg2).
+        D = _xz.T if kind == 'cluster' and _xz is not None else Z.T @ X
+        A = D.T @ W @ D
+        delta = np.linalg.pinv((A + A.T) / 2, hermitian=True) @ (D.T @ W @ g)
+        g = g - D @ delta
+    stat = float(g.T @ W @ g)
     return {"stat": stat, "df": df, "pvalue": float(chi2.sf(stat, df))}

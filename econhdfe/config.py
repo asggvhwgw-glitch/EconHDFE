@@ -33,12 +33,15 @@ class InferenceConfig:
     vce: str | None = None
     confidence_level: float = 0.95
     diagnostics: str = "off"  # off | publication | full
+    iv_advanced_statistics: bool = True
 
     def validate(self) -> None:
         if not 0 < self.confidence_level < 1:
             raise SpecificationError("confidence_level must lie in (0, 1)")
         if self.diagnostics not in {"off", "publication", "full"}:
             raise SpecificationError("diagnostics must be off/publication/full")
+        if not isinstance(self.iv_advanced_statistics, bool):
+            raise SpecificationError("iv_advanced_statistics must be a boolean")
 
 
 @dataclass(slots=True, frozen=True)

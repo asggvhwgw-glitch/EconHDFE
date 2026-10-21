@@ -30,6 +30,7 @@ inference = InferenceConfig(
     vce=None,
     confidence_level=0.95,
     diagnostics="off",   # off | publication | full
+    iv_advanced_statistics=True,  # False skips advanced linear-IV calculations
 )
 
 execution = ExecutionConfig(
@@ -42,6 +43,26 @@ execution = ExecutionConfig(
 ```
 
 These are strategy-level contracts. Avoid depending on private solver constants or internal thresholds.
+
+## Linear-IV diagnostic execution and staged results
+
+`InferenceConfig(iv_advanced_statistics=False)` retains ordinary first-stage F tests
+(including the chosen robust/cluster covariance), partial R², Kleibergen–Paap and
+overidentification tests. It skips the actual calculations of Shea partial R²,
+AP/SW, Cragg–Donald and Stock–Yogo. The default is `True`. Coefficients, covariance,
+sample selection and identification/rank checks are unchanged. `diagnostics`
+continues to control display only; `"off"` does not disable computation.
+
+Pass `on_stage=callback` to `ivhdfe` or `IVHDFESession` to receive synchronous
+independent snapshots: `estimation`, `first_stage`, `diagnostics`, then `complete`.
+The first snapshot has coefficients/covariance/SEs in original units. Only
+`complete` confirms that the full fit finished; a later failure raises normally.
+Snapshots exclude observation-level fitted values and residuals. Callback time
+counts toward fitting time, so keep the callback lightweight. A persistent
+result-cache hit emits only `complete` with `cached=True`.
+
+See [the full contract and example](../../../docs/development/iv-staged-diagnostics.md)
+for event fields, omitted-statistic status and repeated-specification behavior.
 
 ## Solver policy
 

@@ -40,7 +40,7 @@ def weighted_2sls(y, X, Z, *, weights=None) -> Weighted2SLSResult:
     xhat_w = Zw @ first_stage
     beta, bread, rank = equilibrated_lstsq(xhat_w, yw)
     fitted = X @ beta
-    projected_X = Z @ first_stage
+    projected_X = xhat_w if weights is None else Z @ first_stage
     return Weighted2SLSResult(
         beta, y - fitted, bread, rank, fitted, projected_X, first_stage
     )

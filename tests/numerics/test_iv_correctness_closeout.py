@@ -152,3 +152,73 @@ def test_near_identification_matches_exact_float_input_moments(path, delta):
     got = _fit(y, np.empty((len(y), 0)), e, z, path)
     assert got[3] == 2
     np.testing.assert_allclose(got[0], expected, rtol=0, atol=1e-8)
+
+
+@pytest.mark.parametrize("path", ["dense", "block"])
+@pytest.mark.parametrize("vce", ["iid", "robust", "cluster"])
+@pytest.mark.parametrize("weight_kind", [None, "aweight", "fweight"])
+def test_overid_uses_efficient_moments_and_iv_small_convention(path, vce, weight_kind):
+    from econhdfe.compute.weights import prepare_weights
+    from scipy.stats import chi2
+    y, c, e, z, w = _regular()
+    if weight_kind == "fweight":
+        w = np.arange(len(y)) % 3 + 1
+    if weight_kind is None:
+        w = None
+    wi = prepare_weights(w, len(y), weight_kind)
+    sw = np.ones(len(y)) if wi.estimation is None else np.sqrt(wi.estimation)
+    X = np.column_stack([c, e]) * sw[:, None]
+    Z = np.column_stack([c, z]) * sw[:, None]
+    yy = y * sw
+    # Explicit observation-space projection, independent of the package core.
+    xhat = Z @ np.linalg.lstsq(Z, X, rcond=None)[0]
+    b = np.linalg.lstsq(xhat, yy, rcond=None)[0]
+    u = yy - X @ b
+    neff = wi.effective_n
+    groups = np.arange(len(y)) % 12
+    scores = Z * u[:, None]
+    if vce == "iid":
+        S = (Z.T @ Z) * (u @ u) / neff
+    elif vce == "cluster":
+        sums = np.array([scores[groups == g].sum(axis=0) for g in range(12)])
+        S = sums.T @ sums
+    else:
+        if weight_kind == "fweight":
+            scores = scores / np.sqrt(w)[:, None]
+        S = scores.T @ scores
+    W = np.linalg.inv(S)
+    D = Z.T @ X
+    b2 = np.linalg.solve(D.T @ W @ D, D.T @ W @ (Z.T @ yy))
+    g2 = Z.T @ (yy - X @ b2)
+    expected_j = g2 @ W @ g2
+    got = _fit(y, c, e, z, path, weights=wi.estimation, weight_info=wi,
+               vce=vce, clusters=[groups] if vce == "cluster" else None,
+               df_absorbed=3, nested_adj=1)
+    np.testing.assert_allclose(got[0], b, rtol=2e-11, atol=2e-11)
+    over = got[6]["overidentification"]
+    np.testing.assert_allclose([over["stat"], over["pvalue"]],
+                               [expected_j, chi2.sf(expected_j, 1)], rtol=2e-10, atol=2e-11)
+    # Nested FE use the IV denominator N-K, without OLS's extra -1.
+    bread = np.linalg.inv(xhat.T @ xhat)
+    if vce == "iid":
+        V = bread * (u @ u) / (neff - X.shape[1] - 3)
+    else:
+        xscores = xhat * u[:, None]
+        if vce == "cluster":
+            sums = np.array([xscores[groups == g].sum(axis=0) for g in range(12)])
+            meat = sums.T @ sums * 12/11 * (neff-1)/(neff-X.shape[1]-3)
+        else:
+            if weight_kind == "fweight":
+                xscores = xscores / np.sqrt(w)[:, None]
+            meat = xscores.T @ xscores * neff/(neff-X.shape[1]-3)
+        V = bread @ meat @ bread
+    np.testing.assert_allclose(got[1], V, rtol=2e-10, atol=2e-11)
+
+
+@pytest.mark.parametrize("path", ["dense", "block", "gmm"])
+def test_all_nested_retains_single_absorbed_intercept(path):
+    y, c, e, z, w = _regular()
+    groups = np.arange(len(y)) % 12
+    a = _fit(y, c, e, z, path, vce="cluster", clusters=[groups], df_absorbed=0, nested_adj=1)
+    b = _fit(y, c, e, z, path, vce="cluster", clusters=[groups], df_absorbed=1, nested_adj=0)
+    np.testing.assert_allclose(a[1], b[1], rtol=1e-13, atol=1e-13)
