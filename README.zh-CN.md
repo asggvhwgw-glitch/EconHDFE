@@ -6,13 +6,13 @@
 
 `econhdfe` 是一个用于 OLS-HDFE、线性 IV-HDFE、PPML-HDFE 和 IV-PPML-HDFE 的 Python 包，面向大规模数据、高基数固定效应、聚类推断、复杂交互项以及大量相近规格的实证工作流。
 
-项目目前仍属于 **alpha 阶段研究软件**。本源码版本为 **0.8.1**。源码合并与公开发布分开登记，安装后应核对版本，参见[发布状态](docs/development/test-status.md)。仓库内已经进行了较广泛的验证，但 licensed Stata 对照和完整 upstream external certification 仍属于独立的外部验证边界。
+项目目前仍属于 **alpha 阶段研究软件**。本源码版本为 **0.8.3**。源码合并与公开发布分开登记，安装后应核对版本，参见[发布状态](docs/development/test-status.md)。仓库内已经进行了较广泛的验证，但 licensed Stata 对照和完整 upstream external certification 仍属于独立的外部验证边界。
 
-## 当前源码：0.8.1
+## 当前源码：0.8.3
 
 - **线性 IV**：复用单次拟合内的计算；可通过 `on_stage` 同步读取阶段快照，或设置 `InferenceConfig(iv_advanced_statistics=False)` 跳过高级诊断。KP、普通首阶段 F、过度识别与识别检查仍保留，详见[分阶段结果与诊断开关](docs/development/iv-staged-diagnostics.md)。
 - **FE 吸收**：优化投影与 CG 执行，使显式线程数和求解工作区预算生效，修复小量纲变量的错误收敛。旧版持久数值缓存将重新计算，详见[迁移说明](docs/release/migration.md)。
-- **验证**：保留精简回归和独立数值参照；CI 继续在全部支持环境运行完整集。下方历史计时只对应其原工作负载，不代表 0.8.1 的新测量。
+- **验证**：保留精简回归和独立数值参照；CI 继续在全部支持环境运行完整集。下方历史计时只对应其原工作负载，不代表 0.8.3 的新测量。
 
 ## 性能概览
 
@@ -278,7 +278,7 @@ CI 覆盖 Linux、Windows 和 macOS，以及支持的 Python 版本和可行的�
 新数据的 `response` 和 `fe` 要求通过 `save_fe=True` 显式保存受支持的分类固定效应；
 未知水平和未识别的新组合会被拒绝。本版本不支持 PPML/IV-PPML 预测、varying-slope
 或 group+individual FE 样本外预测，也不包含 margins 和 AME。
-详见[后估计契约](docs/development/postestimation-0.7.md)。这些功能从 0.7.0 起提供，在 0.8.1 中继续保留；源码与发行包的选择和版本核对见上方安装说明。
+详见[后估计契约](docs/development/postestimation-0.7.md)。这些功能从 0.7.0 起提供，在 0.8.3 中继续保留；源码与发行包的选择和版本核对见上方安装说明。
 
 ## 固定效应恢复
 

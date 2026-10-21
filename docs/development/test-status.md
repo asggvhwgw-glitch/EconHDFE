@@ -1,8 +1,12 @@
 # Validation status
 
-## Current source: 0.8.1
+## Current source: 0.8.3
 
-The integrated baseline is `main@b8890a7`, merged from PR #20. Its tested PR head
+The 0.8.3 candidate upgrades the package version and carries the compact suite
+and documentation in [PR #21](https://github.com/asggvhwgw-glitch/EconHDFE/pull/21).
+Its final head requires fresh full CI; no earlier green run is transferred to it.
+
+The integrated 0.8.1 baseline is `main@b8890a7`, merged from PR #20. Its tested PR head
 is `d41432f`; [CI 39573323752](https://github.com/asggvhwgw-glitch/EconHDFE/actions/runs/39573323752)
 completed all 16 OS/Python/dependency jobs and the bundle job successfully.
 These records describe that frozen tree, not later maintenance edits.
@@ -14,7 +18,7 @@ implementation and public API are unchanged by this test reduction. Run `python 
 for all four layers; plain pytest runs only contracts + behavior. A local pass
 for the cleanup does not extend the baseline CI result to a new commit.
 
-Source version 0.8.1 alone is not evidence of a tag, GitHub Release, PyPI upload
+Source version 0.8.3 alone is not evidence of a tag, GitHub Release, PyPI upload
 or final artifact acceptance. Check [GitHub Releases](https://github.com/asggvhwgw-glitch/EconHDFE/releases)
 and [PyPI](https://pypi.org/project/econhdfe/) for publication, and use
 [testing.md](testing.md) for the current execution workflow.

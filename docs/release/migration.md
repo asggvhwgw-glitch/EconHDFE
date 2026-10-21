@@ -1,5 +1,23 @@
 # Migration guide
 
+## 0.8.1 → 0.8.3 candidate — tests and documentation
+
+Estimation calls, results, defaults, numerical tolerances, dependencies and cache
+ABIs are unchanged. The source package now identifies as 0.8.3; it retains the
+0.8.1 FE corrections and earlier IV diagnostic/stage interfaces.
+
+The regular full regression suite is 205 focused cases, with a deliberately
+narrower combination and internal-boundary surface. Retained assertions and
+tolerances are unchanged; see [the testing guide](../development/testing.md)
+for the selected risks and retired areas. Full CI still uses every supported
+OS/Python/dependency environment. Installed-wheel checks follow the surviving
+independent references. Historical benchmark and CI records retain their
+original versions and do not certify this candidate.
+
+The 0.8.1 contract baseline is immutable; 0.8.3 has its own snapshot. Maintenance
+review and execution acceptance are reset for this candidate. Source integration
+does not create a tag, GitHub Release, PyPI upload or external certification.
+
 ## 0.8.0 → 0.8.1 candidate — FE absorption
 
 Explicit thread counts now reach the inner grouped-projection kernels and the

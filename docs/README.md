@@ -1,6 +1,6 @@
 # EconHDFE Documentation
 
-This source checkout is **0.8.1**; see [migration notes](release/migration.md) for
+This source checkout is **0.8.3**; see [migration notes](release/migration.md) for
 linear IV diagnostics/reuse, FE execution changes and numerical-cache invalidation.
 
 The documentation is organized by **current behavior**, **mathematical/technical foundations**, **development/validation**, and **release history**. Historical checkpoints are retained for provenance but are not the source of truth for current behavior.
