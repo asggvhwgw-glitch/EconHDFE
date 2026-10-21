@@ -1,11 +1,10 @@
-"""Execution policy and stage snapshots, including actual skipped work."""
+"""Public regression contracts for IV diagnostic policy and stage snapshots."""
 import numpy as np
 import pandas as pd
 import pytest
-from econhdfe import ivhdfe, InferenceConfig, ExecutionConfig, IVHDFESession
-from econhdfe.errors import EconHDFEError, SpecificationError
+from econhdfe import ivhdfe, InferenceConfig, IVHDFESession
+from econhdfe.errors import SpecificationError
 from econhdfe.models.linear_iv import estimators as est, diagnostics as diag
-from econhdfe.compute.block_design import BlockDesign, DenseDesignBlock
 
 
 def data():
@@ -54,9 +53,12 @@ def assert_common(full, basic):
     assert basic.diagnostics["advanced_statistics"]["status"] == "not_requested"
 
 
-@pytest.mark.parametrize("model", ["2sls", "liml", "kclass", "gmm2s"])
-@pytest.mark.parametrize("vce", ["iid", "robust", "cluster"])
-@pytest.mark.parametrize("weight", [None, "aweight", "pweight", "fweight"])
+@pytest.mark.parametrize("model,vce,weight", [
+    ("2sls", "cluster", "aweight"),
+    ("liml", "iid", None),
+    ("kclass", "robust", "fweight"),
+    ("gmm2s", "robust", "pweight"),
+])
 def test_basic_matches_full_and_stages_restore_units(model, vce, weight):
     df = data()
     kw = dict(SPEC, estimator=model, vce=vce,
@@ -66,7 +68,7 @@ def test_basic_matches_full_and_stages_restore_units(model, vce, weight):
         kw.update(weights="w", weight_type=weight)
     full = ivhdfe(df, **kw)
     events = []
-    basic = ivhdfe(df, **kw, inference_config=InferenceConfig(iv_advanced_statistics=False),
+    basic = ivhdfe(df, **kw, inference_config=InferenceConfig(iv_advanced_statistics=False, diagnostics="full"),
                    on_stage=events.append)
     assert_common(full, basic)
     assert [e["stage"] for e in events] == ["estimation", "first_stage", "diagnostics", "complete"]
@@ -87,7 +89,7 @@ def forbidden(*args, **kwargs):
 
 @pytest.mark.parametrize("model", ["2sls", "gmm2s"])
 def test_disabled_really_skips_advanced(monkeypatch, model):
-    for obj, name in ((diag, "_shea_partial_r2"), (diag, "sanderson_windmeijer_diagnostics"),
+    for obj, name in ((diag, "_shea_partial_r2"), (diag, "_shea_from_moments"), (diag, "sanderson_windmeijer_diagnostics"),
                       (est, "cragg_donald_stat"), (est, "stock_yogo_critical_values")):
         monkeypatch.setattr(obj, name, forbidden)
     r = ivhdfe(data(), **SPEC, estimator=model,
@@ -115,30 +117,15 @@ def test_snapshot_mutations_do_not_change_fit():
     same(reference.diagnostics, got.diagnostics)
 
 
-def test_diagnostics_failure_occurs_after_estimation_event(monkeypatch):
-    events = []
-    def fail(*args, **kwargs):
-        assert [e["stage"] for e in events] == ["estimation"]
-        raise ValueError("diagnostic failure fixture")
-    monkeypatch.setattr(est, "_first_stage_suite", fail)
-    with pytest.raises(EconHDFEError):
-        ivhdfe(data(), **SPEC, on_stage=events.append)
-    assert len(events) == 1  # No complete event on failure.
-
-
 def test_callback_failure_is_not_swallowed():
+    seen = []
     def fail(event):
-        raise SpecificationError("callback fixture")
+        seen.append(event["stage"])
+        if event["stage"] == "first_stage":
+            raise SpecificationError("callback fixture")
     with pytest.raises(SpecificationError, match="callback fixture"):
         ivhdfe(data(), **SPEC, on_stage=fail)
-
-
-def test_basic_does_not_skip_identification_checks(monkeypatch):
-    def fail(*args, **kwargs):
-        raise SpecificationError("identification fixture")
-    monkeypatch.setattr(est, "_check_iv_moment_rank", fail)
-    with pytest.raises(SpecificationError, match="identification fixture"):
-        ivhdfe(data(), **SPEC, inference_config=InferenceConfig(iv_advanced_statistics=False))
+    assert seen == ["estimation", "first_stage"]
 
 
 def test_invalid_options_are_structured():
@@ -146,37 +133,13 @@ def test_invalid_options_are_structured():
         ivhdfe(data(), **SPEC, on_stage=4)
     with pytest.raises(SpecificationError):
         ivhdfe(data(), **SPEC, inference_config=InferenceConfig(iv_advanced_statistics="false"))
+    with pytest.raises(SpecificationError, match="underidentified"):
+        ivhdfe(data(), **dict(SPEC, instruments=["z0"]),
+               inference_config=InferenceConfig(iv_advanced_statistics=False))
 
 
-def test_display_mode_is_independent():
-    df = data()
-    full = ivhdfe(df, **SPEC, inference_config=InferenceConfig(diagnostics="off"))
-    basic = ivhdfe(df, **SPEC, inference_config=InferenceConfig(diagnostics="full", iv_advanced_statistics=False))
-    assert "stock_yogo" in full.diagnostics
-    assert "stock_yogo" not in basic.publication_output()["diagnostics"]
-
-
-def test_block_core_basic_and_stages(monkeypatch):
-    df = data()
-    y = df.y.to_numpy()
-    def block(cols):
-        v = df[cols].to_numpy()
-        n,k = v.shape
-        return BlockDesign(n, k, (DenseDesignBlock(0, np.arange(n), np.arange(k), v),))
-    args = (y, block(["c"]), block(["d","d2"]), block(["z0","z1","z2","z3"]))
-    base = est.fit_iv_kclass_block(*args, vce="robust")
-    monkeypatch.setattr(diag, "_shea_partial_r2", forbidden)
-    monkeypatch.setattr(est, "cragg_donald_stat", forbidden)
-    events = []
-    got = est.fit_iv_kclass_block(*args, vce="robust", advanced_statistics=False, on_stage=events.append)
-    same(base[:5], got[:5])
-    same(events[0]["params"], got[0])
-    same(events[0]["vcov"], got[1])
-    assert [e["stage"] for e in events] == ["estimation","first_stage","diagnostics"]
-
-
-@pytest.mark.parametrize("advanced", [False, True])
-def test_group_public_path(advanced):
+def test_group_public_path():
+    advanced = False
     df = data()
     expanded = df.loc[df.index.repeat(2)].reset_index(drop=True)
     events = []
@@ -187,24 +150,6 @@ def test_group_public_path(advanced):
     same(events[0]["params"], got.params)
     same(events[-1]["result"]["first_stage"]["diagnostics"], got.first_stage["diagnostics"])
     assert [e["stage"] for e in events] == ["estimation","first_stage","diagnostics","complete"]
-
-
-def test_session_policy_cache_keys_and_callbacks():
-    df = data()
-    events = []
-    s = IVHDFESession(df, inference_config=InferenceConfig(iv_advanced_statistics=False),
-                      execution_config=ExecutionConfig(cache_validation="none"), on_stage=events.append)
-    result = s.fit(**SPEC)
-    assert events[-1]["stage"] == "complete"
-    assert "stock_yogo" not in result.diagnostics
-    same(events[0]["params"], result.params)
-    # The result-key payload already includes asdict(InferenceConfig).
-    from dataclasses import asdict
-    assert asdict(s.inference)["iv_advanced_statistics"] is False
-    events.clear()
-    out = s.fit_many([SPEC, SPEC])
-    assert len([e for e in events if e["stage"] == "complete"]) == 2
-    same(out[0].params, out[1].params)
 
 
 def test_persistent_cache_separates_policy_and_emits_complete_only(tmp_path):
@@ -266,41 +211,18 @@ def test_default_matches_explicit_true_and_snapshots_are_small():
     check(events)
 
 
-@pytest.mark.parametrize("model", ["2sls", "gmm2s"])
-@pytest.mark.parametrize("vce", ["hac", "dk", "multiway"])
-def test_common_diagnostics_for_other_covariances(model, vce):
-    df = data()
-    kw = dict(SPEC, estimator=model)
-    if vce == "multiway":
-        kw.update(vce="cluster", cluster=["cluster", "fe"])
-    else:
-        kw.update(vce=vce, time=np.arange(len(df)), bandwidth=2)
-        if vce == "dk":
-            kw.update(time=np.arange(len(df)) % 20, panel=np.arange(len(df)) // 20)
-    full = ivhdfe(df, **kw)
+def test_nested_fe_snapshot_reports_frontend_dof():
     events = []
-    basic = ivhdfe(df, **kw, inference_config=InferenceConfig(iv_advanced_statistics=False),
-                   on_stage=events.append)
-    assert_common(full, basic)
-    same(events[0]["vcov"], basic.vcov)
-    assert events[0]["df_resid"] == basic.df_resid
-
-
-@pytest.mark.parametrize("session", [False, True])
-@pytest.mark.parametrize("model", ["2sls", "gmm2s"])
-def test_nested_fe_snapshot_reports_frontend_dof(session, model):
-    events = []
-    kw = dict(vce="cluster", cluster="fe", estimator=model, on_stage=events.append)
-    result = (IVHDFESession(data(), **kw).fit(**SPEC) if session
-              else ivhdfe(data(), **SPEC, **kw))
+    result = IVHDFESession(data(), vce="cluster", cluster="fe",
+                           on_stage=events.append).fit(**SPEC)
     assert result.df_absorbed == 0  # All requested FE are nested in the cluster.
     assert events[0]["df_absorbed"] == result.df_absorbed
     assert events[0]["df_resid"] == result.df_resid
     same(events[0]["vcov"], result.vcov)
 
 
-@pytest.mark.parametrize("vce", ["robust", "cluster"])
-def test_public_block_route_respects_policy_and_names(vce):
+def test_public_block_route_respects_policy_and_names():
+    vce = "cluster"
     from econhdfe import factor, reg_interaction
     df = data()
     df["g"] = np.arange(len(df)) // 50

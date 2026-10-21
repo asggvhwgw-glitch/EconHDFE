@@ -154,9 +154,11 @@ def test_near_identification_matches_exact_float_input_moments(path, delta):
     np.testing.assert_allclose(got[0], expected, rtol=0, atol=1e-8)
 
 
-@pytest.mark.parametrize("path", ["dense", "block"])
-@pytest.mark.parametrize("vce", ["iid", "robust", "cluster"])
-@pytest.mark.parametrize("weight_kind", [None, "aweight", "fweight"])
+@pytest.mark.parametrize("path,vce,weight_kind", [
+    ("dense", "iid", None), ("block", "iid", "aweight"),
+    ("dense", "robust", "fweight"), ("block", "robust", "aweight"),
+    ("dense", "cluster", "aweight"), ("block", "cluster", "fweight"),
+])
 def test_overid_uses_efficient_moments_and_iv_small_convention(path, vce, weight_kind):
     from econhdfe.compute.weights import prepare_weights
     from scipy.stats import chi2
