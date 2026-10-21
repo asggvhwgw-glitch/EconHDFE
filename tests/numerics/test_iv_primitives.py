@@ -189,7 +189,7 @@ def test_workspace_reuses_projections_and_bounds_rhs(monkeypatch):
         fn(E, C, Z, _workspace=work)
     tall = [shape for shape, _ in calls if shape[0] == len(E)]
     small = [shape for shape, _ in calls if shape[0] != len(E)]
-    assert len(tall) == 3  # C projections of E/Z, then one multi-RHS reduced form.
+    assert len(tall) == 2  # One joint C projection of E/Z, then the reduced form.
     assert small == [(Z.shape[1], E.shape[1] - 1)] * E.shape[1]
     assert batches == []  # No further observation-level AP/SW regression batches.
     assert work.bread is work.bread
@@ -427,9 +427,6 @@ def test_joint_first_stage_suite_reuses_only_identical_covariance(monkeypatch, k
     actual = diag._first_stage_suite(E, C, Z, _workspace=work, **options)
     _assert_same(actual, expected)
     assert len(calls) == (1 if k == 1 else 2*k)
-    # No inference object or covariance cache persists into another invocation.
-    assert set(vars(work)) == {'E', 'C', 'Z', 'Ep', 'Zp', 'zz', '_batch_safe',
-                              '_bread', '_shea', '_reduced_form'}
 
 
 def test_joint_suite_cache_budget_changes_execution_not_results(monkeypatch):

@@ -1,81 +1,81 @@
 {
   "schema_version": 1,
-  "release_version": "0.7.0",
-  "previous_version": "0.7.0.dev0",
+  "release_version": "0.8.0",
+  "previous_version": "0.7.0",
   "checks": {
     "frontend_api": {
-      "status": "reviewed",
-      "evidence": "0.7.0.dev0→0.7.0 契约差异为空；0.6.x→0.7 增加 prediction_state/predict 及线性后估计；原拟合签名保持。",
+      "status": "changed",
+      "evidence": "ivhdfe/ivreghdfe/IVHDFESession新增可选on_stage=None；原调用与最终返回保持；tests/behavior/test_iv_stages.py覆盖公开入口。",
       "description": "Public call signatures, exports, aliases, CLI/front-end validation and compatibility."
     },
     "backend_compute": {
       "status": "reviewed",
-      "evidence": "0.7 维护：effects 拓扑复用 hdfe.rank 已有同体 union-find 内核，无数值公式/容差/公开签名变化；完整回归另登记。",
+      "evidence": "审阅IV矩乘积、角色化QR及聚类复用；不改变统计定义与秩容差，保留必要病态回退；数值回归见test_iv_reuse.py和test_iv_correctness_closeout.py。",
       "description": "Solver/compute/cache/backend contracts, numerical defaults and resource controls."
     },
     "errors": {
       "status": "reviewed",
-      "evidence": "保留识别、数值秩亏与预测未知类别/未识别组合的显式错误；不放宽失败路径。",
+      "evidence": "契约diff未改变结构化错误目录；必要识别检查保留，非法开关与回调异常传播有正式回归覆盖。",
       "description": "Structured exception classes, codes, stages, suggestions and public error boundaries."
     },
     "public_contract": {
-      "status": "reviewed",
-      "evidence": "控制 bump 从 0.7.0.dev0 升为 0.7.0；diff 为空，新建当前版本快照，保留所有历史快照。",
+      "status": "changed",
+      "evidence": "按用户指定通过控制脚本从0.7.0升MINOR至0.8.0；六项兼容差异逐项登记理由，新建0.8.0快照，历史快照不改。",
       "description": "Public exports/signatures, result/config schemas and stable structured-error compatibility."
     },
     "skill": {
       "status": "reviewed",
-      "evidence": "现有 Skill 包含后估计/预测边界、隐私支持与发布流程；复核不扩张外部认证声明。",
+      "evidence": "skills/econhdfe/references/configuration.md已记录高级诊断开关、KP保留及同步阶段语义；不增加外部认证声明。",
       "description": "Agent skill commands, examples, decision rules and newly exposed controls."
     },
     "linked_modules": {
       "status": "reviewed",
-      "evidence": "effects 原已依赖 hdfe.rank，复用其私有 union-find 不增加反向层次依赖；生成图同步。",
+      "evidence": "沿用frontend/config、IV计算、inference与results边界；架构图检查保留，不新增重复FE实现。",
       "description": "Cross-module imports, shared schemas, adapters, compatibility shims and downstream consumers."
     },
     "results_reporting": {
-      "status": "reviewed",
-      "evidence": "保留线性组合/Wald、chunked response/xb/fe/stdp；stdp 只包含 beta 协方差。",
+      "status": "changed",
+      "evidence": "阶段快照独立且不携带逐观测工作区；最终结果类型保持，关闭高级诊断保留F、partial R²、KP和overID。",
       "description": "Result fields, publication output, diagnostics metadata and serialization-facing schemas."
     },
     "config_defaults": {
-      "status": "reviewed",
-      "evidence": "不更改拟合/推断/执行默认；save_fe 仍需显式开启，新类别默认拒绝。",
+      "status": "changed",
+      "evidence": "InferenceConfig尾部增加iv_advanced_statistics=True，默认仍计算高级统计；diagnostics仅控制显示；迁移指南提示严格schema消费者。",
       "description": "Config objects, defaults, deprecations, aliases and backwards-compatible behavior."
     },
     "cache_state": {
-      "status": "reviewed",
-      "evidence": "保留 linear-session-result-3 和 within ABI；版本收口不改变缓存状态语义。",
+      "status": "changed",
+      "evidence": "完整线性会话结果缓存ABI为linear-session-result-4；开关进入缓存指纹，旧结果失效；within缓存不变，命中仅发complete。",
       "description": "Reusable state/cache invalidation, fingerprints, lifecycle semantics and stale-state hazards."
     },
     "tests_validation": {
       "status": "reviewed",
-      "evidence": "冻结 0.7.0 指纹后重新执行完整本地测试及16环境 CI，证据登记于 detached manifest；此审阅不是执行证明。",
+      "evidence": "保留28项新增接口/数值回归；本次不增删测试，不放宽两项契约断言。完整套件按testing.md重跑；本地日志不上传，远端CI及正式制品验收另行绑定。",
       "description": "Regression tests, install smoke tests, golden/parity coverage and failure-path tests."
     },
     "performance": {
       "status": "reviewed",
-      "evidence": "保留历史 benchmark 和 #14 调用内缓存；不新增全流程内存或普遍提速承诺。",
+      "evidence": "本轮仅版本/兼容性收尾，不改估计算法、不新增性能承诺；既有复用优化保留，资源预算接入仍为PERF-07。",
       "description": "Representative benchmark/resource regressions for code paths materially changed by the release."
     },
     "docs_migration": {
       "status": "changed",
-      "evidence": "修正 README wald_test、版本/发布区别、迁移、当前验证/制品入口；保留历史记录；新增0.7架构审查及职责边界。",
+      "evidence": "CHANGELOG与migration补充0.8.0参数、阶段、严格schema、缓存及数值修正；明确候选审阅不等于正式发布。",
       "description": "README/architecture/changelog/migration/versioning documentation and user-visible examples."
     },
     "packaging_dependencies": {
       "status": "reviewed",
-      "evidence": "Python 3.10–3.13、运行依赖下限与包内容规则不变；由16环境与bundle实际验证。",
+      "evidence": "控制脚本同步pyproject/runtime版本；Python及依赖范围、包布局不变。隔离构建/干净安装与矩阵未以本地源码测试替代。",
       "description": "Python/dependency matrix, optional extras, wheel/source contents and build metadata."
     },
     "external_validation": {
       "status": "reviewed",
-      "evidence": "Alpha 研究发布；未新增 licensed-Stata/upstream 外部认证、浮点形式验证或历史原创性证明。",
+      "evidence": "本轮未执行新增licensed-Stata/upstream认证、GPU或完整性能矩阵；不沿用历史冻结制品结果证明当前候选。",
       "description": "Licensed/reference-environment parity gates and explicitly deferred external certification."
     },
     "release_artifacts": {
       "status": "reviewed",
-      "evidence": "本轮仅提交维护PR，改变指纹后候选执行记录已重置；不得复用 e738333 冻结发布制品或detached验收，不自动合并/发布本PR。",
+      "evidence": "仅更新草稿PR；执行记录重置为新版本待验收状态。未构建或发布0.8.0制品，不复用历史hash/通过记录；正式发布需独立验收。",
       "description": "Version consistency, source/wheel parity, hashes, clean install and reproducible bundle contents."
     }
   }

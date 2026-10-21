@@ -36,6 +36,26 @@ To avoid relabeling different conventions as parity, `econhdfe` keeps its existi
 - model DoF and fit residual DoF;
 - covariance rank.
 
+The 2026-10-20 external audit corrected three linear-IV quantities:
+
+- Cluster CRV1 uses the ivreg2 denominator `N-K`, where K includes explicit
+  rank and non-nested absorbed DoF. It does not apply OLS/reghdfe's additional
+  nested-FE subtraction. If every absorbed effect is nested and `df_a=0`,
+  ivreghdfe retains one absorbed intercept; the IV path does the same.
+- IV RMSE uses `N-rank-max(df_a, nested_present)` as its fit denominator.
+  It no longer adds all nested FE levels to the reporting penalty. OLS's
+  fit-statistics policy is unchanged.
+- Robust/cluster/HAC overidentification uses efficient second-step moments
+  under the covariance estimated from the reported k-class residuals. The
+  k-class coefficient vector remains the reported estimate. A raw quadratic
+  form in inefficient 2SLS moments is not reported as Hansen J. The iid
+  Sargan calculation uses the uncorrected residual variance. GMM2S retains
+  its existing first-step weight matrix for its J statistic.
+
+The full-result persistent ABI is now `linear-session-result-4`, preventing
+restoration of pre-correction statistics. Within-transformed column caches
+retain their numerical ABI. See [the implementation and validation note](iv-parity-correction-20261020.md).
+
 `tss`, `mss`, and Gaussian log-likelihood fields remain unset for linear IV rather than presenting an overall quantity as if it were the partialled-out `ivreghdfe` scalar. Benchmark reports must mark these convention-sensitive quantities accordingly.
 
 ## PPML-HDFE

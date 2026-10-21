@@ -17,6 +17,7 @@ from ...pipeline import (
 from ...hdfe.dof import absorbed_dof
 from ...compute.weights import normalize_weight_type, prepare_weights, resolve_vce_for_weights
 from .estimators import fit_iv_kclass, fit_iv_gmm2s, fit_iv_kclass_block
+from .stages import bind_callback, completed, validate_callback
 from ...compute.block_design import BlockDesign, hstack_block_designs, align_dense_to_blocks, same_row_partition
 from ...hdfe.block_projection import BlockWeightedFEProjector
 from ...hdfe.plan import FEPlan
@@ -38,6 +39,7 @@ def _ivreghdfe_group_mode(
     time=None, panel=None, bandwidth=None, kernel="bartlett", save_fe=False,
     incidence_backend="auto", collinearity="warn", collinear_tol=1e-10,
     omit_exog=None, omit_endog=None, omit_instruments=None,
+    advanced_statistics=True, on_stage=None,
 ):
     ylong = require_numeric(_col(data, y), name=str(y), role=VariableRole.OUTCOME, ndim=1)
     cdesign = _design(data, exog, len(ylong), "exog", structural=False, omit=omit_exog)
@@ -73,10 +75,12 @@ def _ivreghdfe_group_mode(
     dof = _group_dof(prep, absorber, dof_method)
     winfo = prep["winfo"]
     vce_kind = resolve_vce_for_weights(vce, winfo, has_clusters=bool(prep["clusters"]))
+    stage_callback = bind_callback(on_stage, c_names + e_names, y, df_absorbed=dof.df_absorbed)
     est = estimator.lower()
     if est == "gmm2s":
         beta, V, resid, rank, df_resid, first, diagnostics, meta = fit_iv_gmm2s(
             yw, Cw, Ew, Zw, weights=prep["weights"], weight_info=winfo,
+            advanced_statistics=advanced_statistics, on_stage=stage_callback,
             vce=vce_kind, clusters=prep["clusters"], df_absorbed=dof.df_absorbed,
             nested_adj=int(dof.nested > 0), center=gmm_center, time=prep["time"],
             panel=prep["panel"], bandwidth=bandwidth, kernel=kernel,
@@ -84,6 +88,7 @@ def _ivreghdfe_group_mode(
     else:
         beta, V, resid, rank, df_resid, first, diagnostics, meta = fit_iv_kclass(
             yw, Cw, Ew, Zw, weights=prep["weights"], weight_info=winfo,
+            advanced_statistics=advanced_statistics, on_stage=stage_callback,
             vce=vce_kind, clusters=prep["clusters"], df_absorbed=dof.df_absorbed,
             nested_adj=int(dof.nested > 0), estimator=est, kappa=kappa, fuller=fuller,
             time=prep["time"], panel=prep["panel"], bandwidth=bandwidth, kernel=kernel,
@@ -156,15 +161,24 @@ def ivhdfe(
     structural_collinearity=True, omit_exog=None, omit_endog=None, omit_instruments=None,
     hdfe_config: HDFEConfig | None = None, inference_config: InferenceConfig | None = None,
     execution_config: ExecutionConfig | None = None,
+    on_stage=None,
 ):
     """IV/LIML/GMM2S with high-dimensional fixed effects.
 
     ``estimator`` may be ``"2sls"`` (default), ``"liml"``, ``"kclass"`` or
     ``"gmm2s"``. Exogenous controls are automatically included in the
     instrument matrix, matching ivreg2/ivreghdfe convention.
+
+    ``InferenceConfig.iv_advanced_statistics=False`` skips Shea, AP/SW, CD
+    and Stock--Yogo while retaining ordinary first-stage tests, KP and over-ID.
+    ``on_stage(event)`` receives synchronous independent snapshots in original
+    units at estimation, first_stage, diagnostics and complete. Diagnostics
+    may still fail after estimation; only complete denotes a finished fit.
     """
     _t0 = perf_counter() if execution_config is not None and execution_config.profile != "off" else None
     confidence_level = 0.95
+    advanced_statistics = True
+    validate_callback(on_stage)
     if hdfe_config is not None:
         hdfe_config.validate()
         method, tol, max_iter = hdfe_config.solver, hdfe_config.tolerance, hdfe_config.max_iter
@@ -172,6 +186,7 @@ def ivhdfe(
     if inference_config is not None:
         inference_config.validate()
         confidence_level = inference_config.confidence_level
+        advanced_statistics = inference_config.iv_advanced_statistics
         if inference_config.vce is not None:
             vce = inference_config.vce
     if execution_config is not None:
@@ -209,6 +224,7 @@ def ivhdfe(
             save_fe=save_fe, incidence_backend=incidence_backend,
             collinearity=collinearity, collinear_tol=collinear_tol,
             omit_exog=omit_exog, omit_endog=omit_endog, omit_instruments=omit_instruments,
+            advanced_statistics=advanced_statistics, on_stage=on_stage,
         )
         if not result.converged and not allow_nonconverged:
             raise RuntimeError("group/individual FE absorption did not converge")
@@ -218,6 +234,7 @@ def ivhdfe(
             result.profile = {"total_seconds": perf_counter() - _t0, "mode": execution_config.profile}
             if data_plan is not None:
                 result.profile["data_ingestion"] = data_plan.as_dict()
+        completed(on_stage, result, outcome=y)
         return result
 
     y0 = require_numeric(_col(data, y), name=str(y), role=VariableRole.OUTCOME, ndim=1)
@@ -355,18 +372,24 @@ def ivhdfe(
     if isinstance(Cw, BlockDesign):
         beta, V, resid, rank, df_resid, first, diagnostics, meta = fit_iv_kclass_block(
             yw, Cw, Ew, Zw, weights=w1, weight_info=winfo, vce=vce_kind, clusters=clusters,
+            advanced_statistics=advanced_statistics,
+            on_stage=bind_callback(on_stage, c_names + e_names, y, df_absorbed=dof.df_absorbed),
             df_absorbed=dof.df_absorbed, nested_adj=int(dof.nested > 0),
             estimator=est, kappa=kappa, fuller=fuller,
         )
     elif est == "gmm2s":
         beta, V, resid, rank, df_resid, first, diagnostics, meta = fit_iv_gmm2s(
             yw, Cw, Ew, Zw, weights=w1, weight_info=winfo, vce=vce_kind, clusters=clusters,
+            advanced_statistics=advanced_statistics,
+            on_stage=bind_callback(on_stage, c_names + e_names, y, df_absorbed=dof.df_absorbed),
             df_absorbed=dof.df_absorbed, nested_adj=int(dof.nested > 0),
             center=gmm_center, time=time1, panel=panel1, bandwidth=bandwidth, kernel=kernel,
         )
     else:
         beta, V, resid, rank, df_resid, first, diagnostics, meta = fit_iv_kclass(
             yw, Cw, Ew, Zw, weights=w1, weight_info=winfo, vce=vce_kind, clusters=clusters,
+            advanced_statistics=advanced_statistics,
+            on_stage=bind_callback(on_stage, c_names + e_names, y, df_absorbed=dof.df_absorbed),
             df_absorbed=dof.df_absorbed, nested_adj=int(dof.nested > 0),
             estimator=est, kappa=kappa, fuller=fuller, time=time1, panel=panel1,
             bandwidth=bandwidth, kernel=kernel,
@@ -501,6 +524,7 @@ def ivhdfe(
         if data_plan is not None:
             result.profile["data_ingestion"] = data_plan.as_dict()
         result.profile["sample"] = sample_state.summary()
+    completed(on_stage, result, outcome=y)
     return result
 
 

@@ -1,6 +1,43 @@
 {
-  "approved": [],
-  "baseline_version": "0.7.0.dev0",
-  "release_version": "0.7.0",
+  "approved": [
+    {
+      "id": "03b0be8363428d46",
+      "kind": "changed",
+      "path": "exported_dataclass_schemas.InferenceConfig",
+      "reason": "0.8.0 adds trailing iv_advanced_statistics=True; existing positional arguments and default full diagnostics remain valid. Exact-schema serializers must accept the added field. See docs/release/migration.md (0.8.0)."
+    },
+    {
+      "id": "1d47e94f77e57e50",
+      "kind": "changed",
+      "path": "config_schemas.InferenceConfig",
+      "reason": "0.8.0 adds trailing iv_advanced_statistics=True; existing positional arguments and default full diagnostics remain valid. Exact-schema serializers must accept the added field. See docs/release/migration.md (0.8.0)."
+    },
+    {
+      "id": "53c692a6ef7b5e55",
+      "kind": "changed",
+      "path": "signatures.ivreghdfe",
+      "reason": "0.8.0 adds optional keyword on_stage=None; existing calls and final return type remain unchanged. Opt-in synchronous callbacks propagate exceptions and cached fits emit complete only. See docs/release/migration.md (0.8.0)."
+    },
+    {
+      "id": "ac7f027e3f565619",
+      "kind": "changed",
+      "path": "signatures.InferenceConfig",
+      "reason": "0.8.0 adds trailing iv_advanced_statistics=True; existing positional arguments and default full diagnostics remain valid. Exact-schema serializers must accept the added field. See docs/release/migration.md (0.8.0)."
+    },
+    {
+      "id": "c5b1d8ed21203411",
+      "kind": "changed",
+      "path": "signatures.ivhdfe",
+      "reason": "0.8.0 adds optional keyword on_stage=None; existing calls and final return type remain unchanged. Opt-in synchronous callbacks propagate exceptions and cached fits emit complete only. See docs/release/migration.md (0.8.0)."
+    },
+    {
+      "id": "e94bbe257b0ba04d",
+      "kind": "changed",
+      "path": "signatures.IVHDFESession",
+      "reason": "0.8.0 adds optional keyword on_stage=None; existing calls and final return type remain unchanged. Opt-in synchronous callbacks propagate exceptions and cached fits emit complete only. See docs/release/migration.md (0.8.0)."
+    }
+  ],
+  "baseline_version": "0.7.0",
+  "release_version": "0.8.0",
   "schema_version": 1
 }
