@@ -22,7 +22,9 @@ from .hdfe.dof import absorbed_dof
 from .hdfe.factorvars import compile_absorb_factor_variable
 from .hdfe.specs import Interaction
 from .factorvars import FactorVariableExpression
-from .models.ols import _fit_ols
+from .models.ols import _fit_ols_in_basis, _residualize_ols_basis
+from .compute.stable_linalg import _absorption_basis
+from .collinearity import _weighted_gram
 from .models.linear_iv.estimators import fit_iv_gmm2s, fit_iv_kclass
 from .models.linear_iv.stages import bind_callback, completed, validate_callback
 from .pipeline import (
@@ -692,21 +694,50 @@ class OLSHDFESession(_LinearHDFESessionBase):
         for i, s in enumerate(parsed):
             if i not in cached:
                 grouped[s.absorb].append(s)
-        # One multi-RHS within transform per FE specification for all newly
-        # requested outcomes/regressors. This is the main batch speed path.
+        # Ordinary specifications still share one multi-RHS transform. A raw
+        # ill-conditioned design must be projected jointly before caching any
+        # of its columns at the ordinary tolerance.
+        bases = {}
         for absorb in sorted(grouped, key=len):
             group = grouped[absorb]
             entry = self._get_entry(absorb)
             cols: list[str] = []
-            for s in group:
-                cols.append(s.y); cols.extend(s.x)
-            self._ensure_within(entry, cols)
+            designs = {}
+            for spec in group:
+                key = tuple(spec.x)
+                if key not in designs:
+                    X0 = self._raw_design(entry, key)
+                    gram = _weighted_gram(X0, entry.weights)
+                    designs[key] = (self._basis(entry, X0, gram=gram), gram)
+                basis, gram = designs[key]
+                bases[id(spec)] = (basis, gram)
+                if basis is None:
+                    cols.append(spec.y)
+                    cols.extend(spec.x)
+            if cols:
+                self._ensure_within(entry, cols)
         out = []
-        for i, s in enumerate(parsed):
-            out.append(cached[i] if i in cached else self._fit_spec(s, prewarmed=True))
+        for i, spec in enumerate(parsed):
+            out.append(cached[i] if i in cached else self._fit_spec(
+                spec, prewarmed=True, raw_basis=bases[id(spec)][0], raw_gram=bases[id(spec)][1],
+            ))
         return out
 
-    def _fit_spec(self, spec: OLSSpec, *, prewarmed=False) -> RegressionResult:
+    def _raw_design(self, entry, names):
+        columns = []
+        for name in names:
+            full = self._full_numeric(name)
+            raw = full if bool(np.all(entry.mask)) else full[entry.mask]
+            entry.raw_active[name] = raw
+            columns.append(raw)
+        return np.column_stack(columns) if columns else np.empty((int(entry.mask.sum()), 0))
+
+    def _basis(self, entry, X, *, gram=None):
+        if len(entry.groups) > 1 and entry.solver_selection["resolved"] == "map":
+            return _absorption_basis(X, entry.weights, rank_tolerance=self.collinear_tol, gram=gram)
+        return None
+
+    def _fit_spec(self, spec: OLSSpec, *, prewarmed=False, raw_basis=None, raw_gram=None) -> RegressionResult:
         t0 = perf_counter()
         result_key = self._persistent_result_key("ols", spec)
         if result_key is not None:
@@ -714,26 +745,55 @@ class OLSHDFESession(_LinearHDFESessionBase):
             if cached is not None:
                 return cached
         entry = self._get_entry(spec.absorb)
-        if not prewarmed:
-            self._ensure_within(entry, (spec.y, *spec.x))
-        yw = entry.within[spec.y]
-        y1 = entry.raw_active[spec.y]
-        if spec.x:
-            Xw0 = np.column_stack([entry.within[n] for n in spec.x])
-            X0 = np.column_stack([entry.raw_active[n] for n in spec.x])
+        X0 = self._raw_design(entry, spec.x)
+        y1 = self._raw_design(entry, (spec.y,))[:, 0]
+        if raw_gram is None:
+            raw_gram = _weighted_gram(X0, entry.weights)
+        basis = raw_basis if prewarmed else self._basis(entry, X0, gram=raw_gram)
+        conditioning = None
+        if basis is not None:
+            yw, Xw0, info = _residualize_ols_basis(
+                entry.absorber, y1, X0, basis, entry.pool_size, entry.memory_budget_mb,
+                adaptive_auto=(self.hdfe.solver == "auto"),
+            )
+            entry.residualize_calls += 1
+            entry.residualized_columns += len(spec.x) + 1
+            conditioning = {"basis": "symmetric_weak_direction_scaling", "stage": "before_absorption",
+                            "condition": basis[3], "tolerance": min(self.hdfe.tolerance, 1e-11)}
         else:
-            Xw0 = np.empty((len(yw), 0), dtype=np.float64)
-            X0 = Xw0.copy()
-        Xw, _, collin_plan = _resolve_ols_columns(
+            if not prewarmed:
+                self._ensure_within(entry, (spec.y, *spec.x))
+            yw = entry.within[spec.y]
+            Xw0 = np.column_stack([entry.within[n] for n in spec.x]) if spec.x else X0.copy()
+            info = entry.last_info
+        within_gram = _weighted_gram(Xw0, entry.weights)
+        Xw, Xactive, collin_plan = _resolve_ols_columns(
             Xw0, X0, spec.x, weights=entry.weights,
             tolerance=self.collinear_tol, mode=self.collinearity,
+            _grams=(within_gram, raw_gram),
         )
+        if conditioning is None:
+            active = np.ix_(collin_plan.active_indices, collin_plan.active_indices)
+            basis = self._basis(entry, Xw, gram=within_gram[active])
+            if basis is not None:
+                yw, Xw, corrected_info = _residualize_ols_basis(
+                    entry.absorber, y1, Xactive, basis, entry.pool_size, entry.memory_budget_mb,
+                )
+                if info is not None:
+                    corrected_info.iterations += info.iterations
+                info = corrected_info
+                entry.residualize_calls += 1
+                entry.residualized_columns += Xactive.shape[1] + 1
+                conditioning = {"basis": "symmetric_weak_direction_scaling", "stage": "after_absorption",
+                                "condition": basis[3], "tolerance": min(self.hdfe.tolerance, 1e-11)}
+        elif len(basis[0]) != Xw.shape[1]:
+            basis = self._basis(entry, Xw)
         vce_kind = resolve_vce_for_weights(
             self.inference.vce if self.inference.vce is not None else self.vce,
             entry.winfo, has_clusters=bool(entry.clusters),
         )
-        beta, V, resid, rank, df_resid = _fit_ols(
-            yw, Xw, weights=entry.weights, weight_info=entry.winfo, vce=vce_kind,
+        beta, V, resid, rank, df_resid = _fit_ols_in_basis(
+            yw, Xw, basis=basis, weights=entry.weights, weight_info=entry.winfo, vce=vce_kind,
             clusters=entry.clusters, df_absorbed=entry.dof.df_absorbed,
             nested_adj=int(entry.dof.nested > 0),
         )
@@ -742,7 +802,6 @@ class OLSHDFESession(_LinearHDFESessionBase):
             rank=rank, df_absorbed=entry.dof.df_absorbed, df_nested=entry.dof.nested,
             df_resid_inference=df_resid, has_intercept=bool(any(entry.intercepts)),
         )
-        info = entry.last_info
         absorb_info = None
         if info is not None:
             absorb_info = _absorb_metadata(
@@ -750,6 +809,8 @@ class OLSHDFESession(_LinearHDFESessionBase):
                 _resolve_pool_size(entry.absorber, max(len(spec.x) + 1, 1), "auto", entry.memory_budget_mb),
                 solver_selection=entry.solver_selection,
             )
+        if conditioning is not None:
+            absorb_info["conditioning"] = conditioning
         sample_history = (
             SampleExclusionState("hdfe", "singleton_pruning", entry.dropped, int(np.sum(entry.mask))),
         ) if entry.dropped else ()
