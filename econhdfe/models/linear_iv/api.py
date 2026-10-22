@@ -17,6 +17,7 @@ from ...pipeline import (
 from ...hdfe.dof import absorbed_dof
 from ...compute.weights import normalize_weight_type, prepare_weights, resolve_vce_for_weights
 from .estimators import fit_iv_kclass, fit_iv_gmm2s, fit_iv_kclass_block
+from .absorption import refine_iv_control_absorption
 from .stages import bind_callback, completed, validate_callback
 from ...compute.block_design import BlockDesign, hstack_block_designs, align_dense_to_blocks, same_row_partition
 from ...hdfe.block_projection import BlockWeightedFEProjector
@@ -299,6 +300,10 @@ def ivhdfe(
     absorber = None
     block_projector = None
     block = None
+    refinement_metadata = None
+    refinement_seconds = 0.0
+    refine_controls = None
+    _projection_start = perf_counter() if _t0 is not None else None
     if block_native:
         native_roles = tuple(A for A in (C1, E1, Z1) if isinstance(A, BlockDesign))
         if not same_row_partition(*native_roles):
@@ -348,7 +353,21 @@ def ivhdfe(
         Cw = within[:, p:p+C1.shape[1]]; p += C1.shape[1]
         Ew = within[:, p:p+E1.shape[1]]; p += E1.shape[1]
         Zw = within[:, p:p+Z1.shape[1]]
+        if estimator.lower() in {"2sls", "iv"} and not fuller and kappa is None:
+            def refine_controls(original, controls):
+                nonlocal info, refinement_metadata, refinement_seconds
+                started = perf_counter() if _t0 is not None else None
+                controls, refinement_info, refinement_metadata = refine_iv_control_absorption(
+                    absorber, original, controls, weights=w1,
+                )
+                if started is not None:
+                    refinement_seconds = perf_counter() - started
+                if refinement_info is not None:
+                    _check_absorption(refinement_info, allow_nonconverged=allow_nonconverged)
+                    info = replace(info, converged=info.converged and refinement_info.converged)
+                return controls
     clusters = _cluster_arrays(data, cluster, mask)
+    _projection_end = perf_counter() if _t0 is not None else None
     time1 = _masked_array(data, time, mask)
     panel1 = _masked_array(data, panel, mask)
     Cw, Ew, Zw, C1_active, E1_active, Z1_active, c_names, e_names, z_names, collin_info = _resolve_iv_columns(
@@ -356,6 +375,7 @@ def ivhdfe(
         weights=w1, tolerance=collinear_tol, mode=collinearity,
         c_origins=cdesign.origins, e_origins=edesign.origins, z_origins=zdesign.origins,
         c_design=cdesign, e_design=edesign, z_design=zdesign,
+        _refine_controls=refine_controls,
     )
     dof = absorbed_dof(
         inference_fe.groups, slopes=inference_fe.slopes, intercepts=inference_fe.intercepts,
@@ -369,6 +389,7 @@ def ivhdfe(
             "ivreg2/ivreghdfe semantics; use robust/cluster VCE or another weight type"
         )
     est = estimator.lower()
+    _core_start = perf_counter() if _t0 is not None else None
     if isinstance(Cw, BlockDesign):
         beta, V, resid, rank, df_resid, first, diagnostics, meta = fit_iv_kclass_block(
             yw, Cw, Ew, Zw, weights=w1, weight_info=winfo, vce=vce_kind, clusters=clusters,
@@ -394,6 +415,7 @@ def ivhdfe(
             estimator=est, kappa=kappa, fuller=fuller, time=time1, panel=panel1,
             bandwidth=bandwidth, kernel=kernel,
         )
+    _core_end = perf_counter() if _t0 is not None else None
     fitted = y1 - resid
     fixed_effects = None
     if save_fe:
@@ -458,6 +480,8 @@ def ivhdfe(
             _resolve_pool_size(absorber, block.shape[1], pool_size, memory_budget_mb),
             solver_selection=solver_selection,
         )
+        if refinement_metadata is not None and refinement_metadata["weak_directions"]:
+            absorb_info["control_refinement"] = refinement_metadata
     prediction_state = linear_prediction_state(
         estimator=meta.get("estimator", est),
         coefficient_names=names,
@@ -524,6 +548,13 @@ def ivhdfe(
         if data_plan is not None:
             result.profile["data_ingestion"] = data_plan.as_dict()
         result.profile["sample"] = sample_state.summary()
+        result.profile["iv_stages"] = {
+            "preparation_seconds": _projection_start - _t0,
+            "absorption_seconds": _projection_end - _projection_start,
+            "control_refinement_seconds": refinement_seconds,
+            "columns_and_dof_seconds": _core_start - _projection_end - refinement_seconds,
+            "core_seconds": _core_end - _core_start,
+        }
     completed(on_stage, result, outcome=y)
     return result
 

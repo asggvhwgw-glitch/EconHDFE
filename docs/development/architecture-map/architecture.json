@@ -184,14 +184,16 @@
       ],
       "files": [
         "econhdfe/models/linear_iv/__init__.py",
+        "econhdfe/models/linear_iv/absorption.py",
         "econhdfe/models/linear_iv/api.py",
         "econhdfe/models/linear_iv/diagnostics.py",
         "econhdfe/models/linear_iv/estimators.py",
         "econhdfe/models/linear_iv/solve.py",
+        "econhdfe/models/linear_iv/stable_inference.py",
         "econhdfe/models/linear_iv/stages.py",
         "econhdfe/models/linear_iv/stock_yogo.py"
       ],
-      "module_count": 7
+      "module_count": 9
     },
     {
       "id": "ppml",
@@ -728,7 +730,7 @@
     {
       "source": "linear_iv",
       "target": "compute",
-      "count": 13,
+      "count": 15,
       "examples": [
         "econhdfe.models.linear_iv.api → econhdfe.compute.weights",
         "econhdfe.models.linear_iv.api → econhdfe.compute.block_design",
@@ -740,7 +742,7 @@
     {
       "source": "linear_iv",
       "target": "contracts",
-      "count": 7,
+      "count": 9,
       "examples": [
         "econhdfe.models.linear_iv.api → econhdfe.errors",
         "econhdfe.models.linear_iv.api → econhdfe.config",
@@ -769,8 +771,9 @@
     {
       "source": "linear_iv",
       "target": "hdfe",
-      "count": 4,
+      "count": 5,
       "examples": [
+        "econhdfe.models.linear_iv.absorption → econhdfe.hdfe.absorber",
         "econhdfe.models.linear_iv.api → econhdfe.hdfe.dof",
         "econhdfe.models.linear_iv.api → econhdfe.hdfe.block_projection",
         "econhdfe.models.linear_iv.api → econhdfe.hdfe.plan",
@@ -2575,6 +2578,14 @@
       "reexport_surface": true
     },
     {
+      "source_module": "econhdfe.models.linear_iv.absorption",
+      "source_path": "econhdfe/models/linear_iv/absorption.py",
+      "source_group": "linear_iv",
+      "target_module": "econhdfe.hdfe.absorber",
+      "target_group": "hdfe",
+      "reexport_surface": false
+    },
+    {
       "source_module": "econhdfe.models.linear_iv.api",
       "source_path": "econhdfe/models/linear_iv/api.py",
       "source_group": "linear_iv",
@@ -2643,6 +2654,14 @@
       "source_path": "econhdfe/models/linear_iv/api.py",
       "source_group": "linear_iv",
       "target_module": "econhdfe.models.linear_iv.estimators",
+      "target_group": "linear_iv",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.linear_iv.api",
+      "source_path": "econhdfe/models/linear_iv/api.py",
+      "source_group": "linear_iv",
+      "target_module": "econhdfe.models.linear_iv.absorption",
       "target_group": "linear_iv",
       "reexport_surface": false
     },
@@ -2834,6 +2853,14 @@
       "source_module": "econhdfe.models.linear_iv.estimators",
       "source_path": "econhdfe/models/linear_iv/estimators.py",
       "source_group": "linear_iv",
+      "target_module": "econhdfe.models.linear_iv.stable_inference",
+      "target_group": "linear_iv",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.linear_iv.estimators",
+      "source_path": "econhdfe/models/linear_iv/estimators.py",
+      "source_group": "linear_iv",
       "target_module": "econhdfe.models.linear_iv.stages",
       "target_group": "linear_iv",
       "reexport_surface": false
@@ -2868,6 +2895,38 @@
       "source_group": "linear_iv",
       "target_module": "econhdfe.iv.solve",
       "target_group": "iv",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.linear_iv.solve",
+      "source_path": "econhdfe/models/linear_iv/solve.py",
+      "source_group": "linear_iv",
+      "target_module": "econhdfe.errors",
+      "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.linear_iv.stable_inference",
+      "source_path": "econhdfe/models/linear_iv/stable_inference.py",
+      "source_group": "linear_iv",
+      "target_module": "econhdfe.compute.encoding",
+      "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.linear_iv.stable_inference",
+      "source_path": "econhdfe/models/linear_iv/stable_inference.py",
+      "source_group": "linear_iv",
+      "target_module": "econhdfe.compute.vcov",
+      "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.linear_iv.stable_inference",
+      "source_path": "econhdfe/models/linear_iv/stable_inference.py",
+      "source_group": "linear_iv",
+      "target_module": "econhdfe.errors",
+      "target_group": "contracts",
       "reexport_surface": false
     },
     {
@@ -5490,8 +5549,8 @@
   "repo_areas": [
     {
       "name": "econhdfe",
-      "files": 126,
-      "python_files": 124,
+      "files": 128,
+      "python_files": 126,
       "markdown_files": 2
     },
     {
@@ -5502,8 +5561,8 @@
     },
     {
       "name": "tests",
-      "files": 61,
-      "python_files": 61,
+      "files": 65,
+      "python_files": 65,
       "markdown_files": 0
     },
     {
@@ -5520,9 +5579,9 @@
     },
     {
       "name": "docs",
-      "files": 107,
+      "files": 108,
       "python_files": 1,
-      "markdown_files": 74
+      "markdown_files": 75
     },
     {
       "name": "scripts",

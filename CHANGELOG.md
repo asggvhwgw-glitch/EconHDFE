@@ -2,6 +2,9 @@
 
 ## 0.8.4 — unreleased candidate
 
+- Stabilize ill-conditioned dense 2SLS solving and inference with block QR/SVD and certified weak-control absorption refinement after redundant-control omission.
+- Add independent weighted-FE, degrees-of-freedom and multiway-cluster references; expose refinement timing and retain original accuracy gates.
+
 - Stabilize near-collinear dense OLS absorption and covariance with reversible weak-direction scaling and bounded CG true-residual restarts.
 - Align OLS sessions with standalone numerical protection, preserve shared ordinary column caches, and invalidate prior numerical/result caches.
 - Reuse full-data screening Gram matrices; retain QR/SVD verification, the existing omission policy and public interfaces.

@@ -10,7 +10,7 @@
 | --- | ---: | --- |
 | `tests/contracts/` | 24 | 公共 API/兼容入口、配置、错误、因子语法、结果协议和隐私 |
 | `tests/behavior/` | 92 | 四类估计器的样本、权重、FE、DoF/VCE、遗漏、预测、session 与缓存语义 |
-| `tests/numerics/` | 91 | 独立 dummy/WLS/GLM、SVD/Fraction/moment oracle，秩、尺度、收敛及资源边界 |
+| `tests/numerics/` | 120 | 独立 dummy/WLS/GLM、SVD/Fraction/moment oracle，秩、尺度、收敛及资源边界 |
 | `tests/tooling/` | 17 | 公共契约快照、架构/注册表、发布门禁、制品哈希、安装及来源检查 |
 
 ```bash
@@ -56,7 +56,7 @@ BLAS/OMP/MKL 各设 1。详见[测试环境](test-environment.md)。
 
 ## 精简范围与维护原则
 
-当前完整集为 **224项**；0.8.3 精简基线为205项，本轮增加近共线数值与 Session 生命周期回归。相比历史916项，
+当前完整集为 **253项**；0.8.3 精简基线为205项，本轮增加近共线 OLS/IV 数值、独立加权FE/聚类推断与 Session 生命周期回归。相比历史916项，
 已实际删除退出常驻集的函数、空模块及不再使用的辅助代码。默认core与full的入口没有变化。
 本次不追求与旧矩阵等价覆盖：常驻集聚焦四模型公开工作流、独立数值参照、
 样本/权重/DoF、预测与后估计、缓存失效，以及尺度、识别、收敛和预算的关键失败。

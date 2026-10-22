@@ -12,7 +12,8 @@ from ...iv.solve import weighted_2sls
 from ...compute.stable_linalg import equilibrated_lstsq
 from ...errors import UnderidentifiedError, NumericalError
 from .stock_yogo import stock_yogo_critical_values
-from .solve import _solve_2sls_roles
+from .solve import _solve_2sls_roles, _solve_2sls_stable_roles
+from .stable_inference import stable_2sls_inference
 from .stages import estimation_ready, first_stage_ready, diagnostics_ready
 from .diagnostics import (
     _IVDiagnosticWorkspace, _first_stage_suite, cragg_donald_stat, overid_test,
@@ -40,7 +41,7 @@ def _equilibrate_iv_roles(C, E, I):
     return (*arrays, np.r_[cs, es], np.r_[cs, ins], es)
 
 
-def _check_iv_moment_rank(xx, zz, xz, nobs):
+def _check_iv_moment_rank(xx, zz, xz, nobs, *, defer_to_qr=False):
     """Reject missing or numerically unsafe IV directions before inversion.
 
     Unit-normalized cross moments distinguish role rank from identification.
@@ -55,6 +56,12 @@ def _check_iv_moment_rank(xx, zz, xz, nobs):
     moment = xz / nx[:, None] / nz[None, :]
     singular = la.svdvals(moment)
     largest = float(singular[0]) if len(singular) else 0.0
+    ratio = float(singular[-1] / max(1.0, largest))
+    # Ordinary dense 2SLS can certify rank directly in observation-space QR.
+    # A cross moment is only a routing screen there: included controls occur
+    # on both sides and can square their conditioning without weak IVs.
+    if defer_to_qr:
+        return ratio
     floor = np.finfo(float).eps * max(nobs, *moment.shape) * max(1.0, largest)
     rank = int(np.count_nonzero(singular > floor))
     details = {"rank": rank, "n_parameters": k}
@@ -69,7 +76,7 @@ def _check_iv_moment_rank(xx, zz, xz, nobs):
             details=details, suggestion="Inspect identification and near-dependent IV directions.",
         )
 
-    return float(singular[-1] / max(1.0, largest))
+    return ratio
 
 
 def _compressed_2sls(zz, xz, zy):
@@ -369,10 +376,12 @@ def fit_iv_kclass(
     moments = None
     shared_meat = None
     qr = None
+    stable_factor = stable = None
+    plain_2sls = estimator.lower() in {"2sls", "iv"} and not fuller and kappa is None
     if estimator.lower() != "kclass" or (kappa is not None and float(kappa) == 1.0):
         XX, ZZ, XZ = Xw.T @ Xw, Zw.T @ Zw, Xw.T @ Zw
         moments = (XX, ZZ, XZ)
-        moment_ratio = _check_iv_moment_rank(XX, ZZ, XZ, len(y))
+        moment_ratio = _check_iv_moment_rank(XX, ZZ, XZ, len(y), defer_to_qr=plain_2sls)
 
     estimator = estimator.lower()
     liml_kappa = None
@@ -392,7 +401,14 @@ def fit_iv_kclass(
 
     pi_x = projected_X = None
     resid = None
-    if est_kappa == 1.0 and moment_ratio < 1e-3:
+    if plain_2sls and moment_ratio < 1e-3:
+        solved, stable_factor = _solve_2sls_stable_roles(
+            y, X, Z, weights=weights, n_exog=C.shape[1], weighted=(yw, Xw, Zw, sw),
+        )
+        beta, bread, rank = solved.beta, solved.bread, solved.rank
+        pi_x, resid = solved.first_stage, solved.residuals
+        del solved
+    elif est_kappa == 1.0 and moment_ratio < 1e-3:
         beta, bread, rank = _compressed_2sls(Zw.T @ Zw, Xw.T @ Zw, Zw.T @ yw)
     elif estimator in {"2sls", "iv"} and not fuller and kappa is None:
         solved, qr = _solve_2sls_roles(
@@ -412,7 +428,19 @@ def fit_iv_kclass(
     k_total = rank + int(df_absorbed)
     n_eff = float(len(y) if weight_info is None else weight_info.effective_n)
     score_scale = None if weight_info is None else robust_score_scale(weight_info, vce, len(y))
-    if (estimator in {'2sls', 'iv'} and not fuller and kappa is None
+    if stable_factor is not None:
+        stable = stable_2sls_inference(
+            stable_factor, n_exog=C.shape[1], kind=vce, clusters=clusters,
+            k_total=k_total, nested_adj=0, effective_n=n_eff, score_scale=score_scale,
+            time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
+        )
+        V, ew = stable["V"], stable["residuals_weighted"]
+        if sw is None:
+            resid = ew
+        else:
+            np.divide(ew, sw, out=resid, where=sw > 0)
+        stable_factor = None
+    elif (estimator in {'2sls', 'iv'} and not fuller and kappa is None
             and vce == 'cluster' and len(clusters or ()) == 1
             and pi_x is not None and moment_ratio >= 1e-3):
         # Share raw instrument scores; apply the coefficient VCE correction only here.
@@ -434,7 +462,16 @@ def fit_iv_kclass(
         pi_x = _first_stage_projection(Cw, Ew, Iw)
     estimation_ready(on_stage, beta, V, xscale, nobs_raw=len(y), effective_n=n_eff,
                      rank=rank, df_absorbed=df_absorbed, vce=vce, clusters=clusters)
-    workspace = _IVDiagnosticWorkspace(E, C, I, weights, _qr=qr, _moments=moments)
+    # Stable replay already lives in weighted coordinates. Reuse those role
+    # arrays instead of allocating another weighted N-by-controls matrix.
+    workspace_roles = (E, C, I, weights) if stable is None else (Ew, Cw, Iw, None)
+    workspace = _IVDiagnosticWorkspace(
+        *workspace_roles, _qr=qr, _moments=moments if stable is None else None,
+        _partial=None if stable is None else (stable["partial_endog"], stable["partial_instruments"]),
+        _stable=stable is not None,
+    )
+    if stable is not None:
+        del stable["partial_endog"], stable["partial_instruments"]
     del qr
     first_diagnostics, conditional_diagnostics = _first_stage_suite(
         E, C, I, weights=weights, weight_info=weight_info, vce=vce, clusters=clusters,
@@ -442,9 +479,15 @@ def fit_iv_kclass(
         df_absorbed=df_absorbed, nested_adj=int(bool(nested_adj)),
         time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
     )
+    fitted_endog = Z @ pi_x[:, C.shape[1]:] if stable is None else stable["fitted_endog_weighted"]
+    if stable is not None and sw is not None:
+        positive = sw > 0
+        np.divide(fitted_endog, sw[:, None], out=fitted_endog, where=positive[:, None])
+        if np.any(~positive):
+            fitted_endog[~positive] = Z[~positive] @ pi_x[:, C.shape[1]:]
     first = {
         "coefficients": pi_x,
-        "fitted_endog": Z @ pi_x[:, C.shape[1]:],
+        "fitted_endog": fitted_endog,
         "diagnostics": first_diagnostics,
     }
     first_stage_ready(on_stage, first, advanced_statistics)
@@ -463,7 +506,7 @@ def fit_iv_kclass(
             time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
         ),
         **({"sanderson_windmeijer": conditional_diagnostics} if advanced_statistics else {}),
-        "overidentification": overid_test(
+        "overidentification": stable["overidentification"] if stable is not None else overid_test(
             ew, Zw, X=Xw, kind=vce, clusters=clusters,
             _xz=None if moments is None or moment_ratio < 1e-3 else moments[2],
             _meat=shared_meat,
@@ -473,6 +516,8 @@ def fit_iv_kclass(
     }
     diagnostics_ready(on_stage, diagnostics, advanced_statistics)
     meta = {"estimator": estimator, "kappa": float(est_kappa), "liml_kappa": liml_kappa, "fuller": float(fuller)}
+    if stable is not None:
+        meta["numerical_solver"] = "stable_tsqr"
     df_resid = max(n_eff-k_total, 0.0)
     if str(vce).lower().replace("-", "_") == "cluster" and clusters:
         df_resid = min(df_resid, float(min(len(np.unique(c)) for c in clusters) - 1))
