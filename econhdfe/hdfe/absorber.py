@@ -1045,10 +1045,17 @@ class HDFEAbsorber:
         u = r.copy()
         v = xp.empty_like(a)
         rr = self._weighted_colsum(r, r)
+        # A RHS already orthogonal up to projection roundoff must not enter
+        # Krylov recurrences driven solely by cancellation noise.
+        tiny_initial = rr <= (32 * float(eps))**2 * initial_energy
+        r[:, tiny_initial] = 0
+        u[:, tiny_initial] = 0
+        rr = xp.where(tiny_initial, 0.0, rr)
         max_update = float("inf")
 
         converged = False
         criterion = "hestenes"
+        restarts = 0
         for it in range(1, limit + 1):
             projection_start = perf_counter() if timed else None
             if parallel_cg:
@@ -1060,12 +1067,37 @@ class HDFEAbsorber:
             if not parallel_cg:
                 uv = self._weighted_colsum(u, v)
             active = rr > roundoff_floor
-            if not bool(xp.all(xp.isfinite(uv) & xp.isfinite(rr) & (rr >= 0) & ((uv > 0) | ~active))):
+            if not bool(xp.all(xp.isfinite(uv) & xp.isfinite(rr) & (rr >= 0))):
                 criterion = "cg_breakdown"
                 max_update = float("inf")
                 break
             alpha = xp.divide(rr, uv, out=xp.zeros_like(rr), where=active & (uv > 0))
             recent = alpha * rr
+            unsafe_step = recent > xp.maximum(improvement_potential, 0) + 64 * energy_floor
+            if bool(xp.any(((uv <= 0) & active) | unsafe_step)):
+                # Recursive residuals can drift into the FE null space. A
+                # nonpositive curvature is not evidence of convergence: first
+                # recompute (I-T)a and restart with that true residual. Only
+                # roundoff-sized columns may be locked, independently of tol.
+                self._sym_projection(a, out=r)
+                rr = self._weighted_colsum(r, r)
+                current_energy = self._weighted_colsum(a, a)
+                tiny = rr <= (32 * float(eps))**2 * current_energy
+                r[:, tiny] = 0
+                rr = xp.where(tiny, 0.0, rr)
+                if bool(xp.all(tiny)):
+                    converged = True
+                    max_update = 0.0
+                    criterion = "cg_true_residual_roundoff"
+                    break
+                if restarts >= 2 or not bool(xp.all(xp.isfinite(rr))):
+                    criterion = "cg_breakdown"
+                    max_update = float("inf")
+                    break
+                u[...] = r
+                improvement_potential = current_energy.copy()
+                restarts += 1
+                continue
             improvement_potential = improvement_potential - recent
             if parallel_cg:
                 rr_new = _cg_update_residuals_and_norm(a, r, u, v, alpha, self.weights)
@@ -1103,6 +1135,7 @@ class HDFEAbsorber:
                 cg_algebra_seconds=elapsed - projection_seconds,
                 cg_parallel_fused=parallel_cg,
                 cg_projection_includes_inner_product=parallel_cg,
+                cg_residual_restarts=restarts,
             )
         return AbsorbInfo(converged, it, max_update, criterion)
 

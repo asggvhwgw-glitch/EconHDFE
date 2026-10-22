@@ -619,7 +619,7 @@ def _resolve_ols_columns(Xw, X0, names, *, weights, tolerance, mode, structural_
     return _select_design_columns(Xw, idx), _select_design_columns(X0, idx), plan
 
 
-def _resolve_iv_columns(Cw, Ew, Zw, C0, E0, Z0, c_names, e_names, z_names, *, weights, tolerance, mode, c_origins=None, e_origins=None, z_origins=None, c_design=None, e_design=None, z_design=None):
+def _resolve_iv_columns(Cw, Ew, Zw, C0, E0, Z0, c_names, e_names, z_names, *, weights, tolerance, mode, c_origins=None, e_origins=None, z_origins=None, c_design=None, e_design=None, z_design=None, _refine_controls=None):
     cplan = resolve_collinearity(
         Cw, names=c_names, role="exogenous", original=C0, weights=weights, tolerance=tolerance,
     )
@@ -627,6 +627,10 @@ def _resolve_iv_columns(Cw, Ew, Zw, C0, E0, Z0, c_names, e_names, z_names, *, we
     ci = tuple(cplan.active_indices)
     Cwa, C0a = (Cw, C0) if ci == tuple(range(Cw.shape[1])) else (_select_design_columns(Cw, ci), _select_design_columns(C0, ci))
     cn = tuple(cplan.active_names)
+    # Resolve redundant controls first, then refine the retained basis before
+    # it protects the endogenous and excluded-instrument column selections.
+    if _refine_controls is not None:
+        Cwa = _refine_controls(C0a, Cwa)
 
     eplan = resolve_collinearity(
         Ew, names=e_names, role="endogenous", original=E0, weights=weights, tolerance=tolerance,

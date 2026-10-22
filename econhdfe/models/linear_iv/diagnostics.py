@@ -66,26 +66,42 @@ class _IVDiagnosticWorkspace:
     shared. Callers must construct a new workspace after sample/weight changes.
     """
 
-    def __init__(self, endog, exog, instruments, weights=None, *, _qr=None, _moments=None):
+    def __init__(self, endog, exog, instruments, weights=None, *, _qr=None, _moments=None,
+                 _partial=None, _stable=False):
         self.E, self.C, self.Z = _weighted_triplet(endog, exog, instruments, weights)
+        self._stable = _stable
         # Preserve the canonical/CD projection layout and rank-boundary behavior.
         # One GELSY factorization of the controls for both right-hand sides.
-        partial = _partial_from_solver(self.E, self.C, self.Z, _qr)
+        partial = (_partial_from_solver(self.E, self.C, self.Z, _qr)
+                   if _partial is None else np.column_stack(_partial))
         self._solver_R = (None if _qr is None else
                           _qr.R[:len(_qr.zscale), :len(_qr.zscale)] * _qr.zscale)
         self._moments = _moments
         self.Ep = partial[:, :self.E.shape[1]]
         self.Zp = partial[:, self.E.shape[1]:]
+        if _stable and self.Zp.shape[1]:
+            # Excluded-instrument tests are invariant to a nonsingular basis
+            # change. QR coordinates avoid squaring their condition number.
+            self.Zp, self._partial_R = la.qr(self.Zp, mode="economic", check_finite=False)
+            self.Zp *= np.sqrt(len(self.Zp))
         self.zz = self.Zp.T @ self.Zp
         # Conservative execution guard only: this Gram rank does NOT select
         # model columns, change GELSY's cutoff, or supply a reported rank.
-        self._batch_safe = (
+        self._batch_safe = _stable or (
             (self.C.shape[1] == 0 or np.linalg.matrix_rank(self.C.T @ self.C) == self.C.shape[1])
             and (self.Zp.shape[1] == 0 or np.linalg.matrix_rank(self.zz) == self.Zp.shape[1])
         )
         self._bread = None
         self._shea = None
         self._reduced_form = None
+        self._endog_qr = None
+
+    @property
+    def endog_qr(self):
+        """One narrow observation-space QR for stable multivariate diagnostics."""
+        if self._endog_qr is None:
+            self._endog_qr = la.qr(self.Ep, mode="economic", check_finite=False)
+        return self._endog_qr
 
     @property
     def bread(self):
@@ -96,8 +112,20 @@ class _IVDiagnosticWorkspace:
     @property
     def shea(self):
         if self._shea is None:
-            self._shea = (_shea_partial_r2(self.E, self.C, self.Z) if self._moments is None
-                          else _shea_from_moments(*self._moments, self.C.shape[1]))
+            if self._stable:
+                # Schur complements of the controls reduce both inverse
+                # diagonals to endogenous roles only. Work with QR/SVD rather
+                # than the ill-conditioned full-role cross products.
+                re = self.endog_qr[1]
+                projected = self.Zp.T @ self.Ep / np.sqrt(len(self.Ep))
+                def inverse_diagonal(a):
+                    _, singular, vh = la.svd(a, full_matrices=False, check_finite=False)
+                    return np.sum((vh.T / singular) ** 2, axis=1)
+                with np.errstate(divide="ignore", invalid="ignore"):
+                    self._shea = np.clip(inverse_diagonal(re) / inverse_diagonal(projected), 0., 1.)
+            else:
+                self._shea = (_shea_partial_r2(self.E, self.C, self.Z) if self._moments is None
+                              else _shea_from_moments(*self._moments, self.C.shape[1]))
         return self._shea
 
     @property
@@ -293,15 +321,18 @@ def _conditional_from_reduced_form(work, *, _inverse_cache=None, **inference):
         return None
     # Guard the original [C,Z] scale as well as the conditional fitted span.
     # This 1e3 condition cap only selects execution; it is NOT a rank cutoff.
-    R = work._solver_R
-    if R is None:
-        R = la.qr(np.column_stack([work.C, work.Z]), mode="raw")[1]
-    singular = la.svdvals(R)
-    if singular[-1] <= 1e-3 * singular[0]:
-        return None
-    fitted_small = R[work.C.shape[1]:, work.C.shape[1]:] @ coef
+    if work._stable:
+        fitted_small = np.sqrt(n) * coef
+    else:
+        R = work._solver_R
+        if R is None:
+            R = la.qr(np.column_stack([work.C, work.Z]), mode="raw")[1]
+        singular = la.svdvals(R)
+        if singular[-1] <= 1e-3 * singular[0]:
+            return None
+        fitted_small = R[work.C.shape[1]:, work.C.shape[1]:] @ coef
     singular = la.svdvals(fitted_small)
-    if len(singular) < k or singular[-1] <= 1e-3 * singular[0]:
+    if (len(singular) < k or singular[-1] <= 1e-3 * singular[0]) and not work._stable:
         return None
     out = []
     for j in range(k):
@@ -407,6 +438,16 @@ def _canonical_components(endog, exog, instruments, weights=None, effective_n=No
     n = len(E)
     n_eff = float(n if effective_n is None else effective_n)
     Ep, Zp = work.Ep, work.Zp
+    if work._stable:
+        # Zp is already an orthogonal basis scaled by sqrt(n). Whiten E using
+        # QR directly, retaining observation-space precision for KP and CD.
+        qe, _ = work.endog_qr
+        theta = (Zp.T @ qe) / np.sqrt(n)
+        # Whiten observations BEFORE Kronecker score accumulation. Applying
+        # a large inverse-R on either side of a raw score covariance would
+        # square the conditioning again for nearly dependent endogenous roles.
+        return (qe * np.sqrt(n_eff), Zp * np.sqrt(n_eff / n), theta, theta,
+                np.eye(Zp.shape[1]), np.eye(Ep.shape[1]), C.shape[1], n_eff)
     qzz = work.zz / n_eff
     qzy = (Zp.T @ Ep) / n_eff
     qyy = (Ep.T @ Ep) / n_eff
@@ -576,10 +617,16 @@ def cragg_donald_stat(endog, exog, instruments, *, weights=None, df_absorbed=0, 
     Ep, Zp = work.Ep, work.Zp
     if Zp.shape[1] == 0:
         return np.nan
-    zz_inv = work.bread
-    epz = Ep.T @ Zp
-    explained = epz @ zz_inv @ epz.T
-    residual = Ep.T @ Ep - explained
+    if work._stable:
+        qe = work.endog_qr[0]
+        fitted = Zp @ ((Zp.T @ qe) / n)
+        errors = qe - fitted
+        explained, residual = fitted.T @ fitted, errors.T @ errors
+    else:
+        zz_inv = work.bread
+        epz = Ep.T @ Zp
+        explained = epz @ zz_inv @ epz.T
+        residual = Ep.T @ Ep - explained
     try:
         eig = la.eigvalsh(explained, residual, check_finite=False)
         cdev = float(np.min(eig))

@@ -57,11 +57,11 @@ flowchart TB
   n_interface -->|"1 imports"| n_resampling
   n_iv -->|"4 imports"| n_compute
   n_iv -->|"1 imports"| n_contracts
-  n_linear_iv -->|"13 imports"| n_compute
-  n_linear_iv -->|"7 imports"| n_contracts
+  n_linear_iv -->|"15 imports"| n_compute
+  n_linear_iv -->|"9 imports"| n_contracts
   n_linear_iv -->|"1 imports"| n_data
   n_linear_iv -->|"2 imports"| n_frontend
-  n_linear_iv -->|"4 imports"| n_hdfe
+  n_linear_iv -->|"5 imports"| n_hdfe
   n_linear_iv -->|"2 imports"| n_interface
   n_linear_iv -->|"3 imports"| n_iv
   n_model_shared -->|"4 imports"| n_contracts
@@ -161,7 +161,7 @@ Files/modules: 2. econhdfe/models/ols.py, econhdfe/models/ols_bootstrap.py
 
 Handles endogenous regressors in linear models and reports whether excluded instruments provide credible identifying variation.
 
-Files/modules: 7. econhdfe/models/linear_iv/__init__.py, econhdfe/models/linear_iv/api.py, econhdfe/models/linear_iv/diagnostics.py, econhdfe/models/linear_iv/estimators.py, econhdfe/models/linear_iv/solve.py, … (+2)
+Files/modules: 9. econhdfe/models/linear_iv/__init__.py, econhdfe/models/linear_iv/absorption.py, econhdfe/models/linear_iv/api.py, econhdfe/models/linear_iv/diagnostics.py, econhdfe/models/linear_iv/estimators.py, … (+4)
 
 ### PPML model
 
@@ -248,11 +248,11 @@ Files/modules: 17. econhdfe/compute/__init__.py, econhdfe/compute/backend.py, ec
 | Public interface & orchestration | Resampling engine | 1 | `econhdfe.bootstrap → econhdfe.resampling` |
 | Generic IV primitives | Compute/runtime kernels | 4 | `econhdfe.iv.design → econhdfe.compute.wls`<br>`econhdfe.iv.solve → econhdfe.compute.wls`<br>`econhdfe.iv.solve → econhdfe.compute.stable_linalg`<br>`econhdfe.iv.solve → econhdfe.compute.block_design` |
 | Generic IV primitives | Shared contracts | 1 | `econhdfe.iv.design → econhdfe.errors` |
-| Linear IV model | Compute/runtime kernels | 13 | `econhdfe.models.linear_iv.api → econhdfe.compute.weights`<br>`econhdfe.models.linear_iv.api → econhdfe.compute.block_design`<br>`econhdfe.models.linear_iv.diagnostics → econhdfe.compute.wls`<br>`econhdfe.models.linear_iv.diagnostics → econhdfe.compute.encoding`<br>`econhdfe.models.linear_iv.diagnostics → econhdfe.compute.vcov` |
-| Linear IV model | Shared contracts | 7 | `econhdfe.models.linear_iv.api → econhdfe.errors`<br>`econhdfe.models.linear_iv.api → econhdfe.config`<br>`econhdfe.models.linear_iv.api → econhdfe.results`<br>`econhdfe.models.linear_iv.api → econhdfe.prediction`<br>`econhdfe.models.linear_iv.api → econhdfe.reporting` |
+| Linear IV model | Compute/runtime kernels | 15 | `econhdfe.models.linear_iv.api → econhdfe.compute.weights`<br>`econhdfe.models.linear_iv.api → econhdfe.compute.block_design`<br>`econhdfe.models.linear_iv.diagnostics → econhdfe.compute.wls`<br>`econhdfe.models.linear_iv.diagnostics → econhdfe.compute.encoding`<br>`econhdfe.models.linear_iv.diagnostics → econhdfe.compute.vcov` |
+| Linear IV model | Shared contracts | 9 | `econhdfe.models.linear_iv.api → econhdfe.errors`<br>`econhdfe.models.linear_iv.api → econhdfe.config`<br>`econhdfe.models.linear_iv.api → econhdfe.results`<br>`econhdfe.models.linear_iv.api → econhdfe.prediction`<br>`econhdfe.models.linear_iv.api → econhdfe.reporting` |
 | Linear IV model | Econometric data layer | 1 | `econhdfe.models.linear_iv.api → econhdfe.data` |
 | Linear IV model | Frontend validation | 2 | `econhdfe.models.linear_iv.api → econhdfe.frontend.validate`<br>`econhdfe.models.linear_iv.api → econhdfe.frontend.roles` |
-| Linear IV model | HDFE infrastructure | 4 | `econhdfe.models.linear_iv.api → econhdfe.hdfe.dof`<br>`econhdfe.models.linear_iv.api → econhdfe.hdfe.block_projection`<br>`econhdfe.models.linear_iv.api → econhdfe.hdfe.plan`<br>`econhdfe.models.linear_iv.api → econhdfe.effects.prediction` |
+| Linear IV model | HDFE infrastructure | 5 | `econhdfe.models.linear_iv.absorption → econhdfe.hdfe.absorber`<br>`econhdfe.models.linear_iv.api → econhdfe.hdfe.dof`<br>`econhdfe.models.linear_iv.api → econhdfe.hdfe.block_projection`<br>`econhdfe.models.linear_iv.api → econhdfe.hdfe.plan`<br>`econhdfe.models.linear_iv.api → econhdfe.effects.prediction` |
 | Linear IV model | Public interface & orchestration | 2 | `econhdfe.models.linear_iv.api → econhdfe.pipeline`<br>`econhdfe.models.linear_iv.api → econhdfe.design` |
 | Linear IV model | Generic IV primitives | 3 | `econhdfe.models.linear_iv.estimators → econhdfe.iv.design`<br>`econhdfe.models.linear_iv.estimators → econhdfe.iv.solve`<br>`econhdfe.models.linear_iv.solve → econhdfe.iv.solve` |
 | Shared model primitives | Shared contracts | 4 | `econhdfe.models.poisson → econhdfe.errors` |
@@ -452,12 +452,12 @@ flowchart LR
 
 | Area | Files | Python | Markdown |
 | --- | ---: | ---: | ---: |
-| `econhdfe/` | 126 | 124 | 2 |
+| `econhdfe/` | 128 | 126 | 2 |
 | `pyreghdfe/` | 2 | 2 | 0 |
-| `tests/` | 60 | 60 | 0 |
+| `tests/` | 64 | 64 | 0 |
 | `validation/` | 25 | 8 | 3 |
 | `benchmarks/` | 116 | 29 | 8 |
-| `docs/` | 107 | 1 | 74 |
+| `docs/` | 108 | 1 | 75 |
 | `scripts/` | 22 | 19 | 0 |
 | `skills/` | 17 | 4 | 12 |
 | `compatibility/` | 30 | 0 | 0 |
