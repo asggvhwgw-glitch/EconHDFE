@@ -49,6 +49,54 @@ cutoff; this is empirical evidence, not a speed guarantee for every width.
 Other blocks retain serial vector operations. Vector fusion changes reduction
 order and can slightly change iteration counts; it does not add a preconditioner.
 
+## Near-collinear dense OLS
+
+Pure-intercept NumPy MAP OLS screens the scaled design for ill-conditioning.
+A condition estimate above 10,000 triggers a bounded-row QR/SVD verification;
+Gram eigenvalues alone never decide numerical rank. Full-rank difficult
+designs use reversible symmetric scaling of the weak right-singular subspace during absorption, with an
+effective absorption tolerance no larger than `1e-11`. Singular designs keep
+the existing order-preserving omission policy. If near-collinearity appears
+only after FE removal, the retained original columns are reprojected in the
+within-informed basis. This fallback costs an additional absorption pass.
+
+Well-conditioned directions are not whitened. OLS and its covariance are
+computed in the conditioned basis; coefficients and the full covariance are
+then mapped back together. The retained within columns are restored for
+prediction and state consumers. No ridge penalty or
+additional omission is introduced. `absorb_info["conditioning"]` records the
+trigger stage, condition estimate and effective tolerance. This path currently
+excludes block designs, two-way solvers, heterogeneous slopes, GPU and other
+estimators; the CG safeguards below are shared by their applicable CG paths.
+
+CG locks initially projection-orthogonal RHS columns at a small multiple of
+machine roundoff. Nonpositive curvature or a step exceeding the remaining
+energy budget triggers a fresh symmetric-operator residual and at most two
+restarts, within the existing iteration budget. Failure after these checks
+remains nonconvergence. A small recursive residual, FE orthogonality, or
+Hestenes metric alone is not a universal coefficient-error bound: weak graph
+connectivity and weak design directions can amplify projection error.
+
+These are established orthogonal preconditioning and residual-replacement
+techniques, not new mathematical or identification claims. Near-collinearity
+still increases statistical uncertainty. Validation compares original-unit
+coefficients and covariance with independent dense-FWL/analytic references;
+performance comparisons must use the same numerical acceptance gates.
+
+`OLSHDFESession` applies the same screening, original-column reprojection,
+and stable-coordinate inference to each specification. Ordinary specifications
+retain their batched, FE/sample-aware column cache. Conditioned projections
+are specification-local: they do not replace shared within columns, and the
+shared absorber's requested tolerance is restored even on failure. Repeated
+conditioned fits may therefore reproject; completed persistent results can be
+reused. Numerical/result cache ABIs invalidate results from before this repair.
+
+Screening reuses the full-data raw and within Gram matrices required by the
+omission checks. It retains column-max scaling and QR/SVD verification for
+suspicious designs; it does not sample rows or relax the trigger. Each Gram
+matrix is formed once per specification and reused only for that same sample,
+weights and column order.
+
 ### Scale-aware stopping
 
 The closeout numerical audit removed the absolute `recent < 1e-15` success

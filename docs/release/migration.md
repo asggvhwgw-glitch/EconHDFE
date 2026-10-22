@@ -1,5 +1,26 @@
 # Migration guide
 
+## 0.8.3 → 0.8.4 candidate — near-collinear OLS and IV
+
+Public calls, result schemas and requested defaults remain compatible. Pure-intercept
+dense NumPy MAP OLS and OLS sessions now protect weak design directions during
+absorption and compute inference in stable coordinates before restoring original
+units. Triggered fits use an effective absorption tolerance at most 1e-11; hidden
+within-design ill-conditioning can require another projection of original columns.
+
+The shared CG kernel checks suspicious curvature/energy updates against a fresh
+operator residual and limits restarts. Numerical cache ABI changes from 2 to 3;
+completed-result ABI changes from 4 to 5, invalidating older persistent values.
+Ordinary session column caches remain reusable; conditioned projections remain
+specification-local. Full-data Gram reuse reduces screening cost without sampling.
+
+No ridge penalty or extra omission is introduced. Statistical uncertainty from
+near-collinearity remains. The OLS conditioning is not applied to IV/PPML, GPU,
+heterogeneous slopes or the dedicated two-way solver. Full external parity and
+release-artifact acceptance remain separate. The 0.8.3 snapshot is preserved.
+
+Ordinary dense 2SLS separately routes ill-conditioned designs through stable block QR/SVD and inference. For supported categorical NumPy MAP absorption, redundant controls are omitted first and retained weak directions are reprojected and certified at the original tolerance. The IV model and omission policy remain unchanged; Block/LIML/GMM retain their existing guards. Profile output separates original absorption and control refinement. See [IV numerical design](../development/iv-conditioned-solve.md) for scope and validation limits.
+
 ## 0.8.1 → 0.8.3 candidate — tests and documentation
 
 Estimation calls, results, defaults, numerical tolerances, dependencies and cache

@@ -607,10 +607,12 @@ def _collinearity_metadata(
     return out
 
 
-def _resolve_ols_columns(Xw, X0, names, *, weights, tolerance, mode, structural_plan=None):
+def _resolve_ols_columns(Xw, X0, names, *, weights, tolerance, mode, structural_plan=None, _grams=None):
     plan = resolve_collinearity(
         Xw, names=names, role="regressor", original=X0, weights=weights,
         tolerance=tolerance,
+        _gram=None if _grams is None else _grams[0],
+        _original_gram=None if _grams is None else _grams[1],
     )
     _enforce_collinearity_mode(plan, mode, structural_plan)
     idx = tuple(plan.active_indices)

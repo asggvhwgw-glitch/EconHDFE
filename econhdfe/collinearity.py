@@ -142,6 +142,7 @@ def resolve_collinearity(
     protected_basis: np.ndarray | None = None,
     protected_names=(),
     _gram=None,
+    _original_gram=None,
 ) -> CollinearityPlan:
     """Order-preserving rank resolution using small weighted Gram matrices.
 
@@ -202,7 +203,8 @@ def resolve_collinearity(
             B = la.qr(np.vstack((B, block)), mode="r", check_finite=False)[0][:A.shape[1]]
         norms = np.linalg.norm(B, axis=0)
         B /= np.where(norms > 0, norms, 1.0)
-    original_gram = G[p:, p:] if original is None else _weighted_gram(orig, weights)
+    original_gram = (_original_gram if _original_gram is not None else
+                     G[p:, p:] if original is None else _weighted_gram(orig, weights))
     orig_diag = np.diag(original_gram)
     within_diag = np.diag(G)[p:]
 

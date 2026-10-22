@@ -20,7 +20,10 @@ from ..compute.weights import (
     normalize_weight_type, prepare_weights, resolve_vce_for_weights, robust_score_scale,
 )
 from ..compute.wls import weighted_arrays
-from ..compute.stable_linalg import equilibrated_lstsq, equilibrated_gram_inverse
+from ..compute.stable_linalg import (
+    equilibrated_lstsq, equilibrated_gram_inverse,
+    _absorption_basis, _apply_absorption_basis,
+)
 from ..compute.vcov import ols_vcov, sandwich_vcov_block_xe
 from ..compute.block_design import BlockDesign
 from ..compute.execution import _check_allocation_headroom
@@ -32,6 +35,7 @@ from ..prediction import design_state, linear_prediction_state
 from ..effects.prediction import saved_categorical_state
 from ..reporting import cluster_counts as _cluster_counts, reghdfe_model_statistics
 from ..design import is_heterogeneous_spec_candidate
+from ..collinearity import _weighted_gram
 
 
 def _fit_ols(y, X, *, weights=None, weight_info=None, vce="iid", clusters=None,
@@ -57,6 +61,39 @@ def _fit_ols(y, X, *, weights=None, weight_info=None, vce="iid", clusters=None,
     if str(vce).lower().replace("-", "_") == "cluster" and clusters:
         df_resid = min(df_resid, float(min(len(np.unique(c)) for c in clusters) - 1))
     return beta, V, resid, int(rank), df_resid
+
+
+def _fit_ols_in_basis(y, X, *, basis=None, **kwargs):
+    """Keep inference in stable coordinates and restore the owned design."""
+    if basis is None:
+        return _fit_ols(y, X, **kwargs)
+    _apply_absorption_basis(X, basis)
+    try:
+        beta, V, resid, rank, df_resid = _fit_ols(y, X, **kwargs)
+        scale, forward, _, _ = basis
+        beta = (forward @ beta) / scale
+        V = ((forward @ V @ forward.T) / scale[:, None]) / scale[None, :]
+        return beta, (V + V.T) / 2, resid, rank, df_resid
+    finally:
+        _apply_absorption_basis(X, basis, restore=True)
+
+
+def _residualize_ols_basis(absorber, y, X, basis, pool_size, memory_budget_mb,
+                           *, adaptive_auto=False, allow_nonconverged=False):
+    """Reproject original columns without changing a shared solver's tolerance."""
+    block = np.column_stack((y, X))
+    _apply_absorption_basis(block[:, 1:], basis)
+    requested_tol = absorber.tol
+    try:
+        absorber.tol = min(requested_tol, 1e-11)
+        within, info = _residualize_blocks(
+            absorber, block, pool_size, memory_budget_mb, adaptive_auto=adaptive_auto,
+        )
+        _check_absorption(info, allow_nonconverged=allow_nonconverged)
+    finally:
+        absorber.tol = requested_tol
+    _apply_absorption_basis(within[:, 1:], basis, restore=True)
+    return within[:, 0], within[:, 1:], info
 
 
 def _fit_ols_block(y, X: BlockDesign, *, weights=None, weight_info=None, vce="iid",
@@ -307,6 +344,8 @@ def olshdfe(
     absorber = None
     block_projector = None
     block = None
+    conditioning = None
+    raw_gram = None
     if _t0 is not None:
         _stage_end = perf_counter()
         _stage_times["design_seconds"] = _stage_end - _stage_start
@@ -340,6 +379,20 @@ def olshdfe(
         )
         _check_allocation_headroom(len(y1) * (X1.shape[1] + 1) * 8)
         block = np.column_stack([y1, X1])
+        basis = None
+        conditioning_eligible = (
+            backend == "numpy" and method_resolved == "map"
+            and all(intercepts) and all(s is None for s in slopes)
+            and len(groups) > 1
+        )
+        if conditioning_eligible:
+            raw_gram = _weighted_gram(X1, w1)
+            basis = _absorption_basis(X1, w1, rank_tolerance=collinear_tol, gram=raw_gram)
+            if basis is not None:
+                _apply_absorption_basis(block[:, 1:], basis)
+                absorber.tol = min(tol, 1e-11)
+                conditioning = {"basis": "symmetric_weak_direction_scaling", "stage": "before_absorption",
+                                "condition": basis[3], "tolerance": absorber.tol}
         if _t0 is not None:
             _stage_end = perf_counter()
             _stage_times["absorber_setup_seconds"] = _stage_end - _stage_start
@@ -350,6 +403,8 @@ def olshdfe(
             profile=_t0 is not None,
         )
         _check_absorption(info, allow_nonconverged=allow_nonconverged)
+        if basis is not None:
+            _apply_absorption_basis(within[:, 1:], basis, restore=True)
         yw, Xw = within[:, 0], within[:, 1:]
     if _t0 is not None:
         _stage_end = perf_counter()
@@ -360,10 +415,46 @@ def olshdfe(
     clusters = _cluster_arrays(data, cluster, mask)
     time1 = _masked_array(data, time, mask)
     panel1 = _masked_array(data, panel, mask)
+    within_gram = _weighted_gram(Xw, w1) if raw_gram is not None else None
     Xw, X1_active, collin_plan = _resolve_ols_columns(
         Xw, X1, xdesign.names, weights=w1, tolerance=collinear_tol, mode=collinearity,
         structural_plan=xdesign.structural_plan,
+        _grams=None if raw_gram is None else (within_gram, raw_gram),
     )
+    if not block_native and conditioning_eligible and conditioning is None:
+        # Dependencies can become nearly exact only after FE removal. Inspect
+        # the retained design, then reproject ORIGINAL columns in that basis;
+        # transforming inaccurate within columns alone cannot recover a weak
+        # direction lost during the first projection.
+        active = np.ix_(collin_plan.active_indices, collin_plan.active_indices)
+        basis = _absorption_basis(Xw, w1, rank_tolerance=collinear_tol, gram=within_gram[active])
+        if basis is not None:
+            refinement_start = perf_counter() if _t0 is not None else None
+            first_profile = getattr(absorber, "execution_profile", None)
+            # Reuse the owned block, including when omissions reduced width.
+            block = block[:, :X1_active.shape[1]+1]
+            block[:, 0] = y1
+            block[:, 1:] = X1_active
+            _apply_absorption_basis(block[:, 1:], basis)
+            absorber.tol = min(tol, 1e-11)
+            within, corrected_info = _residualize_blocks(
+                absorber, block, pool_size, memory_budget_mb, profile=_t0 is not None,
+            )
+            _check_absorption(corrected_info, allow_nonconverged=allow_nonconverged)
+            _apply_absorption_basis(within[:, 1:], basis, restore=True)
+            yw, Xw = within[:, 0], within[:, 1:]
+            corrected_info.iterations += info.iterations
+            info = corrected_info
+            if _t0 is not None:
+                refinement_seconds = perf_counter() - refinement_start
+                _stage_times["absorption_seconds"] += refinement_seconds
+                _stage_start += refinement_seconds
+                if first_profile is not None:
+                    absorber.execution_profile["pools"] = (
+                        first_profile["pools"] + absorber.execution_profile["pools"]
+                    )
+            conditioning = {"basis": "symmetric_weak_direction_scaling", "stage": "after_absorption",
+                            "condition": basis[3], "tolerance": absorber.tol}
     if _t0 is not None:
         _stage_end = perf_counter()
         _stage_times["clusters_and_collinearity_seconds"] = _stage_end - _stage_start
@@ -384,8 +475,14 @@ def olshdfe(
             df_absorbed=dof.df_absorbed, nested_adj=int(dof.nested > 0),
         )
     else:
-        beta, V, resid, rank, df_resid = _fit_ols(
-            yw, Xw, weights=w1, weight_info=winfo, vce=vce_kind, clusters=clusters,
+        # Keep the sandwich computation in the well-scaled basis too. Forming
+        # bread and cluster scores in the original near-collinear basis loses
+        # digits even when the within projection itself is accurate.
+        fit_basis = basis if conditioning is not None else None
+        if fit_basis is not None and len(fit_basis[0]) != Xw.shape[1]:
+            fit_basis = _absorption_basis(Xw, w1, rank_tolerance=collinear_tol)
+        beta, V, resid, rank, df_resid = _fit_ols_in_basis(
+            yw, Xw, basis=fit_basis, weights=w1, weight_info=winfo, vce=vce_kind, clusters=clusters,
             df_absorbed=dof.df_absorbed, nested_adj=int(dof.nested > 0),
             time=time1, panel=panel1, bandwidth=bandwidth, kernel=kernel,
         )
@@ -445,6 +542,8 @@ def olshdfe(
             _resolve_pool_size(absorber, block.shape[1], pool_size, memory_budget_mb),
             solver_selection=solver_selection,
         )
+    if conditioning is not None:
+        absorb_info["conditioning"] = conditioning
     prediction_state = linear_prediction_state(
         estimator="ols",
         coefficient_names=names,
