@@ -1,0 +1,16 @@
+{
+  "tau": 0.5,
+  "n": 133122,
+  "p": 72,
+  "b": 199,
+  "source": "2024 ACS 1-year California PUMS; unweighted wage-proxy associations; PUMA clustering",
+  "input_sha256": {
+    "x.npy": "9f9126a50a098fcd5f431fdd595de53a01a3356ed6ff430422008e46008a1433",
+    "y.npy": "50f401e1bfdd2a0dafc3ea97f87bb88669665de94a9a00f2ad37ffb0f7f742c5",
+    "W.npy": "925a4178ab34d252a5cf8c72af8184f284612e1454dec3f8fad370fb92822bb1",
+    "base_beta.npy": "c2f3d92401cdc9ffd318d11a7ac386335a489f6365ba17f73806062d2d18cad2"
+  },
+  "reference_sha256": "596c66189650ae9dad858a72fbbd88f02e1e83a6ef4586330351cb5eb8cb715c",
+  "reference": "quantreg 6.1 rq.fit.fnb, finite pseudo-observation, original frozen W",
+  "interpretation": "The pooled design is a post-hoc sensitivity, not a replacement for the primary specification"
+}

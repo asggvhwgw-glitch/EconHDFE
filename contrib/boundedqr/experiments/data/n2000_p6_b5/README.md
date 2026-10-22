@@ -1,0 +1,3 @@
+# Frozen synthetic reference
+
+This synthetic fixture was generated in the BoundedQR study with n=2000, p=6, 50 clusters, tau=0.5, 5 draws, seed=2130. `x`, `y`, `cluster` are artificial inputs; `base_beta`, `psi`, `v`, `W` preserve the fixed R baseline and perturbations; `r_fn` and `r_pwy` contain quantreg reference solutions. They are included only for regression checks, not as speed/coverage evidence. `meta.json` contains the generation dimensions; `SOURCE_ORIGIN.json` records pre-import SHA256 hashes. The separate R example constructs new synthetic data and runs a live reference comparison without this archive.

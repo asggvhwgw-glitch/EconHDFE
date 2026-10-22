@@ -1,0 +1,9 @@
+include VALIDATION.md LICENSE README.md THIRD_PARTY_NOTICES.md SOURCE_ORIGIN.json
+graft checks
+graft examples
+graft experiments/data
+graft validation
+prune validation/datasets/raw
+prune validation/datasets/processed
+prune .cache
+global-exclude *.pyc
