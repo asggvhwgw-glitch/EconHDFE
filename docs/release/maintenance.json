@@ -1,81 +1,81 @@
 {
   "schema_version": 1,
-  "release_version": "0.8.3",
-  "previous_version": "0.8.1",
+  "release_version": "0.8.4",
+  "previous_version": "0.8.3",
   "checks": {
     "frontend_api": {
       "status": "reviewed",
-      "evidence": "0.8.1至0.8.3公共签名/别名不变；compatibility diff为空。",
+      "evidence": "0.8.3至0.8.4公开签名、导出与别名兼容；compatibility diff无差异。",
       "description": "Public call signatures, exports, aliases, CLI/front-end validation and compatibility."
     },
     "backend_compute": {
-      "status": "reviewed",
-      "evidence": "估计/FE/IV/PPML计算实现与PR基线一致；仅__version__更新，不改变求解或数值容差。",
+      "status": "changed",
+      "evidence": "共享CG新增舍入保护及真实残差有限重启；dense纯截距MAP OLS/Session采用弱方向可逆变换和稳定坐标VCE，边界见solver/design.md。",
       "description": "Solver/compute/cache/backend contracts, numerical defaults and resource controls."
     },
     "errors": {
       "status": "reviewed",
-      "evidence": "结构化错误目录、code/stage不变；公共契约自动比对无差异。",
+      "evidence": "结构化错误类别/code/stage与公共错误边界未更改；失败路径测试保留。",
       "description": "Structured exception classes, codes, stages, suggestions and public error boundaries."
     },
     "public_contract": {
       "status": "changed",
-      "evidence": "受控升版0.8.3；以不可变0.8.1为基线新增0.8.3快照，旧基线不改，审批列表重置且无差异。",
+      "evidence": "受控升版0.8.4，以不可变0.8.3为基线新增0.8.4快照；无接口差异，旧快照不变。",
       "description": "Public exports/signatures, result/config schemas and stable structured-error compatibility."
     },
     "skill": {
       "status": "reviewed",
-      "evidence": "技能路由、配置和用户命令不变；本轮用户明确授权采用205项精简覆盖，缩减边界在testing.md披露；skill gate检查继续执行。",
+      "evidence": "没有新用户参数，技能路由及公开调用方式不变；保留外部验证边界，skill gate核查。",
       "description": "Agent skill commands, examples, decision rules and newly exposed controls."
     },
     "linked_modules": {
       "status": "changed",
-      "evidence": "删除退出常驻的测试模块，安装集和技术注册表引用联动；重新生成架构图，生产导入方向未改。",
+      "evidence": "OLS与Session复用内部稳定坐标推断函数，复用共线性统计；更新生成架构图并检查。",
       "description": "Cross-module imports, shared schemas, adapters, compatibility shims and downstream consumers."
     },
     "results_reporting": {
       "status": "reviewed",
-      "evidence": "公共结果/配置schema不变；四模型论文输出及线性组合/Wald关键检查保留。",
+      "evidence": "结果schema不变；beta/V共同映回原坐标，within恢复；新增conditioning诊断记录触发阶段及有效容差。",
       "description": "Result fields, publication output, diagnostics metadata and serialization-facing schemas."
     },
     "config_defaults": {
       "status": "reviewed",
-      "evidence": "公开配置默认值和Python/依赖范围不变，未新增执行参数或更改推断口径。",
+      "evidence": "请求默认值和公开配置不变；仅触发病态保护时内部tol至多1e-11，已在迁移说明披露。",
       "description": "Config objects, defaults, deprecations, aliases and backwards-compatible behavior."
     },
     "cache_state": {
-      "status": "reviewed",
-      "evidence": "0.8.1数值/完整结果缓存ABI保持；保留持久缓存重算、FE变更失效和预测roundtrip检查。",
+      "status": "changed",
+      "evidence": "数值ABI由2至3、完整结果ABI由4至5；病态Session投影不写共享列缓存，成功/失败均恢复共享容差。",
       "description": "Reusable state/cache invalidation, fingerprints, lifecycle semantics and stale-state hazards."
     },
     "tests_validation": {
       "status": "changed",
-      "evidence": "0.8.3本机完整205项通过，4条既有遗漏变量警告；保留关键独立oracle与失败语义，原矩阵覆盖有意收缩；最终头16格CI和bundle另行等待。",
+      "evidence": "0.8.4完整套件224 passed、4条预期省略提示；包含独立dense FWL、加权/列序/单位、Session批量/预热/变更/持久缓存及失败恢复；跨平台CI与制品验收另行确认。",
       "description": "Regression tests, install smoke tests, golden/parity coverage and failure-path tests."
     },
     "performance": {
-      "status": "not_applicable",
-      "evidence": "只改测试、外围文档和版本元数据，无新的运行期算法或性能主张，不需新大样本benchmark。",
+      "status": "changed",
+      "evidence": "最终运行期代码十万解析压力门槛全通过；普通21列热中位数172.363ms至162.498ms，原版156.196ms；此前五百万证据仅覆盖第一阶段修复，非最终头重测。",
       "description": "Representative benchmark/resource regressions for code paths materially changed by the release."
     },
     "docs_migration": {
       "status": "changed",
-      "evidence": "双语README、TODO、测试与状态说明同步0.8.3；migration披露精简覆盖及版本/缓存兼容边界，历史记录不改。",
+      "evidence": "双语README、CHANGELOG、TODO、迁移/验证状态更新0.8.4，披露适用范围、缓存失效和统计/外部认证限制。",
       "description": "README/architecture/changelog/migration/versioning documentation and user-visible examples."
     },
     "packaging_dependencies": {
       "status": "changed",
-      "evidence": "受控同步pyproject/runtime为0.8.3；installed-wheel测试选择使用存续数值文件；依赖、包发现与wheel内容规则不变。",
+      "evidence": "受控同步pyproject/runtime版本0.8.4；依赖、包发现及制品内容规则不变；本轮仅源码合并，不运行发行包发布。",
       "description": "Python/dependency matrix, optional extras, wheel/source contents and build metadata."
     },
     "external_validation": {
       "status": "reviewed",
-      "evidence": "没有新增Stata/GPU或全外部认证主张；本机/内部oracle不替代独立参考验收。",
+      "evidence": "本机独立FWL及解析综合样本不替代Stata/跨平台认证；未新增IV/PPML同规模、Stata或GPU认证主张。",
       "description": "Licensed/reference-environment parity gates and explicitly deferred external certification."
     },
     "release_artifacts": {
       "status": "reviewed",
-      "evidence": "重置0.8.3执行验收且不转移旧成功记录；本地候选构建及最终头CI分别执行，此PR仅合并源码，不创建tag或正式发布。",
+      "evidence": "0.8.4执行验收重置，旧制品和通过记录不迁移；本轮仅升版合并，不创建tag或发行包；隔离构建、干净安装及最终制品仍须发布前独立验收。",
       "description": "Version consistency, source/wheel parity, hashes, clean install and reproducible bundle contents."
     }
   }

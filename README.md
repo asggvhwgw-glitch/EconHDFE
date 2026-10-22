@@ -6,13 +6,14 @@
 
 `econhdfe` is a Python package for OLS-HDFE, linear IV-HDFE, PPML-HDFE, and IV-PPML-HDFE. It is designed for empirical work with large datasets, high-cardinality fixed effects, clustered inference, rich interactions, and many closely related specifications.
 
-The project is currently **alpha research software**. This source tree is version **0.8.3**. Source integration and package publication are separate; check the installed version and the [release status](docs/development/test-status.md). Repository-local validation is extensive, but licensed-Stata and complete upstream external certification remain separate validation boundaries.
+The project is currently **alpha research software**. This source tree is version **0.8.4**. Source integration and package publication are separate; check the installed version and the [release status](docs/development/test-status.md). Repository-local validation is extensive, but licensed-Stata and complete upstream external certification remain separate validation boundaries.
 
-## Current source: 0.8.3
+## Current source: 0.8.4
 
+- **Near-collinear OLS:** protect CG iterations, condition weak design directions, and compute covariance in stable coordinates; repeated OLS sessions use the same protection. Full-data screening moments are reused. See [solver details](docs/technical/hdfe/solver/design.md).
 - **Linear IV:** reuse work within a fit; optionally receive synchronous `on_stage` snapshots or skip advanced diagnostics with `InferenceConfig(iv_advanced_statistics=False)`. KP, ordinary first-stage F, overidentification and identification checks remain. See [IV stages and diagnostics](docs/development/iv-staged-diagnostics.md).
 - **FE absorption:** improve projection and CG execution, honor explicit threads and solver-workspace budgets, and correct false convergence for small-unit columns. Persistent numerical caches from before the correction are recomputed. See [migration notes](docs/release/migration.md).
-- **Validation:** retain focused regression cases and independent numerical references; CI still runs the full suite across all supported environments. Historical timing results below are workload-specific evidence, not new 0.8.3 measurements.
+- **Validation:** retain focused regression cases and independent numerical references; CI still runs the full suite across all supported environments. Historical timing results below are workload-specific evidence, not new 0.8.4 measurements.
 
 ## Performance at a glance
 
@@ -246,7 +247,7 @@ explicitly with `save_fe=True`; unknown levels and unidentified combinations
 are rejected. PPML/IV-PPML prediction, varying-slope or group+individual FE
 prediction, margins and AME are not supported in this version.
 See the [post-estimation contract](docs/development/postestimation-0.7.md).
-These features were introduced in 0.7.0 and remain available in 0.8.3; use the installation instructions above to select and check the source or published package you need.
+These features were introduced in 0.7.0 and remain available in 0.8.4; use the installation instructions above to select and check the source or published package you need.
 
 ## Fixed-effect recovery
 
