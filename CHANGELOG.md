@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.4 — unreleased candidate
+
+- Stabilize near-collinear dense OLS absorption and covariance with reversible weak-direction scaling and bounded CG true-residual restarts.
+- Align OLS sessions with standalone numerical protection, preserve shared ordinary column caches, and invalidate prior numerical/result caches.
+- Reuse full-data screening Gram matrices; retain QR/SVD verification, the existing omission policy and public interfaces.
+- Add independent FWL, session lifecycle and failure regressions; retain explicit limits on large-sample, external-reference and performance claims.
+- Advance from 0.8.3 through the controlled version workflow; reset execution acceptance. This source integration does not publish packages.
+
 ## 0.8.3 — unreleased candidate
 
 - Advance from 0.8.1 through the controlled version workflow; freeze a new public-contract snapshot without API changes, reset execution acceptance, and retain prior snapshots. This source candidate does not create a tag or publish packages.

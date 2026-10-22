@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "econhdfe",
-  "version": "0.8.3",
+  "version": "0.8.4",
   "evidence": {
     "topology": "Python AST import analysis; package __init__ re-export imports excluded from aggregated dependency counts.",
     "execution_flows": "Explicit semantic overlays reviewed against estimator orchestration modules; not presented as import edges."
@@ -607,7 +607,7 @@
     {
       "source": "interface",
       "target": "compute",
-      "count": 11,
+      "count": 12,
       "examples": [
         "econhdfe.collinearity → econhdfe.compute.block_design",
         "econhdfe.design → econhdfe.compute.block_design",
@@ -869,10 +869,11 @@
     {
       "source": "ols",
       "target": "interface",
-      "count": 2,
+      "count": 3,
       "examples": [
         "econhdfe.models.ols → econhdfe.pipeline",
-        "econhdfe.models.ols → econhdfe.design"
+        "econhdfe.models.ols → econhdfe.design",
+        "econhdfe.models.ols → econhdfe.collinearity"
       ]
     },
     {
@@ -3046,6 +3047,14 @@
       "reexport_surface": false
     },
     {
+      "source_module": "econhdfe.models.ols",
+      "source_path": "econhdfe/models/ols.py",
+      "source_group": "ols",
+      "target_module": "econhdfe.collinearity",
+      "target_group": "interface",
+      "reexport_surface": false
+    },
+    {
       "source_module": "econhdfe.models.ols_bootstrap",
       "source_path": "econhdfe/models/ols_bootstrap.py",
       "source_group": "ols",
@@ -4793,6 +4802,22 @@
       "source_module": "econhdfe.sessions",
       "source_path": "econhdfe/sessions.py",
       "source_group": "interface",
+      "target_module": "econhdfe.compute.stable_linalg",
+      "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.sessions",
+      "source_path": "econhdfe/sessions.py",
+      "source_group": "interface",
+      "target_module": "econhdfe.collinearity",
+      "target_group": "interface",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.sessions",
+      "source_path": "econhdfe/sessions.py",
+      "source_group": "interface",
       "target_module": "econhdfe.models.linear_iv.estimators",
       "target_group": "linear_iv",
       "reexport_surface": false
@@ -5477,8 +5502,8 @@
     },
     {
       "name": "tests",
-      "files": 60,
-      "python_files": 60,
+      "files": 61,
+      "python_files": 61,
       "markdown_files": 0
     },
     {
@@ -5513,7 +5538,7 @@
     },
     {
       "name": "compatibility",
-      "files": 30,
+      "files": 31,
       "python_files": 0,
       "markdown_files": 0
     }
