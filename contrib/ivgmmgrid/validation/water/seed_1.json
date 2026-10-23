@@ -1,0 +1,20 @@
+{
+  "seed": 1,
+  "difference_lag": 7,
+  "instruments": [
+    [
+      2,
+      "Dp"
+    ],
+    [
+      2,
+      "DlnP"
+    ]
+  ],
+  "selected_order": 3,
+  "selected_gamma": 0.4399999976158142,
+  "source": "Do and Jacoby (2024), Zenodo v2, DOI 10.5281/zenodo.10965745",
+  "data_license": "CC-BY-4.0",
+  "reference": "ivreghdfe 1.1.4; reghdfe 6.14.1; ivreg2 4.1.12; Stata MP 19",
+  "scope": "one frozen household bootstrap draw; conditional on frozen Lstar and excluded instruments"
+}
