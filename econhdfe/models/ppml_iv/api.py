@@ -3,6 +3,7 @@ from time import perf_counter
 from ...errors import error_boundary, SpecificationError, UnderidentifiedError, ShapeError
 from ...config import InferenceConfig, ExecutionConfig
 from ...compute.context import ExecutionContext
+from ...planner.scheduler import managed_execution
 from ...frontend.validate import require_numeric
 from ...frontend.roles import VariableRole
 import numpy as np
@@ -43,6 +44,7 @@ def _prepare(y, exog, endog, instruments, *, offset, exposure, weights, weight_t
 
 
 @error_boundary("ivppml")
+@managed_execution
 def ivppmlhdfe(
     y, *, exog=None, endog=None, instruments=None, absorb=None,
     offset=None, exposure=None, weights=None, weight_type=None, vce="robust", clusters=None,
@@ -109,6 +111,10 @@ class IVPPMLHDFE:
         )
         self.context.put(self.plan.fingerprint, self.plan)
 
+    def _prepare_resource_admission(self):
+        # self.plan/data remain owned by the model even if cache entries go.
+        self.context.prepare_admission(self.execution_config, protected=(self.plan, self.data))
+
     def _ensure_plan_current(self):
         if not self.absorb:
             return
@@ -126,60 +132,62 @@ class IVPPMLHDFE:
             self.context.put(self.plan.fingerprint, self.plan)
 
     @error_boundary("ivppml")
+    @managed_execution
     def fit(self, y: str, *, exog=(), endog=(), instruments=(), offset=None, exposure=None,
             weights=None, weight_type=None, vce="robust", clusters=None, warm_start=None):
         self._ensure_plan_current()
-        def _spec_tuple(value):
-            if value is None:
-                return ()
-            if isinstance(value, str):
+        with self.context.maintain(self.execution_config, protected=(self.plan, self.data)):
+            def _spec_tuple(value):
+                if value is None:
+                    return ()
+                if isinstance(value, str):
+                    return (value,)
+                if isinstance(value, (tuple, list)):
+                    return tuple(value)
                 return (value,)
-            if isinstance(value, (tuple, list)):
-                return tuple(value)
-            return (value,)
 
-        ccols, ecols, zcols = _spec_tuple(exog), _spec_tuple(endog), _spec_tuple(instruments)
-        if self.inference_config.vce is not None:
-            vce = self.inference_config.vce
-        t0 = perf_counter() if self.execution_config.profile != "off" else None
+            ccols, ecols, zcols = _spec_tuple(exog), _spec_tuple(endog), _spec_tuple(instruments)
+            if self.inference_config.vce is not None:
+                vce = self.inference_config.vce
+            t0 = perf_counter() if self.execution_config.profile != "off" else None
 
-        result = None
-        if self.plan.groups and any(is_heterogeneous_spec_candidate(v) for v in (ccols, ecols, zcols)):
-            result = fit_structured_dataframe(
-                self.data, y=y, exog=ccols, endog=ecols, instruments=zcols, plan=self.plan,
-                offset=offset, exposure=exposure, weights=weights, weight_type=weight_type,
-                vce=vce, clusters=clusters, config=self.config,
-                execution_config=self.execution_config, warm_start=warm_start,
-            )
+            result = None
+            if self.plan.groups and any(is_heterogeneous_spec_candidate(v) for v in (ccols, ecols, zcols)):
+                result = fit_structured_dataframe(
+                    self.data, y=y, exog=ccols, endog=ecols, instruments=zcols, plan=self.plan,
+                    offset=offset, exposure=exposure, weights=weights, weight_type=weight_type,
+                    vce=vce, clusters=clusters, config=self.config,
+                    execution_config=self.execution_config, warm_start=warm_start,
+                )
 
-        if result is None:
-            n = len(self.data)
-            cdesign = build_design(self.data, ccols, n, prefix="exog", structural=True)
-            edesign = build_design(self.data, ecols, n, prefix="endog", structural=True, protected_terms=cdesign.structural_terms)
-            zdesign = build_design(self.data, zcols, n, prefix="z", structural=True, protected_terms=cdesign.structural_terms)
-            vals = _prepare(
-                self.data[y].to_numpy(), cdesign.values, edesign.values, zdesign.values,
-                offset=None if offset is None else self.data[offset].to_numpy(),
-                exposure=None if exposure is None else self.data[exposure].to_numpy(),
-                weights=None if weights is None else self.data[weights].to_numpy(),
-                weight_type=weight_type, exog_names=cdesign.names, endog_names=edesign.names,
-                instrument_names=zdesign.names,
-            )
-            yv, C, E, I, off, w, wkind, cn, en, zn = vals
-            cls = None
-            if clusters is not None:
-                cvars = (clusters,) if isinstance(clusters, str) else tuple(clusters)
-                cls = [self.data[c].to_numpy() if isinstance(c, str) else np.asarray(c) for c in cvars]
-            result = fit_arrays(
-                yv, C, E, I, self.plan, offset=off, true_w=w, weight_kind=wkind, vce=vce, clusters=cls,
-                exog_names=cn, endog_names=en, instrument_names=zn, config=self.config,
-                warm_start=warm_start, execution_config=self.execution_config, execution_context=self.context,
-            )
-        result.confidence_level = self.inference_config.confidence_level
-        result.diagnostics_mode = self.inference_config.diagnostics
-        if t0 is not None:
-            result.profile = {
-                "total_seconds": perf_counter() - t0, "mode": self.execution_config.profile,
-                "separation_seconds": dict(result.diagnostics.get("separation_seconds", {})),
-            }
-        return result
+            if result is None:
+                n = len(self.data)
+                cdesign = build_design(self.data, ccols, n, prefix="exog", structural=True)
+                edesign = build_design(self.data, ecols, n, prefix="endog", structural=True, protected_terms=cdesign.structural_terms)
+                zdesign = build_design(self.data, zcols, n, prefix="z", structural=True, protected_terms=cdesign.structural_terms)
+                vals = _prepare(
+                    self.data[y].to_numpy(), cdesign.values, edesign.values, zdesign.values,
+                    offset=None if offset is None else self.data[offset].to_numpy(),
+                    exposure=None if exposure is None else self.data[exposure].to_numpy(),
+                    weights=None if weights is None else self.data[weights].to_numpy(),
+                    weight_type=weight_type, exog_names=cdesign.names, endog_names=edesign.names,
+                    instrument_names=zdesign.names,
+                )
+                yv, C, E, I, off, w, wkind, cn, en, zn = vals
+                cls = None
+                if clusters is not None:
+                    cvars = (clusters,) if isinstance(clusters, str) else tuple(clusters)
+                    cls = [self.data[c].to_numpy() if isinstance(c, str) else np.asarray(c) for c in cvars]
+                result = fit_arrays(
+                    yv, C, E, I, self.plan, offset=off, true_w=w, weight_kind=wkind, vce=vce, clusters=cls,
+                    exog_names=cn, endog_names=en, instrument_names=zn, config=self.config,
+                    warm_start=warm_start, execution_config=self.execution_config, execution_context=self.context,
+                )
+            result.confidence_level = self.inference_config.confidence_level
+            result.diagnostics_mode = self.inference_config.diagnostics
+            if t0 is not None:
+                result.profile = {
+                    "total_seconds": perf_counter() - t0, "mode": self.execution_config.profile,
+                    "separation_seconds": dict(result.diagnostics.get("separation_seconds", {})),
+                }
+            return result

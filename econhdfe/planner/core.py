@@ -11,6 +11,7 @@ from .contracts import (
 )
 from .resources import RuntimeResources, runtime_resources
 from .calibration import auto_thread_count
+from .scheduler import current_allocation
 
 
 def plan_memory(
@@ -37,6 +38,13 @@ def plan_memory(
         effective = max(1, min(requested, headroom))
         if effective < requested:
             reason = "runtime_headroom_tighter_than_user_budget"
+
+    active = current_allocation()
+    if active is not None:
+        remaining = active.remaining_memory_bytes()
+        effective = min(effective, remaining)
+        headroom = remaining if headroom is None else min(headroom, remaining)
+        reason = "shared_call_budget"
 
     peak = None if estimated_peak_bytes is None else max(0, int(estimated_peak_bytes))
     feasible = peak is None or peak <= effective
@@ -87,13 +95,14 @@ def plan_parallelism(
     """
     use_runtime = resources is None
     r = runtime_resources() if resources is None else resources
-    cap = max(1, int(r.cpu_threads))
+    active = current_allocation()
+    cap = max(1, min(int(r.cpu_threads), active.cpu_threads)) if active else max(1, int(r.cpu_threads))
     auto_source = "explicit"
     calibration_id = None
     if requested_threads in (None, "auto"):
         if calibrate_auto is None:
             calibrate_auto = use_runtime
-        if calibrate_auto and cap > 1:
+        if calibrate_auto and cap > 1 and not (prefer_outer and int(outer_tasks) > 1):
             requested, calibration = auto_thread_count(max_threads=cap)
             requested = max(1, min(int(requested), cap))
             auto_source = calibration.source
@@ -111,7 +120,7 @@ def plan_parallelism(
         outer = min(tasks, requested)
         inner = max(1, requested // outer)
         mode = "outer"
-        reason = "independent_tasks_share_calibrated_cpu_budget" if requested_label == "auto" else "independent_tasks_share_cpu_budget"
+        reason = "independent_tasks_share_cpu_budget"
     else:
         outer = 1
         inner = requested

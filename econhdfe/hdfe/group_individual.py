@@ -281,7 +281,7 @@ class GroupIndividualAbsorber:
             std_nnz += self.nobs * (int(has_int) + (0 if S is None else S.shape[1]))
         ind_nnz = self.membership_group.size * self._ind_q
         estimated_peak = 32.0 * (std_nnz + ind_nnz) + 16.0 * self.nobs
-        budget = max(self.memory_budget_mb, 64.0) * (1024.0**2)
+        budget = max(self.memory_budget_mb, 0.0) * (1024.0**2)
         if incidence_backend == "auto":
             # CSR is substantially faster for the common sparse incidence case,
             # but COO->CSR construction temporarily holds multiple index/data
@@ -303,6 +303,7 @@ class GroupIndividualAbsorber:
                     max_iter=self.max_iter,
                     method="lsmr",
                     preconditioner=self.preconditioner,
+                    projection_memory_budget_mb=self.memory_budget_mb,
                 )
                 self._std_op, self._std_inv_scales, self._std_offsets, _ = self._std_absorber._lsmr_operator()
                 self._std_width = int(self._std_op.shape[1])

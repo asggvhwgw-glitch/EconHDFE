@@ -1,4 +1,5 @@
 from __future__ import annotations
+from ...planner.scheduler import managed_execution
 from ...compute.clusters import normalize_vce_clusters
 import math
 import numpy as np
@@ -53,6 +54,7 @@ def _ppml_wald(coef, vcov, names):
     return stat, float(chi2_dist.sf(stat, q)), q
 
 
+@managed_execution
 def fit_arrays(
     y,
     X,
@@ -146,15 +148,20 @@ def fit_arrays(
         ystd, Xstd = y0s[survivor0], X0s[survivor0]
         ys_orig, ws, offs = y0[survivor0], w0[survivor0], off0[survivor0]
         ps_requested = p0.subset(survivor0) if p0.groups else p0
+        # Rebuild for the surviving topology under the original resource policy.
+        pre_projector = get_projector(
+            ps_requested, engine=config.engine, method="map", execution=execution,
+            context=exec_context, cache=False,
+        )
         # Only a changed estimation sample can change post-FE rank.
         Xstd, names, keep = _filter_columns(
             Xstd, names, ps_requested, ws, config.target_inner_tol,
-            engine=config.engine, projector=None,
+            engine=config.engine, projector=pre_projector,
         )
         standardizer = standardizer.select_columns(keep)
 
     ps_solver, canonicalization = ps_requested.for_engine(config.engine)
-    if (not any_sep) and (ps_solver is p0):
+    if ps_solver is ps_requested:
         projector = pre_projector
     else:
         projector = get_projector(

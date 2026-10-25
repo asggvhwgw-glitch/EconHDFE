@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import numpy as np
 from ..errors import SpecificationError
+from ..planner.scheduler import current_allocation, inner_thread_request
 
 from ..planner import (
     PlanCertificate, RepresentationCandidate, choose_representation,
@@ -68,13 +69,15 @@ def _plan_workspace(
 ):
     """Internal byte-based plan; resident solver state shares the user budget."""
     nobs = int(nobs); ncols = max(1, int(ncols))
+    requested_threads = inner_thread_request(requested_threads)
     budget = int(float(memory_budget_mb) * 1024**2)
     if budget <= 0:
         raise SpecificationError("memory_budget_mb must be positive")
     resources = runtime_resources()
     execution = plan_execution(
         requested_budget_bytes=budget,
-        requested_threads=requested_threads, resources=resources,
+        requested_threads=1 if requested_threads in (None, "auto") and nobs < 100_000 else requested_threads,
+        resources=resources,
         reserve_fraction=reserve_fraction, calibrate_auto_threads=(requested_threads in (None, "auto") and nobs >= 100_000),
     )
     threads = execution.parallel.inner_threads
@@ -91,6 +94,7 @@ def _plan_workspace(
     if requested > cap:
         raise SpecificationError(
             "Requested HDFE workspace does not fit the memory budget or available headroom.",
+            code="resource.memory", stage="execution",
             details={"pool_size": requested, "bytes_per_column": per_col,
                      "resident_solver_bytes": int(resident_solver_bytes),
                      "requested_budget_bytes": budget, "available_workspace_bytes": max(0, usable)},
@@ -114,6 +118,10 @@ def _plan_workspace(
 
 def _check_allocation_headroom(nbytes):
     """Check a known upcoming allocation; inputs are not a solver-workspace budget."""
+    active = current_allocation()
+    if active is not None and int(nbytes) > active.remaining_memory_bytes():
+        raise SpecificationError("Allocation exceeds the remaining shared computation budget.",
+                                 code="resource.memory", stage="execution")
     resources = runtime_resources()
     if resources.memory_limit_bytes is None or resources.memory_current_bytes is None:
         return
@@ -122,6 +130,7 @@ def _check_allocation_headroom(nbytes):
     if int(nbytes) > headroom:
         raise SpecificationError(
             "Insufficient available memory for the dense HDFE design block.",
+            code="resource.memory", stage="execution",
             details={"allocation_bytes": int(nbytes), "headroom_bytes": headroom},
             suggestion="Free memory or reduce the design width before estimation.",
         )

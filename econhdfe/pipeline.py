@@ -21,7 +21,9 @@ from .design import build_design, Factor, RegressorInteraction, _compile_executi
 from .compute.block_design import BlockDesign
 from .collinearity import resolve_collinearity, OmittedVariableWarning, format_omission_warning
 from .compute.execution import _plan_workspace, should_probe_plain_map, ReusableRHSWorkspace
-from .hdfe.projection import estimate_index_bytes
+from .hdfe.projection import estimate_index_bytes, resolve_threads
+from .hdfe.workspace import _absorption_workspace_cost, _absorption_build_cost
+from .planner import scheduler
 from .compute.weights import normalize_weight_type, prepare_weights, resolve_vce_for_weights
 from .frontend.validate import require_numeric, require_identifier
 from .frontend.roles import VariableRole
@@ -262,54 +264,6 @@ def _resolve_pool_size(absorber, ncols, pool_size, memory_budget_mb):
         requested_threads=getattr(absorber, "absorb_threads", "auto"),
     ).pool_size
 
-
-def _absorption_workspace_cost(absorber):
-    """Conservative byte inventory for pooled CPU absorption, excluding input."""
-    arrays = {}
-
-    def add(a):
-        if isinstance(a, np.ndarray):
-            arrays[id(a)] = a.nbytes
-
-    for name in ("groups", "slopes", "_denoms"):
-        for a in getattr(absorber, name, ()) or ():
-            add(a)
-    for name in ("weights", "_projection_scratch", "left", "right",
-                 "denom_left", "denom_right", "_diag", "_precond_diag", "keep_right"):
-        add(getattr(absorber, name, None))
-    for proj in getattr(absorber, "_projectors", ()):
-        for name in ("denom", "slope_means", "slope_gram_inv", "slope_inv_ss"):
-            add(getattr(proj, name))
-    fixed = int(getattr(absorber, "index_bytes", 0)) + sum(arrays.values())
-    n = int(absorber.nobs)
-    if absorber.method == "twoway":
-        # Includes the lazy group indexes and bounded coefficient-space PCG
-        # arrays/advanced-indexing temporaries, not an N x FE dummy matrix.
-        if absorber.absorb_threads > 1 and absorber._left_index is None:
-            fixed += estimate_index_bytes(n, [absorber.n_left, absorber.n_right])
-        per_col = 8 * (n + 4 * absorber.n_left + 20 * absorber.n_right)
-    else:
-        vectors = 4 if absorber.acceleration in ("cg", "auto") else 2
-        per_col = 8 * n * vectors
-        if absorber.acceleration in ("cg", "auto") and absorber.absorb_threads > 1:
-            # At most 16 partial reductions plus their per-column result.
-            per_col += 17 * 8
-        indexes = getattr(absorber, "_group_indexes", ())
-        levels = getattr(absorber, "levels", ())
-        # Fused fallback accumulators are reused across FE, so reserve only
-        # the largest group matrix. This also bounds one-column bincount work.
-        unindexed = [L for i, L in enumerate(levels) if not indexes or indexes[i] is None]
-        if unindexed:
-            per_col += 8 * max(unindexed) * 3
-        if any(s is not None for s in getattr(absorber, "slopes", ())):
-            per_col += 8 * n * 4
-        core = getattr(absorber, "_core_plan", None)
-        if core is not None:
-            fixed += core.core_index.nbytes + sum(g.nbytes for g in core.core_groups)
-            core_levels = [int(g.max()) + 1 if g.size else 0 for g in core.core_groups]
-            fixed += estimate_index_bytes(core.core_nobs, core_levels) + 8 * sum(core_levels)
-            per_col += 8 * core.core_nobs
-    return int(fixed), max(1, int(per_col))
 
 
 def _residualize_blocks(
@@ -849,26 +803,40 @@ def _make_standard_absorber(
                 "method='twoway' requires exactly two intercept-only fixed effects "
                 "after FE canonicalization"
             )
-        return TwoWayFEAbsorber(
-            groups, weights=weights, tol=tol, max_iter=max_iter
-        )._configure_execution(absorb_threads=absorb_threads)
-    return HDFEAbsorber(
-        groups, slopes=slopes, intercepts=intercepts, weights=weights,
-        tol=tol, max_iter=max_iter, backend=backend, method=method,
-        transform=transform, acceleration=acceleration,
-        preconditioner=preconditioner, projection_backend=projection_backend,
-        absorb_threads=absorb_threads, projection_memory_budget_mb=memory_budget_mb,
-    )
+    build_bytes = _absorption_build_cost(groups, "twoway" if method == "twoway" else "generic")
+    for codes, slope in zip(groups, slopes, strict=True):
+        if slope is not None:
+            width = 1 if slope.ndim == 1 else slope.shape[1]
+            levels = int(codes.max()) + 1 if len(codes) else 0
+            # Slope copies, centered vectors, means and Gram/inverse work.
+            build_bytes += 8 * (len(codes) * (width + 5) + levels * (3 * width**2 + width))
+    if backend == "numpy" and groups:
+        # Warm the saturation cache before construction reserves workspace.
+        # Small samples/explicit requests do not run a calibration probe.
+        resolve_threads(absorb_threads, nobs=len(groups[0]))
+    with scheduler.reserve_memory(build_bytes, label="linear_fe_build"):
+        if method == "twoway":
+            return TwoWayFEAbsorber(
+                groups, weights=weights, tol=tol, max_iter=max_iter
+            )._configure_execution(absorb_threads=absorb_threads)
+        return HDFEAbsorber(
+            groups, slopes=slopes, intercepts=intercepts, weights=weights,
+            tol=tol, max_iter=max_iter, backend=backend, method=method,
+            transform=transform, acceleration=acceleration,
+            preconditioner=preconditioner, projection_backend=projection_backend,
+            absorb_threads=absorb_threads, projection_memory_budget_mb=memory_budget_mb,
+        )
 
 
-def _make_group_absorber(prep, *, method, transform, backend, acceleration, preconditioner, tol, max_iter, aggregation, incidence_backend, memory_budget_mb):
+def _make_group_absorber(prep, *, method, transform, backend, acceleration, preconditioner, tol, max_iter, aggregation, incidence_backend, memory_budget_mb, projection_backend="auto", absorb_threads="auto"):
     indiv = prep["individual_spec"]
     if indiv is None:
-        return HDFEAbsorber(
-            prep["groups"], slopes=prep["slopes"], intercepts=prep["intercepts"],
+        return _make_standard_absorber(
+            prep["groups"], prep["slopes"], prep["intercepts"],
             weights=prep["weights"], tol=tol, max_iter=max_iter, backend=backend,
             method=method, transform=transform, acceleration=acceleration,
-            preconditioner=preconditioner,
+            preconditioner=preconditioner, projection_backend=projection_backend,
+            absorb_threads=absorb_threads, memory_budget_mb=memory_budget_mb,
         )
     if backend != "numpy":
         raise ValueError("group()+individual() currently uses SciPy LSMR/LSQR on CPU; backend must be 'numpy'")
@@ -877,14 +845,42 @@ def _make_group_absorber(prep, *, method, transform, backend, acceleration, prec
     solver = "lsmr" if method == "map" else method
     if solver not in {"lsmr", "lsqr"}:
         raise ValueError("group()+individual() requires method='lsmr' or method='lsqr'")
-    return GroupIndividualAbsorber(
-        prep["groups"], standard_slopes=prep["slopes"], standard_intercepts=prep["intercepts"],
-        membership_group=prep["membership_group"], individual_codes=prep["individual_codes"],
-        individual_slopes=prep["individual_slopes"], individual_intercept=indiv.intercept,
-        aggregation=aggregation, weights=prep["weights"], tol=tol, max_iter=max_iter,
-        method=solver, preconditioner=preconditioner, incidence_backend=incidence_backend,
-        memory_budget_mb=memory_budget_mb,
-    )
+    membership = prep["membership_group"]
+    n = int(membership.max()) + 1 if len(membership) else len(prep["groups"][0])
+    ni = int(prep["individual_codes"].max()) + 1 if len(membership) else 0
+    individual_slopes = prep["individual_slopes"]
+    p = 0 if individual_slopes is None else (1 if individual_slopes.ndim == 1 else individual_slopes.shape[1])
+    q = int(indiv.intercept) + p
+    widths = [int(has_int) + (0 if slope is None else (1 if slope.ndim == 1 else slope.shape[1]))
+              for has_int, slope in zip(prep["intercepts"], prep["slopes"], strict=True)]
+    nnz = n * sum(widths) + len(membership) * q
+    coefficient_count = ni * q + sum((int(g.max()) + 1) * width for g, width in zip(prep["groups"], widths, strict=True) if len(g))
+    base_bytes = 32 * n + 32 * len(membership) + 24 * coefficient_count
+    csr_bytes = base_bytes + 64 * nnz + 16 * n
+    selected = str(incidence_backend).lower().replace("-", "_")
+    if selected == "auto":
+        allocation = scheduler.current_allocation()
+        available = int(memory_budget_mb * 1024**2) if allocation is None else allocation.unreserved_memory_bytes()
+        # Preserve the constructor's sparse heuristic, but allow its matrix-free
+        # alternative when concurrent workspace leaves less construction room.
+        selected = "csr" if (32 * nnz + 16 * n <= .45 * memory_budget_mb * 1024**2
+                             and csr_bytes <= available) else "matrix_free"
+    build_bytes = csr_bytes if selected == "csr" else base_bytes + _absorption_build_cost(prep["groups"], "generic")
+    if selected != "csr":
+        for codes, slope in zip(prep["groups"], prep["slopes"], strict=True):
+            if slope is not None:
+                width = 1 if slope.ndim == 1 else slope.shape[1]
+                levels = int(codes.max()) + 1 if len(codes) else 0
+                build_bytes += 8 * (len(codes) * (width + 5) + levels * (3 * width**2 + width))
+    with scheduler.reserve_memory(build_bytes, label="group_individual_build"):
+        return GroupIndividualAbsorber(
+            prep["groups"], standard_slopes=prep["slopes"], standard_intercepts=prep["intercepts"],
+            membership_group=prep["membership_group"], individual_codes=prep["individual_codes"],
+            individual_slopes=prep["individual_slopes"], individual_intercept=indiv.intercept,
+            aggregation=aggregation, weights=prep["weights"], tol=tol, max_iter=max_iter,
+            method=solver, preconditioner=preconditioner, incidence_backend=selected,
+            memory_budget_mb=memory_budget_mb,
+        )
 
 
 def _group_dof(prep, absorber, dof_method):

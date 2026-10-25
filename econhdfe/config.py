@@ -1,5 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
+from math import isfinite
 from .errors import SpecificationError
 
 
@@ -48,7 +49,7 @@ class InferenceConfig:
 class ExecutionConfig:
     """Resource policy. Defaults are intentionally automatic and conservative."""
     threads: int | str = "auto"
-    memory_budget_mb: int = 512
+    memory_budget_mb: int | float | str = "auto"
     profile: str = "off"  # off | summary | full
     cache: str = "auto"   # auto | on | off
     cache_validation: str = "signature"  # signature | none
@@ -56,8 +57,11 @@ class ExecutionConfig:
     def validate(self) -> None:
         if self.threads != "auto" and (not isinstance(self.threads, int) or self.threads < 1):
             raise SpecificationError("threads must be 'auto' or a positive integer")
-        if self.memory_budget_mb < 32:
-            raise SpecificationError("memory_budget_mb must be at least 32")
+        if self.memory_budget_mb != "auto" and (
+            not isinstance(self.memory_budget_mb, (int, float))
+            or not isfinite(self.memory_budget_mb) or self.memory_budget_mb < 32
+        ):
+            raise SpecificationError("memory_budget_mb must be auto or at least 32")
         if self.profile not in {"off", "summary", "full"}:
             raise SpecificationError("profile must be off/summary/full")
         if self.cache not in {"auto", "on", "off"}:

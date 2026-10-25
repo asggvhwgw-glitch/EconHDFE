@@ -188,7 +188,7 @@ class HDFEAbsorber:
         core_min_peel_fraction=0.05,
         auto_plain_limit=8,
         auto_polish_limit=32,
-        fused_rhs_memory_mb=128,
+        fused_rhs_memory_mb=None,
     ):
         self.backend = backend
         self.method = method
@@ -265,7 +265,12 @@ class HDFEAbsorber:
         # Empirical thresholding is validated by the complex-FE corpus.
         self._auto_probe_iterations = 2
         self._auto_contraction_threshold = 0.02
-        self.fused_rhs_memory_mb = float(fused_rhs_memory_mb)
+        # A child scratch allowance may tighten, but never enlarge, the
+        # caller's projection budget.
+        self.fused_rhs_memory_mb = (
+            self.projection_memory_budget_mb if fused_rhs_memory_mb is None else
+            min(float(fused_rhs_memory_mb), self.projection_memory_budget_mb)
+        )
         self._projection_scratch = np.empty(0, dtype=np.float64)
         # Scratch belongs to this reusable absorber. Protect same-instance
         # calls even on OpenMP/TBB, where the global workqueue guard is absent.

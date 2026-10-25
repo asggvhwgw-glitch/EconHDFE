@@ -6,6 +6,7 @@ from threading import RLock
 import numpy as np
 from ..planner import effective_cpu_count
 from ..planner.calibration import auto_thread_count
+from ..planner.scheduler import current_allocation, inner_thread_request
 from numba import config, get_num_threads, get_thread_id, njit, prange, set_num_threads, threading_layer
 
 
@@ -241,14 +242,20 @@ def resolve_threads(value, *, nobs: int | None = None, calibration_min_nobs: int
 
     ``auto`` is a planning decision and uses the shared planner once when an
     absorber/projector is compiled. Integer values are already-resolved policy
-    in hot projection calls, so they take a constant-time cap-only path.
+    in hot projection calls. Recheck the runtime cap because affinity or quotas
+    can shrink after Numba's thread pool was initialized.
     """
+    active = current_allocation()
+    value = inner_thread_request(value)
     if value not in (None, "auto"):
         n = int(value)
         if n < 1:
             raise ValueError("absorb_threads must be >= 1 or 'auto'")
-        return max(1, min(n, int(config.NUMBA_NUM_THREADS)))
+        return max(1, min(n, int(config.NUMBA_NUM_THREADS), int(effective_cpu_count()),
+                          active.cpu_threads if active is not None else n))
     cap = min(int(get_num_threads()), int(effective_cpu_count()), int(config.NUMBA_NUM_THREADS))
+    if active is not None:
+        cap = min(cap, active.cpu_threads)
     if nobs is not None and int(nobs) < max(1, int(calibration_min_nobs)):
         return 1
     selected, _calibration = auto_thread_count(max_threads=max(1, cap))
@@ -264,7 +271,9 @@ def numba_thread_limit(nthreads: int):
     OpenMP/TBB retain concurrent execution; no platform-specific defaults change.
     """
     old = int(get_num_threads())  # Also initializes the selected threading layer.
-    n = max(1, min(int(nthreads), int(config.NUMBA_NUM_THREADS)))
+    active = current_allocation()
+    n = max(1, min(int(nthreads), int(config.NUMBA_NUM_THREADS),
+                   active.cpu_threads if active else int(config.NUMBA_NUM_THREADS)))
     guard = _WORKQUEUE_LOCK if threading_layer() == "workqueue" else nullcontext()
     with guard:
         if n != old:

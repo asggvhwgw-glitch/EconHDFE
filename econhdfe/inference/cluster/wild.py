@@ -2,14 +2,15 @@ from __future__ import annotations
 
 import math
 import numpy as np
-from joblib import Parallel, delayed, effective_n_jobs
-from threadpoolctl import threadpool_limits
 
 from ...compute.clusters import normalize_cluster_arrays
 from ...errors import BootstrapError, InferenceError, InputError, error_boundary
 from ...hdfe.absorber import HDFEAbsorber
 from ...hdfe.two_way import TwoWayFEAbsorber
+from ...hdfe.workspace import _absorption_workspace_cost
 from ...resampling.sampling import wild_weights
+from ...resampling.engine import run_replicates, _wild_memory_estimate, _check_worker_memory
+from ...planner.scheduler import current_allocation, managed_execution
 from .results import WildClusterTestResult
 
 
@@ -146,11 +147,12 @@ def _alternative_pvalue(observed, draws, *, alternative: str, joint: bool, exact
 
 
 @error_boundary("ols_bootstrap")
+@managed_execution
 def wild_cluster_test_ols(
     result, *, param=None, R=None, r=0.0, reps=9_999,
     impose_null: bool = True, weight_distribution: str = "rademacher",
     alternative: str = "two_sided", n_jobs: int = 1, batch_size: int = 32,
-    seed: int = 0,
+    seed: int = 0, execution_config=None,
 ) -> WildClusterTestResult:
     """Studentized one-way WCR11/WCU11 test for OLS-HDFE.
 
@@ -167,6 +169,16 @@ def wild_cluster_test_ols(
     Rm, rv = _restriction(result, param=param, R=R, r=r)
     beta_hat = np.asarray(result.params, dtype=np.float64)
     n = len(y); G = int(cluster.max()) + 1
+    requested_B = int(reps)
+    dist0 = str(weight_distribution).lower().replace("-", "_")
+    full_enumeration = bool(dist0 in {"rademacher", "radem", "rad"} and G <= 16 and (1 << G) <= requested_B)
+    B = (1 << G) if full_enumeration else requested_B
+    setup_bytes, worker_bytes = _wild_memory_estimate(
+        _absorption_workspace_cost(state.absorber), nobs=n, ncols=X.shape[1],
+        groups=G, batch_size=batch_size,
+        reps=B, restrictions=Rm.shape[0], enumeration=full_enumeration,
+    )
+    _check_worker_memory(worker_bytes, setup_bytes=setup_bytes)
     sw = np.ones(n, dtype=np.float64) if w is None else np.sqrt(w)
     Xw = X * sw[:, None]
     bread = np.linalg.pinv(Xw.T @ Xw, hermitian=True)
@@ -190,9 +202,6 @@ def wild_cluster_test_ols(
         boot_type = "WCU11"
     fitted_unrestricted = X @ beta_hat
 
-    requested_B = int(reps)
-    dist0 = str(weight_distribution).lower().replace("-", "_")
-    full_enumeration = bool(dist0 in {"rademacher", "radem", "rad"} and G <= 16 and (1 << G) <= requested_B)
     if full_enumeration:
         B = 1 << G
         ids = np.arange(B, dtype=np.uint64)
@@ -208,16 +217,14 @@ def wild_cluster_test_ols(
         sizes = [min(int(batch_size), B - i) for i in starts]
         seeds = np.random.SeedSequence(seed).spawn(len(sizes))
 
-    workers = max(1, effective_n_jobs(n_jobs))
-    fe_threads = max(1, int(getattr(state.absorber, "absorb_threads", 1)) // workers)
-
-    def one_batch(ss, b, start):
+    def one_batch(item):
+        ss, b, start = item
+        fe_threads = min(int(getattr(state.absorber, "absorb_threads", 1)), current_allocation().cpu_threads)
         vg = wild_weights(np.random.default_rng(ss), (G, b), weight_distribution) if vg_full is None else vg_full[:, start:start+b]
         ystar = fitted_unrestricted[:, None] + base_resid[:, None] * vg[cluster]
         ystar = state.absorber.residualize(ystar, absorb_threads=fe_threads)
         ystar_w = ystar * sw[:, None]
-        with threadpool_limits(limits=1):
-            betas = bread @ (Xw.T @ ystar_w)
+        betas = bread @ (Xw.T @ ystar_w)
         out = np.empty(b, dtype=np.float64)
         for j in range(b):
             resid = (ystar[:, j] - X @ betas[:, j]) * sw
@@ -228,13 +235,11 @@ def wild_cluster_test_ols(
                 out[j] = np.nan
         return out
 
-    if workers == 1:
-        raw = [one_batch(ss, b, start) for ss, b, start in zip(seeds, sizes, starts, strict=True)]
-    else:
-        raw = Parallel(n_jobs=n_jobs, prefer="threads")(
-            delayed(one_batch)(ss, b, start) for ss, b, start in zip(seeds, sizes, starts, strict=True)
-        )
-    draws = np.concatenate(raw)[:B]
+    batch = run_replicates(
+        one_batch, list(zip(seeds, sizes, starts, strict=True)), n_jobs=n_jobs, skip_exceptions=(),
+        estimated_worker_bytes=worker_bytes,
+    )
+    draws = np.concatenate(batch.values)[:B]
     finite = draws[np.isfinite(draws)]
     if len(finite) < max(99, int(0.95 * B)):
         raise BootstrapError(
