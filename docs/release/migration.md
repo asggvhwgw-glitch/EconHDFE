@@ -1,5 +1,40 @@
 # Migration guide
 
+## 0.8.4 → 0.8.5 candidate — shared resource scheduling
+
+OLS/IV (including aliases) and `ExecutionConfig` now default to
+`memory_budget_mb="auto"`, using effective available memory with a system reserve.
+Pass `memory_budget_mb=512` explicitly to retain a 512 MiB requested budget;
+the shared budget now covers more allocation paths, so some formerly accepted
+calls may fail early with a structured resource error. This is cooperative
+allocation accounting, not an OS RSS cap or a cross-process coordinator.
+
+`HDFEAbsorber.fused_rhs_memory_mb=None` inherits the parent projection budget;
+pass `128` explicitly when that scratch ceiling is required. Resampling entry
+points add optional `execution_config=None` to carry memory/thread policy.
+`ExecutionContext` dataclass reflection includes three private lifecycle fields
+(`_protected`, `_policy_signature`, `_resource_signature`); its constructor is
+unchanged. Consumers enumerating fields should exclude private names.
+
+Thread auto-selection preserves its automatic origin through nested calls.
+Session and nonlinear caches evict cold entries under budget pressure and may
+recompute them. Explicit resource requests and cache-off policies reach inner
+execution paths. Estimation specifications and result schemas are unchanged.
+
+Existing stress samples/DGPs passed numerical comparisons in 23 isolated
+processes (100k composite OLS, 1m four-FE, 150k sessions, 100k resampling,
+200k PPML). Performance is workload-dependent: composite OLS at four threads
+was flat (8.843s → 8.827s); auto showed a preliminary 9.5% slowdown, and PPML
+four-thread warm medians showed 5.3% slowdown over 15 calls per version.
+The auto comparison needs alternating repeated runs before attributing its
+cause. The 5m sample was not run because safe memory headroom was insufficient.
+See PR #24 for the validation summary; no new external parity is claimed.
+
+The immutable 0.8.4 snapshot is preserved; 0.8.5 has a new contract snapshot.
+This source version bump does not publish packages or certify isolated builds,
+clean installation, support matrices or final artifacts. Their execution status
+remains explicit in `execution.json` under the release acceptance policy.
+
 ## 0.8.3 → 0.8.4 candidate — near-collinear OLS and IV
 
 Public calls, result schemas and requested defaults remain compatible. Pure-intercept

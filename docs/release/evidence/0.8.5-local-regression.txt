@@ -1,0 +1,7 @@
+Date: 2026-10-26 Asia/Shanghai
+Environment: research Python 3.12.15; macOS-15.7.9-arm64-arm-64bit
+Command: python scripts/run_tests.py --suite full -- -q
+Result: exit 0; 396 passed, 4 warnings in 11.58s
+Warnings: expected omitted-variable warnings in collinearity/structural omission tests.
+Additional checks: version.py gate (0.8.5), generate_architecture_map.py --check (PASS), git diff --check (PASS).
+This is a command-result summary, not a full raw test log.
