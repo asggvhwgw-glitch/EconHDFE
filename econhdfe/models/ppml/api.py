@@ -3,6 +3,7 @@ from time import perf_counter
 from ...errors import error_boundary, SpecificationError, ShapeError
 from ...config import InferenceConfig, ExecutionConfig
 from ...compute.context import ExecutionContext
+from ...planner.scheduler import managed_execution
 from ...frontend.validate import require_numeric
 from ...frontend.roles import VariableRole
 import numpy as np
@@ -29,6 +30,7 @@ def _prepare_inputs(y, X, *, offset, exposure, weights, names):
 
 
 @error_boundary("ppml")
+@managed_execution
 def ppmlhdfe(
     y,
     X=None,
@@ -102,6 +104,10 @@ class PPMLHDFE:
         )
         self.context.put(self.plan.fingerprint, self.plan)
 
+    def _prepare_resource_admission(self):
+        # self.plan/data remain owned by the model even if cache entries go.
+        self.context.prepare_admission(self.execution_config, protected=(self.plan, self.data))
+
     def _ensure_plan_current(self):
         if not self.absorb:
             return
@@ -119,47 +125,49 @@ class PPMLHDFE:
             self.context.put(self.plan.fingerprint, self.plan)
 
     @error_boundary("ppml")
+    @managed_execution
     def fit(self, y: str, X=(), *, offset=None, exposure=None, weights=None, vce="robust", clusters=None, warm_start=None):
         self._ensure_plan_current()
-        if is_heterogeneous_spec_candidate(X):
-            result, _ = fit_structured_dataframe(
-                self.data, y=y, x=X, plan=self.plan,
-                offset=offset, exposure=exposure, weights=weights,
-                vce=self.inference_config.vce if self.inference_config.vce is not None else vce,
-                clusters=clusters, config=self.config,
-                execution_config=self.execution_config,
-                warm_start=warm_start,
+        with self.context.maintain(self.execution_config, protected=(self.plan, self.data)):
+            if is_heterogeneous_spec_candidate(X):
+                result, _ = fit_structured_dataframe(
+                    self.data, y=y, x=X, plan=self.plan,
+                    offset=offset, exposure=exposure, weights=weights,
+                    vce=self.inference_config.vce if self.inference_config.vce is not None else vce,
+                    clusters=clusters, config=self.config,
+                    execution_config=self.execution_config,
+                    warm_start=warm_start,
+                )
+                result.confidence_level = self.inference_config.confidence_level
+                result.diagnostics_mode = self.inference_config.diagnostics
+                return result
+
+            cols = tuple(X)
+            yv, Xv, off, w, names = _prepare_inputs(
+                self.data[y].to_numpy(),
+                self.data[list(cols)].to_numpy() if cols else None,
+                offset=None if offset is None else self.data[offset].to_numpy(),
+                exposure=None if exposure is None else self.data[exposure].to_numpy(),
+                weights=None if weights is None else self.data[weights].to_numpy(),
+                names=cols,
+            )
+            cluster_arrays = None
+            if clusters is not None:
+                ccols = (clusters,) if isinstance(clusters, str) else tuple(clusters)
+                cluster_arrays = [self.data[c].to_numpy() for c in ccols]
+            if self.inference_config.vce is not None:
+                vce = self.inference_config.vce
+            t0 = perf_counter() if self.execution_config.profile != "off" else None
+            result = fit_arrays(
+                yv, Xv, self.plan, offset=off, true_w=w, vce=vce,
+                clusters=cluster_arrays, names=names, config=self.config, warm_start=warm_start,
+                execution_config=self.execution_config, execution_context=self.context,
             )
             result.confidence_level = self.inference_config.confidence_level
             result.diagnostics_mode = self.inference_config.diagnostics
+            if t0 is not None:
+                result.profile = {
+                    "total_seconds": perf_counter() - t0, "mode": self.execution_config.profile,
+                    "separation_seconds": dict(result.diagnostics.get("separation_seconds", {})),
+                }
             return result
-
-        cols = tuple(X)
-        yv, Xv, off, w, names = _prepare_inputs(
-            self.data[y].to_numpy(),
-            self.data[list(cols)].to_numpy() if cols else None,
-            offset=None if offset is None else self.data[offset].to_numpy(),
-            exposure=None if exposure is None else self.data[exposure].to_numpy(),
-            weights=None if weights is None else self.data[weights].to_numpy(),
-            names=cols,
-        )
-        cluster_arrays = None
-        if clusters is not None:
-            ccols = (clusters,) if isinstance(clusters, str) else tuple(clusters)
-            cluster_arrays = [self.data[c].to_numpy() for c in ccols]
-        if self.inference_config.vce is not None:
-            vce = self.inference_config.vce
-        t0 = perf_counter() if self.execution_config.profile != "off" else None
-        result = fit_arrays(
-            yv, Xv, self.plan, offset=off, true_w=w, vce=vce,
-            clusters=cluster_arrays, names=names, config=self.config, warm_start=warm_start,
-            execution_config=self.execution_config, execution_context=self.context,
-        )
-        result.confidence_level = self.inference_config.confidence_level
-        result.diagnostics_mode = self.inference_config.diagnostics
-        if t0 is not None:
-            result.profile = {
-                "total_seconds": perf_counter() - t0, "mode": self.execution_config.profile,
-                "separation_seconds": dict(result.diagnostics.get("separation_seconds", {})),
-            }
-        return result

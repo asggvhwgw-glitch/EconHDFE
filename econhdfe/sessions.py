@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from functools import wraps
 from dataclasses import asdict, dataclass, field
 import hashlib
 from time import perf_counter
@@ -10,6 +11,9 @@ import numpy as np
 import pandas as pd
 
 from .config import ExecutionConfig, HDFEConfig, InferenceConfig
+from .planner.scheduler import managed_execution, current_allocation, reserve_memory
+from .planner.resources import runtime_resources
+from .session_cache import retained_array_bytes
 from .data.dataset import EncodedEconometricDataset, prepare_repeated_dataset
 from .data.persistent import PersistentSessionStore
 from .data.source import DataSource, as_data_source
@@ -197,6 +201,8 @@ class _FECacheEntry:
     solver_selection: dict
     pool_size: int | str
     memory_budget_mb: int
+    execution_threads: int | str
+    execution_auto_threads: bool
     source_signature: str | None
     within: dict[str, np.ndarray] = field(default_factory=dict)
     raw_active: dict[str, np.ndarray] = field(default_factory=dict)
@@ -204,6 +210,27 @@ class _FECacheEntry:
     last_info: object | None = None
     residualize_calls: int = 0
     residualized_columns: int = 0
+
+
+def _session_cache_policy(method):
+    """Keep temporary reuse inside one call, but retain nothing with cache off."""
+    @wraps(method)
+    def wrapped(self, *args, **kwargs):
+        if self.execution.cache != "off":
+            self._trim_cache()
+            try:
+                return method(self, *args, **kwargs)
+            finally:
+                self._trim_cache()
+        self.clear_cache()
+        store = self._persistent_store
+        self._persistent_store = None
+        try:
+            return method(self, *args, **kwargs)
+        finally:
+            self.clear_cache()
+            self._persistent_store = store
+    return wrapped
 
 
 class _LinearHDFESessionBase:
@@ -268,11 +295,15 @@ class _LinearHDFESessionBase:
         self.collinear_tol = float(collinear_tol)
         self._entries: dict[tuple, _FECacheEntry] = {}
         self._component_cache: dict = {}
-        self._prime_component_cache()
+        if self.execution.cache != "off":
+            self._prime_component_cache()
         self._raw_full: dict[str, np.ndarray] = {}
         self._raw_signatures: dict[str, str] = {}
         self._hits = 0
         self._misses = 0
+        self._cache_evictions = 0
+        self._cache_released_bytes = 0
+        self._cache_budget_last = 0
         self._validation_round: dict[str, str] = {}
 
     def enable_persistent_cache(self, root, *, source_validation: str = "strict") -> "_LinearHDFESessionBase":
@@ -281,6 +312,8 @@ class _LinearHDFESessionBase:
         The on-disk cache is never part of estimator semantics. Deleting it can
         only remove reuse. The method leaves constructor/public estimator
         signatures unchanged while this feature is validated experimentally.
+        ExecutionConfig(cache="off") takes precedence: calls neither read nor
+        write this store, and discard their temporary in-memory caches.
         """
         self._persistent_store = PersistentSessionStore(root, source_validation=source_validation)
         return self
@@ -380,14 +413,81 @@ class _LinearHDFESessionBase:
     def clear_cache(self) -> None:
         self._entries.clear()
         self._component_cache.clear()
-        self._prime_component_cache()
+        if self.execution.cache != "off":
+            self._prime_component_cache()
         self._raw_full.clear()
         self._raw_signatures.clear()
         self._validation_round.clear()
         self._hits = self._misses = 0
 
+    def _cache_bytes(self) -> int:
+        return retained_array_bytes(
+            (self._entries, self._component_cache, self._raw_full),
+            (self.data, self.weights_spec, self.cluster_spec),
+        )
+
+    def _cache_limit_bytes(self) -> int:
+        allocation = current_allocation()
+        if allocation is not None:
+            budget = allocation.memory_budget_bytes
+            available = allocation.unreserved_memory_bytes()
+        else:
+            resources = runtime_resources()
+            available = None if (resources.memory_limit_bytes is None or
+                                 resources.memory_current_bytes is None) else max(
+                0, resources.memory_limit_bytes - resources.memory_current_bytes
+                - int(resources.memory_limit_bytes * 0.12))
+            requested = self.execution.memory_budget_mb
+            budget = available if requested == "auto" else int(float(requested) * 1024**2)
+        # Retained, rebuildable caches use at most a quarter of the envelope,
+        # leaving room for the next design and its numerical workspaces.
+        limit = 0 if budget is None else budget // 4
+        if available is not None:
+            limit = 0 if available < 32 * 1024**2 else min(limit, available // 4)
+        return max(0, int(limit))
+
+    def _trim_cache(self, *, pending_bytes=0, protect=None) -> None:
+        limit = self._cache_limit_bytes()
+        self._cache_budget_last = limit
+        target = max(0, limit - int(pending_bytes))
+        before = self._cache_bytes()
+        if before <= target:
+            return
+        # Global lookup arrays are reconstructible; active entries hold their
+        # own references. Never alter an entry currently used by the caller.
+        self._component_cache.clear()
+        self._prune_raw_cache()
+        for key in tuple(self._entries):
+            if self._cache_bytes() <= target:
+                break
+            if self._entries[key] is protect:
+                continue
+            del self._entries[key]
+            self._prune_raw_cache()
+            self._cache_evictions += 1
+        self._cache_released_bytes += max(0, before - self._cache_bytes())
+
+    def _prune_raw_cache(self) -> None:
+        needed = {name for entry in self._entries.values()
+                  for name in (*entry.raw_active, *entry.within)}
+        for name in tuple(self._raw_full):
+            if name not in needed:
+                self._raw_full.pop(name, None)
+                self._raw_signatures.pop(name, None)
+
+    def _prepare_resource_admission(self) -> None:
+        """Called under scheduler admission lock, before resolving headroom."""
+        if self.execution.cache == "off":
+            self.clear_cache()
+        else:
+            self._trim_cache()
+
     def cache_info(self) -> dict:
         out = {
+            "retained_bytes": self._cache_bytes(),
+            "cache_budget_bytes": self._cache_budget_last,
+            "evictions": self._cache_evictions,
+            "released_bytes_estimate": self._cache_released_bytes,
             "fe_entries": len(self._entries),
             "hits": self._hits,
             "misses": self._misses,
@@ -442,7 +542,6 @@ class _LinearHDFESessionBase:
             "weight_type": self.weight_type,
             "drop_singletons": self.drop_singletons,
             "hdfe": asdict(self.hdfe),
-            "memory_budget_mb": self.execution.memory_budget_mb,
         }
         return self._persistent_store.within_signature(entry_payload=payload)
 
@@ -458,7 +557,8 @@ class _LinearHDFESessionBase:
         # A completed-result key is independent of the physical FE solver
         # object. Exact source/column signatures plus the full econometric and
         # numerical configuration determine the result, so a cache hit can be
-        # returned before rebuilding FE topology.
+        # returned before rebuilding FE topology. Resource budgets are excluded:
+        # live host headroom changes execution plans, not the mathematical result.
         source_names = list(names)
         source_names.extend(self._entry_source_columns(getattr(spec, "absorb", ())))
         variables = {name: self._column_signature(name) for name in dict.fromkeys(source_names)}
@@ -473,7 +573,6 @@ class _LinearHDFESessionBase:
             "drop_singletons": self.drop_singletons,
             "hdfe": asdict(self.hdfe),
             "inference": asdict(self.inference),
-            "memory_budget_mb": self.execution.memory_budget_mb,
             "collinearity": self.collinearity,
             "collinear_tol": self.collinear_tol,
             "extra": dict(extra or {}),
@@ -535,11 +634,35 @@ class _LinearHDFESessionBase:
     def _get_entry(self, absorb) -> _FECacheEntry:
         absorb = _normalize_absorb(absorb)
         key = self._entry_key(absorb)
+        allocation = current_allocation()
+        auto_threads = bool(allocation is not None and allocation.auto_threads)
+        self._trim_cache(protect=self._entries.get(key))
         validate = self.execution.cache_validation == "signature"
         source_cols = self._entry_source_columns(absorb)
         source_sig = self._source_signature(source_cols) if validate else None
         hit = self._entries.get(key)
         if hit is not None and (not validate or hit.source_signature == source_sig):
+            # Within columns depend on the model, but compiled scratch/index
+            # plans must follow this call's newly resolved resource allocation.
+            if (hit.memory_budget_mb != self.execution.memory_budget_mb
+                    or hit.execution_threads != self.execution.threads
+                    or hit.execution_auto_threads != auto_threads):
+                if hit.absorber is not None:
+                    method = hit.solver_selection["resolved"]
+                    hit.absorber = _make_standard_absorber(
+                        hit.groups, hit.slopes, hit.intercepts, weights=hit.weights,
+                        tol=self.hdfe.tolerance, max_iter=self.hdfe.max_iter,
+                        backend="numpy", method=method, transform="symmetric",
+                        acceleration=_resolve_acceleration(method, "auto"),
+                        preconditioner="diagonal", projection_backend="auto",
+                        absorb_threads=self.execution.threads,
+                        memory_budget_mb=self.execution.memory_budget_mb,
+                    )
+                hit.memory_budget_mb = self.execution.memory_budget_mb
+                hit.execution_threads = self.execution.threads
+                hit.execution_auto_threads = auto_threads
+            self._entries.pop(key)
+            self._entries[key] = hit
             self._hits += 1
             return hit
         if hit is not None:
@@ -606,10 +729,27 @@ class _LinearHDFESessionBase:
             weights=winfo.estimation, winfo=winfo, clusters=clusters, dof=dof,
             solver_selection=solver_selection, pool_size="auto",
             memory_budget_mb=self.execution.memory_budget_mb,
+            execution_threads=self.execution.threads,
+            execution_auto_threads=auto_threads,
             source_signature=source_sig,
         )
         self._entries[key] = entry
         return entry
+
+    def _active_numeric(self, entry, full):
+        if bool(np.all(entry.mask)):
+            return full
+        pending = int(np.sum(entry.mask)) * int(full.dtype.itemsize)
+        self._trim_cache(pending_bytes=pending, protect=entry)
+        with reserve_memory(pending, label="session active column"):
+            return full[entry.mask]
+
+    def _stack_columns(self, entry, columns):
+        nrows = int(np.sum(entry.mask))
+        pending = nrows * len(columns) * 8
+        self._trim_cache(pending_bytes=pending, protect=entry)
+        with reserve_memory(pending, label="session dense design"):
+            return np.column_stack(columns) if columns else np.empty((nrows, 0))
 
     def _ensure_within(self, entry: _FECacheEntry, columns: Iterable[str]) -> None:
         cols = tuple(dict.fromkeys(map(str, columns)))
@@ -623,10 +763,13 @@ class _LinearHDFESessionBase:
                 sig = self._column_signature(name)
             if name in entry.within and (not validate or entry.variable_signatures.get(name) == sig):
                 continue
-            raw = full if bool(np.all(entry.mask)) else full[entry.mask]
+            raw = self._active_numeric(entry, full)
             entry.raw_active[name] = raw
             if self._persistent_store is not None and entry_sig is not None and sig is not None:
-                cached = self._persistent_store.load_within(entry_sig, name, sig, len(raw))
+                pending = len(raw) * 8
+                self._trim_cache(pending_bytes=pending, protect=entry)
+                with reserve_memory(pending, label="session persistent within column"):
+                    cached = self._persistent_store.load_within(entry_sig, name, sig, len(raw))
                 if cached is not None:
                     entry.within[name] = cached
                     entry.variable_signatures[name] = sig
@@ -634,27 +777,32 @@ class _LinearHDFESessionBase:
             missing.append(name)
         if not missing:
             return
-        block = np.column_stack([entry.raw_active[n] for n in missing])
-        if entry.absorber is None:
-            within, info = block.copy(), None
-        else:
-            within, info = _residualize_blocks(
-                entry.absorber, block, entry.pool_size, entry.memory_budget_mb,
-                adaptive_auto=(self.hdfe.solver == "auto"),
-            )
-            _check_absorption(info, allow_nonconverged=False)
-        entry.last_info = info
-        entry.residualize_calls += 1
-        entry.residualized_columns += len(missing)
-        for j, name in enumerate(missing):
-            entry.within[name] = within[:, j].copy()
-            sig = self._column_signature(name) if self._persistent_store is not None else self._raw_signatures.get(name)
-            if self.execution.cache_validation == "signature" or self._persistent_store is not None:
-                entry.variable_signatures[name] = sig
-            if self._persistent_store is not None and entry_sig is not None and sig is not None:
-                self._persistent_store.save_within(entry_sig, name, sig, entry.within[name])
+        pending = int(np.sum(entry.mask)) * len(missing) * 8 * 3
+        self._trim_cache(pending_bytes=pending, protect=entry)
+        with reserve_memory(pending, label="session within block and retained columns"):
+            block = np.column_stack([entry.raw_active[n] for n in missing])
+            if entry.absorber is None:
+                within, info = block.copy(), None
+            else:
+                within, info = _residualize_blocks(
+                    entry.absorber, block, entry.pool_size, entry.memory_budget_mb,
+                    adaptive_auto=(self.hdfe.solver == "auto"),
+                )
+                _check_absorption(info, allow_nonconverged=False)
+            entry.last_info = info
+            entry.residualize_calls += 1
+            entry.residualized_columns += len(missing)
+            for j, name in enumerate(missing):
+                entry.within[name] = within[:, j].copy()
+                sig = self._column_signature(name) if self._persistent_store is not None else self._raw_signatures.get(name)
+                if self.execution.cache_validation == "signature" or self._persistent_store is not None:
+                    entry.variable_signatures[name] = sig
+                if self._persistent_store is not None and entry_sig is not None and sig is not None:
+                    self._persistent_store.save_within(entry_sig, name, sig, entry.within[name])
 
     @error_boundary("session")
+    @managed_execution
+    @_session_cache_policy
     def prewarm(self, *, absorb, columns: Sequence[str]) -> None:
         self._ensure_source_specs([{"x": tuple(columns), "absorb": absorb}])
         self._start_validation_round()
@@ -666,6 +814,8 @@ class OLSHDFESession(_LinearHDFESessionBase):
     """Repeated OLS-HDFE specifications with exact FE/sample-aware caching."""
 
     @error_boundary("session")
+    @managed_execution
+    @_session_cache_policy
     def fit(self, *, y: str, x=(), absorb=()) -> RegressionResult:
         spec = OLSSpec(str(y), tuple(map(str, _as_tuple(x))), _normalize_absorb(absorb))
         self._ensure_source_specs([{"y": spec.y, "x": spec.x, "absorb": spec.absorb}])
@@ -678,6 +828,8 @@ class OLSHDFESession(_LinearHDFESessionBase):
         return self.fit_many(specs)
 
     @error_boundary("session")
+    @managed_execution
+    @_session_cache_policy
     def fit_many(self, specs: Sequence[OLSSpec | Mapping]) -> list[RegressionResult]:
         parsed = [OLSSpec.from_any(s) for s in specs]
         self._ensure_source_specs([{"y": s.y, "x": s.x, "absorb": s.absorb} for s in parsed])
@@ -727,10 +879,10 @@ class OLSHDFESession(_LinearHDFESessionBase):
         columns = []
         for name in names:
             full = self._full_numeric(name)
-            raw = full if bool(np.all(entry.mask)) else full[entry.mask]
+            raw = self._active_numeric(entry, full)
             entry.raw_active[name] = raw
             columns.append(raw)
-        return np.column_stack(columns) if columns else np.empty((int(entry.mask.sum()), 0))
+        return self._stack_columns(entry, columns)
 
     def _basis(self, entry, X, *, gram=None):
         if len(entry.groups) > 1 and entry.solver_selection["resolved"] == "map":
@@ -761,10 +913,10 @@ class OLSHDFESession(_LinearHDFESessionBase):
             conditioning = {"basis": "symmetric_weak_direction_scaling", "stage": "before_absorption",
                             "condition": basis[3], "tolerance": min(self.hdfe.tolerance, 1e-11)}
         else:
-            if not prewarmed:
+            if not prewarmed or any(name not in entry.within for name in (spec.y, *spec.x)):
                 self._ensure_within(entry, (spec.y, *spec.x))
             yw = entry.within[spec.y]
-            Xw0 = np.column_stack([entry.within[n] for n in spec.x]) if spec.x else X0.copy()
+            Xw0 = self._stack_columns(entry, [entry.within[n] for n in spec.x])
             info = entry.last_info
         within_gram = _weighted_gram(Xw0, entry.weights)
         Xw, Xactive, collin_plan = _resolve_ols_columns(
@@ -881,6 +1033,8 @@ class IVHDFESession(_LinearHDFESessionBase):
         self.on_stage = on_stage
 
     @error_boundary("session")
+    @managed_execution
+    @_session_cache_policy
     def fit(self, *, y: str, exog=(), endog=(), instruments=(), absorb=()) -> RegressionResult:
         spec = IVSpec(
             str(y), tuple(map(str, _as_tuple(exog))), tuple(map(str, _as_tuple(endog))),
@@ -894,6 +1048,8 @@ class IVHDFESession(_LinearHDFESessionBase):
         return self._fit_spec(spec)
 
     @error_boundary("session")
+    @managed_execution
+    @_session_cache_policy
     def fit_many(self, specs: Sequence[IVSpec | Mapping]) -> list[RegressionResult]:
         parsed = [IVSpec.from_any(s) for s in specs]
         self._ensure_source_specs([{
@@ -955,7 +1111,7 @@ class IVHDFESession(_LinearHDFESessionBase):
                 return cached
         entry = self._get_entry(spec.absorb)
         cols = (spec.y, *spec.exog, *spec.endog, *spec.instruments)
-        if not prewarmed:
+        if not prewarmed or any(name not in entry.within for name in cols):
             self._ensure_within(entry, cols)
         yw = entry.within[spec.y]
         y1 = entry.raw_active[spec.y]
@@ -964,8 +1120,8 @@ class IVHDFESession(_LinearHDFESessionBase):
             if not names:
                 return np.empty((len(yw), 0), dtype=np.float64), np.empty((len(yw), 0), dtype=np.float64)
             return (
-                np.column_stack([entry.within[n] for n in names]),
-                np.column_stack([entry.raw_active[n] for n in names]),
+                self._stack_columns(entry, [entry.within[n] for n in names]),
+                self._stack_columns(entry, [entry.raw_active[n] for n in names]),
             )
 
         Cw0, C0 = stack(spec.exog); Ew0, E0 = stack(spec.endog); Zw0, Z0 = stack(spec.instruments)

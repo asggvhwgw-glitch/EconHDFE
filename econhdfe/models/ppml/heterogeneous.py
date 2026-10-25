@@ -1,4 +1,5 @@
 from __future__ import annotations
+from ...planner.scheduler import managed_execution
 from ...compute.clusters import normalize_vce_clusters
 
 """Heterogeneous-specification PPML execution operators.
@@ -391,6 +392,7 @@ def _resource_block_projector(X: BlockDesign, plan: FEPlan, config: PPMLConfig, 
     )
 
 
+@managed_execution
 def fit_block_arrays(
     y,
     X: BlockDesign,

@@ -1,4 +1,5 @@
 from __future__ import annotations
+from ...planner.scheduler import managed_execution
 from ...compute.clusters import normalize_vce_clusters
 import math
 import numpy as np
@@ -71,6 +72,7 @@ def _prune_iv_columns(C, E, I, names_c, names_e, names_i, plan, weights, config,
     return C, E, I, names_c, names_e, names_i
 
 
+@managed_execution
 def fit_arrays(
     y, exog, endog, instruments, plan: FEPlan, *, offset, true_w, weight_kind="none", vce,
     clusters, exog_names, endog_names, instrument_names, config: IVPPMLConfig,
@@ -138,9 +140,13 @@ def fit_arrays(
         separation[idx0[sep.separated]] = True
         y1, C1, E1, I1, w1, off1 = y0[keep_sep], C0[keep_sep], E0[keep_sep], I0[keep_sep], w0[keep_sep], off0[keep_sep]
         p1 = p0.subset(keep_sep)
+        pre_projector = get_projector(
+            p1, engine=config.engine, method="map", execution=execution,
+            context=exec_context, cache=False,
+        )
         C1, E1, I1, exog_names, endog_names, instrument_names = _prune_iv_columns(
             C1, E1, I1, exog_names, endog_names, instrument_names,
-            p1, w1, config,
+            p1, w1, config, projector=pre_projector,
         )
     else:
         sample = active0.copy()
@@ -153,7 +159,7 @@ def fit_arrays(
     Cs, Es = Xs[:, :kc], Xs[:, kc:]
 
     solver_plan, canonicalization = p1.for_engine(config.engine)
-    projector = get_projector(
+    projector = pre_projector if solver_plan is p1 else get_projector(
         solver_plan, engine=config.engine, method="map", execution=execution,
         context=exec_context, cache=not bool(np.any(sep.separated)),
     )

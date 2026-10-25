@@ -3,6 +3,7 @@ from dataclasses import replace
 from time import perf_counter
 from ..errors import error_boundary
 from ..config import HDFEConfig, InferenceConfig, ExecutionConfig
+from ..planner.scheduler import managed_execution
 from ..data import materialize_model_data, EstimationSampleState
 from ..frontend.validate import require_numeric
 from ..frontend.roles import VariableRole
@@ -129,6 +130,7 @@ def _reghdfe_group_mode(
     acceleration="none", preconditioner="diagonal", backend="numpy",
     pool_size="auto", memory_budget_mb=512, dof_method="pairwise", keep_state=False,
     save_fe=False, time=None, panel=None, bandwidth=None, kernel="bartlett",
+    projection_backend="auto", absorb_threads="auto",
     incidence_backend="auto", collinearity="warn", collinear_tol=1e-10, omit=None,
 ):
     ylong = require_numeric(_col(data, y), name=str(y), role=VariableRole.OUTCOME, ndim=1)
@@ -145,6 +147,7 @@ def _reghdfe_group_mode(
         prep, method=method, transform=transform, backend=backend, acceleration=acceleration,
         preconditioner=preconditioner, tol=tol, max_iter=max_iter, aggregation=aggregation,
         incidence_backend=incidence_backend, memory_budget_mb=memory_budget_mb,
+        projection_backend=projection_backend, absorb_threads=absorb_threads,
     )
     block = np.column_stack([y1, X1])
     within, info = _residualize_blocks(absorber, block, pool_size, memory_budget_mb)
@@ -209,11 +212,12 @@ def _reghdfe_group_mode(
     )
 
 @error_boundary("ols")
+@managed_execution
 def olshdfe(
     data=None, *, y, x, absorb, weights=None, weight_type=None, cluster=None,
     vce=None, drop_singletons=True, tol=1e-8, max_iter=16_000,
     method="auto", transform="symmetric", acceleration="auto",
-    preconditioner="diagonal", backend="numpy", pool_size="auto", memory_budget_mb=512,
+    preconditioner="diagonal", backend="numpy", pool_size="auto", memory_budget_mb="auto",
     projection_backend="auto", absorb_threads="auto",
     dof_method="pairwise", keep_state=False, save_fe=False, time=None, panel=None, bandwidth=None, kernel="bartlett",
     group=None, individual=None, aggregation="mean", incidence_backend="auto",
@@ -272,6 +276,7 @@ def olshdfe(
             backend=backend, pool_size=pool_size, memory_budget_mb=memory_budget_mb,
             dof_method=dof_method, keep_state=keep_state, save_fe=save_fe, time=time, panel=panel,
             bandwidth=bandwidth, kernel=kernel, incidence_backend=incidence_backend,
+            projection_backend=projection_backend, absorb_threads=absorb_threads,
             collinearity=collinearity, collinear_tol=collinear_tol, omit=omit,
         )
         if not result.converged and not allow_nonconverged:
@@ -355,7 +360,7 @@ def olshdfe(
         block_projector = BlockWeightedFEProjector.from_design(
             X1, fe_exec_plan,
             engine="optimized" if method_resolved == "twoway" else "replica",
-            method="map", absorb_threads=absorb_threads,
+            method="map", max_iter=max_iter, absorb_threads=absorb_threads,
             projection_memory_budget_mb=memory_budget_mb,
         )
         wproj = np.ones(len(y1), dtype=np.float64) if w1 is None else w1

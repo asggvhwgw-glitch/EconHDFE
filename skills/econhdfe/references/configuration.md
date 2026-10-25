@@ -35,7 +35,7 @@ inference = InferenceConfig(
 
 execution = ExecutionConfig(
     threads="auto",
-    memory_budget_mb=512,
+    memory_budget_mb="auto",
     profile="off",       # off | summary | full
     cache="auto",        # auto | on | off
     cache_validation="signature",
@@ -114,7 +114,7 @@ res = olshdfe(
     projection_backend="auto",
     absorb_threads="auto",
     pool_size="auto",
-    memory_budget_mb=512,
+    memory_budget_mb="auto",
 )
 ```
 
@@ -133,6 +133,8 @@ Use `ExecutionConfig(profile="summary")` or the corresponding public profile con
 For repeated OLS/IV tables on the same DataFrame use `OLSHDFESession` / `IVHDFESession` so FE encoding and within-transformed columns can be reused.
 
 Keep `cache_validation="signature"` unless the caller guarantees the relevant data are immutable and measured profiling justifies disabling validation. Treat cache correctness as part of the econometric result, not merely an optimization detail.
+
+In-memory Session and reusable nonlinear-model caches are bounded by the execution budget and live headroom. Cold entries can be evicted and rebuilt; `cache="on"` does not bypass the limit. `Session.cache_info()` exposes retained array bytes, the current cache allowance and eviction counts. Eviction removes reusable references, not user data or the persistent on-disk store, and does not guarantee an immediate RSS decrease.
 
 ## Weights
 
@@ -191,4 +193,6 @@ Use `projection_resources["requested_threads"]` and `projection_resources["actua
 
 ## Automatic thread calibration
 
-With `ExecutionConfig(threads="auto")`, econhdfe calibrates a synthetic memory-bound kernel on the real runtime and caches the saturation-point thread count. Explicit integer threads override it. See `planner-feedback.md`.
+Public estimator and Session calls now use one shared resource scope. `ExecutionConfig(threads="auto", memory_budget_mb="auto")` uses effective CPU capacity and available host/container memory after a 12% total-memory reserve. An explicit memory or thread value caps that scope. Nested stages inherit it; resampling workers divide it. Independent root calls in the same process queue to avoid overlapping full-host budgets and BLAS-setting races.
+
+Automatic inner HDFE kernels now retain that policy through the managed scope: small problems use one thread, while large problems select the smallest measured thread count within 5% of the best synthetic bandwidth timing. The root CPU capacity stays available to independent outer tasks. Calibration runs before workspace reservations and fits available memory; reserved/parallel cold paths temporarily use one thread until a safe calibration boundary. Explicit integer threads bypass calibration. The shared scope is cooperative planning, not an OS RSS or GPU-memory limit; unknown-size file reads and third-party temporaries cannot all be bounded in advance. Inspect `resource_schedule` in linear `absorb_info` or nonlinear `diagnostics` for the admitted envelope.

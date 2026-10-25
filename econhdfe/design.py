@@ -601,6 +601,11 @@ def _prediction_terms(compiled: _CompiledStructuredDesign) -> tuple[DesignTermSt
 
 
 def _materialize_compiled_dense(data, compiled: _CompiledStructuredDesign) -> DesignMatrix:
+    from .compute.execution import _check_allocation_headroom
+
+    width = sum(int(np.count_nonzero(bp.active)) for bp in compiled.blueprints)
+    # Individual columns coexist with column_stack's final dense result.
+    _check_allocation_headroom(compiled.n_active * (16 * width + (24 if width else 0)))
     cols, names, origins = [], [], []
     for bp in compiled.blueprints:
         c, nm, org = _materialize(data, bp, compiled.row_mask, compiled.n_active)
@@ -625,6 +630,14 @@ def _materialize_compiled_block(data, compiled: _CompiledStructuredDesign, struc
         raise ValueError("block materialization requires a certified structural plan")
     if structure.nobs != compiled.n_active:
         raise ValueError("structural plan row count does not match compiled design")
+
+    from .compute.execution import _check_allocation_headroom
+
+    payload = sum(int(b.nrows) * len(b.columns) * 8 for b in structure.blocks)
+    indices = compiled.n_active * 16 + structure.ncols * 8
+    scratch = max((int(b.nrows) * (24 + 8 * len(compiled.blueprints))
+                   for b in structure.blocks), default=0)
+    _check_allocation_headroom(payload + indices + scratch)
 
     # Global output-column order exactly matches dense materialization order.
     sources = []
@@ -894,6 +907,12 @@ def build_design(
     if specs is None:
         return DesignMatrix(np.empty((n_active, 0), dtype=np.float64), (), ())
     if isinstance(specs, np.ndarray) and specs.ndim == 2:
+        from .compute.execution import _check_allocation_headroom
+
+        conversion_bytes = n_active * specs.shape[1] * 8 if specs.dtype != np.float64 else 0
+        subset_bytes = n_active * specs.shape[1] * specs.dtype.itemsize if row_mask is not None else 0
+        if conversion_bytes or subset_bytes:
+            _check_allocation_headroom(conversion_bytes + subset_bytes)
         a = np.asarray(specs if row_mask is None else specs[row_mask], dtype=np.float64)
         names = tuple(f"{prefix}{j+1}" for j in range(a.shape[1]))
         origins = tuple(ColumnOrigin(name, name, "array") for name in names)
@@ -915,6 +934,8 @@ def build_design(
         # Boolean column indexing always copies. Preserve the caller's dense
         # NumPy matrix when no column was actually omitted; this matters at
         # 10M+ rows where an unnecessary X copy can approach a gigabyte.
+        if not bool(np.all(keep)):
+            _check_allocation_headroom(n_active * int(np.count_nonzero(keep)) * 8)
         values = a if bool(np.all(keep)) else a[:, keep]
         prediction_terms = tuple(
             DesignTermState(

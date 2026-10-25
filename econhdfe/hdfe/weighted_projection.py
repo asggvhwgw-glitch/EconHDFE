@@ -1,9 +1,17 @@
 from __future__ import annotations
 
+from dataclasses import replace
 import numpy as np
 
 from .absorber import HDFEAbsorber
 from .two_way import TwoWayFEAbsorber
+from .projection import resolve_threads
+from .workspace import (
+    _absorption_workspace_cost, _absorption_build_cost, _absorption_pending_cost,
+)
+from ..planner import scheduler
+from ..compute.execution import _plan_workspace
+from ..errors import SpecificationError
 
 
 class WeightedFEProjector:
@@ -21,12 +29,14 @@ class WeightedFEProjector:
         *,
         engine: str,
         method: str = "map",
+        max_iter: int = 16_000,
         absorb_threads="auto",
         projection_memory_budget_mb: float = 512,
     ):
         self.groups = tuple(np.asarray(g, dtype=np.int32) for g in groups)
         self.engine = str(engine)
         self.method = str(method)
+        self.max_iter = int(max_iter)
         self.absorb_threads_requested = absorb_threads
         self.projection_memory_budget_mb = float(projection_memory_budget_mb)
         self._absorber = None
@@ -49,13 +59,14 @@ class WeightedFEProjector:
 
     def _build(self, weights, tol, kind: str):
         if kind == "twoway":
-            out = TwoWayFEAbsorber(self.groups, weights=weights, tol=tol)
+            out = TwoWayFEAbsorber(self.groups, weights=weights, tol=tol, max_iter=self.max_iter)
             out._configure_execution(absorb_threads=self.absorb_threads_requested)
             return out
         return HDFEAbsorber(
             self.groups,
             weights=weights,
             tol=tol,
+            max_iter=self.max_iter,
             method=self.method,
             transform="symmetric",
             acceleration="cg" if self.method == "map" else "none",
@@ -70,7 +81,13 @@ class WeightedFEProjector:
         kind = self._kind(w)
         absorber = self._absorbers.get(kind)
         if absorber is None:
-            absorber = self._build(w, tol, kind)
+            # Probe only at an unreserved planning boundary; construction below
+            # may use the cached decision while holding its memory claim.
+            resolve_threads(self.absorb_threads_requested, nobs=len(w))
+            with scheduler.reserve_memory(
+                _absorption_build_cost(self.groups, kind), label="weighted_fe_build",
+            ):
+                absorber = self._build(w, tol, kind)
             self._absorbers[kind] = absorber
         else:
             absorber.update_weights(w, tol=tol)
@@ -80,7 +97,54 @@ class WeightedFEProjector:
 
     def residualize(self, data, weights, *, tol, return_info=False, copy=True):
         absorber = self.prepare(weights, tol=tol)
-        return absorber.residualize(data, copy=copy, return_info=return_info)
+        source = np.asarray(data, dtype=np.float64)
+        one_dim = source.ndim == 1
+        matrix = source[:, None] if one_dim else source
+        with scheduler.reserve_memory(matrix.nbytes if copy else 0, label="weighted_fe_output"):
+            if copy:
+                matrix = matrix.copy()
+            resident, per_column = _absorption_workspace_cost(absorber)
+            plan = _plan_workspace(
+                nobs=absorber.nobs, ncols=matrix.shape[1], pool_size="auto",
+                memory_budget_mb=self.projection_memory_budget_mb,
+                requested_threads=self.absorb_threads_requested,
+                bytes_per_column=per_column, resident_solver_bytes=resident,
+            )
+            pending = _absorption_pending_cost(absorber)
+            allocation = scheduler.current_allocation()
+            if allocation is not None:
+                # Output reservations stay live through this loop. Planning
+                # must leave them and lazy topology room before choosing RHS
+                # width, rather than discovering the conflict at admission.
+                available = max(0, allocation.unreserved_memory_bytes() - pending)
+                cap = available // per_column
+                if cap < 1:
+                    raise SpecificationError(
+                        "No memory remains for one weighted projection column.",
+                        code="resource.memory", stage="execution",
+                        details={"available_bytes": available, "bytes_per_column": per_column},
+                    )
+                if cap < plan.pool_size:
+                    pool = 1 << (int(cap).bit_length() - 1)
+                    plan = replace(plan, pool_size=pool, mode="pooled_memory",
+                                   reason="bounded_by_shared_reservations")
+            with scheduler.reserve_memory(
+                plan.pool_size * per_column + pending, label="weighted_fe_scratch",
+            ):
+                infos = []
+                for lo in range(0, matrix.shape[1], plan.pool_size):
+                    hi = min(matrix.shape[1], lo + plan.pool_size)
+                    projected, info = absorber.residualize(
+                        matrix[:, lo:hi], copy=False, return_info=True,
+                        absorb_threads=plan.threads,
+                    )
+                    matrix[:, lo:hi] = projected
+                    infos.append(info)
+            output = matrix[:, 0] if one_dim else matrix
+            if return_info:
+                info = max(infos, key=lambda item: (not item.converged, item.iterations, item.max_update)) if infos else None
+                return output, info
+            return output
 
     @property
     def compiled(self) -> bool:

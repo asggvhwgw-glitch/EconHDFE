@@ -50,10 +50,11 @@
         "econhdfe/factorvars.py",
         "econhdfe/inference/__init__.py",
         "econhdfe/pipeline.py",
+        "econhdfe/session_cache.py",
         "econhdfe/sessions.py",
         "econhdfe/templates/__init__.py"
       ],
-      "module_count": 11
+      "module_count": 12
     },
     {
       "id": "frontend",
@@ -121,9 +122,10 @@
         "econhdfe/planner/contracts.py",
         "econhdfe/planner/core.py",
         "econhdfe/planner/report.py",
-        "econhdfe/planner/resources.py"
+        "econhdfe/planner/resources.py",
+        "econhdfe/planner/scheduler.py"
       ],
-      "module_count": 6
+      "module_count": 7
     },
     {
       "id": "contracts",
@@ -309,9 +311,10 @@
         "econhdfe/hdfe/specs.py",
         "econhdfe/hdfe/structure.py",
         "econhdfe/hdfe/two_way.py",
-        "econhdfe/hdfe/weighted_projection.py"
+        "econhdfe/hdfe/weighted_projection.py",
+        "econhdfe/hdfe/workspace.py"
       ],
-      "module_count": 23
+      "module_count": 24
     },
     {
       "id": "iv",
@@ -434,18 +437,28 @@
     {
       "source": "cluster_inference",
       "target": "hdfe",
-      "count": 2,
+      "count": 3,
       "examples": [
         "econhdfe.inference.cluster.wild → econhdfe.hdfe.absorber",
-        "econhdfe.inference.cluster.wild → econhdfe.hdfe.two_way"
+        "econhdfe.inference.cluster.wild → econhdfe.hdfe.two_way",
+        "econhdfe.inference.cluster.wild → econhdfe.hdfe.workspace"
+      ]
+    },
+    {
+      "source": "cluster_inference",
+      "target": "planner",
+      "count": 1,
+      "examples": [
+        "econhdfe.inference.cluster.wild → econhdfe.planner.scheduler"
       ]
     },
     {
       "source": "cluster_inference",
       "target": "resampling",
-      "count": 1,
+      "count": 2,
       "examples": [
-        "econhdfe.inference.cluster.wild → econhdfe.resampling.sampling"
+        "econhdfe.inference.cluster.wild → econhdfe.resampling.sampling",
+        "econhdfe.inference.cluster.wild → econhdfe.resampling.engine"
       ]
     },
     {
@@ -486,12 +499,22 @@
     },
     {
       "source": "compute",
-      "target": "planner",
-      "count": 3,
+      "target": "interface",
+      "count": 1,
       "examples": [
+        "econhdfe.compute.context → econhdfe.session_cache"
+      ]
+    },
+    {
+      "source": "compute",
+      "target": "planner",
+      "count": 6,
+      "examples": [
+        "econhdfe.compute.context → econhdfe.planner.resources",
+        "econhdfe.compute.context → econhdfe.planner.scheduler",
+        "econhdfe.compute.execution → econhdfe.planner.scheduler",
         "econhdfe.compute.execution → econhdfe.planner",
-        "econhdfe.compute.partitioned_lstsq → econhdfe.planner",
-        "econhdfe.compute.runtime → econhdfe.planner.resources"
+        "econhdfe.compute.partitioned_lstsq → econhdfe.planner"
       ]
     },
     {
@@ -504,8 +527,16 @@
     },
     {
       "source": "data",
+      "target": "compute",
+      "count": 1,
+      "examples": [
+        "econhdfe.data.dataset → econhdfe.compute.execution"
+      ]
+    },
+    {
+      "source": "data",
       "target": "contracts",
-      "count": 7,
+      "count": 8,
       "examples": [
         "econhdfe.data.dataset → econhdfe.errors",
         "econhdfe.data.encoding → econhdfe.errors",
@@ -526,8 +557,9 @@
     {
       "source": "data",
       "target": "planner",
-      "count": 1,
+      "count": 2,
       "examples": [
+        "econhdfe.data.dataset → econhdfe.planner",
         "econhdfe.data.planner → econhdfe.planner"
       ]
     },
@@ -560,7 +592,7 @@
     {
       "source": "hdfe",
       "target": "compute",
-      "count": 6,
+      "count": 7,
       "examples": [
         "econhdfe.effects.adapters → econhdfe.compute.encoding",
         "econhdfe.effects.diagnostics → econhdfe.compute.encoding",
@@ -572,7 +604,7 @@
     {
       "source": "hdfe",
       "target": "contracts",
-      "count": 5,
+      "count": 6,
       "examples": [
         "econhdfe.effects.diagnostics → econhdfe.errors",
         "econhdfe.effects.prediction → econhdfe.prediction",
@@ -592,10 +624,13 @@
     {
       "source": "hdfe",
       "target": "planner",
-      "count": 2,
+      "count": 5,
       "examples": [
+        "econhdfe.hdfe.block_projection → econhdfe.planner",
         "econhdfe.hdfe.projection → econhdfe.planner",
-        "econhdfe.hdfe.projection → econhdfe.planner.calibration"
+        "econhdfe.hdfe.projection → econhdfe.planner.calibration",
+        "econhdfe.hdfe.projection → econhdfe.planner.scheduler",
+        "econhdfe.hdfe.weighted_projection → econhdfe.planner"
       ]
     },
     {
@@ -609,12 +644,12 @@
     {
       "source": "interface",
       "target": "compute",
-      "count": 12,
+      "count": 15,
       "examples": [
         "econhdfe.collinearity → econhdfe.compute.block_design",
+        "econhdfe.design → econhdfe.compute.execution",
         "econhdfe.design → econhdfe.compute.block_design",
         "econhdfe.design → econhdfe.compute.design_plan",
-        "econhdfe.design → econhdfe.compute.execution",
         "econhdfe.pipeline → econhdfe.compute.encoding"
       ]
     },
@@ -655,7 +690,7 @@
     {
       "source": "interface",
       "target": "hdfe",
-      "count": 11,
+      "count": 12,
       "examples": [
         "econhdfe.pipeline → econhdfe.hdfe.absorber",
         "econhdfe.pipeline → econhdfe.hdfe.two_way",
@@ -682,6 +717,16 @@
         "econhdfe.api → econhdfe.models.ols",
         "econhdfe.bootstrap → econhdfe.models.ols_bootstrap",
         "econhdfe.sessions → econhdfe.models.ols"
+      ]
+    },
+    {
+      "source": "interface",
+      "target": "planner",
+      "count": 3,
+      "examples": [
+        "econhdfe.pipeline → econhdfe.planner",
+        "econhdfe.sessions → econhdfe.planner.scheduler",
+        "econhdfe.sessions → econhdfe.planner.resources"
       ]
     },
     {
@@ -800,6 +845,14 @@
       ]
     },
     {
+      "source": "linear_iv",
+      "target": "planner",
+      "count": 1,
+      "examples": [
+        "econhdfe.models.linear_iv.api → econhdfe.planner.scheduler"
+      ]
+    },
+    {
       "source": "model_shared",
       "target": "contracts",
       "count": 4,
@@ -860,7 +913,7 @@
     {
       "source": "ols",
       "target": "hdfe",
-      "count": 5,
+      "count": 6,
       "examples": [
         "econhdfe.models.ols → econhdfe.hdfe.dof",
         "econhdfe.models.ols → econhdfe.hdfe.block_projection",
@@ -881,10 +934,29 @@
     },
     {
       "source": "ols",
-      "target": "resampling",
-      "count": 1,
+      "target": "planner",
+      "count": 2,
       "examples": [
-        "econhdfe.models.ols_bootstrap → econhdfe.resampling.sampling"
+        "econhdfe.models.ols → econhdfe.planner.scheduler",
+        "econhdfe.models.ols_bootstrap → econhdfe.planner.scheduler"
+      ]
+    },
+    {
+      "source": "ols",
+      "target": "resampling",
+      "count": 2,
+      "examples": [
+        "econhdfe.models.ols_bootstrap → econhdfe.resampling.sampling",
+        "econhdfe.models.ols_bootstrap → econhdfe.resampling.engine"
+      ]
+    },
+    {
+      "source": "planner",
+      "target": "contracts",
+      "count": 2,
+      "examples": [
+        "econhdfe.planner.scheduler → econhdfe.config",
+        "econhdfe.planner.scheduler → econhdfe.errors"
       ]
     },
     {
@@ -957,6 +1029,17 @@
         "econhdfe.models.ppml.api → econhdfe.models.poisson",
         "econhdfe.models.ppml.heterogeneous → econhdfe.models.poisson",
         "econhdfe.models.ppml.irls → econhdfe.models.poisson"
+      ]
+    },
+    {
+      "source": "ppml",
+      "target": "planner",
+      "count": 4,
+      "examples": [
+        "econhdfe.models.ppml.api → econhdfe.planner.scheduler",
+        "econhdfe.models.ppml.estimator → econhdfe.planner.scheduler",
+        "econhdfe.models.ppml.execution → econhdfe.planner.scheduler",
+        "econhdfe.models.ppml.heterogeneous → econhdfe.planner.scheduler"
       ]
     },
     {
@@ -1037,12 +1120,23 @@
     },
     {
       "source": "ppml_iv",
+      "target": "planner",
+      "count": 3,
+      "examples": [
+        "econhdfe.models.ppml_iv.api → econhdfe.planner.scheduler",
+        "econhdfe.models.ppml_iv.estimator → econhdfe.planner.scheduler",
+        "econhdfe.models.ppml_iv.heterogeneous → econhdfe.planner.scheduler"
+      ]
+    },
+    {
+      "source": "ppml_iv",
       "target": "ppml",
-      "count": 4,
+      "count": 5,
       "examples": [
         "econhdfe.models.ppml_iv.config → econhdfe.models.ppml.config",
         "econhdfe.models.ppml_iv.estimator → econhdfe.models.ppml.separation",
         "econhdfe.models.ppml_iv.estimator → econhdfe.models.ppml.execution",
+        "econhdfe.models.ppml_iv.heterogeneous → econhdfe.models.ppml.execution",
         "econhdfe.models.ppml_iv.heterogeneous → econhdfe.models.ppml.heterogeneous"
       ]
     },
@@ -1061,6 +1155,14 @@
       "examples": [
         "econhdfe.resampling.engine → econhdfe.errors",
         "econhdfe.resampling.sampling → econhdfe.errors"
+      ]
+    },
+    {
+      "source": "resampling",
+      "target": "planner",
+      "count": 1,
+      "examples": [
+        "econhdfe.resampling.engine → econhdfe.planner.scheduler"
       ]
     }
   ],
@@ -1362,6 +1464,30 @@
       "reexport_surface": false
     },
     {
+      "source_module": "econhdfe.compute.context",
+      "source_path": "econhdfe/compute/context.py",
+      "source_group": "compute",
+      "target_module": "econhdfe.planner.resources",
+      "target_group": "planner",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.compute.context",
+      "source_path": "econhdfe/compute/context.py",
+      "source_group": "compute",
+      "target_module": "econhdfe.planner.scheduler",
+      "target_group": "planner",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.compute.context",
+      "source_path": "econhdfe/compute/context.py",
+      "source_group": "compute",
+      "target_module": "econhdfe.session_cache",
+      "target_group": "interface",
+      "reexport_surface": false
+    },
+    {
       "source_module": "econhdfe.compute.design_ops",
       "source_path": "econhdfe/compute/design_ops.py",
       "source_group": "compute",
@@ -1375,6 +1501,14 @@
       "source_group": "compute",
       "target_module": "econhdfe.errors",
       "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.compute.execution",
+      "source_path": "econhdfe/compute/execution.py",
+      "source_group": "compute",
+      "target_module": "econhdfe.planner.scheduler",
+      "target_group": "planner",
       "reexport_surface": false
     },
     {
@@ -1594,6 +1728,22 @@
       "reexport_surface": false
     },
     {
+      "source_module": "econhdfe.data.dataset",
+      "source_path": "econhdfe/data/dataset.py",
+      "source_group": "data",
+      "target_module": "econhdfe.compute.execution",
+      "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.data.dataset",
+      "source_path": "econhdfe/data/dataset.py",
+      "source_group": "data",
+      "target_module": "econhdfe.planner",
+      "target_group": "planner",
+      "reexport_surface": false
+    },
+    {
       "source_module": "econhdfe.data.encoding",
       "source_path": "econhdfe/data/encoding.py",
       "source_group": "data",
@@ -1669,6 +1819,14 @@
       "source_module": "econhdfe.data.planner",
       "source_path": "econhdfe/data/planner.py",
       "source_group": "data",
+      "target_module": "econhdfe.errors",
+      "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.data.planner",
+      "source_path": "econhdfe/data/planner.py",
+      "source_group": "data",
       "target_module": "econhdfe.data.source",
       "target_group": "data",
       "reexport_surface": false
@@ -1733,7 +1891,23 @@
       "source_module": "econhdfe.design",
       "source_path": "econhdfe/design.py",
       "source_group": "interface",
+      "target_module": "econhdfe.compute.execution",
+      "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.design",
+      "source_path": "econhdfe/design.py",
+      "source_group": "interface",
       "target_module": "econhdfe.compute.block_design",
+      "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.design",
+      "source_path": "econhdfe/design.py",
+      "source_group": "interface",
+      "target_module": "econhdfe.compute.execution",
       "target_group": "compute",
       "reexport_surface": false
     },
@@ -1758,6 +1932,14 @@
       "source_path": "econhdfe/design.py",
       "source_group": "interface",
       "target_module": "econhdfe.compute.design_plan",
+      "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.design",
+      "source_path": "econhdfe/design.py",
+      "source_group": "interface",
+      "target_module": "econhdfe.compute.execution",
       "target_group": "compute",
       "reexport_surface": false
     },
@@ -2210,6 +2392,22 @@
       "reexport_surface": false
     },
     {
+      "source_module": "econhdfe.hdfe.block_projection",
+      "source_path": "econhdfe/hdfe/block_projection.py",
+      "source_group": "hdfe",
+      "target_module": "econhdfe.hdfe.projection",
+      "target_group": "hdfe",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.hdfe.block_projection",
+      "source_path": "econhdfe/hdfe/block_projection.py",
+      "source_group": "hdfe",
+      "target_module": "econhdfe.planner",
+      "target_group": "planner",
+      "reexport_surface": false
+    },
+    {
       "source_module": "econhdfe.hdfe.dof",
       "source_path": "econhdfe/hdfe/dof.py",
       "source_group": "hdfe",
@@ -2338,6 +2536,14 @@
       "reexport_surface": false
     },
     {
+      "source_module": "econhdfe.hdfe.projection",
+      "source_path": "econhdfe/hdfe/projection.py",
+      "source_group": "hdfe",
+      "target_module": "econhdfe.planner.scheduler",
+      "target_group": "planner",
+      "reexport_surface": false
+    },
+    {
       "source_module": "econhdfe.hdfe.rank",
       "source_path": "econhdfe/hdfe/rank.py",
       "source_group": "hdfe",
@@ -2374,6 +2580,54 @@
       "source_path": "econhdfe/hdfe/weighted_projection.py",
       "source_group": "hdfe",
       "target_module": "econhdfe.hdfe.two_way",
+      "target_group": "hdfe",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.hdfe.weighted_projection",
+      "source_path": "econhdfe/hdfe/weighted_projection.py",
+      "source_group": "hdfe",
+      "target_module": "econhdfe.hdfe.projection",
+      "target_group": "hdfe",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.hdfe.weighted_projection",
+      "source_path": "econhdfe/hdfe/weighted_projection.py",
+      "source_group": "hdfe",
+      "target_module": "econhdfe.hdfe.workspace",
+      "target_group": "hdfe",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.hdfe.weighted_projection",
+      "source_path": "econhdfe/hdfe/weighted_projection.py",
+      "source_group": "hdfe",
+      "target_module": "econhdfe.planner",
+      "target_group": "planner",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.hdfe.weighted_projection",
+      "source_path": "econhdfe/hdfe/weighted_projection.py",
+      "source_group": "hdfe",
+      "target_module": "econhdfe.compute.execution",
+      "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.hdfe.weighted_projection",
+      "source_path": "econhdfe/hdfe/weighted_projection.py",
+      "source_group": "hdfe",
+      "target_module": "econhdfe.errors",
+      "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.hdfe.workspace",
+      "source_path": "econhdfe/hdfe/workspace.py",
+      "source_group": "hdfe",
+      "target_module": "econhdfe.hdfe.projection",
       "target_group": "hdfe",
       "reexport_surface": false
     },
@@ -2469,8 +2723,32 @@
       "source_module": "econhdfe.inference.cluster.wild",
       "source_path": "econhdfe/inference/cluster/wild.py",
       "source_group": "cluster_inference",
+      "target_module": "econhdfe.hdfe.workspace",
+      "target_group": "hdfe",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.inference.cluster.wild",
+      "source_path": "econhdfe/inference/cluster/wild.py",
+      "source_group": "cluster_inference",
       "target_module": "econhdfe.resampling.sampling",
       "target_group": "resampling",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.inference.cluster.wild",
+      "source_path": "econhdfe/inference/cluster/wild.py",
+      "source_group": "cluster_inference",
+      "target_module": "econhdfe.resampling.engine",
+      "target_group": "resampling",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.inference.cluster.wild",
+      "source_path": "econhdfe/inference/cluster/wild.py",
+      "source_group": "cluster_inference",
+      "target_module": "econhdfe.planner.scheduler",
+      "target_group": "planner",
       "reexport_surface": false
     },
     {
@@ -2599,6 +2877,14 @@
       "source_group": "linear_iv",
       "target_module": "econhdfe.config",
       "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.linear_iv.api",
+      "source_path": "econhdfe/models/linear_iv/api.py",
+      "source_group": "linear_iv",
+      "target_module": "econhdfe.planner.scheduler",
+      "target_group": "planner",
       "reexport_surface": false
     },
     {
@@ -2957,6 +3243,14 @@
       "source_module": "econhdfe.models.ols",
       "source_path": "econhdfe/models/ols.py",
       "source_group": "ols",
+      "target_module": "econhdfe.planner.scheduler",
+      "target_group": "planner",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ols",
+      "source_path": "econhdfe/models/ols.py",
+      "source_group": "ols",
       "target_module": "econhdfe.data",
       "target_group": "data",
       "reexport_surface": false
@@ -3141,8 +3435,32 @@
       "source_module": "econhdfe.models.ols_bootstrap",
       "source_path": "econhdfe/models/ols_bootstrap.py",
       "source_group": "ols",
+      "target_module": "econhdfe.hdfe.workspace",
+      "target_group": "hdfe",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ols_bootstrap",
+      "source_path": "econhdfe/models/ols_bootstrap.py",
+      "source_group": "ols",
       "target_module": "econhdfe.resampling.sampling",
       "target_group": "resampling",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ols_bootstrap",
+      "source_path": "econhdfe/models/ols_bootstrap.py",
+      "source_group": "ols",
+      "target_module": "econhdfe.resampling.engine",
+      "target_group": "resampling",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ols_bootstrap",
+      "source_path": "econhdfe/models/ols_bootstrap.py",
+      "source_group": "ols",
+      "target_module": "econhdfe.planner.scheduler",
+      "target_group": "planner",
       "reexport_surface": false
     },
     {
@@ -3245,6 +3563,14 @@
       "source_module": "econhdfe.models.ppml.api",
       "source_path": "econhdfe/models/ppml/api.py",
       "source_group": "ppml",
+      "target_module": "econhdfe.planner.scheduler",
+      "target_group": "planner",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ppml.api",
+      "source_path": "econhdfe/models/ppml/api.py",
+      "source_group": "ppml",
       "target_module": "econhdfe.frontend.validate",
       "target_group": "frontend",
       "reexport_surface": false
@@ -3319,6 +3645,14 @@
       "source_group": "ppml",
       "target_module": "econhdfe.errors",
       "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ppml.estimator",
+      "source_path": "econhdfe/models/ppml/estimator.py",
+      "source_group": "ppml",
+      "target_module": "econhdfe.planner.scheduler",
+      "target_group": "planner",
       "reexport_surface": false
     },
     {
@@ -3445,6 +3779,14 @@
       "source_module": "econhdfe.models.ppml.execution",
       "source_path": "econhdfe/models/ppml/execution.py",
       "source_group": "ppml",
+      "target_module": "econhdfe.planner.scheduler",
+      "target_group": "planner",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ppml.execution",
+      "source_path": "econhdfe/models/ppml/execution.py",
+      "source_group": "ppml",
       "target_module": "econhdfe.compute.context",
       "target_group": "compute",
       "reexport_surface": false
@@ -3463,6 +3805,14 @@
       "source_group": "ppml",
       "target_module": "econhdfe.hdfe.weighted_projection",
       "target_group": "hdfe",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ppml.heterogeneous",
+      "source_path": "econhdfe/models/ppml/heterogeneous.py",
+      "source_group": "ppml",
+      "target_module": "econhdfe.planner.scheduler",
+      "target_group": "planner",
       "reexport_surface": false
     },
     {
@@ -3901,6 +4251,14 @@
       "source_module": "econhdfe.models.ppml_iv.api",
       "source_path": "econhdfe/models/ppml_iv/api.py",
       "source_group": "ppml_iv",
+      "target_module": "econhdfe.planner.scheduler",
+      "target_group": "planner",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ppml_iv.api",
+      "source_path": "econhdfe/models/ppml_iv/api.py",
+      "source_group": "ppml_iv",
       "target_module": "econhdfe.frontend.validate",
       "target_group": "frontend",
       "reexport_surface": false
@@ -4053,6 +4411,14 @@
       "source_module": "econhdfe.models.ppml_iv.estimator",
       "source_path": "econhdfe/models/ppml_iv/estimator.py",
       "source_group": "ppml_iv",
+      "target_module": "econhdfe.planner.scheduler",
+      "target_group": "planner",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ppml_iv.estimator",
+      "source_path": "econhdfe/models/ppml_iv/estimator.py",
+      "source_group": "ppml_iv",
       "target_module": "econhdfe.compute.clusters",
       "target_group": "compute",
       "reexport_surface": false
@@ -4181,6 +4547,14 @@
       "source_module": "econhdfe.models.ppml_iv.heterogeneous",
       "source_path": "econhdfe/models/ppml_iv/heterogeneous.py",
       "source_group": "ppml_iv",
+      "target_module": "econhdfe.planner.scheduler",
+      "target_group": "planner",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ppml_iv.heterogeneous",
+      "source_path": "econhdfe/models/ppml_iv/heterogeneous.py",
+      "source_group": "ppml_iv",
       "target_module": "econhdfe.collinearity",
       "target_group": "interface",
       "reexport_surface": false
@@ -4279,6 +4653,14 @@
       "source_group": "ppml_iv",
       "target_module": "econhdfe.models.poisson",
       "target_group": "model_shared",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ppml_iv.heterogeneous",
+      "source_path": "econhdfe/models/ppml_iv/heterogeneous.py",
+      "source_group": "ppml_iv",
+      "target_module": "econhdfe.models.ppml.execution",
+      "target_group": "ppml",
       "reexport_surface": false
     },
     {
@@ -4525,6 +4907,22 @@
       "source_module": "econhdfe.pipeline",
       "source_path": "econhdfe/pipeline.py",
       "source_group": "interface",
+      "target_module": "econhdfe.hdfe.workspace",
+      "target_group": "hdfe",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.pipeline",
+      "source_path": "econhdfe/pipeline.py",
+      "source_group": "interface",
+      "target_module": "econhdfe.planner",
+      "target_group": "planner",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.pipeline",
+      "source_path": "econhdfe/pipeline.py",
+      "source_group": "interface",
       "target_module": "econhdfe.compute.weights",
       "target_group": "compute",
       "reexport_surface": false
@@ -4594,6 +4992,46 @@
       "reexport_surface": false
     },
     {
+      "source_module": "econhdfe.planner.calibration",
+      "source_path": "econhdfe/planner/calibration.py",
+      "source_group": "planner",
+      "target_module": "econhdfe.planner.scheduler",
+      "target_group": "planner",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.planner.calibration",
+      "source_path": "econhdfe/planner/calibration.py",
+      "source_group": "planner",
+      "target_module": "econhdfe.planner.scheduler",
+      "target_group": "planner",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.planner.calibration",
+      "source_path": "econhdfe/planner/calibration.py",
+      "source_group": "planner",
+      "target_module": "econhdfe.planner.scheduler",
+      "target_group": "planner",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.planner.calibration",
+      "source_path": "econhdfe/planner/calibration.py",
+      "source_group": "planner",
+      "target_module": "econhdfe.planner.scheduler",
+      "target_group": "planner",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.planner.calibration",
+      "source_path": "econhdfe/planner/calibration.py",
+      "source_group": "planner",
+      "target_module": "econhdfe.planner.scheduler",
+      "target_group": "planner",
+      "reexport_surface": false
+    },
+    {
       "source_module": "econhdfe.planner.core",
       "source_path": "econhdfe/planner/core.py",
       "source_group": "planner",
@@ -4614,6 +5052,14 @@
       "source_path": "econhdfe/planner/core.py",
       "source_group": "planner",
       "target_module": "econhdfe.planner.calibration",
+      "target_group": "planner",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.planner.core",
+      "source_path": "econhdfe/planner/core.py",
+      "source_group": "planner",
+      "target_module": "econhdfe.planner.scheduler",
       "target_group": "planner",
       "reexport_surface": false
     },
@@ -4647,6 +5093,30 @@
       "source_group": "planner",
       "target_module": "econhdfe",
       "target_group": "interface",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.planner.scheduler",
+      "source_path": "econhdfe/planner/scheduler.py",
+      "source_group": "planner",
+      "target_module": "econhdfe.config",
+      "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.planner.scheduler",
+      "source_path": "econhdfe/planner/scheduler.py",
+      "source_group": "planner",
+      "target_module": "econhdfe.errors",
+      "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.planner.scheduler",
+      "source_path": "econhdfe/planner/scheduler.py",
+      "source_group": "planner",
+      "target_module": "econhdfe.planner.resources",
+      "target_group": "planner",
       "reexport_surface": false
     },
     {
@@ -4687,6 +5157,14 @@
       "source_group": "resampling",
       "target_module": "econhdfe.errors",
       "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.resampling.engine",
+      "source_path": "econhdfe/resampling/engine.py",
+      "source_group": "resampling",
+      "target_module": "econhdfe.planner.scheduler",
+      "target_group": "planner",
       "reexport_surface": false
     },
     {
@@ -4751,6 +5229,30 @@
       "source_group": "interface",
       "target_module": "econhdfe.config",
       "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.sessions",
+      "source_path": "econhdfe/sessions.py",
+      "source_group": "interface",
+      "target_module": "econhdfe.planner.scheduler",
+      "target_group": "planner",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.sessions",
+      "source_path": "econhdfe/sessions.py",
+      "source_group": "interface",
+      "target_module": "econhdfe.planner.resources",
+      "target_group": "planner",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.sessions",
+      "source_path": "econhdfe/sessions.py",
+      "source_group": "interface",
+      "target_module": "econhdfe.session_cache",
+      "target_group": "interface",
       "reexport_surface": false
     },
     {
@@ -5549,8 +6051,8 @@
   "repo_areas": [
     {
       "name": "econhdfe",
-      "files": 128,
-      "python_files": 126,
+      "files": 131,
+      "python_files": 129,
       "markdown_files": 2
     },
     {
@@ -5561,8 +6063,8 @@
     },
     {
       "name": "tests",
-      "files": 65,
-      "python_files": 65,
+      "files": 81,
+      "python_files": 81,
       "markdown_files": 0
     },
     {
