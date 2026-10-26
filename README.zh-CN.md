@@ -244,7 +244,7 @@ $$\mathrm{DoF}_{\mathrm{FE}} = \mathrm{rank}(D_{\mathrm{FE}}).$$
 | 重复规格 | 可复用的 OLS 和 linear-IV session，并带 FE/sample-aware invalidation |
 | Post-estimation | 论文结果输出、线性组合/Wald、分块 OLS/IV 预测，以及显式保存的分类 FE（0.7.0） |
 | Execution | projected data access、memory budgets、structured representations、bounded parallelism、automatic HDFE thread selection |
-| Compatibility | `reghdfe`、`ivreghdfe` 与 legacy `pyreghdfe` 入口 |
+| Compatibility | `reghdfe` 与 `ivreghdfe` alias |
 | Agent interface | 项目原生 `econhdfe` Skill，用于 agent-driven empirical 与 development workflow |
 
 ## 验证
@@ -299,14 +299,13 @@ CI 覆盖 Linux、Windows 和 macOS，以及支持的 Python 版本和可行的�
 from econhdfe import olshdfe, ivhdfe, ppmlhdfe, ivppmlhdfe
 ```
 
-同时保留兼容入口：
+同时保留 Stata 风格 alias：
 
 ```python
 from econhdfe import reghdfe, ivreghdfe
-import pyreghdfe
 ```
 
-这些 alias 用于降低迁移和互操作成本，并不表示所有 Stata syntax 或 upstream edge case 都已经完成独立外部认证。
+旧 `pyreghdfe` 命名空间已于 0.9.0 移除；请把 `pyreghdfe` 导入改为 `econhdfe`（见[迁移说明](docs/release/migration.md)）。这些 alias 用于降低迁移和互操作成本，并不表示所有 Stata syntax 或 upstream edge case 都已经完成独立外部认证。
 
 ## 文档
 

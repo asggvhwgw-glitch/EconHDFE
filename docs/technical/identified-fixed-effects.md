@@ -109,6 +109,16 @@ The package deliberately does **not** search for a maximal identified subspace i
 
 Recursive singleton pruning removes observations/levels that provide no usable support under the estimator's FE geometry.
 
+Since 0.9.0 the sample rule of each estimator follows its Stata upstream (all are iterated to a fixed point over every FE):
+
+| Estimator | First stage | After separation trims |
+|---|---|---|
+| OLS / linear IV (`reghdfe`, `ivreghdfe`), standard and `group()` FEs | level degree = row count; fweight: frequency mass (a one-row level with `fw>1` is kept) | — |
+| PPML (`ppmlhdfe`) | row count, user weights ignored; with `"fe"` in `separation`, levels with zero outcome sum are removed in the **same** fixed point and counted as singletons | after simplex, ReLU or IRLS-mu trims, newly created singletons are pruned and added to `n_singletons` |
+| IV-PPML (`ivppmlhdfe`) | as PPML | after simplex/ReLU trims, new singletons are pruned (fweight: frequency mass) and counted in `n_separated`; mu-separated rows stay in the sample |
+
+Consequently `nobs_full = nobs + n_singletons + n_separated` uses upstream counting: rows removed by FE-only separation are reported as singletons, and `separation_by_method["fe"]` records how many of them a pure singleton pass would have kept.
+
 For linear adapters, full raw categorical groups can be supplied even when the fitted result was estimated after singleton removal. The adapter reconstructs the same recursive keep mask using the shared HDFE singleton algorithm and cross-checks both the dropped count and final sample size before recovery.
 
 Removed levels are not assigned artificial FE coefficients. Surviving identified components remain recoverable.

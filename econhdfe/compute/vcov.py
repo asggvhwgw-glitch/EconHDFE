@@ -8,6 +8,34 @@ from .kernels import hac_meat, driscoll_kraay_meat
 from .block_design import BlockDesign
 
 
+IID_VCE_KINDS = ("iid", "unadjusted", "homoskedastic")
+ROBUST_VCE_KINDS = ("robust", "hc1", "heteroskedastic")
+# VCE names served by the block-native linear paths; "" is an unset VCE.
+BLOCK_VCE_KINDS = ("", *IID_VCE_KINDS, *ROBUST_VCE_KINDS, "cluster")
+
+
+def normalize_vce(vce, default=None):
+    """Lower-case VCE name with hyphens as underscores; ``None`` gives ``default``.
+
+    Callers keep their own unset convention ("iid", "model", "robust", "").
+    """
+    if vce is None:
+        return default
+    return str(vce).lower().replace("-", "_")
+
+
+def is_iid_vce(kind) -> bool:
+    """Homoskedastic VCE aliases; an unset kind (``None``) is iid."""
+    return kind is None or kind in IID_VCE_KINDS
+
+
+def cluster_df_resid(df_resid, vce, clusters):
+    """Cap residual DoF at ``min(G) - 1`` under clustered inference."""
+    if normalize_vce(vce) == "cluster" and clusters:
+        return min(df_resid, float(min(len(np.unique(c)) for c in clusters) - 1))
+    return df_resid
+
+
 def _sym_inv(a: np.ndarray) -> np.ndarray:
     return equilibrated_gram_inverse(a)
 
@@ -261,7 +289,7 @@ def _fix_psd(v: np.ndarray, *, tol: float = 0.0) -> np.ndarray:
 
 
 def _is_multiway_cluster(kind, clusters) -> bool:
-    return kind is not None and str(kind).lower().replace("-", "_") == "cluster" and clusters is not None and len(clusters) > 1
+    return normalize_vce(kind) == "cluster" and clusters is not None and len(clusters) > 1
 
 
 def score_covariance(
@@ -297,7 +325,7 @@ def score_covariance(
     if center:
         scores = scores - scores.mean(axis=0, keepdims=True)
     kind = "iid" if kind is None else kind.lower().replace("-", "_")
-    if kind in ("robust", "hc1", "heteroskedastic"):
+    if kind in ROBUST_VCE_KINDS:
         out = scores.T @ scores
         if small_sample:
             out *= n_eff / max(n_eff - k_total, 1)
@@ -328,7 +356,7 @@ def score_covariance(
                 n_eff, k_total, n_periods, nested_adj=nested_adj
             )
         return meat
-    if kind in ("iid", "unadjusted", "homoskedastic"):
+    if is_iid_vce(kind):
         return scores.T @ scores
     raise ValueError(f"unknown covariance kind: {kind}")
 
@@ -349,9 +377,9 @@ def sandwich_vcov_xe(
     n, k = X.shape
     n_eff = float(n if effective_n is None else effective_n)
     k_total = k if k_total is None else int(k_total)
-    kind0 = "iid" if kind is None else str(kind).lower().replace("-", "_")
+    kind0 = normalize_vce(kind, "iid")
     base = e if score_scale is None else e * np.asarray(score_scale, dtype=np.float64)
-    if kind0 in {"robust", "hc1", "heteroskedastic"}:
+    if kind0 in ROBUST_VCE_KINDS:
         meat = np.zeros((k, k), dtype=np.float64)
         chunk = max(1, int(chunk_rows))
         for lo in range(0, n, chunk):
@@ -465,10 +493,10 @@ def sandwich_vcov_block_xe(
         raise ValueError("e must have one value per observation")
     n_eff = float(X.nobs if effective_n is None else effective_n)
     k_total = X.ncols if k_total is None else int(k_total)
-    kind0 = "iid" if kind is None else str(kind).lower().replace("-", "_")
+    kind0 = normalize_vce(kind, "iid")
     base = e if score_scale is None else e * np.asarray(score_scale, dtype=np.float64)
 
-    if kind0 in {"robust", "hc1", "heteroskedastic"}:
+    if kind0 in ROBUST_VCE_KINDS:
         meat = X.gram(weights=base * base)
         meat *= n_eff / max(n_eff - k_total, 1)
     elif kind0 == "cluster":
@@ -490,11 +518,6 @@ def block_cluster_meat_xe(X: BlockDesign, e, clusters, *, score_scale=None):
     return _block_cluster_meat_xe(X, e, clusters, score_scale=score_scale)
 
 
-def cluster_meat_xe(X, e, clusters, *, score_scale=None):
-    """Public streamed cluster meat for scalar-multiplier scores ``X_i e_i``."""
-    return _cluster_meat_xe(X, e, clusters, score_scale=score_scale)
-
-
 def fix_psd(V, *, tol=0.0):
     """Public PSD repair used by multi-way sandwich estimators."""
     return _fix_psd(V, tol=tol)
@@ -506,7 +529,7 @@ def ols_vcov(Xw, ew, bread, *, kind="iid", clusters=None, k_total=None, nested_a
     n, k = Xw.shape
     n_eff = float(n if effective_n is None else effective_n)
     k_total = k if k_total is None else int(k_total)
-    if kind in (None, "iid", "unadjusted", "homoskedastic"):
+    if is_iid_vce(kind):
         df = max(n_eff - k_total, 1)
         return bread * (float(ew @ ew) / df)
     return sandwich_vcov_xe(
@@ -529,7 +552,7 @@ def kclass_vcov(
     n, k = Xw.shape
     n_eff = float(n if effective_n is None else effective_n)
     k_total = k if k_total is None else int(k_total)
-    if kind in (None, "iid", "unadjusted", "homoskedastic") and kappa in (0.0, 1.0):
+    if is_iid_vce(kind) and kappa in (0.0, 1.0):
         df = max(n_eff - k_total, 1)
         return bread * (float(ew @ ew) / df)
     if kappa == 0.0:
@@ -542,7 +565,7 @@ def kclass_vcov(
             xhat = projected_X
         if kappa != 1.0:
             xhat = (1.0 - kappa) * Xw + kappa * xhat
-    if kind in (None, "iid", "unadjusted", "homoskedastic"):
+    if is_iid_vce(kind):
         sigma2 = float(ew @ ew) / max(n_eff - k_total, 1)
         return sigma2 * (bread @ (xhat.T @ xhat) @ bread.T)
     return sandwich_vcov_xe(
@@ -550,10 +573,6 @@ def kclass_vcov(
         nested_adj=nested_adj, time=time, panel=panel, bandwidth=bandwidth,
         kernel=kernel, effective_n=n_eff, score_scale=score_scale,
     )
-
-
-def iv_vcov(Xw, Zw, ew, A_inv, **kwargs):
-    return kclass_vcov(Xw, Zw, ew, A_inv, **kwargs)
 
 
 def gmm_vcov(
@@ -567,7 +586,7 @@ def gmm_vcov(
     XZ = Xw.T @ Zw
     D = XZ @ W
     bread = np.linalg.pinv(D @ XZ.T, hermitian=True)
-    if kind in (None, "iid", "unadjusted", "homoskedastic"):
+    if is_iid_vce(kind):
         sigma2 = float(ew @ ew) / max(n_eff - k_total, 1)
         S = sigma2 * (Zw.T @ Zw)
     else:

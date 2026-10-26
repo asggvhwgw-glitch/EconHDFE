@@ -4,7 +4,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from ..design import Factor, RegressorInteraction
+from ..design_specs import Factor, RegressorInteraction
 from ..factorvars import FactorVariableExpression
 from ..hdfe.specs import FixedEffect, Interaction
 

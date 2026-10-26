@@ -97,7 +97,7 @@ def _ppml_data(seed=4802, n=1800):
 def test_ppml_main_scalars_match_ppmlhdfe_definitions():
     y, X, fe = _ppml_data(seed=4803)
     r = ppmlhdfe(
-        y, X, absorb=fe, vce="model",
+        y=y, x=X, absorb=fe, vce="model",
         config=PPMLConfig(standardize=True, separation=(), tolerance=1e-9, target_inner_tol=1e-10),
     )
     keep = r.sample_mask
@@ -113,7 +113,7 @@ def test_ppml_main_scalars_match_ppmlhdfe_definitions():
     ll0 = float(np.sum(ys * math.log(mu0) - mu0 - gammaln(ys + 1)))
     idx = [i for i, name in enumerate(r.names) if name != "_cons"]
     V = r.vcov[np.ix_(idx, idx)]
-    beta = r.coef[idx]
+    beta = r.params[idx]
     chi2 = float(beta @ np.linalg.solve(V, beta))
     p = float(chi2_dist.sf(chi2, len(idx)))
     np.testing.assert_allclose(

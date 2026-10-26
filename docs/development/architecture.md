@@ -37,33 +37,38 @@ For an economics-facing explanation of every runtime module, use `docs/developme
 
 ## Dependency rule
 
+`tests/tooling/test_dependency_contract.py` enforces this rule on actual (AST) imports, including function-local imports. Every runtime module must belong to one declared unit.
+
 ```text
-frontend ─────► data
-   │             ▲
-   └──── specification/column requirements
-
-models ───────────────► hdfe ───────────────► compute
-  │                      │                       │
-  ├──────────────► iv ───┘                       ▼
-  ├──────────────► data ───────────────────► planner
-  └──────────────► resampling                 ▲
-                         hdfe ─────────────────┘
-
-`planner` is estimator-agnostic infrastructure: data, HDFE and compute may report resource/candidate metadata to it, while the planner must not import estimator/data/HDFE implementations.
+upper       models/*, design, design_structure, collinearity, pipeline, results,
+            postestimation, prediction_api, reporting, sessions, api,
+            support_reports, package __init__        (may import every unit below)
+post-fit    effects   ──► hdfe, compute, prediction
+            inference ──► compute, hdfe, planner, resampling
+data        data      ──► frontend, compute, planner
+numerical   hdfe      ──► compute, planner
+            iv        ──► compute
+infra       compute   ──► planner
+            resampling ─► planner
+            planner, frontend, prediction, templates  (foundation only)
+foundation  errors, config, factorvars, design_specs, hdfe.specs   (importable everywhere)
 ```
 
 The direction is strict:
 
-- `data` owns source scanning, batching, stable encoding and sample-state infrastructure; it never imports estimator models. A thin specification bridge may consume frontend column requirements.
+- **Foundation vocabulary** is configuration, the error taxonomy and pure specification syntax (`fv()` expressions, `Factor`/`RegressorInteraction`, `FixedEffect`/`Interaction`). These modules import only one another, so every layer may name a specification without importing its compiler. `hdfe.specs` lives inside `hdfe/` for its public path; importing it still executes `hdfe/__init__`.
 - `planner` owns execution certificates/resource policy only. It imports no data, HDFE, IV or model implementation and cannot define statistical eligibility by inspecting estimator internals. Its calibration sublayer may benchmark only package-generated synthetic memory traffic, and its developer-report sublayer may expose only aggregate runtime/planner metadata.
-- `compute` depends on no estimator, HDFE, IV, or data-source layer.
-- `hdfe` may depend on `compute`, but not on `iv` or `models`.
+- `compute` may depend only on `planner` (plus foundation); it imports no estimator, HDFE, IV, data-source or root orchestration/result module. Cache-retention accounting lives in `compute/cache_accounting.py`.
+- `resampling` is outcome-model agnostic and may depend only on `planner`; model-specific bootstrap definitions call into it.
 - `iv` is outcome-model agnostic and may depend only on `compute`; it must not import HDFE or any model implementation.
-- `models` owns estimating equations and may compose `hdfe`, `iv`, and `compute`.
-- `resampling` is outcome-model agnostic and must not import `models`, `hdfe`, or `iv`; model-specific bootstrap definitions call into it.
-- `frontend` provides cheap role-aware input checks and structured reports; `errors` provides the public failure taxonomy.
+- `hdfe` may depend on `compute` and `planner`, but not on `iv`, `models` or result modules. It owns `DofInfo`, which results carry unchanged.
+- `frontend` provides cheap role-aware input checks, structured reports and specification-to-column projection; it imports only foundation vocabulary.
+- `data` owns source scanning, batching, stable encoding and sample-state infrastructure and may depend on `frontend` (column requirements), `compute` and `planner`; it never imports estimator models or HDFE.
+- `prediction` is the frozen fitted-state schema and imports no other package module. `effects` (post-estimation FE recovery) may depend on `hdfe`, `compute` and `prediction`; `inference` on `compute`, `hdfe`, `planner` and `resampling`.
+- Upper layers compose all of the above. `models` owns estimating equations; `models.linear_iv` and `models.ppml` must not import each other or `models.ppml_iv`.
 - `results` exposes thin result methods; `postestimation` owns coefficient inference, `prediction` owns frozen state, `prediction_api` owns new-row reconstruction/evaluation, and `effects/prediction` builds fit-time FE certificates. These are distinct responsibilities.
-- Root-level `pipeline` and `design` are substantial orchestration/compilation modules, not thin wrappers; `collinearity` owns active-column policy. Root `bootstrap.py` is compatibility-only.
+- Root-level `pipeline` and `design` are substantial orchestration/compilation modules, not thin wrappers; `collinearity` owns active-column policy.
+- Registered exceptions are listed with reasons in the test: `data.persistent` encodes/decodes cached session results (`results`, `prediction`) until that codec moves to the session layer, and `planner.report` reads the package `__version__` as a metadata fallback.
 - See the [0.7 architecture review](architecture-review-0.7.md) for measured complexity and scoped follow-up work.
 
 The stronger IV rule is deliberate: endogeneity is not a synonym for linear 2SLS. Linear IV and IV-PPML should consume the same instrument/moment/weighted-2SLS primitives without depending on one another.
@@ -77,6 +82,7 @@ econhdfe/
   results.py
   postestimation.py / prediction.py / prediction_api.py
   design.py / design_structure.py
+  design_specs.py           # Factor / RegressorInteraction specification vocabulary
   collinearity.py
   errors.py
   config.py                 # HDFE / inference / execution strategy configs
@@ -90,6 +96,7 @@ econhdfe/
     dataset.py             # materialize only required econometric columns
     encoding.py            # stable categorical codes across chunks
     sample.py              # monotone estimation-sample state
+    persistent.py          # disposable on-disk session cache
   resampling/
     engine.py / sampling.py / results.py
   inference/
@@ -97,7 +104,6 @@ econhdfe/
       diagnostics.py         # cluster balance/score concentration diagnostics
       wild.py                # one-way OLS WCR11/WCU11
       results.py
-  bootstrap.py               # compatibility re-exports
 
   models/
     ols.py
@@ -130,7 +136,7 @@ econhdfe/
     results.py              # level-sized effect/result contracts
 
   hdfe/
-    specs.py / encoding.py
+    specs.py
     structure.py / plan.py
     absorber.py / numerical_core.py / projection.py
     two_way.py / weighted_projection.py
@@ -144,7 +150,7 @@ econhdfe/
   compute/
     backend.py / encoding.py / clusters.py / kernels.py
     linalg.py / wls.py / vcov.py / weights.py
-    runtime.py / execution.py / context.py
+    execution.py / context.py / cache_accounting.py
 ```
 
 ## Econometric data-layer boundary
@@ -181,7 +187,7 @@ SPJ bias correction and bootstrap remain model-specific in `models.ppml_iv.bias`
 from econhdfe import olshdfe, ppmlhdfe, ivhdfe, ivppmlhdfe
 ```
 
-`ivhdfe` remains the public linear-IV estimator for compatibility. The nonlinear IV-PPML estimator is exposed explicitly as `ivppmlhdfe`; `ivhdfe` remains the linear-IV estimator. Legacy `reghdfe`, `ivreghdfe`, and `pyreghdfe` remain compatibility shims.
+`ivhdfe` remains the public linear-IV estimator for compatibility. The nonlinear IV-PPML estimator is exposed explicitly as `ivppmlhdfe`; `ivhdfe` remains the linear-IV estimator. `reghdfe` and `ivreghdfe` remain Stata-style aliases of `olshdfe` and `ivhdfe`.
 
 ## Error boundary rule
 
@@ -195,7 +201,9 @@ CRV3/cluster jackknife is intentionally not public in 0.4.6. The current prototy
 
 ## Result/reporting boundary
 
-Estimator results expose a common `PublicationResult` protocol: `coef_table()`, `model_stats()`, and `publication_output()`. The default publication output contains econometric quantities suitable for regression tables and appendices, while internal solver diagnostics/profile traces remain opt-in. Linear-IV publication output retains reportable first-stage and identification/over-identification tests without returning large observation-level fitted first-stage arrays.
+Linear estimators and sessions merge config objects with scalar arguments field by field (`models/linear.py::config_precedence`, built on `config.resolve_override`): a value equal to its default counts as unset, the set side wins, and two different set values raise `SpecificationError(code="specification.config_conflict")`. Execution fields are merged before resource admission, because `managed_execution` sizes the call from `execution_config`. FE absorption that fails to converge raises `HDFEConvergenceError` (a `ConvergenceError`) unless `allow_nonconverged=True`.
+
+Estimator results expose a common `PublicationResult` protocol: `coef_table()`, `model_stats()`, and `publication_output()`. The default publication output contains econometric quantities suitable for regression tables and appendices, while internal solver diagnostics/profile traces remain opt-in: `InferenceConfig(diagnostics="publication")` adds the stored diagnostics, `diagnostics="full"` additionally defaults `include_profile` to True, and explicit `include_diagnostics`/`include_profile` arguments take precedence. Linear-IV publication output retains reportable first-stage and identification/over-identification tests without returning large observation-level fitted first-stage arrays.
 
 ## Configuration and execution lifecycle
 

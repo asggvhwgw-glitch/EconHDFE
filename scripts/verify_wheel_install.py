@@ -26,7 +26,7 @@ def main() -> None:
     cluster_smoke = root / "scripts" / "smoke_cluster_inference.py"
     support_report_smoke = root / "scripts" / "smoke_support_reports.py"
     effects_smoke = root / "scripts" / "smoke_fe_recovery.py"
-    with tempfile.TemporaryDirectory(prefix="pyreghdfe-wheel-") as td:
+    with tempfile.TemporaryDirectory(prefix="econhdfe-wheel-") as td:
         td = Path(td)
         site = td / "site"
         subprocess.run(
@@ -36,8 +36,8 @@ def main() -> None:
         env = os.environ.copy()
         env["PYTHONPATH"] = str(site)
         code = (
-            "import pyreghdfe, pathlib; "
-            f"p=pathlib.Path(pyreghdfe.__file__).resolve(); target=pathlib.Path({str(site)!r}).resolve(); "
+            "import econhdfe, pathlib; "
+            f"p=pathlib.Path(econhdfe.__file__).resolve(); target=pathlib.Path({str(site)!r}).resolve(); "
             "assert target in p.parents, (p, target); "
             "print('isolated import:', p)"
         )

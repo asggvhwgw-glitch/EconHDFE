@@ -103,8 +103,8 @@ def test_ppml_against_independent_glm(engine,kind):
     y=rng.poisson(np.exp(eta)).astype(float)
     D,_=independent_basis(dummy(groups));U=np.column_stack([X,D])
     ref=sm.GLM(y,U,family=sm.families.Poisson(),offset=off,var_weights=weights).fit(tol=1e-12,maxiter=100)
-    got=e.ppmlhdfe(y,X,absorb=groups,offset=off,weights=weights,vce=kind,
-                   clusters=[cluster] if kind=='cluster' else None,
+    got=e.ppmlhdfe(y=y,x=X,absorb=groups,offset=off,weights=weights,vce=kind,
+                   cluster=[cluster] if kind=='cluster' else None,
                    config=e.PPMLConfig(engine=engine,tolerance=1e-11,target_inner_tol=1e-12,dof_method='exact'))
     assert np.all(got.sample_mask)
     bread=np.linalg.inv(U.T@((weights*ref.mu)[:,None]*U))
@@ -116,7 +116,7 @@ def test_ppml_against_independent_glm(engine,kind):
             unq,inv=np.unique(cluster,return_inverse=True);agg=np.zeros((len(unq),U.shape[1]));np.add.at(agg,inv,scores)
             meat=agg.T@agg;scale=(len(y)-1)/(len(y)-U.shape[1])*len(unq)/(len(unq)-1)
         V=scale*bread@meat@bread
-    np.testing.assert_allclose(got.coef,ref.params[:2],rtol=2e-6,atol=2e-8)
+    np.testing.assert_allclose(got.params,ref.params[:2],rtol=2e-6,atol=2e-8)
     np.testing.assert_allclose(got.mu,ref.mu,rtol=2e-6,atol=2e-7)
     np.testing.assert_allclose(got.vcov,V[:2,:2],rtol=2e-5,atol=2e-8)
 

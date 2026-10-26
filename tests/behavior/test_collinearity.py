@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from pyreghdfe import reghdfe, ivreghdfe, interaction, factor
+from econhdfe import reghdfe, ivreghdfe, interaction, factor
 
 
 def _df(seed=1, n=6000):

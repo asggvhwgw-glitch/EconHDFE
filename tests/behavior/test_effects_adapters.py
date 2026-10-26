@@ -26,7 +26,7 @@ def test_ivppml_adapter_reconstructs_eta_after_reported_constant():
     y = rng.poisson(mu)
 
     fit = ivppmlhdfe(
-        y, exog=c[:, None], endog=x[:, None], instruments=z[:, None], absorb=[origin, dest],
+        y=y, exog=c[:, None], endog=x[:, None], instruments=z[:, None], absorb=[origin, dest],
         exog_names=["c"], endog_names=["x"], instrument_names=["z"], vce="model",
         config=IVPPMLConfig(engine="optimized", separation=("fe", "simplex", "relu")),
     )
@@ -37,7 +37,7 @@ def test_ivppml_adapter_reconstructs_eta_after_reported_constant():
     sample = fit.sample_mask
     name_to_col = {"c": c, "x": x}
     xb = np.zeros(int(sample.sum()))
-    for name, b in zip(fit.names, fit.coef, strict=False):
+    for name, b in zip(fit.names, fit.params, strict=False):
         if name == "_cons":
             xb += b
         else:

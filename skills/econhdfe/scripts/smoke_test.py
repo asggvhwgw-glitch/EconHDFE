@@ -32,12 +32,12 @@ def main() -> int:
         X = np.column_stack([np.ones(n), x])
         eta = 0.2 + 0.1 * x + 0.03 * (firm - firm.mean())
         count_y = np.maximum(0.0, np.round(np.exp(eta))).astype(float)
-        ppml = ppmlhdfe(count_y, X, absorb=[firm, year], vce="robust", names=["const", "x"])
+        ppml = ppmlhdfe(y=count_y, x=X, absorb=[firm, year], vce="robust", names=["const", "x"])
 
         checks = {
             "ols_finite": bool(np.all(np.isfinite(np.asarray(ols.params)))),
             "iv_finite": bool(np.all(np.isfinite(np.asarray(iv.params)))),
-            "ppml_finite": bool(np.all(np.isfinite(np.asarray(ppml.coef)))),
+            "ppml_finite": bool(np.all(np.isfinite(np.asarray(ppml.params)))),
             "ols_nobs": int(ols.nobs),
             "iv_nobs": int(iv.nobs),
             "ppml_nobs": int(ppml.nobs),

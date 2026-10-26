@@ -165,7 +165,7 @@ def test_structured_ppml_frontend_avoids_global_dense_design_and_matches_pooled(
     )
     assert isinstance(exec_design.values, BlockDesign)
     assert exec_design.storage_plan.representation == "block_dense"
-    np.testing.assert_allclose(got.coef, pooled.coef, rtol=2e-8, atol=2e-9)
+    np.testing.assert_allclose(got.params, pooled.params, rtol=2e-8, atol=2e-9)
     np.testing.assert_allclose(got.stderr, pooled.stderr, rtol=2e-7, atol=2e-8)
     np.testing.assert_array_equal(got.sample_mask, pooled.sample_mask)
     assert got.loglike == pytest.approx(pooled.loglike, rel=2e-9, abs=2e-9)
@@ -211,6 +211,6 @@ def test_structured_ppml_shared_global_control_uses_partitioned_design_without_d
     assert isinstance(exec_design.values, BlockDesign)
     assert not exec_design.values.columns_disjoint
     assert exec_design.execution_structure.reason == "exact_fe_partition_shared_columns"
-    np.testing.assert_allclose(got.coef, pooled.coef, rtol=5e-8, atol=5e-9)
+    np.testing.assert_allclose(got.params, pooled.params, rtol=5e-8, atol=5e-9)
     np.testing.assert_allclose(got.stderr, pooled.stderr, rtol=6e-7, atol=6e-8)
     assert got.loglike == pytest.approx(pooled.loglike, rel=5e-9, abs=5e-9)

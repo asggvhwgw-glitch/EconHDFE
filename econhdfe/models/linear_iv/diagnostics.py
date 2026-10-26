@@ -6,6 +6,8 @@ import scipy.linalg as la
 from scipy.stats import chi2, f
 from ...compute.encoding import factorize_interaction
 from ...compute.vcov import ols_vcov, score_covariance, _cluster_meat_xe, _cluster_kron_meat
+from ...compute.vcov import is_iid_vce, IID_VCE_KINDS, ROBUST_VCE_KINDS
+from ...compute.weights import robust_score_scale
 
 
 # Only the joint first-stage/AP call owns this cache; never persist it in a
@@ -266,9 +268,7 @@ def first_stage_diagnostics(endog, exog, instruments, *, weights=None, weight_in
     work = _workspace or _IVDiagnosticWorkspace(endog, exog, instruments, weights)
     E, C, Z = work.E, work.C, work.Z
     n_eff = float(len(E) if weight_info is None else weight_info.effective_n)
-    score_scale = None
-    if weight_info is not None and weight_info.kind == "fweight" and str(vce).lower().replace("-", "_") in {"robust", "hc1", "heteroskedastic"}:
-        score_scale = 1.0 / np.sqrt(np.asarray(weight_info.estimation, dtype=np.float64))
+    score_scale = None if weight_info is None else robust_score_scale(weight_info, vce, len(E))
     out = work.tests(
         _inverse_cache=_inverse_cache, vce=vce, clusters=clusters, df_absorbed=df_absorbed,
         nested_adj=nested_adj, time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
@@ -370,9 +370,7 @@ def sanderson_windmeijer_diagnostics(endog, exog, instruments, *, weights=None, 
     E, C, Z = work.E, work.C, work.Z
     n, k1 = E.shape
     n_eff = float(n if weight_info is None else weight_info.effective_n)
-    score_scale = None
-    if weight_info is not None and weight_info.kind == "fweight" and str(vce).lower().replace("-", "_") in {"robust", "hc1", "heteroskedastic"}:
-        score_scale = 1.0 / np.sqrt(np.asarray(weight_info.estimation, dtype=np.float64))
+    score_scale = None if weight_info is None else robust_score_scale(weight_info, vce, n)
     l1 = Z.shape[1]
     df1 = l1 - k1 + 1
     if df1 <= 0:
@@ -531,17 +529,15 @@ def kleibergen_paap_stats(endog, exog, instruments, *, weights=None, weight_info
         endog, exog, instruments, weights, effective_n=effective_n, _workspace=_workspace
     )
     n, k1 = Ep.shape
-    score_scale = None
-    if weight_info is not None and weight_info.kind == "fweight" and str(vce).lower().replace("-", "_") in {"robust", "hc1", "heteroskedastic"}:
-        score_scale = 1.0 / np.sqrt(np.asarray(weight_info.estimation, dtype=np.float64))
+    score_scale = None if weight_info is None else robust_score_scale(weight_info, vce, n)
     l1 = Zp.shape[1]
     if l1 < k1:
         return {"rk_lm": np.nan, "rk_lm_df": 0, "rk_lm_pvalue": np.nan,
                 "rk_wald_chi2": np.nan, "rk_wald_df": 0, "rk_wald_f": np.nan}
     kind = (vce or "robust").lower().replace("-", "_")
     supported = {
-        "robust", "hc1", "heteroskedastic", "cluster",
-        "iid", "unadjusted", "homoskedastic",
+        *ROBUST_VCE_KINDS, "cluster",
+        *IID_VCE_KINDS,
         "hac", "newey_west", "neweywest",
         "dkraay", "driscoll_kraay", "dk",
     }
@@ -565,7 +561,7 @@ def kleibergen_paap_stats(endog, exog, instruments, *, weights=None, weight_info
             shat = _cluster_kron_meat(left, right, clusters) / n_eff
         else:
             scores = _kron_scores(Vhat @ v_loading, projected_z) if reduced else _kron_scores(Vhat, Zp)
-            if kind in {"iid", "unadjusted", "homoskedastic"}:
+            if is_iid_vce(kind):
                 shat = (scores.T @ scores) / n_eff
             else:
                 # Keep ranktest's Bartlett convention and the existing raw-score
@@ -647,7 +643,7 @@ def overid_test(resid, Z, *, X, kind="robust", clusters=None, center=False,
     if df <= 0:
         return {"stat": np.nan, "df": 0, "pvalue": np.nan}
     g = Z.T @ resid
-    if kind in (None, "iid", "unadjusted", "homoskedastic"):
+    if is_iid_vce(kind):
         # Sargan uses the uncorrected residual variance, not HC1/fit DoF.
         sigma2 = float(resid @ resid) / n_eff
         S = sigma2 * (Z.T @ Z)
@@ -662,7 +658,7 @@ def overid_test(resid, Z, *, X, kind="robust", clusters=None, center=False,
             effective_n=n_eff, score_scale=score_scale,
         )
     W = np.linalg.pinv(S, hermitian=True)
-    if kind not in (None, "iid", "unadjusted", "homoskedastic"):
+    if not is_iid_vce(kind):
         # The reported coefficient remains 2SLS/k-class. Hansen J, however,
         # uses the efficient second-step moments under this fixed S (ivreg2).
         D = _xz.T if kind == 'cluster' and _xz is not None else Z.T @ X

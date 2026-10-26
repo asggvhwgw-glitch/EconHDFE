@@ -22,7 +22,7 @@ def _fit(df, spec):
         instruments=df[list(spec["inst"])].to_numpy(),
         absorb=absorb,
         vce=spec.get("vce", "robust"),
-        clusters=clusters,
+        cluster=clusters,
         exog_names=spec.get("exog", ()), endog_names=spec["endog"], instrument_names=spec["inst"],
         config=cfg(standardize=spec.get("standardize", False), separation=spec.get("separation", ("fe","simplex","relu"))),
     )
@@ -54,7 +54,7 @@ def python_results(df):
         r = _fit(df, spec)
         for j, term in enumerate(r.names):
             coef_rows.append(dict(
-                model=model, term=term, b=r.coef[j], se=r.stderr[j], N=r.nobs,
+                model=model, term=term, b=r.params[j], se=r.stderr[j], N=r.nobs,
                 df_a=r.df_absorbed, num_sep=r.n_separated,
                 num_sep_mu=int(r.diagnostics.get("num_sep_mu", 0)), iters=r.iterations,
             ))

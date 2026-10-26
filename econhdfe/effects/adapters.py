@@ -202,7 +202,7 @@ def recover_ppml_result(
 
     n = len(sample)
     X0 = _as_2d(X, n)
-    coef = np.asarray(result.coef, dtype=np.float64)
+    coef = np.asarray(result.params, dtype=np.float64)
     names = tuple(str(x) for x in result.names)
     slope_idx = [j for j, name in enumerate(names) if name != "_cons"]
     slope_names = tuple(names[j] for j in slope_idx)

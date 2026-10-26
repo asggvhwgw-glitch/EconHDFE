@@ -33,7 +33,7 @@ python scripts/compatibility.py snapshot --version "$VERSION"
 python scripts/compatibility.py check --version "$VERSION"
 python scripts/generate_architecture_map.py
 python scripts/generate_architecture_map.py --check
-python -m compileall -q econhdfe pyreghdfe validation scripts benchmarks skills/econhdfe/scripts
+python -m compileall -q econhdfe validation scripts benchmarks skills/econhdfe/scripts
 python scripts/run_tests.py --suite full -- -q
 if [[ "${ECONHDFE_OFFLINE_BUILD:-0}" == "1" ]]; then
   echo 'OFFLINE DIAGNOSTIC BUILD: host backend/dependencies; NOT isolated validation' >&2

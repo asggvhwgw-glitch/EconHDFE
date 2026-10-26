@@ -6,6 +6,7 @@ import numpy as np
 from .frontend.validate import require_numeric, require_identifier
 from .frontend.roles import VariableRole
 from .factorvars import FactorVariableExpression, _FVAtom
+from .design_specs import Factor, RegressorInteraction, factor, reg_interaction
 from .prediction import PredictionInput, CategoricalEncodingState, DesignTermState
 
 from .design_structure import StructuralTerm, StructuralCollinearityPlan, plan_structural_collinearity
@@ -14,32 +15,6 @@ from .design_structure import StructuralTerm, StructuralCollinearityPlan, plan_s
 @dataclass(frozen=True, slots=True)
 class _FactorBaseSelector:
     mode: str
-
-
-@dataclass(frozen=True, slots=True)
-class Factor:
-    """Categorical regressor expanded to observed-level indicators."""
-
-    variable: Any
-    base: Any | None = None
-    drop_base: bool = True
-    name: str | None = None
-
-
-@dataclass(frozen=True, slots=True)
-class RegressorInteraction:
-    """Multiplicative interaction among continuous/factor regressor terms."""
-
-    parts: tuple[Any, ...]
-    name: str | None = None
-
-    def __init__(self, *parts: Any, name: str | None = None):
-        if len(parts) < 2:
-            raise ValueError("a regressor interaction requires at least two parts")
-        object.__setattr__(self, "parts", tuple(parts))
-        object.__setattr__(self, "name", name)
-
-
 
 
 @dataclass(frozen=True, slots=True)
@@ -141,15 +116,6 @@ class DesignMatrix:
     @property
     def ncols(self) -> int:
         return int(self.values.shape[1])
-
-
-def factor(variable: Any, *, base: Any | None = None, drop_base: bool = True,
-           name: str | None = None) -> Factor:
-    return Factor(variable, base=base, drop_base=drop_base, name=name)
-
-
-def reg_interaction(*parts: Any, name: str | None = None) -> RegressorInteraction:
-    return RegressorInteraction(*parts, name=name)
 
 
 def _factor_from_fv_atom(atom: _FVAtom) -> Any:
@@ -564,10 +530,6 @@ def _prediction_source(token: str) -> str | None:
     return token[len("column:"):] if token.startswith("column:") else None
 
 
-def _python_level(value):
-    return value.item() if isinstance(value, np.generic) else value
-
-
 def _prediction_terms(compiled: _CompiledStructuredDesign) -> tuple[DesignTermState, ...]:
     out = []
     for bp in compiled.blueprints:
@@ -695,61 +657,6 @@ def _materialize_compiled_block(data, compiled: _CompiledStructuredDesign, struc
                 vals[:, local_j] = monomial
         blocks.append(DenseDesignBlock(int(meta.index), rows, cols, vals))
     return BlockDesign._from_trusted(compiled.n_active, structure.ncols, tuple(blocks))
-
-
-@dataclass(slots=True)
-class _BlockDesignMatrix:
-    values: Any
-    names: tuple[str, ...]
-    origins: tuple[ColumnOrigin, ...]
-    requested_names: tuple[str, ...]
-    requested_origins: tuple[ColumnOrigin, ...]
-    structural_plan: StructuralCollinearityPlan | None
-    structural_terms: tuple[StructuralTerm, ...]
-    user_omissions: tuple[UserOmission, ...]
-    execution_structure: Any
-    prediction_terms: tuple[DesignTermState, ...] = ()
-
-    @property
-    def ncols(self) -> int:
-        return int(self.values.ncols)
-
-
-def _build_heterogeneous_design(
-    data,
-    specs,
-    n: int,
-    *,
-    groups=(),
-    prefix: str = "x",
-    row_mask=None,
-    absorbed_groups=(),
-    absorbed_names=(),
-    structural: bool = True,
-    protected_terms=(),
-    omit=None,
-):
-    """Compile a certified heterogeneous specification directly into BlockDesign.
-
-    Factor/interactions retain symbolic support until the physical storage
-    representation is selected. Plain caller-supplied 2D arrays intentionally
-    remain on the established dense path.
-    """
-    if specs is None or (isinstance(specs, np.ndarray) and specs.ndim == 2):
-        raise ValueError("pre-materialization block compilation requires structured regressor specs")
-    compiled = _compile_structured_design(
-        data, specs, n, prefix=prefix, row_mask=row_mask,
-        absorbed_groups=absorbed_groups, absorbed_names=absorbed_names,
-        structural=structural, protected_terms=protected_terms, omit=omit,
-    )
-    from .compute.design_plan import analyze_execution_structure
-    structure = analyze_execution_structure(compiled.terms, groups=groups)
-    values = _materialize_compiled_block(data, compiled, structure)
-    return _BlockDesignMatrix(
-        values, compiled.names, compiled.origins, compiled.requested_names,
-        compiled.requested_origins, compiled.structural_plan, compiled.terms,
-        compiled.user_omissions, structure, _prediction_terms(compiled),
-    )
 
 
 @dataclass(slots=True)

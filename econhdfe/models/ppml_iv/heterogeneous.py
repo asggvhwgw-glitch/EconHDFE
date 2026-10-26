@@ -31,6 +31,7 @@ from ...reporting import cluster_counts as _cluster_counts, fe_names_from_metada
 from ..poisson import exp_clip_into, poisson_deviance, prepare_poisson_base, working_state
 from ..ppml.execution import resolve_execution
 from ..ppml.heterogeneous import detect_separation_block
+from ..ppml.separation import initial_sample_mask
 from .config import IVPPMLConfig
 from .results import IVPPMLResult
 from .standardize import IVPPMLStandardization
@@ -292,7 +293,7 @@ def fit_block_arrays(
     if any(A.nobs != n for A in (C, E, I)) or w.shape != (n,) or off.shape != (n,):
         raise ShapeError("structured IV-PPML inputs have incompatible observation counts")
 
-    singleton = plan.singleton_mask()
+    singleton, n_fe_separated = initial_sample_mask(y, plan, config)
     active0 = ~singleton
     if not np.any(active0):
         raise InputError(
@@ -312,8 +313,12 @@ def fit_block_arrays(
         C0, E0, I0, exog_names, endog_names, instrument_names, p0, w0, config, execution
     )
     X0 = hstack_block_designs(C0, E0)
-    sep = detect_separation_block(y0, X0, p0, w0, config, execution)
-    keep_sep = ~sep.separated
+    sep = detect_separation_block(
+        y0, X0, p0, w0, config, execution, frequency_weights=(weight_kind == "fweight"),
+    )
+    if "fe" in sep.by_method:
+        sep.by_method["fe"] = n_fe_separated
+    keep_sep = ~(sep.separated | sep.singletons)
     if not np.any(keep_sep) or not np.any(y0[keep_sep] > 0):
         raise InputError(
             "PPML has no finite estimable sample after separation",
@@ -328,11 +333,11 @@ def fit_block_arrays(
         )
 
     separation = np.zeros(n, dtype=bool)
-    if np.any(sep.separated):
+    if not np.all(keep_sep):
         idx0 = np.flatnonzero(active0)
         sample = np.zeros(n, dtype=bool)
         sample[idx0[keep_sep]] = True
-        separation[idx0[sep.separated]] = True
+        separation[idx0[~keep_sep]] = True
         y1, w1, off1 = y0[keep_sep], w0[keep_sep], off0[keep_sep]
         C1, E1, I1 = C0.subset_rows(keep_sep), E0.subset_rows(keep_sep), I0.subset_rows(keep_sep)
         p1 = p0.subset(keep_sep)

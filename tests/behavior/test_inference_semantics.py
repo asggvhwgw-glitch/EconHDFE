@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
-from pyreghdfe.encoding import factorize_interaction
-from pyreghdfe.kernels import hac_meat, driscoll_kraay_meat
-from pyreghdfe.vcov import score_covariance
+from econhdfe.compute.encoding import factorize_interaction
+from econhdfe.compute.kernels import hac_meat, driscoll_kraay_meat
+from econhdfe.compute.vcov import score_covariance
 
 
 def _meat(scores, codes):
@@ -63,7 +63,7 @@ def test_dkraay_aggregates_scores_by_time():
 
 
 def test_all_ivreg2_kernel_weights_and_spectral_horizon():
-    from pyreghdfe.kernels import kernel_weight, hac_meat
+    from econhdfe.compute.kernels import kernel_weight, hac_meat
     assert kernel_weight(1, 4, "thann") == pytest.approx(0.5 + 0.5*np.cos(np.pi/4))
     assert kernel_weight(1, 4, "thamm") == pytest.approx(0.54 + 0.46*np.cos(np.pi/4))
     assert np.isfinite(kernel_weight(1, 4, "qs"))

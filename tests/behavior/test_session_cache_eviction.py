@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 
 from econhdfe import ExecutionConfig, InferenceConfig, OLSHDFESession, IVHDFESession, olshdfe, ivhdfe
-from econhdfe.session_cache import retained_array_bytes
+from econhdfe.compute.cache_accounting import retained_array_bytes
 
 
 @pytest.fixture

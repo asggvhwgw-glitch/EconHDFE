@@ -1,7 +1,7 @@
 from __future__ import annotations
 import argparse, time
 import numpy as np
-from pyreghdfe import reghdfe, FixedEffect
+from econhdfe import reghdfe, FixedEffect
 
 p = argparse.ArgumentParser()
 p.add_argument('--n', type=int, default=1_000_000)

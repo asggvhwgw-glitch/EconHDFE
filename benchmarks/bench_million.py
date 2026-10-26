@@ -1,6 +1,6 @@
 import time
 import numpy as np
-from pyreghdfe import reghdfe
+from econhdfe import reghdfe
 
 n=1_000_000
 rng=np.random.default_rng(123)

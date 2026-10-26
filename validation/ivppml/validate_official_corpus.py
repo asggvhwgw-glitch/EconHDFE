@@ -27,11 +27,11 @@ def fit_class(label, df):
         return ivppmlhdfe(**common, absorb=[df.id.to_numpy(), df.year.to_numpy()], vce="robust", config=_cfg())
     ey = _interaction(df.exp, df.year); iy = _interaction(df.imp, df.year)
     if label == "ClassB":
-        return ivppmlhdfe(**common, absorb=[ey, iy], vce="cluster", clusters=[df.pair.to_numpy()], config=_cfg())
+        return ivppmlhdfe(**common, absorb=[ey, iy], vce="cluster", cluster=[df.pair.to_numpy()], config=_cfg())
     if label == "ClassC":
         pair = _interaction(df.exp, df.imp)
         return ivppmlhdfe(
-            **common, absorb=[pair, ey, iy], vce="cluster", clusters=[df.pair.to_numpy()],
+            **common, absorb=[pair, ey, iy], vce="cluster", cluster=[df.pair.to_numpy()],
             config=_cfg(standardize=True, separation=("fe","simplex","relu","mu")),
         )
     raise ValueError(label)
@@ -45,7 +45,7 @@ def collect(data_dir: Path):
             raise FileNotFoundError(path)
         r = fit_class(label, pd.read_stata(path))
         for j,t in enumerate(r.names):
-            rows.append(dict(model=label,term=t,b=r.coef[j],se=r.stderr[j],N=r.nobs,df_a=r.df_absorbed,
+            rows.append(dict(model=label,term=t,b=r.params[j],se=r.stderr[j],N=r.nobs,df_a=r.df_absorbed,
                              num_sep=r.n_separated,num_sep_mu=r.diagnostics.get("num_sep_mu",0),iters=r.iterations))
             for k,t2 in enumerate(r.names):
                 vrows.append(dict(model=label,row=t,col=t2,v=r.vcov[j,k]))

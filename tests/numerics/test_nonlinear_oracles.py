@@ -45,10 +45,10 @@ def fit(data, *, path='dense', engine='replica', standardize=False, kind='robust
                  instrument_names=tuple(f'z{i}' for i in range(data['instruments'].shape[1])))
     n = len(data['y'])
     if path == 'dense':
-        return ivppmlhdfe(data['y'], exog=data['exog'], endog=data['endog'],
+        return ivppmlhdfe(y=data['y'], exog=data['exog'], endog=data['endog'],
                          instruments=data['instruments'], absorb=[data['g']],
                          offset=data['offset'], weights=weights, weight_type=weight_type,
-                         vce=kind, clusters=clusters, config=cfg, **names)
+                         vce=kind, cluster=clusters, config=cfg, **names)
     return fit_block_arrays(data['y'], as_block(data['exog'], data['g']),
                             as_block(data['endog'], data['g']),
                             as_block(data['instruments'], data['g']),
@@ -113,10 +113,10 @@ def test_ivppml_explicit_nonlinear_reference(path, weight_type, overidentified):
     w = np.ones(n) if weight_type is None else (1 + np.arange(n)%3).astype(float)
     oracle = reference(d, w, overidentified=overidentified, fweight=weight_type=='fweight')
     r = fit(d, path=path, weights=w if weight_type else None, weight_type=weight_type)
-    assert_allclose(r.coef[:2], oracle[0][:2], rtol=2e-7, atol=2e-8)
+    assert_allclose(r.params[:2], oracle[0][:2], rtol=2e-7, atol=2e-8)
     assert_allclose(r.mu, oracle[1], rtol=2e-7, atol=2e-8)
     assert_allclose(r.vcov[:2, :2], oracle[2][:2, :2], rtol=3e-6, atol=2e-8)
-    assert np.max(np.abs(oracle[3](np.r_[r.coef[:2], oracle[0][2:]]))) < 2e-7
+    assert np.max(np.abs(oracle[3](np.r_[r.params[:2], oracle[0][2:]]))) < 2e-7
 
 
 def test_ivppml_reference_cluster_and_jacobian():
@@ -142,7 +142,7 @@ def test_ivppml_units_preserve_covariance():
     ds = dict(d); ds[role] = d[role]*scale
     s = fit(ds, path=path, kind=kind, clusters=cls)
     units = np.array([scale if role=='exog' else 1, scale if role=='endog' else 1, 1.])
-    assert_allclose(s.coef*units, r.coef, rtol=2e-6, atol=2e-8)
+    assert_allclose(s.params*units, r.params, rtol=2e-6, atol=2e-8)
     assert_allclose(s.vcov*units[:, None]*units[None, :], r.vcov, rtol=2e-5, atol=1e-10)
 
 
@@ -168,7 +168,7 @@ def test_ivppml_frequency_replication_and_probability_rescaling(weight_type):
         s=fit(dd)
     assert r.nobs == (int(w.sum()) if weight_type == 'fweight' else n)
     assert r.diagnostics['n_rows'] == n
-    assert_allclose(s.coef,r.coef,rtol=2e-7,atol=2e-8)
+    assert_allclose(s.params,r.params,rtol=2e-7,atol=2e-8)
     assert_allclose(s.vcov,r.vcov,rtol=2e-6,atol=2e-9)
 
 

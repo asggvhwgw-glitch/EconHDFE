@@ -60,11 +60,10 @@ def main() -> None:
             install.append("--no-index")
         subprocess.run(install, cwd=temp, env=env, check=True)
         subprocess.run([str(python), "-m", "pip", "check"], cwd=temp, env=env, check=True)
-        code = ("import econhdfe, pyreghdfe, pathlib, sys; "
+        code = ("import econhdfe, pathlib, sys; "
                 "prefix=pathlib.Path(sys.prefix).resolve(); "
                 "assert sys.prefix != sys.base_prefix; "
-                "assert all(prefix in pathlib.Path(m.__file__).resolve().parents "
-                "for m in (econhdfe,pyreghdfe)); "
+                "assert prefix in pathlib.Path(econhdfe.__file__).resolve().parents; "
                 "print('clean-venv package:', econhdfe.__file__)")
         subprocess.run([str(python), "-c", code], cwd=temp, env=env, check=True)
         for i, rel in enumerate(SMOKES):

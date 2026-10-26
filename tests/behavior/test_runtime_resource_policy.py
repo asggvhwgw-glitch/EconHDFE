@@ -15,7 +15,7 @@ def test_ppml_explicit_threads_obey_current_cpu_capacity(monkeypatch):
     x = rng.normal(size=(300, 1))
     y = rng.poisson(np.exp(0.1 * x[:, 0]))
     result = ppmlhdfe(
-        y, x, absorb=[np.arange(300) % 15, np.arange(300) % 17],
+        y=y, x=x, absorb=[np.arange(300) % 15, np.arange(300) % 17],
         config=PPMLConfig(engine="optimized"),
         execution_config=ExecutionConfig(threads=4, memory_budget_mb=32),
     )

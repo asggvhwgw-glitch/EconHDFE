@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from pyreghdfe.fe_projection import build_group_index, project_indexed_inplace
+from econhdfe.hdfe.projection import build_group_index, project_indexed_inplace
 
 p = argparse.ArgumentParser(description="CPU scaling for one indexed FE projection")
 p.add_argument("--n", type=int, default=10_000_000)

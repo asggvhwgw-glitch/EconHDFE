@@ -1,27 +1,17 @@
 {
   "schema_version": 1,
-  "release_version": "0.8.5",
+  "release_version": "0.9.0",
   "fingerprint_scope": "runtime-validation-v1",
-  "code_fingerprint_sha256": "82bb0b1c383913968d493efd9066270f97b9831e0decc6b74f08ea13d5b65b61",
+  "code_fingerprint_sha256": "6185f3ec4bc48bf8470317d59f0fa2934122f247f446313806feafcb493bd89d",
   "source_commit": null,
   "checks": {
     "local_regression": {
-      "execution_status": "passed",
-      "reason": "Full source regression suite passed; see command-result summary.",
-      "environment": {
-        "python": "3.12.15",
-        "platform": "macOS-15.7.9-arm64-arm-64bit",
-        "environment": "research",
-        "NUMBA_NUM_THREADS": "4"
-      },
-      "executed_at": "2026-10-25T16:06:53.845962+00:00",
-      "code_fingerprint_sha256": "82bb0b1c383913968d493efd9066270f97b9831e0decc6b74f08ea13d5b65b61",
-      "evidence": [
-        {
-          "path": "docs/release/evidence/0.8.5-local-regression.txt",
-          "sha256": "a412e5bb3e582b6d1ae76693f857b4291f5e6a6ced12e2abedcc7a00936aac79"
-        }
-      ]
+      "execution_status": "not_run",
+      "reason": "Not executed for this release.",
+      "environment": {},
+      "executed_at": null,
+      "code_fingerprint_sha256": null,
+      "evidence": []
     },
     "installed_numerics": {
       "execution_status": "not_run",

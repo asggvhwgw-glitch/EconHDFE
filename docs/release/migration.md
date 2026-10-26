@@ -1,5 +1,93 @@
 # Migration guide
 
+## 0.8.5 → 0.9.0 candidate — breaking API cleanup and upstream singleton parity
+
+### `pyreghdfe` removed
+
+The `pyreghdfe` compatibility package is gone (no deprecation period). Replace
+`import pyreghdfe` / `from pyreghdfe import X` with `econhdfe`; the objects are
+the same. Old submodules map to `econhdfe.hdfe.*` (absorber, two_way,
+group_individual, dof, rank, specs, weighted_projection; `fe_projection`,
+`fe_structure`, `fe_plan` → `hdfe.projection`, `hdfe.structure`, `hdfe.plan`),
+`econhdfe.compute.*` (encoding, backend, kernels, linalg, execution, weights,
+vcov), `econhdfe.planner.resources` (runtime), `econhdfe.models.linear_iv.*`
+(diagnostics, stock_yogo) and `econhdfe.models.ppml*` (ppml, ppml_iv). The
+internal `pyreghdfe.linear.fit_*` helpers are not provided; use `olshdfe` /
+`ivhdfe(..., estimator=...)`. The forwarding modules `econhdfe.bootstrap`,
+`econhdfe.compute.runtime` and `econhdfe.hdfe.encoding` are also removed;
+top-level names such as `econhdfe.wild_bootstrap` are unchanged.
+
+### PPML / IV-PPML call shape matches OLS / IV
+
+| 0.8.5 | 0.9.0 |
+|---|---|
+| `ppmlhdfe(y, X, absorb=[g1, g2], clusters=[c])` | `ppmlhdfe(y=y, x=X, absorb=[g1, g2], cluster=[c])` or `ppmlhdfe(df, y="y", x=["x1"], absorb=["g1", "g2"], cluster="c")` |
+| `ivppmlhdfe(y, exog=C, endog=E, instruments=Z, clusters=[c])` | `ivppmlhdfe(y=y, exog=C, endog=E, instruments=Z, cluster=[c])` or the DataFrame form |
+| `PPMLHDFE(...).fit("y", X=[...], clusters="c")` | `.fit("y", x=[...], cluster="c")` |
+| `IVPPMLHDFE(...).fit(..., clusters=...)` | `.fit(..., cluster=...)` |
+| `SPJPanel.clusters` | `SPJPanel.cluster` |
+| `res.coef` (PPMLResult, IVPPMLResult, SPJResult) | `res.params` (ndarray) |
+| `res.params` (dict) | `dict(zip(res.names, res.params))` |
+
+`vce` defaults stay as in the Stata upstreams: OLS/IV `None` (reghdfe
+unadjusted), PPML/IV-PPML `"robust"` (ppmlhdfe). In the DataFrame form,
+`names` / `*_names` are rejected (`specification.array_only_option`).
+
+### Scalar arguments versus config objects
+
+Config objects no longer silently override scalar arguments. Fields are merged
+pairwise — `HDFEConfig.solver/tolerance/max_iter/dof_method/canonicalize` ↔
+`method/tol/max_iter/dof_method/canonicalize_fe`, `InferenceConfig.vce` ↔ `vce`,
+`ExecutionConfig.memory_budget_mb/threads` ↔ `memory_budget_mb/absorb_threads`.
+A value equal to its default counts as unset; if only one side is set it is
+used; if both are set and differ, `SpecificationError(code="specification.config_conflict")`
+is raised. This applies to OLS/IV (and aliases), linear sessions and the PPML
+family (`vce`). Formerly `tol=1e-10, hdfe_config=HDFEConfig()` used 1e-8 and
+`memory_budget_mb=512, execution_config=ExecutionConfig(profile="summary")`
+used the automatic budget; both now use the scalar value.
+
+### Non-convergence error type
+
+Group/individual and heterogeneous (BlockDesign) FE absorption that fails to
+converge now raises `HDFEConvergenceError` (a `ConvergenceError`, code
+`convergence.hdfe`, `details["iterations"]`) instead of `InternalEstimationError`
+(`estimation.internal`). Messages are unchanged and both remain `RuntimeError`
+subclasses; `allow_nonconverged=True` is unchanged.
+
+### `InferenceConfig.diagnostics`
+
+`"off"` reports estimates and model statistics; `"publication"` adds
+diagnostics to `publication_output()` (previous behaviour); `"full"` also makes
+`include_profile` default to True (a profile exists only when
+`ExecutionConfig.profile != "off"`). `include_profile` now defaults to `None`
+in `publication_output()`; explicit arguments still win.
+
+### Singleton pruning follows each Stata upstream (sample definition change)
+
+- OLS/IV `group()` mode without `individual()`: with fweights, group-level FE
+  singletons are judged by fweight mass, as in reghdfe/ivreghdfe 6.12.5. A
+  level with one row and fw>1 is now kept, so N and standard errors may change.
+- PPML (ppmlhdfe 2.3.0): with `"fe"` separation, FE levels whose outcome sums
+  to zero are pruned jointly with row-count singletons in one fixed point, and
+  counted in `n_singletons` (no longer in `n_separated` / `separation_mask`).
+  Singletons created by simplex, ReLU or mu trimming are pruned again (fweight
+  mass when applicable) and added to `n_singletons`. `separation_by_method["fe"]`
+  is diagnostic only. Separation methods always run in upstream order
+  fe → simplex → relu (mu inside IRLS). `nobs_full = nobs + n_singletons + n_separated`.
+- IV-PPML (ivppmlhdfe 0.9.4): same first stage as PPML, user weights never
+  enter it; singletons created by simplex/ReLU trimming are pruned (fweight
+  mass) and counted in `n_separated`, as upstream.
+
+Coefficients are normally unchanged; N, degrees of freedom, standard errors
+and counters can change. Local Stata 18 comparisons on constructed cases match
+the new counts; IV-PPML was checked against upstream source only.
+
+### Performance
+
+Representative 500k-row fits (4 threads, three alternating runs against
+0.8.5): OLS, IV and four-spec OLS sessions unchanged; PPML about 3% slower
+(0.70s → 0.72s, both array and DataFrame entry points).
+
 ## 0.8.4 → 0.8.5 candidate — shared resource scheduling
 
 OLS/IV (including aliases) and `ExecutionConfig` now default to

@@ -1,81 +1,81 @@
 {
   "schema_version": 1,
-  "release_version": "0.8.5",
-  "previous_version": "0.8.4",
+  "release_version": "0.9.0",
+  "previous_version": "0.8.5",
   "checks": {
     "frontend_api": {
       "status": "changed",
-      "evidence": "13 exact contract changes reviewed and approved; optional resampling config and automatic memory defaults documented in docs/release/migration.md.",
+      "evidence": "PPML/IV-PPML signatures unified (data= first, cluster=); config conflict rule via config.resolve_override; pyreghdfe removed; tests/contracts/test_ppml_api.py, test_configuration.py",
       "description": "Public call signatures, exports, aliases, CLI/front-end validation and compatibility."
     },
     "backend_compute": {
       "status": "changed",
-      "evidence": "PR #24 shared scheduler, atomic reservations, bounded worker resources and thread policy propagation; dedicated behavior tests.",
+      "evidence": "Shared linear/VCE/singleton refactor validated against 0.8.5; root resource admission caps only Linux OpenBLAS 0.3.28 to one thread after reproduced native TRTRS/QR crashes when raising initial thread limits (Actions 40305500701 and 40306310472); scoped restoration preserves other backends and worker policy.",
       "description": "Solver/compute/cache/backend contracts, numerical defaults and resource controls."
     },
     "errors": {
-      "status": "reviewed",
-      "evidence": "Compatibility diff has no error catalog changes; allocation admission and resampling resource errors are tested and propagated.",
+      "status": "changed",
+      "evidence": "Non-converged group/BlockDesign absorption raises HDFEConvergenceError (convergence.hdfe); new codes specification.config_conflict, specification.array_only_option, input.data_type",
       "description": "Structured exception classes, codes, stages, suggestions and public error boundaries."
     },
     "public_contract": {
       "status": "changed",
-      "evidence": "Preserved 0.8.4 baseline; separate 0.8.5 snapshot and exact approved changes with migration guidance.",
+      "evidence": "12 approved changes vs 0.8.5 (PPML/IV-PPML/SPJ result schemas and signatures, publication_output); snapshot econhdfe-0.9.0.json",
       "description": "Public exports/signatures, result/config schemas and stable structured-error compatibility."
     },
     "skill": {
       "status": "changed",
-      "evidence": "skills/econhdfe/references/configuration.md covers auto budgets, scratch inheritance and shared scheduling; skill checked by version gate.",
+      "evidence": "skills/econhdfe references and smoke_test updated for new PPML API, config rule and pyreghdfe removal",
       "description": "Agent skill commands, examples, decision rules and newly exposed controls."
     },
     "linked_modules": {
       "status": "changed",
-      "evidence": "Shared scheduler integrated across OLS/IV/PPML/IVPPML/session/resampling; generated architecture map checked.",
+      "evidence": "Dependency contract extended to all modules; DofInfo moved to hdfe/dof.py, design_specs.py, compute/cache_accounting.py; forwarding modules removed; data.persistent registered exception",
       "description": "Cross-module imports, shared schemas, adapters, compatibility shims and downstream consumers."
     },
     "results_reporting": {
-      "status": "reviewed",
-      "evidence": "No result-schema diff; stress comparisons checked params, VCE, SE, sample and applicable DoF.",
+      "status": "changed",
+      "evidence": "PPMLResult/IVPPMLResult/SPJResult coef->params; publication_output include_profile=None follows diagnostics=full",
       "description": "Result fields, publication output, diagnostics metadata and serialization-facing schemas."
     },
     "config_defaults": {
       "status": "changed",
-      "evidence": "memory_budget_mb defaults to auto; fused scratch inherits; explicit historical ceilings documented in migration.",
+      "evidence": "Scalar/config precedence: conflict raises, otherwise the set side wins; defaults unchanged; vce defaults keep upstream conventions",
       "description": "Config objects, defaults, deprecations, aliases and backwards-compatible behavior."
     },
     "cache_state": {
-      "status": "changed",
-      "evidence": "Session and nonlinear LRU, protected entries and policy invalidation covered by dedicated tests.",
+      "status": "reviewed",
+      "evidence": "Session cache entry layout changed (StandardFEStructure) with equal byte accounting; persistent result ABI unchanged; session persistent-cache cases identical in d-equivalence",
       "description": "Reusable state/cache invalidation, fingerprints, lifecycle semantics and stale-state hazards."
     },
     "tests_validation": {
-      "status": "reviewed",
-      "evidence": "research Python 3.12: scripts/run_tests.py --suite full -- -q: 396 passed, 4 warnings in 11.58s on 2026-10-26; prior contract failures resolved. No installed-wheel claim.",
+      "status": "changed",
+      "evidence": "Full local suite and existing 100k composite IV independent reference pass; stable contrast-coordinate oracle keeps original tolerances; native BLAS compatibility checks triangular solves, QR and exception restoration at root execution scope.",
       "description": "Regression tests, install smoke tests, golden/parity coverage and failure-path tests."
     },
     "performance": {
-      "status": "reviewed",
-      "evidence": "PR #24: 23 stress processes passed; preliminary OLS auto +9.5%, PPML warm +5.3%; 5m deferred for memory. User accepted these limitations.",
+      "status": "changed",
+      "evidence": "500k-row 4-thread alternating 3-run medians vs 0.8.5: OLS/IV/session flat, PPML about 3 percent slower (0.70s to 0.72s); no large-sample benchmark",
       "description": "Representative benchmark/resource regressions for code paths materially changed by the release."
     },
     "docs_migration": {
       "status": "changed",
-      "evidence": "docs/release/migration.md documents 0.8.5 changes, explicit budget migration and performance limits; execution-planner and architecture map updated.",
+      "evidence": "docs/release/migration.md 0.9.0 section; CHANGELOG 0.9.0; architecture.md dependency rule; identified-fixed-effects.md singleton rules",
       "description": "README/architecture/changelog/migration/versioning documentation and user-visible examples."
     },
     "packaging_dependencies": {
-      "status": "reviewed",
-      "evidence": "Only package version changes in pyproject; dependency bounds unchanged. Isolated build and clean install remain not_run in execution.json.",
+      "status": "changed",
+      "evidence": "pyproject packages include econhdfe* only; MANIFEST.in drops pyreghdfe; no dependency changes",
       "description": "Python/dependency matrix, optional extras, wheel/source contents and build metadata."
     },
     "external_validation": {
-      "status": "reviewed",
-      "evidence": "No new Stata/R parity performed or claimed; execution acceptance remains pending.",
+      "status": "changed",
+      "evidence": "Singleton/N counts compared with local Stata 18 reghdfe 6.12.5 / ppmlhdfe 2.3.0 on constructed cases; IV-PPML source-only; external corpus not rerun",
       "description": "Licensed/reference-environment parity gates and explicitly deferred external certification."
     },
     "release_artifacts": {
-      "status": "reviewed",
-      "evidence": "Source integration only; published 0.8.4 artifacts preserved. No 0.8.5 binary publication; build/hash/install acceptance explicitly pending in execution.json.",
+      "status": "not_applicable",
+      "evidence": "Source candidate only; no wheel or release bundle built or published",
       "description": "Version consistency, source/wheel parity, hashes, clean install and reproducible bundle contents."
     }
   }
