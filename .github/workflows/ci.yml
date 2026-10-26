@@ -59,7 +59,8 @@ jobs:
           import os, subprocess, sys
           probe = '''import numpy as np
           import scipy.linalg as la
-          from threadpoolctl import threadpool_info
+          from threadpoolctl import threadpool_info, threadpool_limits
+          threadpool_limits(limits=4)
           print(threadpool_info(), flush=True)
           for n in (1, 2, 3, 20):
               for order in ('C', 'F'):
