@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "status": "executed_experimental_not_release_certification",
+  "runtime_source_sha": "266bee7717857773e48b67e0e93ab6b7dca4bd7b",
+  "upstream_within_sha": "fc44282cea6124f5f18bb142908605a656d35a7c",
+  "ci_run": "https://github.com/asggvhwgw-glitch/EconHDFE/actions/runs/40272121466",
+  "ci_artifact_id": 12629006778,
+  "ci_artifact_sha256": "deec11001541cd1e634ff2041631d21c6a45869a3ac3e1304f0f3f5e6f2ef42d",
+  "wheel_sha256": "b1471ba8512ae9f7b91b44b2e335d22b0d41b94d87db5cec6a6446155c56243e",
+  "tested_platform": "Linux x86_64",
+  "ci_python": "3.12.15",
+  "local_wheel_retest_python": "3.13.5",
+  "rust_unit_tests": {"passed": 5, "failed": 0},
+  "native_and_integration_tests": {"passed": 39, "failed": 0, "skipped": 0},
+  "existing_full_suite": {"passed": 396, "failed": 0, "warnings": 4},
+  "local_installed_wheel_retest": {"passed": 39, "failed": 0, "skipped": 0},
+  "uncommitted_diff_bytes_at_ci_execution": 0,
+  "timing_contract": {
+    "rows": 1000000,
+    "rhs": 4,
+    "threads_requested": 2,
+    "blas_threads": 1,
+    "repetitions": 3,
+    "statistic": "median",
+    "first_includes": ["native construction", "preconditioner setup", "solve", "original-row restoration"],
+    "excludes": ["DGP", "imports", "independent accuracy validation"],
+    "reuse_rhs": "2 * original_rhs + 3",
+    "baseline": "unmodified pinned within through same sequential-RHS native wrapper and accuracy checks",
+    "not_comparable_to": ["upstream default solve_batch policy", "full econometric regression wall time"],
+    "weighted_relative_residual_error_gate": 1e-8
+  },
+  "ci_cases": [
+    {
+      "case": "schur", "optimized_route": "schur", "schur_condition": 139.9260537811035,
+      "baseline_first_seconds": 0.8587087589999669, "optimized_first_seconds": 0.19830998600002658,
+      "baseline_reuse_seconds": 0.6634859759999756, "optimized_reuse_seconds": 0.12505049600000007,
+      "first_speedup": 4.330133728111159, "reuse_speedup": 5.305744457022987,
+      "max_relative_residual_error": 1.1851591529771327e-15,
+      "baseline_process_peak_mib": 493.53125, "optimized_process_peak_mib": 385.38671875
+    },
+    {
+      "case": "repeated", "optimized_route": "compressed_within", "compressed_rows": 62500,
+      "baseline_first_seconds": 0.8635307559999887, "optimized_first_seconds": 0.17933799000002182,
+      "baseline_reuse_seconds": 0.8288368219999995, "optimized_reuse_seconds": 0.11292807899999957,
+      "first_speedup": 4.815102232381904, "reuse_speedup": 7.339510503849115,
+      "max_relative_residual_error": 2.3044996351953234e-13,
+      "baseline_process_peak_mib": 459.796875, "optimized_process_peak_mib": 361.765625
+    },
+    {
+      "case": "weighted", "optimized_route": "compressed_within", "compressed_rows": 62500,
+      "baseline_first_seconds": 0.9201302700000156, "optimized_first_seconds": 0.18548207200001343,
+      "baseline_reuse_seconds": 0.889480017000011, "optimized_reuse_seconds": 0.11715310900001441,
+      "first_speedup": 4.960750438457195, "reuse_speedup": 7.592457635929248,
+      "max_relative_residual_error": 2.399386973646785e-13,
+      "baseline_process_peak_mib": 474.41015625, "optimized_process_peak_mib": 361.6171875
+    }
+  ],
+  "local_large_extension": {
+    "runtime_source_sha": "266bee7717857773e48b67e0e93ab6b7dca4bd7b",
+    "case": "repeated", "rows": 10000000, "rhs": 4, "threads": 2,
+    "repetitions": 1, "compressed_rows": 624996,
+    "first_seconds": 4.023530708999942, "changed_rhs_reuse_seconds": 1.643082338999875,
+    "relative_residual_error": 8.610076480385631e-14,
+    "process_peak_mib": 2774.24609375,
+    "speedup": null,
+    "baseline_attempt": {
+      "source_sha": "38d3bb78799ace431e1d64829f572c0190de3cac",
+      "status": "entire_process_timeout", "process_limit_seconds": 90,
+      "scope": "DGP + first solve + reuse + validation",
+      "usable_solve_timing": false
+    }
+  },
+  "limitations": [
+    "Synthetic controlled workloads only; no universal speedup claim.",
+    "No completed 10M baseline; do not compute a 10M speedup or solve-time lower bound.",
+    "Peak RSS includes inputs, DGP, references and validation, not only solver scratch.",
+    "Native Windows/macOS builds not executed in this evidence record.",
+    "High-level PPML/IV-PPML, slopes, GPU and group-individual native routing remain excluded.",
+    "Upstream Schwarz factor fill and total process RSS are not hard-budgeted."
+  ]
+}
