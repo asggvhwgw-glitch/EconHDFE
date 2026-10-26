@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.1 — unreleased candidate
+
+- Add an optional, explicitly selected `method="within"` Rust backend for CPU categorical-intercept OLS/IV and sessions, with weighted reductions and bounded Schur/compression routes over pinned upstream within. Preserve default routing and weak-design conditioning. Local 0.9.0 integration tests and existing-sample comparisons show workload-dependent gains; see the native validation report for limitations.
+- Add opt-in `ExecutionConfig(memory_policy="relaxed")` for monitored large runs: reduce the system reserve and let explicit workspace budgets use subsequently available host memory, while retaining live headroom, RSS, reservation and worker-slice checks. Default conservative admission is unchanged.
+- With the relaxed policy, the existing 5M composite IV sample completes on the default backend and passes independent coefficient/residual/conditional-covariance checks; the within backend still fails its original-row convergence gate at the unchanged 1e-12 tolerance. No 5M native speedup is claimed.
+
 ## 0.9.0 — unreleased candidate
 
 - Keep Linux OpenBLAS 0.3.28 single-threaded inside estimation calls to avoid reproduced TRTRS/QR crashes after thread-limit increases; other backends retain the requested CPU envelope, and all limits restore on exit. Stabilize the cross-platform thread fixture and ill-conditioned IV reference without loosening tolerances.

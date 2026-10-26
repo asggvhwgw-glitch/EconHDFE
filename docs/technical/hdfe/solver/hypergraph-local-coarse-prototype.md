@@ -1,7 +1,8 @@
 # Experimental hypergraph local/coarse projection
 
-Status: standalone draft in `contrib/hyperfe_local_coarse/`, not a registered
-EconHDFE backend. Base source is 0.9.0; no public API/default/dependency change.
+Status: standalone research prototype in `contrib/hyperfe_local_coarse/`, not a
+registered EconHDFE backend. Originally based on 0.9.0 and reviewed against
+0.9.1; no public API/default/dependency change.
 
 ## Mathematical target and assumptions
 

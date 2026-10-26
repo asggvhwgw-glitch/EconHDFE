@@ -1,0 +1,215 @@
+{
+  "date": "2026-10-26",
+  "platform": "macOS-15.7.9-arm64-arm-64bit",
+  "python": "3.12.15",
+  "base_main": "45ab1bc9dc69ef6fb4b85d263cc65d24b35d7692",
+  "version": "0.9.0",
+  "native_upstream": "fc44282cea6124f5f18bb142908605a656d35a7c",
+  "validation": {
+    "rust": 5,
+    "native": 43,
+    "base_full": 464
+  },
+  "composite_iv_100k": {
+    "threads": 4,
+    "memory_mb": 512,
+    "tol": 1e-12,
+    "methods": {
+      "auto": {
+        "seconds": [
+          11.523231458151713,
+          12.341371582821012,
+          11.47594074998051
+        ],
+        "median_seconds": 11.523231458151713,
+        "all_reference_checks_pass": true,
+        "nobs": 97056,
+        "rank": 21,
+        "df_absorbed": 26890,
+        "dropped_singletons": 2944,
+        "max_scaled_coefficient_error": 4.274074658638938e-07,
+        "max_residual_relative_l2": 1.7186227656793974e-10,
+        "source_sha256": "d527a86fe49472ab2900134c88738b2f38692edc4fc96d5e1ddddf98a233dbbd",
+        "source_unchanged": true
+      },
+      "within": {
+        "seconds": [
+          4.010331500088796,
+          4.069795083021745,
+          4.110789791215211
+        ],
+        "median_seconds": 4.069795083021745,
+        "all_reference_checks_pass": true,
+        "nobs": 97056,
+        "rank": 21,
+        "df_absorbed": 26890,
+        "dropped_singletons": 2944,
+        "max_scaled_coefficient_error": 1.1771192021114985e-08,
+        "max_residual_relative_l2": 4.62411777792448e-12,
+        "source_sha256": "d527a86fe49472ab2900134c88738b2f38692edc4fc96d5e1ddddf98a233dbbd",
+        "source_unchanged": true
+      }
+    },
+    "speedup": 2.8314033564549725
+  },
+  "representative_500k": {
+    "n": 500000,
+    "seed": 20261026,
+    "threads": 4,
+    "memory_mb": 512,
+    "tol": 1e-10,
+    "scope": "whole estimation, session includes construction and four specifications",
+    "rows": [
+      {
+        "model": "ols",
+        "parity": true,
+        "differences": [
+          {
+            "max_coefficient_diff": 1.4432899320127035e-15,
+            "max_se_diff": 2.2724877535296173e-16,
+            "residual_relative_l2": 1.1715102301771563e-11
+          }
+        ],
+        "timings": {
+          "auto": [
+            0.15214195800945163,
+            0.1498517501167953,
+            0.15458212490193546
+          ],
+          "within": [
+            0.15707295783795416,
+            0.15462729195132852,
+            0.15881129098124802
+          ]
+        },
+        "medians": {
+          "auto": 0.15214195800945163,
+          "within": 0.15707295783795416
+        },
+        "speedup": 0.9686069461199702
+      },
+      {
+        "model": "iv",
+        "parity": true,
+        "differences": [
+          {
+            "max_coefficient_diff": 4.218847493575595e-15,
+            "max_se_diff": 3.473783760643556e-16,
+            "residual_relative_l2": 1.6327512277772583e-11
+          }
+        ],
+        "timings": {
+          "auto": [
+            0.28370724990963936,
+            0.2882730830460787,
+            0.2804300419520587
+          ],
+          "within": [
+            0.29621608299203217,
+            0.2885580421425402,
+            0.27425916609354317
+          ]
+        },
+        "medians": {
+          "auto": 0.28370724990963936,
+          "within": 0.2885580421425402
+        },
+        "speedup": 0.9831895441316285
+      },
+      {
+        "model": "session4",
+        "parity": true,
+        "differences": [
+          {
+            "max_coefficient_diff": 8.881784197001252e-16,
+            "max_se_diff": 1.209969624493823e-16,
+            "residual_relative_l2": 1.1314409393078873e-11
+          },
+          {
+            "max_coefficient_diff": 1.3322676295501878e-15,
+            "max_se_diff": 1.3097162243624894e-16,
+            "residual_relative_l2": 1.1422432879063252e-11
+          },
+          {
+            "max_coefficient_diff": 2.3037127760972e-15,
+            "max_se_diff": 1.5092094240998222e-16,
+            "residual_relative_l2": 1.1450779635667129e-11
+          },
+          {
+            "max_coefficient_diff": 1.4432899320127035e-15,
+            "max_se_diff": 2.2724877535296173e-16,
+            "residual_relative_l2": 1.1715102301771563e-11
+          }
+        ],
+        "timings": {
+          "auto": [
+            0.3169700000435114,
+            0.38691937481053174,
+            0.3194813330192119
+          ],
+          "within": [
+            0.4492250829935074,
+            0.3918435419909656,
+            0.37135804211720824
+          ]
+        },
+        "medians": {
+          "auto": 0.3194813330192119,
+          "within": 0.3918435419909656
+        },
+        "speedup": 0.8153288207735165
+      }
+    ]
+  },
+  "native_micro_1m": {
+    "threads": 2,
+    "rhs": 4,
+    "repeat": 3,
+    "scope": "same native wrapper, not default econhdfe estimator",
+    "cases": [
+      {
+        "case": "schur",
+        "plain": {
+          "median_first": 0.9274858760181814,
+          "median_reuse": 0.7580921668559313,
+          "max_error": 1.5347231356369517e-13
+        },
+        "auto": {
+          "median_first": 0.14163966686464846,
+          "median_reuse": 0.09779020887799561,
+          "max_error": 1.185159080158485e-15
+        }
+      },
+      {
+        "case": "repeated",
+        "plain": {
+          "median_first": 0.834850249812007,
+          "median_reuse": 0.8118464171420783,
+          "max_error": 5.553699745893293e-13
+        },
+        "auto": {
+          "median_first": 0.1510295830667019,
+          "median_reuse": 0.11133412504568696,
+          "max_error": 2.3045074088198096e-13
+        }
+      },
+      {
+        "case": "weighted",
+        "plain": {
+          "median_first": 0.8969950422178954,
+          "median_reuse": 0.8573045409284532,
+          "max_error": 6.658284469773305e-13
+        },
+        "auto": {
+          "median_first": 0.1509490420576185,
+          "median_reuse": 0.11375287501141429,
+          "max_error": 2.3910885438886293e-13
+        }
+      }
+    ]
+  },
+  "composite_iv_5m": {
+    "status": "not_measured",
+    "reason": "default backend rejected design materialization under available-memory admission at both 512 and 2048 MiB budgets; no full fit timing or speedup claim"
+  }
+}

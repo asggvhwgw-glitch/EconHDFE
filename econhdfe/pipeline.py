@@ -481,6 +481,8 @@ def absorb_metadata(plan, absorber, info, pool_size, solver_selection=None):
         "convergence_criterion": getattr(info, "criterion", "unknown"),
         "pool_size": (absorber.execution_plan.pool_size if hasattr(absorber, "execution_plan") else pool_size),
     }
+    if absorber.method == "within":
+        out["within"] = absorber.resource_info
     if solver_selection is not None:
         out["solver_selection"] = dict(solver_selection)
     if hasattr(absorber, "execution_plan"):
@@ -878,6 +880,9 @@ def make_standard_absorber(
     transform, acceleration, preconditioner, projection_backend, absorb_threads,
     memory_budget_mb,
 ):
+    if method == "within":
+        if backend != "numpy" or any(s is not None for s in slopes) or not all(intercepts):
+            raise ValueError("method='within' requires CPU pure-intercept categorical FEs")
     if method == "twoway":
         if backend != "numpy":
             raise ValueError("method='twoway' currently requires backend='numpy'")
@@ -893,6 +898,12 @@ def make_standard_absorber(
         # Small samples/explicit requests do not run a calibration probe.
         resolve_threads(absorb_threads, nobs=len(groups[0]))
     with scheduler.reserve_memory(build_bytes, label="linear_fe_build"):
+        if method == "within":
+            from .hdfe.within_backend import WithinFEAbsorber
+            return WithinFEAbsorber(
+                groups, weights=weights, tol=tol, max_iter=max_iter,
+                absorb_threads=absorb_threads, projection_memory_budget_mb=memory_budget_mb,
+            )
         if method == "twoway":
             return TwoWayFEAbsorber(
                 groups, weights=weights, tol=tol, max_iter=max_iter

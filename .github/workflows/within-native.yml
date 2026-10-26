@@ -1,0 +1,84 @@
+name: Within native validation
+on:
+  push:
+    branches: [feat/within-native-accel-20261026]
+    paths: ["native/within-accel/**", "econhdfe/**", ".github/workflows/within-native.yml"]
+  pull_request:
+    paths: ["native/within-accel/**", "econhdfe/hdfe/within_backend.py", ".github/workflows/within-native.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+concurrency:
+  group: within-native-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      NUMBA_NUM_THREADS: "2"
+      RAYON_NUM_THREADS: "2"
+      REQUIRE_WITHIN_NATIVE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            native/within-accel/target
+          key: within-native-v1-${{ runner.os }}-${{ hashFiles('native/within-accel/Cargo.toml') }}
+      - name: Install base package and test tools
+        run: python -m pip install -e '.[test]' maturin
+      - name: Rust unit tests
+        run: |
+          mkdir -p native-results
+          cargo test --release --locked --manifest-path native/within-accel/Cargo.toml 2>&1 | tee native-results/rust-tests.log
+      - name: Build and install native wheel
+        run: |
+          python -m pip wheel --no-deps ./native/within-accel -w native-wheels -v 2>&1 | tee native-results/build.log
+          python -m pip install native-wheels/*.whl
+          python -c 'import _econhdfe_within as n; print(n.UPSTREAM_REV)'
+      - name: Independent numerical and estimator parity
+        run: python -m pytest native/within-accel/tests -q --junitxml=native-results/native-tests.xml 2>&1 | tee native-results/native-tests.log
+      - name: Full existing regression suite
+        env:
+          NUMBA_NUM_THREADS: "4"
+        run: python scripts/run_tests.py --suite full -- -q 2>&1 | tee native-results/full-tests.log
+      - name: Same-machine known-residual performance
+        run: |
+          for case in schur repeated weighted; do
+            for strategy in plain auto; do
+              python native/within-accel/benchmark.py --case "$case" --strategy "$strategy" --rows 1000000 --repeat 3 --threads 2 | tee "native-results/${case}-${strategy}.json"
+            done
+          done
+      - name: Archive source and diagnostics
+        if: always()
+        run: |
+          mkdir -p native-results
+          git diff > native-results/integration.diff
+          git rev-parse HEAD > native-results/source-sha.txt
+          python -m pip freeze > native-results/environment.txt
+          cp native/within-accel/Cargo.lock native-results/ 2>/dev/null || true
+          git archive --format=zip HEAD > native-results/source.zip
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: within-native-${{ runner.os }}-${{ github.run_id }}
+          path: |
+            native-results/
+            native-wheels/

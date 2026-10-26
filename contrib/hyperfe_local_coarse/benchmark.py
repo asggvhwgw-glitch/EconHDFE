@@ -96,10 +96,21 @@ try:
         t=time.perf_counter()
         if native:
             rr=solver.solve_batch(np.asfortranarray(Y2),options=opts);R2=np.asarray(rr.demeaned)
-        else:R2,inf=solve_rect(s,Y2,root,tol=a.tol,maxiter=a.maxiter)
+            reuse_converged=list(rr.converged);reuse_iterations=list(rr.iterations)
+        else:
+            R2,inf=solve_rect(s,Y2,root,tol=a.tol,maxiter=a.maxiter)
+            reuse_converged=[x['status'] in [1,2,4,5] for x in inf['rhs']]
+            reuse_iterations=[x['iterations'] for x in inf['rhs']]
         elapsed=time.perf_counter()-t
         expect=R.copy();expect[:,0]+=R[:,1];expect[:,-1]*=-1
-        rec['reuse']={'solve_seconds':elapsed,'audit':audit(c,w,Y2,R2,-truth),'linearity_error':(np.linalg.norm(np.sqrt(w)[:,None]*(R2-expect),axis=0)/np.linalg.norm(np.sqrt(w)[:,None]*expect,axis=0)).tolist()}
+        reuse_audit=audit(c,w,Y2,R2,-truth)
+        denominator=np.maximum(np.linalg.norm(np.sqrt(w)[:,None]*expect,axis=0),np.finfo(float).tiny)
+        linearity_error=np.linalg.norm(np.sqrt(w)[:,None]*(R2-expect),axis=0)/denominator
+        reuse_passed=bool(all(reuse_converged) and reuse_audit['projection_gate_passed']
+                          and np.all(np.isfinite(linearity_error)) and np.all(linearity_error<1e-8))
+        rec['reuse']={'solve_seconds':elapsed,'iterations':reuse_iterations,'converged':reuse_converged,
+                      'audit':reuse_audit,'linearity_error':linearity_error.tolist(),'passed':reuse_passed}
+        rec['passed']=bool(rec['passed'] and reuse_passed)
     rec['status']='completed'
 except ResourceGuard as e:
     rec.update(status='budget_rejected',error=str(e),passed=False)

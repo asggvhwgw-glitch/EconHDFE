@@ -308,7 +308,7 @@ def olshdfe(
         block = np.column_stack([y1, X1])
         basis = None
         conditioning_eligible = (
-            backend == "numpy" and method_resolved == "map"
+            backend == "numpy" and method_resolved in {"map", "within"}
             and all(intercepts) and all(s is None for s in slopes)
             and len(groups) > 1
         )

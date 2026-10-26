@@ -1,79 +1,25 @@
 {
   "approved": [
     {
-      "id": "0354de33d0b3b094",
+      "id": "b18a4c775ea9cb97",
       "kind": "changed",
-      "path": "exported_dataclass_schemas.SPJResult",
-      "reason": "0.9.0: PPML/IV-PPML API unified with OLS/IV (data= first, cluster=, params field); see docs/release/migration.md"
+      "path": "signatures.ExecutionConfig",
+      "reason": "Optional memory_policy keyword exposes the monitored relaxed strategy without altering numerical tolerances or estimator specification."
     },
     {
-      "id": "064f14d2af0807ed",
+      "id": "e04401650a13e005",
       "kind": "changed",
-      "path": "signatures.PPMLResult",
-      "reason": "0.9.0: PPML/IV-PPML API unified with OLS/IV (data= first, cluster=, params field); see docs/release/migration.md"
+      "path": "config_schemas.ExecutionConfig",
+      "reason": "User-requested opt-in relaxed memory policy; conservative default and live safeguards retained; documented in docs/development/execution-planner.md."
     },
     {
-      "id": "2e97e0f457799f34",
+      "id": "f564745b4a9d3820",
       "kind": "changed",
-      "path": "signatures.SPJResult",
-      "reason": "0.9.0: PPML/IV-PPML API unified with OLS/IV (data= first, cluster=, params field); see docs/release/migration.md"
-    },
-    {
-      "id": "3967b097731401cc",
-      "kind": "changed",
-      "path": "result_schemas.IVPPMLResult",
-      "reason": "0.9.0: PPML/IV-PPML API unified with OLS/IV (data= first, cluster=, params field); see docs/release/migration.md"
-    },
-    {
-      "id": "4ef5efb81d40c33e",
-      "kind": "changed",
-      "path": "signatures.ppmlhdfe",
-      "reason": "0.9.0: PPML/IV-PPML API unified with OLS/IV (data= first, cluster=, params field); see docs/release/migration.md"
-    },
-    {
-      "id": "5667557da59b4360",
-      "kind": "changed",
-      "path": "exported_dataclass_schemas.IVPPMLResult",
-      "reason": "0.9.0: PPML/IV-PPML API unified with OLS/IV (data= first, cluster=, params field); see docs/release/migration.md"
-    },
-    {
-      "id": "6659d7c521048986",
-      "kind": "changed",
-      "path": "result_schemas.SPJResult",
-      "reason": "0.9.0: PPML/IV-PPML API unified with OLS/IV (data= first, cluster=, params field); see docs/release/migration.md"
-    },
-    {
-      "id": "77d711e168f013de",
-      "kind": "changed",
-      "path": "signatures.publication_output",
-      "reason": "0.9.0: include_profile defaults to None and follows InferenceConfig.diagnostics='full'; see docs/release/migration.md"
-    },
-    {
-      "id": "86938f51cffbf5c5",
-      "kind": "changed",
-      "path": "signatures.ivppmlhdfe",
-      "reason": "0.9.0: PPML/IV-PPML API unified with OLS/IV (data= first, cluster=, params field); see docs/release/migration.md"
-    },
-    {
-      "id": "8e4f887aadca3b1a",
-      "kind": "changed",
-      "path": "exported_dataclass_schemas.PPMLResult",
-      "reason": "0.9.0: PPML/IV-PPML API unified with OLS/IV (data= first, cluster=, params field); see docs/release/migration.md"
-    },
-    {
-      "id": "a0462cc3f6dc733c",
-      "kind": "changed",
-      "path": "signatures.IVPPMLResult",
-      "reason": "0.9.0: PPML/IV-PPML API unified with OLS/IV (data= first, cluster=, params field); see docs/release/migration.md"
-    },
-    {
-      "id": "acd9de6a757f7c33",
-      "kind": "changed",
-      "path": "result_schemas.PPMLResult",
-      "reason": "0.9.0: PPML/IV-PPML API unified with OLS/IV (data= first, cluster=, params field); see docs/release/migration.md"
+      "path": "exported_dataclass_schemas.ExecutionConfig",
+      "reason": "Additive trailing ExecutionConfig field; existing calls and default policy unchanged."
     }
   ],
-  "baseline_version": "0.8.5",
-  "release_version": "0.9.0",
+  "baseline_version": "0.9.0",
+  "release_version": "0.9.1",
   "schema_version": 1
 }

@@ -914,7 +914,7 @@ class OLSHDFESession(_LinearHDFESessionBase):
         return self._stack_columns(entry, columns)
 
     def _basis(self, entry, X, *, gram=None):
-        if len(entry.fe.groups) > 1 and entry.solver_selection["resolved"] == "map":
+        if len(entry.fe.groups) > 1 and entry.solver_selection["resolved"] in {"map", "within"}:
             return _absorption_basis(X, entry.weights, rank_tolerance=self.collinear_tol, gram=gram)
         return None
 

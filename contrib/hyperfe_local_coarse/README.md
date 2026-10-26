@@ -1,6 +1,6 @@
 # Hypergraph local/coarse FE solver — research prototype
 
-**Draft research contribution, not an estimator backend.** Nothing here is
+**Experimental research contribution, not an estimator backend.** Nothing here is
 imported by `econhdfe`, registered as a method, or included in its wheel. The
 existing estimator defaults, dependencies, sample rules, DoF and inference
 contracts are unchanged. This is separate from the native-within adapter PR #25.
@@ -35,6 +35,10 @@ For independent all-column checking, first run the same case/seed/RHS count in
 on the same design; `--relabel` permutes FE level labels. Output JSON, including
 `status`, `passed` and rejection reasons, is authoritative: the diagnostic script
 records failures rather than using its process exit code as a success signal.
+With `--reuse`, both solves must converge and pass projection auditing, and
+every reused RHS must pass the finite relative linearity-error gate at `1e-8`.
+The second solve's checks are recorded under `reuse`; a failed check also makes
+the top-level `passed` false.
 
 ## Boundaries that must remain visible
 
@@ -75,9 +79,13 @@ inputs and residual arrays are generated from seeds, not committed.
 `evidence/submission_checks.json` is separate: 38 tests and four one-million-row
 packaging checks (prototype, native, independent reference, expected rejection).
 These single runs do not replace the historical repeated timing experiments.
-The full EconHDFE suite, version gate and architecture-map check were not run
-locally because cloning the complete repository was blocked by DNS. This draft
-must not be described as having passed those checks or as release-ready.
+That original submission did not run the full EconHDFE suite, version gate or
+architecture-map check locally because the full clone was blocked by DNS.
+The subsequent 0.9.1 integration review fixes the reuse result gate, adds eight
+small regression cases, and refreshes the generated architecture map. Its
+separate record is `evidence/integration_checks_20261027.json`; the historical
+million-row timing and accuracy records above are not rewritten. Passing
+repository integration checks does not qualify this as a production backend.
 
 ## Next research step
 
