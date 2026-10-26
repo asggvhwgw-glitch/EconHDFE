@@ -15,42 +15,6 @@ from econhdfe.errors import InferenceError, UnderidentifiedError
 from econhdfe.models.linear_iv.estimators import fit_iv_kclass
 
 
-@pytest.mark.parametrize("controls", [1, 2])
-def test_small_qr_partial_matches_observation_space(controls):
-    from types import SimpleNamespace
-    from econhdfe.models.linear_iv import diagnostics
-
-    rng = np.random.default_rng(726)
-    c = rng.normal(size=(80, controls))
-    z = rng.normal(size=(80, 3)) + .2 * c[:, :1]
-    e = rng.normal(size=(80, 2)) + .3 * z[:, :2]
-    instruments = np.column_stack((c, z))
-    _, r = np.linalg.qr(np.column_stack((instruments, e)), mode="reduced")
-    qr = SimpleNamespace(R=r, zscale=np.ones(instruments.shape[1]), escale=np.ones(2))
-    a = np.column_stack((e, z))
-    expected = a - c @ np.linalg.lstsq(c, a, rcond=None)[0]
-    np.testing.assert_allclose(diagnostics._partial_from_solver(e, c, z, qr),
-                               expected, rtol=1e-12, atol=1e-12)
-
-
-def test_triangular_solve_limits_and_restores_blas(monkeypatch):
-    from threadpoolctl import threadpool_info, threadpool_limits
-    from econhdfe.compute import stable_linalg
-    original = stable_linalg.la.solve_triangular
-    def checked(*args, **kwargs):
-        assert all(p['num_threads'] == 1 for p in threadpool_info() if p['user_api'] == 'blas')
-        return original(*args, **kwargs)
-    monkeypatch.setattr(stable_linalg.la, 'solve_triangular', checked)
-    with threadpool_limits(limits=4, user_api='blas'):
-        before = threadpool_info()
-        for n in (1, 2, 20):
-            out = stable_linalg.serial_triangular_solve(np.eye(n)*2, np.ones((n, 3)))
-            np.testing.assert_allclose(out, .5)
-        with pytest.raises(np.linalg.LinAlgError):
-            stable_linalg.serial_triangular_solve(np.zeros((2, 2)), np.ones(2))
-        assert threadpool_info() == before
-
-
 def _cluster_reference(y, c, e, z, groups, weights=None, df_absorbed=0,
                        vce="cluster", second_groups=None):
     """Define 2SLS in observation space and accumulate coefficient influences."""

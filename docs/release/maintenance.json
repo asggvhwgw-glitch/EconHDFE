@@ -10,7 +10,7 @@
     },
     "backend_compute": {
       "status": "changed",
-      "evidence": "Shared linear/VCE/singleton refactor validated against 0.8.5; small IV triangular solves now use serial BLAS with restored limits after an independent SciPy 1.15.3/OpenBLAS 0.3.28 Linux thread-change crash reproducer (Actions 40305500701).",
+      "evidence": "Shared linear/VCE/singleton refactor validated against 0.8.5; root resource admission caps only Linux OpenBLAS 0.3.28 to one thread after reproduced native TRTRS/QR crashes when raising initial thread limits (Actions 40305500701 and 40306310472); scoped restoration preserves other backends and worker policy.",
       "description": "Solver/compute/cache/backend contracts, numerical defaults and resource controls."
     },
     "errors": {
@@ -50,7 +50,7 @@
     },
     "tests_validation": {
       "status": "changed",
-      "evidence": "466 local full-suite tests pass; independent IV reference uses invertible contrast coordinates without relaxing tolerances; BLAS-limit restoration tested on success/error; existing 100k composite IV sample matches independent coefficient/residual/covariance reference.",
+      "evidence": "Full local suite and existing 100k composite IV independent reference pass; stable contrast-coordinate oracle keeps original tolerances; native BLAS compatibility checks triangular solves, QR and exception restoration at root execution scope.",
       "description": "Regression tests, install smoke tests, golden/parity coverage and failure-path tests."
     },
     "performance": {

@@ -8,18 +8,6 @@ established orthogonal-reduction methods, not new mathematical claims.
 from __future__ import annotations
 import numpy as np
 import scipy.linalg as la
-from threadpoolctl import threadpool_limits
-
-
-def serial_triangular_solve(a, b, **kwargs):
-    """Solve small IV moment systems without multithreaded TRTRS.
-
-    SciPy 1.15.3's Linux OpenBLAS 0.3.28 crashes in TRTRS after increasing
-    its thread limit from one. These systems are small; serial execution
-    also avoids thread dispatch overhead and restores the caller's limit.
-    """
-    with threadpool_limits(limits=1, user_api="blas"):
-        return la.solve_triangular(a, b, **kwargs)
 
 
 def _absorption_basis(X, weights=None, *, rank_tolerance=1e-10, gram=None):

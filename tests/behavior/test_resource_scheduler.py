@@ -82,6 +82,26 @@ def test_exception_restores_process_limits_and_model_policy(host, monkeypatch):
     assert events == [8, "restore"] and scheduler.current_allocation() is None
 
 
+def test_native_blas_compatibility_and_restore(host):
+    import sys
+    import scipy.linalg as la
+    from threadpoolctl import threadpool_info
+    before = threadpool_info()
+    with pytest.raises(RuntimeError, match="restore probe"):
+        with scheduler.execution_scope(ExecutionConfig(threads=4, memory_budget_mb=128)):
+            for pool in threadpool_info():
+                if pool['internal_api'] == 'openblas':
+                    expected = 1 if sys.platform == 'linux' and pool['version'] == '0.3.28' else 4
+                    assert pool['num_threads'] == expected
+            for n in (1, 2, 20):
+                np.testing.assert_allclose(la.solve_triangular(np.eye(n)*2, np.ones((n, 3))), .5)
+            a = np.random.default_rng(927).normal(size=(100, 8))
+            q, r = la.qr(a, mode='economic')
+            np.testing.assert_allclose(q @ r, a, rtol=1e-12, atol=1e-12)
+            raise RuntimeError("restore probe")
+    assert threadpool_info() == before
+
+
 def test_weighted_projection_honors_remaining_memory(host, monkeypatch):
     from econhdfe.hdfe.weighted_projection import WeightedFEProjector
     from econhdfe.compute import execution

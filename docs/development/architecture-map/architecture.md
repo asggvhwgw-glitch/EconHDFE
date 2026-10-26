@@ -56,7 +56,7 @@ flowchart TB
   n_interface -->|"1 imports"| n_ppml_iv
   n_iv -->|"4 imports"| n_compute
   n_iv -->|"1 imports"| n_contracts
-  n_linear_iv -->|"21 imports"| n_compute
+  n_linear_iv -->|"20 imports"| n_compute
   n_linear_iv -->|"8 imports"| n_contracts
   n_linear_iv -->|"1 imports"| n_data
   n_linear_iv -->|"2 imports"| n_frontend
@@ -253,7 +253,7 @@ Files/modules: 17. econhdfe/compute/__init__.py, econhdfe/compute/backend.py, ec
 | Public interface & orchestration | IV-PPML model | 1 | `econhdfe.api → econhdfe.models.ppml_iv` |
 | Generic IV primitives | Compute/runtime kernels | 4 | `econhdfe.iv.design → econhdfe.compute.wls`<br>`econhdfe.iv.solve → econhdfe.compute.wls`<br>`econhdfe.iv.solve → econhdfe.compute.stable_linalg`<br>`econhdfe.iv.solve → econhdfe.compute.block_design` |
 | Generic IV primitives | Shared contracts | 1 | `econhdfe.iv.design → econhdfe.errors` |
-| Linear IV model | Compute/runtime kernels | 21 | `econhdfe.models.linear_iv.api → econhdfe.compute.weights`<br>`econhdfe.models.linear_iv.api → econhdfe.compute.vcov`<br>`econhdfe.models.linear_iv.api → econhdfe.compute.block_design`<br>`econhdfe.models.linear_iv.diagnostics → econhdfe.compute.wls`<br>`econhdfe.models.linear_iv.diagnostics → econhdfe.compute.stable_linalg` |
+| Linear IV model | Compute/runtime kernels | 20 | `econhdfe.models.linear_iv.api → econhdfe.compute.weights`<br>`econhdfe.models.linear_iv.api → econhdfe.compute.vcov`<br>`econhdfe.models.linear_iv.api → econhdfe.compute.block_design`<br>`econhdfe.models.linear_iv.diagnostics → econhdfe.compute.wls`<br>`econhdfe.models.linear_iv.diagnostics → econhdfe.compute.encoding` |
 | Linear IV model | Shared contracts | 8 | `econhdfe.models.linear_iv.api → econhdfe.errors`<br>`econhdfe.models.linear_iv.api → econhdfe.config`<br>`econhdfe.models.linear_iv.api → econhdfe.results`<br>`econhdfe.models.linear_iv.api → econhdfe.prediction`<br>`econhdfe.models.linear_iv.estimators → econhdfe.errors` |
 | Linear IV model | Econometric data layer | 1 | `econhdfe.models.linear_iv.api → econhdfe.data` |
 | Linear IV model | Frontend validation | 2 | `econhdfe.models.linear_iv.api → econhdfe.frontend.validate`<br>`econhdfe.models.linear_iv.api → econhdfe.frontend.roles` |
