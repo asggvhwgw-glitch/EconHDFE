@@ -15,6 +15,28 @@ from econhdfe.errors import InferenceError, UnderidentifiedError
 from econhdfe.models.linear_iv.estimators import fit_iv_kclass
 
 
+@pytest.mark.parametrize("controls", [1, 2])
+def test_small_qr_partial_matches_observation_space(controls, monkeypatch):
+    from types import SimpleNamespace
+    from econhdfe.models.linear_iv import diagnostics
+
+    rng = np.random.default_rng(726)
+    c = rng.normal(size=(80, controls))
+    z = rng.normal(size=(80, 3)) + .2 * c[:, :1]
+    e = rng.normal(size=(80, 2)) + .3 * z[:, :2]
+    instruments = np.column_stack((c, z))
+    _, r = np.linalg.qr(np.column_stack((instruments, e)), mode="reduced")
+    qr = SimpleNamespace(R=r, zscale=np.ones(instruments.shape[1]), escale=np.ones(2))
+    a = np.column_stack((e, z))
+    expected = a - c @ np.linalg.lstsq(c, a, rcond=None)[0]
+    if controls == 1:
+        def forbidden(*args, **kwargs):
+            pytest.fail("scalar diagnostic solve must not call LAPACK trtrs")
+        monkeypatch.setattr(diagnostics.la, "solve_triangular", forbidden)
+    np.testing.assert_allclose(diagnostics._partial_from_solver(e, c, z, qr),
+                               expected, rtol=1e-12, atol=1e-12)
+
+
 def _cluster_reference(y, c, e, z, groups, weights=None, df_absorbed=0,
                        vce="cluster", second_groups=None):
     """Define 2SLS in observation space and accumulate coefficient influences."""

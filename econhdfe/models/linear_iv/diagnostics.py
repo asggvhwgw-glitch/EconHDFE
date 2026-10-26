@@ -52,7 +52,10 @@ def _partial_from_solver(E, C, Z, qr):
     if np.any(noise <= np.sqrt(np.finfo(float).eps) * energy):
         return _residualize_small(A, C)
     rhs = np.column_stack([R[:kc, l:l+ke] * es, rz[:kc, kc:]])
-    coef = la.solve_triangular(rz[:kc, :kc], rhs, lower=False, check_finite=False)
+    # A single control is a scalar division. Avoid dispatching the 1-by-1,
+    # multiple-RHS case to LAPACK (SciPy 1.15.3/Linux crashes in that call).
+    coef = (rhs / rz[0, 0] if kc == 1 else
+            la.solve_triangular(rz[:kc, :kc], rhs, lower=False, check_finite=False))
     partial = A - C @ coef
     if np.any(np.sum(partial ** 2, axis=0) <=
               np.sqrt(np.finfo(float).eps) * np.sum(A ** 2, axis=0)):
