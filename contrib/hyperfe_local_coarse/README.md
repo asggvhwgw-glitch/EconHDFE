@@ -88,4 +88,4 @@ change the main package's default on the strength of these synthetic results.
 
 Two-level Schwarz, Schur complements and spectral coarse spaces are established
 techniques. No historical-priority claim is made. For the algebra and scope, see
-`../../../docs/technical/hdfe/solver/hypergraph-local-coarse-prototype.md`.
+[the mathematical note](../../docs/technical/hdfe/solver/hypergraph-local-coarse-prototype.md).
