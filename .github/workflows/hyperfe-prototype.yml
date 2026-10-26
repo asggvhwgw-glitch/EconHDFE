@@ -1,0 +1,25 @@
+name: Experimental hyperFE prototype
+on:
+  pull_request:
+    paths:
+      - 'contrib/hyperfe_local_coarse/**'
+      - '.github/workflows/hyperfe-prototype.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  numerical-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      NUMBA_NUM_THREADS: '1'
+      RAYON_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install -r contrib/hyperfe_local_coarse/requirements.txt
+      - run: python -m pytest contrib/hyperfe_local_coarse/tests -q
