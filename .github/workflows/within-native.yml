@@ -2,47 +2,20 @@ name: Within native validation
 on:
   push:
     branches: [feat/within-native-accel-20261026]
-    paths: ["native/within-accel/**", "econhdfe/**", "scripts/_wire_within_branch.py", ".github/workflows/within-native.yml"]
+    paths: ["native/within-accel/**", "econhdfe/**", ".github/workflows/within-native.yml"]
   pull_request:
     paths: ["native/within-accel/**", "econhdfe/hdfe/within_backend.py", ".github/workflows/within-native.yml"]
   workflow_dispatch:
 permissions:
   contents: read
+defaults:
+  run:
+    shell: bash
 concurrency:
   group: within-native-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 jobs:
-  prepare:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/feat/within-native-accel-20261026' && github.repository == 'asggvhwgw-glitch/EconHDFE'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: write
-    outputs:
-      source_sha: ${{ steps.wire.outputs.source_sha }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: feat/within-native-accel-20261026
-      - name: Materialize audited wiring on the feature branch only
-        id: wire
-        shell: bash
-        run: |
-          set -euo pipefail
-          if test -f scripts/_wire_within_branch.py; then
-            python scripts/_wire_within_branch.py
-            cp LICENSE native/within-accel/LICENSE
-            git add econhdfe/config.py econhdfe/pipeline.py econhdfe/hdfe/workspace.py econhdfe/hdfe/plan.py econhdfe/hdfe/weighted_projection.py native/within-accel/LICENSE
-            git rm scripts/_wire_within_branch.py
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git commit -m 'Materialize opt-in within integration in shared FE factories'
-            git push origin HEAD:refs/heads/feat/within-native-accel-20261026
-          fi
-          echo "source_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
   native:
-    needs: prepare
-    if: always() && (needs.prepare.result == 'success' || needs.prepare.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
@@ -54,8 +27,6 @@ jobs:
       REQUIRE_WITHIN_NATIVE: "1"
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.prepare.outputs.source_sha || github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -67,10 +38,6 @@ jobs:
             ~/.cargo/git
             native/within-accel/target
           key: within-native-v1-${{ runner.os }}-${{ hashFiles('native/within-accel/Cargo.toml') }}
-      - name: PR before one-time wiring commit
-        run: |
-          if test -f scripts/_wire_within_branch.py; then python scripts/_wire_within_branch.py; fi
-          cp LICENSE native/within-accel/LICENSE
       - name: Install base package and test tools
         run: python -m pip install -e '.[test]' maturin
       - name: Rust unit tests
@@ -85,6 +52,8 @@ jobs:
       - name: Independent numerical and estimator parity
         run: python -m pytest native/within-accel/tests -q --junitxml=native-results/native-tests.xml 2>&1 | tee native-results/native-tests.log
       - name: Full existing regression suite
+        env:
+          NUMBA_NUM_THREADS: "4"
         run: python scripts/run_tests.py --suite full -- -q 2>&1 | tee native-results/full-tests.log
       - name: Same-machine known-residual performance
         run: |

@@ -46,45 +46,55 @@ impl NativeSolver {
         } else {Ok(Engine::Iterative{solver:upstream(&g.groups,w)?,mass:vec![],compressed:false})}
     }
     fn label(&self)->&str {match &self.engine {Engine::Schur(_)=>"schur",Engine::Iterative{compressed:true,..}=>"compressed_within",_=>"within"}}
+    fn project(&self, y:&[f64], options:&LsmrOptions)->reductions::Result<(Vec<f64>,bool,usize)> {
+        match &self.engine {
+            Engine::Schur(s)=>Ok((s.residualize(&self.geometry,&self.weights,y)?,true,1)),
+            Engine::Iterative{solver,mass,compressed}=>{
+                if *compressed {
+                    let ix=self.index.as_ref().unwrap();let means=ix.means(y,&self.weights,mass)?;
+                    let r=solver.solve(&means,options).map_err(|e|e.to_string())?;
+                    let mut out=y.to_vec();ix.restore(&mut out,&means,&r.demeaned)?;
+                    Ok((out,r.converged,r.iterations))
+                } else {
+                    let r=solver.solve(y,options).map_err(|e|e.to_string())?;
+                    Ok((r.demeaned,r.converged,r.iterations))
+                }
+            }
+        }
+    }
     fn one(&mut self, y:&mut [f64], tol:f64, max_iter:usize)->reductions::Result<(bool,usize,f64)> {
         if y.iter().any(|v|!v.is_finite()) {return Err("RHS must be finite".into());}
         let scale=y.iter().map(|v|v.abs()).fold(0.0_f64,f64::max);
         if scale==0.0 {return Ok((true,0,0.0));}
         for v in y.iter_mut() {*v/=scale;}
-        let options=LsmrOptions{tol,maxiter:max_iter,local_size:None};
-        let (mut result, mut ok, mut iterations)=match &self.engine {
-            Engine::Schur(s)=>{
-                let mut r=s.residualize(&self.geometry,&self.weights,y)?;
-                // Iterative refinement uses residuals, never a ridge or a truncated eigenspace.
-                for _ in 0..2 {
-                    if reductions::stationarity(&self.geometry,&self.weights,&r)<=tol {break;}
-                    r=s.residualize(&self.geometry,&self.weights,&r)?;
-                }
-                (r,true,1)
-            }
-            Engine::Iterative{solver,mass,compressed}=>{
-                if *compressed {
-                    let ix=self.index.as_ref().unwrap();let means=ix.means(y,&self.weights,mass)?;
-                    let r=solver.solve(&means,&options).map_err(|e|e.to_string())?;
-                    let mut out=y.to_vec();ix.restore(&mut out,&means,&r.demeaned)?;
-                    (out,r.converged,r.iterations)
-                } else {
-                    let r=solver.solve(y,&options).map_err(|e|e.to_string())?;
-                    (r.demeaned,r.converged,r.iterations)
-                }
-            }
-        };
+        // Upstream's global backward error and our maximum group-mean metric
+        // are not identical. Ask for a stricter inner solve; never loosen the
+        // independent original-row acceptance gate to match its stopping rule.
+        let inner_tol=(tol*0.01).max(f64::MIN_POSITIVE);
+        let mut options=LsmrOptions{tol:inner_tol,maxiter:max_iter,local_size:None};
+        let (mut result, mut ok, mut iterations)=self.project(y,&options)?;
+        let gate=tol.max(64.0*f64::EPSILON);
         let mut error=reductions::stationarity(&self.geometry,&self.weights,&result);
-        if matches!(&self.engine,Engine::Schur(_)) && (!error.is_finite()||error>tol) {
+        // Residual replacement is another projection of r, so it preserves
+        // y-r in col(D); all passes share the caller's total iteration budget.
+        for _ in 0..2 {
+            if !ok || error<=gate || iterations>=max_iter {break;}
+            options.maxiter=max_iter-iterations;
+            let (corrected,success,spent)=self.project(&result,&options)?;
+            result=corrected;ok=success;iterations+=spent;
+            error=reductions::stationarity(&self.geometry,&self.weights,&result);
+        }
+        if matches!(&self.engine,Engine::Schur(_)) && (!error.is_finite()||error>gate) && iterations<max_iter {
             let solver=upstream(&self.geometry.groups,&self.weights)?;
+            options.maxiter=max_iter-iterations;
             let r=solver.solve(y,&options).map_err(|e|e.to_string())?;
             result=r.demeaned;ok=r.converged;iterations+=r.iterations;self.fallbacks+=1;
             error=reductions::stationarity(&self.geometry,&self.weights,&result);
         }
         for (dst,r) in y.iter_mut().zip(result) {*dst=r*scale;}
         if y.iter().any(|v|!v.is_finite()) {return Err("residual overflow while restoring original units".into());}
-        // Stationarity is an additional backward-error gate, not a forward-error claim.
-        Ok((ok && error<=tol.max(64.0*f64::EPSILON),iterations,error))
+        // Additional backward check, NOT a condition-independent forward bound.
+        Ok((ok && error.is_finite() && error<=gate,iterations,error))
     }
 }
 #[pymethods]
@@ -101,7 +111,6 @@ impl NativeSolver {
         py.detach(move || {
             let g=Geometry::new(groups)?;let w=reductions::weights(raw_w.as_deref(),g.n)?;
             let pool=Arc::new(rayon::ThreadPoolBuilder::new().num_threads(threads).build().map_err(|e|e.to_string())?);
-            // Try the cheap Schur gate first; do not pay a tuple sort when Schur already applies.
             let direct=if matches!(strategy.as_str(),"auto"|"schur") {SmallSchur::build(&g,&w,workspace_bytes)?} else {None};
             let index=if direct.is_none() && matches!(strategy.as_str(),"auto"|"compressed") {
                 match TupleIndex::build(&g,workspace_bytes) {
@@ -119,7 +128,6 @@ impl NativeSolver {
         if !tol.is_finite() || tol<=0.0 || tol>1.0 || max_iter==0 {return Err(value("invalid tolerance or iteration limit"));}
         let a=data.as_array();let (n,k)=(a.nrows(),a.ncols());
         if n!=self.geometry.n {return Err(value("RHS row count mismatch"));}
-        // Single owned F-order result buffer. No per-RHS result collection / concatenation.
         let mut out:Vec<f64>=a.columns().into_iter().flat_map(|c|c.to_vec()).collect();
         let pool=Arc::clone(&self.pool);
         let (out,ok,iterations,errors)=py.detach(move ||pool.install(|| {
@@ -132,7 +140,6 @@ impl NativeSolver {
     }
     fn update_weights(&mut self,py:Python<'_>,weights:PyReadonlyArray1<'_,f64>)->PyResult<()> {
         let raw:Vec<f64>=weights.as_array().iter().copied().collect();let pool=Arc::clone(&self.pool);
-        // Build-then-swap: a rejected update leaves the previous working state intact.
         let (w,engine)=py.detach(||pool.install(|| {
             let w=reductions::weights(Some(&raw),self.geometry.n)?;
             let e=Self::build_engine(&self.geometry,self.index.as_deref(),&w,&self.strategy,self.budget)?;
