@@ -9,10 +9,40 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: within-native-${{ github.ref }}
+  group: within-native-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 jobs:
+  prepare:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feat/within-native-accel-20261026' && github.repository == 'asggvhwgw-glitch/EconHDFE'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    outputs:
+      source_sha: ${{ steps.wire.outputs.source_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/within-native-accel-20261026
+      - name: Materialize audited wiring on the feature branch only
+        id: wire
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -f scripts/_wire_within_branch.py; then
+            python scripts/_wire_within_branch.py
+            cp LICENSE native/within-accel/LICENSE
+            git add econhdfe/config.py econhdfe/pipeline.py econhdfe/hdfe/workspace.py econhdfe/hdfe/plan.py econhdfe/hdfe/weighted_projection.py native/within-accel/LICENSE
+            git rm scripts/_wire_within_branch.py
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m 'Materialize opt-in within integration in shared FE factories'
+            git push origin HEAD:refs/heads/feat/within-native-accel-20261026
+          fi
+          echo "source_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
   native:
+    needs: prepare
+    if: always() && (needs.prepare.result == 'success' || needs.prepare.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
@@ -24,13 +54,23 @@ jobs:
       REQUIRE_WITHIN_NATIVE: "1"
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.source_sha || github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - uses: dtolnay/rust-toolchain@stable
-      - name: Temporary branch wiring (removed when source wiring is committed)
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            native/within-accel/target
+          key: within-native-v1-${{ runner.os }}-${{ hashFiles('native/within-accel/Cargo.toml') }}
+      - name: PR before one-time wiring commit
         run: |
           if test -f scripts/_wire_within_branch.py; then python scripts/_wire_within_branch.py; fi
+          cp LICENSE native/within-accel/LICENSE
       - name: Install base package and test tools
         run: python -m pip install -e '.[test]' maturin
       - name: Rust unit tests
@@ -39,7 +79,8 @@ jobs:
           cargo test --release --manifest-path native/within-accel/Cargo.toml 2>&1 | tee native-results/rust-tests.log
       - name: Build and install native wheel
         run: |
-          python -m pip install ./native/within-accel -v 2>&1 | tee native-results/build.log
+          python -m pip wheel --no-deps ./native/within-accel -w native-wheels -v 2>&1 | tee native-results/build.log
+          python -m pip install native-wheels/*.whl
           python -c 'import _econhdfe_within as n; print(n.UPSTREAM_REV)'
       - name: Independent numerical and estimator parity
         run: python -m pytest native/within-accel/tests -q --junitxml=native-results/native-tests.xml 2>&1 | tee native-results/native-tests.log
@@ -52,15 +93,19 @@ jobs:
               python native/within-accel/benchmark.py --case "$case" --strategy "$strategy" --rows 1000000 --repeat 3 --threads 2 | tee "native-results/${case}-${strategy}.json"
             done
           done
-      - name: Archive source wiring and diagnostics
+      - name: Archive source and diagnostics
         if: always()
         run: |
           mkdir -p native-results
           git diff > native-results/integration.diff
+          git rev-parse HEAD > native-results/source-sha.txt
           python -m pip freeze > native-results/environment.txt
           cp native/within-accel/Cargo.lock native-results/ 2>/dev/null || true
+          git archive --format=zip HEAD > native-results/source.zip
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: within-native-${{ github.run_id }}
-          path: native-results/
+          path: |
+            native-results/
+            native-wheels/

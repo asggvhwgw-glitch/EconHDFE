@@ -17,7 +17,7 @@ def data(case, n, rhs, seed=271):
         city = firm % 64
         moves = rng.random(u) < 0.01
         city[moves] = rng.integers(64, size=moves.sum(), dtype=np.uint32)
-        year = np.arange(u, dtype=np.uint32) % 16
+        year = rng.integers(16, size=u, dtype=np.uint32)
         codes = np.repeat(np.column_stack((firm, city, year)), 2, axis=0)
     else:
         n -= n % 16; u = n // 16

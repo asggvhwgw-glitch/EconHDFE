@@ -9,7 +9,7 @@ requires-python = ">=3.10"
 dependencies = ["numpy>=1.26"]
 description = "Experimental native structured FE reductions over pinned within"
 license = "BSD-3-Clause AND MIT"
-license-files = ["LICENSE-WITHIN"]
+license-files = ["LICENSE", "LICENSE-WITHIN"]
 
 [tool.maturin]
 features = ["extension-module"]
