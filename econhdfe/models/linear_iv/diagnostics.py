@@ -2,6 +2,7 @@ from __future__ import annotations
 from itertools import combinations
 import numpy as np
 from ...compute.wls import as_2d
+from ...compute.stable_linalg import serial_triangular_solve
 import scipy.linalg as la
 from scipy.stats import chi2, f
 from ...compute.encoding import factorize_interaction
@@ -52,10 +53,7 @@ def _partial_from_solver(E, C, Z, qr):
     if np.any(noise <= np.sqrt(np.finfo(float).eps) * energy):
         return _residualize_small(A, C)
     rhs = np.column_stack([R[:kc, l:l+ke] * es, rz[:kc, kc:]])
-    # A single control is a scalar division. Avoid dispatching the 1-by-1,
-    # multiple-RHS case to LAPACK (SciPy 1.15.3/Linux crashes in that call).
-    coef = (rhs / rz[0, 0] if kc == 1 else
-            la.solve_triangular(rz[:kc, :kc], rhs, lower=False, check_finite=False))
+    coef = serial_triangular_solve(rz[:kc, :kc], rhs, lower=False, check_finite=False)
     partial = A - C @ coef
     if np.any(np.sum(partial ** 2, axis=0) <=
               np.sqrt(np.finfo(float).eps) * np.sum(A ** 2, axis=0)):
@@ -455,8 +453,8 @@ def _canonical_components(endog, exog, instruments, weights=None, effective_n=No
     try:
         rzz = la.cholesky(qzz, lower=False, check_finite=False)
         ryy = la.cholesky(qyy, lower=False, check_finite=False)
-        irzz = la.solve_triangular(rzz, np.eye(rzz.shape[0]), lower=False, check_finite=False)
-        iryy = la.solve_triangular(ryy, np.eye(ryy.shape[0]), lower=False, check_finite=False)
+        irzz = serial_triangular_solve(rzz, np.eye(rzz.shape[0]), lower=False, check_finite=False)
+        iryy = serial_triangular_solve(ryy, np.eye(ryy.shape[0]), lower=False, check_finite=False)
     except la.LinAlgError:
         def root_and_invroot(a):
             vals, vecs = np.linalg.eigh((a+a.T)/2)

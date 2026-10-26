@@ -2,6 +2,7 @@
 
 ## 0.9.0 — unreleased candidate
 
+- Keep small IV triangular solves single-threaded to avoid a reproduced Linux SciPy 1.15.3/OpenBLAS 0.3.28 crash after BLAS thread-limit changes; restore caller limits, including on errors. Stabilize the cross-platform thread fixture and ill-conditioned IV reference without loosening tolerances.
 - Remove the `pyreghdfe` compatibility package and the internal forwarding modules `econhdfe.bootstrap`, `econhdfe.compute.runtime` and `econhdfe.hdfe.encoding`.
 - Unify PPML/IV-PPML with OLS/IV: `data=` first with column-name specs, `cluster=` (was `clusters=`), and a `params` ndarray field (was `coef`); vce defaults keep the Stata upstream conventions.
 - Reject conflicting scalar/config settings with `specification.config_conflict` instead of letting config objects silently override scalars.

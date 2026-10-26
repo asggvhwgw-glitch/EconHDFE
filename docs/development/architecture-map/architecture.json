@@ -724,13 +724,13 @@
     {
       "source": "linear_iv",
       "target": "compute",
-      "count": 20,
+      "count": 21,
       "examples": [
         "econhdfe.models.linear_iv.api → econhdfe.compute.weights",
         "econhdfe.models.linear_iv.api → econhdfe.compute.vcov",
         "econhdfe.models.linear_iv.api → econhdfe.compute.block_design",
         "econhdfe.models.linear_iv.diagnostics → econhdfe.compute.wls",
-        "econhdfe.models.linear_iv.diagnostics → econhdfe.compute.encoding"
+        "econhdfe.models.linear_iv.diagnostics → econhdfe.compute.stable_linalg"
       ]
     },
     {
@@ -3117,6 +3117,14 @@
       "source_path": "econhdfe/models/linear_iv/diagnostics.py",
       "source_group": "linear_iv",
       "target_module": "econhdfe.compute.wls",
+      "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.linear_iv.diagnostics",
+      "source_path": "econhdfe/models/linear_iv/diagnostics.py",
+      "source_group": "linear_iv",
+      "target_module": "econhdfe.compute.stable_linalg",
       "target_group": "compute",
       "reexport_surface": false
     },

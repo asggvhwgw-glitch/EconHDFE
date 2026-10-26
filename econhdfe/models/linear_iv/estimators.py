@@ -10,7 +10,7 @@ from ...compute.wls import weighted_arrays
 from ...compute.block_design import BlockDesign, hstack_block_designs
 from ...iv.design import IVDesign
 from ...iv.solve import weighted_2sls
-from ...compute.stable_linalg import equilibrated_lstsq
+from ...compute.stable_linalg import equilibrated_lstsq, serial_triangular_solve
 from ...errors import UnderidentifiedError, NumericalError
 from .stock_yogo import stock_yogo_critical_values
 from .solve import _solve_2sls_roles, _solve_2sls_stable_roles
@@ -91,8 +91,8 @@ def _compressed_2sls(zz, xz, zy):
         lower = la.cholesky(zz, lower=True)
     except la.LinAlgError as exc:
         raise NumericalError("Instrument Gram is not numerically positive definite") from exc
-    projected = la.solve_triangular(lower, xz.T, lower=True)
-    response = la.solve_triangular(lower, zy, lower=True)
+    projected = serial_triangular_solve(lower, xz.T, lower=True)
+    response = serial_triangular_solve(lower, zy, lower=True)
     return equilibrated_lstsq(projected, response)
 
 
