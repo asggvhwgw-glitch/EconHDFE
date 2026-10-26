@@ -77,11 +77,11 @@ def test_cache_off_discards_between_calls_and_overrides_persistent(data, monkeyp
     for name in ("load_result", "save_result", "load_within", "save_within"):
         monkeypatch.setattr(type(store), name, forbidden)
     calls = []
-    original = sessions._residualize_blocks
+    original = sessions.residualize_blocks
     def capture(*args, **kwargs):
         calls.append(1)
         return original(*args, **kwargs)
-    monkeypatch.setattr(sessions, "_residualize_blocks", capture)
+    monkeypatch.setattr(sessions, "residualize_blocks", capture)
     spec = specification(iv)
     first = session.fit(**spec)
     second = session.fit(**spec)

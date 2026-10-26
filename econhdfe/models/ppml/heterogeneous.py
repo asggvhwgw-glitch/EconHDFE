@@ -20,7 +20,7 @@ from ...compute.block_design import BlockDesign, DenseDesignBlock
 from ...compute.linalg import weighted_lstsq, independent_columns
 from ...compute.partitioned_lstsq import partitioned_weighted_lstsq
 from ...compute.stable_linalg import equilibrated_gram_inverse
-from ...compute.vcov import sandwich_vcov_block_xe
+from ...compute.vcov import sandwich_vcov_block_xe, normalize_vce
 from ...errors import ShapeError, InputError, ConvergenceError
 from ...hdfe.block_projection import BlockWeightedFEProjector
 from ...hdfe.plan import FEPlan
@@ -31,6 +31,7 @@ from .separation import SeparationResult, detect_separation
 from .standardize import Standardization
 from .results import PPMLResult
 from .execution import resolve_execution
+from .vce import MODEL_VCE_KINDS
 from ...reporting import cluster_counts as _cluster_counts, fe_names_from_metadata
 from scipy.special import gammaln
 
@@ -369,8 +370,8 @@ def ppml_vcov_block(
     mu = np.asarray(mu, dtype=np.float64)
     tw = np.asarray(true_w, dtype=np.float64)
     bread = equilibrated_gram_inverse(X_tilde.gram(weights=tw * mu))
-    kind0 = "model" if kind is None else str(kind).lower().replace("-", "_")
-    if kind0 in {"model", "iid", "asymptotic", "unadjusted", "homoskedastic"}:
+    kind0 = normalize_vce(kind, "model")
+    if kind0 in MODEL_VCE_KINDS:
         return bread
     score_scalar = tw * (y - mu)
     if kind0 == "cluster":
@@ -553,7 +554,7 @@ def fit_block_arrays(
     if clusters is not None:
         cls_list = clusters if isinstance(clusters, (list, tuple)) else [clusters]
         cls_s = [np.asarray(c)[sample] for c in cls_list]
-    if str(vce).lower() == "cluster":
+    if normalize_vce(vce) == "cluster":
         cls_s = normalize_vce_clusters(cls_s, nobs=len(ystd))
     dof = ps_requested.dof_info(clusters=cls_s, method=config.dof_method)
     df_a = int(dof.df_absorbed)
@@ -562,8 +563,7 @@ def fit_block_arrays(
         df_absorbed=df_a, nested_adj=int(dof.nested > 0),
     )
     V = standardizer.unscale_vcov(Vstd)
-    vce_key = "model" if vce is None else str(vce).lower().replace("-", "_")
-    if vce_key in {"model", "iid", "asymptotic", "unadjusted", "homoskedastic"}:
+    if normalize_vce(vce, "model") in MODEL_VCE_KINDS:
         V /= standardizer.y_scale
     se = np.sqrt(np.maximum(np.diag(V), 0.0))
 

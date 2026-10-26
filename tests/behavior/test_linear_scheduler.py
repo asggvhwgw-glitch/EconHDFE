@@ -36,8 +36,8 @@ def host(monkeypatch):
 def test_linear_stages_share_auto_or_explicit_allocation(data, host, monkeypatch, iv, explicit):
     module = importlib.import_module("econhdfe.models.linear_iv.api" if iv else "econhdfe.models.ols")
     observed = []
-    for name in ("materialize_model_data", "_make_standard_absorber",
-                 "fit_iv_kclass" if iv else "_fit_ols_in_basis"):
+    for name in ("materialize_model_data", "make_standard_absorber",
+                 "fit_iv_kclass" if iv else "fit_ols_in_basis"):
         original = getattr(module, name)
         def capture(*args, _original=original, _name=name, **kwargs):
             allocation = scheduler.current_allocation()
@@ -62,12 +62,12 @@ def test_linear_stages_share_auto_or_explicit_allocation(data, host, monkeypatch
 @pytest.mark.parametrize("iv", [False, True])
 def test_legacy_resource_limits_are_preserved(data, host, monkeypatch, iv):
     module = importlib.import_module("econhdfe.models.linear_iv.api" if iv else "econhdfe.models.ols")
-    original = module._make_standard_absorber
+    original = module.make_standard_absorber
     seen = []
     def capture(*args, **kwargs):
         seen.append((kwargs["memory_budget_mb"], kwargs["absorb_threads"]))
         return original(*args, **kwargs)
-    monkeypatch.setattr(module, "_make_standard_absorber", capture)
+    monkeypatch.setattr(module, "make_standard_absorber", capture)
     (ivhdfe if iv else olshdfe)(data, **specification(iv), memory_budget_mb=48, absorb_threads=1,
                               inference_config=InferenceConfig(iv_advanced_statistics=False))
     assert seen == [(48, 1)]
@@ -107,8 +107,8 @@ def test_session_source_and_solver_run_inside_one_allocation(data, host, monkeyp
     from econhdfe.data.source import DataFrameSource
     import econhdfe.sessions as module
     observed = []
-    for name in ("prepare_repeated_dataset", "_residualize_blocks",
-                 "fit_iv_kclass" if iv else "_fit_ols_in_basis"):
+    for name in ("prepare_repeated_dataset", "residualize_blocks",
+                 "fit_iv_kclass" if iv else "fit_ols_in_basis"):
         original = getattr(module, name)
         def capture(*args, _original=original, _name=name, **kwargs):
             allocation = scheduler.current_allocation()

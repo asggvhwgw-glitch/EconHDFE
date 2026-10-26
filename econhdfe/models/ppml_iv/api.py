@@ -2,7 +2,6 @@ from __future__ import annotations
 from time import perf_counter
 from ...errors import error_boundary, SpecificationError, UnderidentifiedError, ShapeError
 from ...config import InferenceConfig, ExecutionConfig
-from ...compute.context import ExecutionContext
 from ...planner.scheduler import managed_execution
 from ...frontend.validate import require_numeric
 from ...frontend.roles import VariableRole
@@ -12,10 +11,22 @@ from ...compute.wls import as_2d
 from ...compute.weights import prepare_weights
 from ...hdfe.plan import FEPlan
 from ..poisson import prepare_poisson_base
+from ..ppml.api import _ReusableFEModel, _finish_result, _resolve_call_configs
 from .config import IVPPMLConfig
 from .estimator import fit_arrays
 from .heterogeneous import fit_structured_dataframe
 from ...design import build_design, is_heterogeneous_spec_candidate
+
+
+def _spec_tuple(value):
+    """Role specification as a term tuple; a single term may be passed unwrapped."""
+    if value is None:
+        return ()
+    if isinstance(value, str):
+        return (value,)
+    if isinstance(value, (tuple, list)):
+        return tuple(value)
+    return (value,)
 
 
 def _prepare(y, exog, endog, instruments, *, offset, exposure, weights, weight_type, exog_names, endog_names, instrument_names):
@@ -53,18 +64,9 @@ def ivppmlhdfe(
     execution_config: ExecutionConfig | None = None, warm_start=None,
 ):
     """Estimate additive-moment IV-PPML with optional high-dimensional FEs."""
-    confidence_level = 0.95
-    if inference_config is not None:
-        inference_config.validate()
-        confidence_level = inference_config.confidence_level
-        if inference_config.vce is not None:
-            vce = inference_config.vce
-    execution_config = ExecutionConfig() if execution_config is None else execution_config
-    execution_config.validate()
-    context = ExecutionContext(execution_config)
-    _t0 = perf_counter() if execution_config.profile != "off" else None
-    config = IVPPMLConfig() if config is None else config
-    config.validate()
+    vce, config, execution_config, context, t0 = _resolve_call_configs(
+        vce, config, IVPPMLConfig, inference_config, execution_config,
+    )
     vals = _prepare(
         y, exog, endog, instruments, offset=offset, exposure=exposure, weights=weights,
         weight_type=weight_type, exog_names=exog_names, endog_names=endog_names, instrument_names=instrument_names,
@@ -78,58 +80,17 @@ def ivppmlhdfe(
         exog_names=cn, endog_names=en, instrument_names=zn, config=config,
         warm_start=warm_start, execution_config=execution_config, execution_context=context,
     )
-    result.confidence_level = confidence_level
-    result.diagnostics_mode = inference_config.diagnostics if inference_config is not None else "off"
-    if _t0 is not None:
-        result.profile = {
-            "total_seconds": perf_counter() - _t0, "mode": execution_config.profile,
-            "separation_seconds": dict(result.diagnostics.get("separation_seconds", {})),
-        }
-    return result
+    return _finish_result(result, inference_config, execution_config, t0)
 
 
-class IVPPMLHDFE:
+class IVPPMLHDFE(_ReusableFEModel):
     """Reusable DataFrame IV-PPML model with a compiled FE plan."""
 
     @error_boundary("ivppml")
     def __init__(self, data: pd.DataFrame, *, absorb=(), config: IVPPMLConfig | None = None,
                  inference_config: InferenceConfig | None = None,
                  execution_config: ExecutionConfig | None = None):
-        self.data = data
-        self.absorb = tuple(absorb)
-        self.config = IVPPMLConfig() if config is None else config
-        self.config.validate()
-        self.inference_config = InferenceConfig() if inference_config is None else inference_config
-        self.inference_config.validate()
-        self.execution_config = ExecutionConfig() if execution_config is None else execution_config
-        self.execution_config.validate()
-        self.context = ExecutionContext(self.execution_config)
-        self.plan = FEPlan.from_dataframe(data, self.absorb)
-        self._source_fingerprint = (
-            FEPlan.source_fingerprint(data, self.absorb)
-            if self.execution_config.cache_validation == "signature" else None
-        )
-        self.context.put(self.plan.fingerprint, self.plan)
-
-    def _prepare_resource_admission(self):
-        # self.plan/data remain owned by the model even if cache entries go.
-        self.context.prepare_admission(self.execution_config, protected=(self.plan, self.data))
-
-    def _ensure_plan_current(self):
-        if not self.absorb:
-            return
-        rebuild = self.plan.nobs != len(self.data)
-        if not rebuild and self.execution_config.cache_validation == "signature":
-            current = FEPlan.source_fingerprint(self.data, self.absorb)
-            rebuild = current != self._source_fingerprint
-        if rebuild:
-            self.plan = FEPlan.from_dataframe(self.data, self.absorb)
-            self._source_fingerprint = (
-                FEPlan.source_fingerprint(self.data, self.absorb)
-                if self.execution_config.cache_validation == "signature" else None
-            )
-            self.context.clear()
-            self.context.put(self.plan.fingerprint, self.plan)
+        self._setup(data, absorb, config, IVPPMLConfig, inference_config, execution_config)
 
     @error_boundary("ivppml")
     @managed_execution
@@ -137,15 +98,6 @@ class IVPPMLHDFE:
             weights=None, weight_type=None, vce="robust", clusters=None, warm_start=None):
         self._ensure_plan_current()
         with self.context.maintain(self.execution_config, protected=(self.plan, self.data)):
-            def _spec_tuple(value):
-                if value is None:
-                    return ()
-                if isinstance(value, str):
-                    return (value,)
-                if isinstance(value, (tuple, list)):
-                    return tuple(value)
-                return (value,)
-
             ccols, ecols, zcols = _spec_tuple(exog), _spec_tuple(endog), _spec_tuple(instruments)
             if self.inference_config.vce is not None:
                 vce = self.inference_config.vce
@@ -183,11 +135,4 @@ class IVPPMLHDFE:
                     exog_names=cn, endog_names=en, instrument_names=zn, config=self.config,
                     warm_start=warm_start, execution_config=self.execution_config, execution_context=self.context,
                 )
-            result.confidence_level = self.inference_config.confidence_level
-            result.diagnostics_mode = self.inference_config.diagnostics
-            if t0 is not None:
-                result.profile = {
-                    "total_seconds": perf_counter() - t0, "mode": self.execution_config.profile,
-                    "separation_seconds": dict(result.diagnostics.get("separation_seconds", {})),
-                }
-            return result
+            return _finish_result(result, self.inference_config, self.execution_config, t0)

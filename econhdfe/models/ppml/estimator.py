@@ -15,7 +15,8 @@ from ...compute.linalg import independent_columns, weighted_lstsq
 from .results import PPMLResult
 from .separation import detect_separation
 from .standardize import Standardization
-from .vce import ppml_vcov
+from ...compute.vcov import normalize_vce
+from .vce import ppml_vcov, MODEL_VCE_KINDS
 from .execution import resolve_execution, get_projector
 from ...reporting import cluster_counts as _cluster_counts, fe_names_from_metadata
 
@@ -248,7 +249,7 @@ def fit_arrays(
     if clusters is not None:
         cls_list = clusters if isinstance(clusters, (list, tuple)) else [clusters]
         cls_s = [np.asarray(c)[sample] for c in cls_list]
-    if str(vce).lower() == "cluster":
+    if normalize_vce(vce) == "cluster":
         cls_s = normalize_vce_clusters(cls_s, nobs=len(ystd))
     dof = ps_requested.dof_info(clusters=cls_s, method=config.dof_method)
     df_a = int(dof.df_absorbed)
@@ -258,8 +259,7 @@ def fit_arrays(
         nested_adj=int(dof.nested > 0),
     )
     V = standardizer.unscale_vcov(Vstd)
-    vce_key = "model" if vce is None else str(vce).lower().replace("-", "_")
-    if vce_key in {"model", "iid", "asymptotic", "unadjusted", "homoskedastic"}:
+    if normalize_vce(vce, "model") in MODEL_VCE_KINDS:
         # H_std = H_original / y_scale. Robust sandwich scaling cancels,
         # but the model-based inverse Hessian requires this additional factor.
         V /= standardizer.y_scale

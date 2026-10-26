@@ -1,8 +1,26 @@
 from __future__ import annotations
+from dataclasses import dataclass
 import numpy as np
 from numba import njit
 from .rank import categorical_prefix_ranks
-from ..results import DofInfo
+
+
+@dataclass(slots=True)
+class DofInfo:
+    """Serializable absorbed degrees-of-freedom metadata.
+
+    Produced by the HDFE DoF engine and carried unchanged on result objects
+    (``RegressionResult.dof_info``); ``econhdfe.results`` re-exports it.
+    """
+    df_absorbed: int
+    initial: int
+    redundant: int
+    nested: int
+    k_by_component: tuple[int, ...]
+    m_by_component: tuple[int, ...]
+    exact_by_component: tuple[bool, ...]
+    nested_by_component: tuple[bool, ...]
+    method: str
 
 
 @njit(cache=True)
@@ -231,8 +249,3 @@ def absorbed_dof(
         nested_by_component=tuple(map(bool, nested_flags)),
         method=method,
     )
-
-
-def absorbed_rank(groups: list[np.ndarray]) -> int:
-    """Backward-compatible rank helper for intercept-only fixed effects."""
-    return absorbed_dof(groups, method="pairwise", adjust_nested=False, adjust_continuous=False).df_absorbed

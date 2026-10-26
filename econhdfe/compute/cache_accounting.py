@@ -1,4 +1,4 @@
-"""Backing-array accounting for disposable linear-session caches."""
+"""Backing-array accounting for disposable execution and session caches."""
 from dataclasses import fields, is_dataclass
 import numpy as np
 import pandas as pd

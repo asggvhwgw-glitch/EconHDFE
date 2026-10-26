@@ -4,19 +4,23 @@ from time import perf_counter
 from ...errors import error_boundary
 from ...config import HDFEConfig, InferenceConfig, ExecutionConfig
 from ...planner.scheduler import managed_execution
-from ...data import materialize_model_data, EstimationSampleState
+from ...data import materialize_model_data
 from ...frontend.validate import require_numeric
 from ...frontend.roles import VariableRole
 import numpy as np
 from ...pipeline import (
-    _col, _design, _execution_design, _prepare_group_mode, _make_group_absorber, _residualize_blocks,
-    _resolve_iv_columns, _group_dof, _group_info, _collinearity_metadata,
-    _check_collinearity_mode, _resolve_method, _resolve_acceleration,
-    _prepare_standard_fe_structure, _make_standard_absorber, _check_absorption,
-    _cluster_arrays, _masked_array, _absorb_metadata, _resolve_pool_size,
+    column_values, compile_design, compile_execution_design, prepare_group_mode, make_group_absorber,
+    residualize_blocks, resolve_iv_columns, group_dof, group_info, group_has_intercept,
+    check_collinearity_mode, resolve_method, resolve_acceleration, standard_dof,
+    make_standard_absorber, check_absorption, cluster_arrays, masked_array, absorb_metadata,
+    block_absorb_metadata, resolve_pool_size,
 )
-from ...hdfe.dof import absorbed_dof
-from ...compute.weights import normalize_weight_type, prepare_weights, resolve_vce_for_weights
+from ..linear import (
+    IV_DESIGN_ROLES, StageClock, apply_config_overrides, reporting_options, prepare_standard_sample,
+    finish_group_mode, recover_fixed_effects, linear_result, prediction_state, with_saved_effects,
+)
+from ...compute.weights import prepare_weights, resolve_vce_for_weights
+from ...compute.vcov import normalize_vce, BLOCK_VCE_KINDS
 from .estimators import fit_iv_kclass, fit_iv_gmm2s, fit_iv_kclass_block
 from .absorption import refine_iv_control_absorption
 from .stages import bind_callback, completed, validate_callback
@@ -24,12 +28,36 @@ from ...compute.block_design import BlockDesign, hstack_block_designs, align_den
 from ...hdfe.block_projection import BlockWeightedFEProjector
 from ...hdfe.plan import FEPlan
 from ...design import is_heterogeneous_spec_candidate
-from ...results import RegressionResult, EstimationState, FixedEffectEstimates, FixedEffectTermEstimate
-from ...prediction import design_state, linear_prediction_state
-from ...effects.prediction import saved_categorical_state
-from ...reporting import (
-    cluster_counts as _cluster_counts, reghdfe_r2_statistics, ivreghdfe_model_statistics,
-)
+from ...results import EstimationState
+from ...prediction import design_state
+
+
+def _split_within(within, widths, start):
+    """Column blocks of a stacked within matrix, in ``widths`` order from ``start``."""
+    out = []
+    for width in widths:
+        out.append(within[:, start:start + width])
+        start += width
+    return out
+
+
+def _fe_target(y1, C1, E1, beta, resid):
+    """y - xb - e on the estimation sample, the input of FE recovery."""
+    kc = C1.shape[1]
+    xb = np.zeros_like(y1, dtype=np.float64)
+    if kc:
+        xb += C1 @ beta[:kc]
+    if E1.shape[1]:
+        xb += E1 @ beta[kc:]
+    return y1 - xb - resid
+
+
+def _fit_dense_iv(est, yw, Cw, Ew, Zw, *, kappa, fuller, center, **common):
+    """Dispatch a dense within-transformed IV system to GMM2S or the k-class family."""
+    if est == "gmm2s":
+        return fit_iv_gmm2s(yw, Cw, Ew, Zw, center=center, **common)
+    return fit_iv_kclass(yw, Cw, Ew, Zw, estimator=est, kappa=kappa, fuller=fuller, **common)
+
 
 def _ivreghdfe_group_mode(
     data=None, *, y, exog=None, endog, instruments, absorb, group, individual=None,
@@ -44,12 +72,14 @@ def _ivreghdfe_group_mode(
     omit_exog=None, omit_endog=None, omit_instruments=None,
     advanced_statistics=True, on_stage=None,
 ):
-    ylong = require_numeric(_col(data, y), name=str(y), role=VariableRole.OUTCOME, ndim=1)
-    cdesign = _design(data, exog, len(ylong), "exog", structural=False, omit=omit_exog)
-    edesign = _design(data, endog, len(ylong), "endog", structural=False, omit=omit_endog)
-    zdesign = _design(data, instruments, len(ylong), "z", structural=False, omit=omit_instruments)
+    method, _ = resolve_method(method, group_mode=True, individual=individual is not None, backend=backend)
+    acceleration = resolve_acceleration(method, acceleration, group_mode=True)
+    ylong = require_numeric(column_values(data, y), name=str(y), role=VariableRole.OUTCOME, ndim=1)
+    cdesign = compile_design(data, exog, len(ylong), "exog", structural=False, omit=omit_exog)
+    edesign = compile_design(data, endog, len(ylong), "endog", structural=False, omit=omit_endog)
+    zdesign = compile_design(data, instruments, len(ylong), "z", structural=False, omit=omit_instruments)
     Clong, Elong, Zlong = cdesign.values, edesign.values, zdesign.values
-    prep = _prepare_group_mode(
+    prep = prepare_group_mode(
         data, group=group, individual=individual, absorb=absorb,
         arrays=[("dependent variable", ylong), ("exogenous regressors", Clong),
                 ("endogenous regressors", Elong), ("instruments", Zlong)],
@@ -57,94 +87,46 @@ def _ivreghdfe_group_mode(
         drop_singletons=drop_singletons, weight_type=weight_type, aggregation=aggregation,
     )
     y1, C1, E1, Z1 = prep["arrays"]
-    absorber = _make_group_absorber(
+    absorber = make_group_absorber(
         prep, method=method, transform=transform, backend=backend, acceleration=acceleration,
         preconditioner=preconditioner, tol=tol, max_iter=max_iter, aggregation=aggregation,
         incidence_backend=incidence_backend, memory_budget_mb=memory_budget_mb,
         projection_backend=projection_backend, absorb_threads=absorb_threads,
     )
     block = np.column_stack([y1, C1, E1, Z1])
-    within, info = _residualize_blocks(absorber, block, pool_size, memory_budget_mb)
-    p = 1
+    within, info = residualize_blocks(absorber, block, pool_size, memory_budget_mb)
     yw = within[:, 0]
-    Cw = within[:, p:p+C1.shape[1]]; p += C1.shape[1]
-    Ew = within[:, p:p+E1.shape[1]]; p += E1.shape[1]
-    Zw = within[:, p:p+Z1.shape[1]]
-    Cw, Ew, Zw, C1_active, E1_active, Z1_active, c_names, e_names, z_names, collin_info = _resolve_iv_columns(
+    Cw, Ew, Zw = _split_within(within, (C1.shape[1], E1.shape[1], Z1.shape[1]), 1)
+    Cw, Ew, Zw, C1_active, E1_active, Z1_active, c_names, e_names, z_names, collin_info = resolve_iv_columns(
         Cw, Ew, Zw, C1, E1, Z1, cdesign.names, edesign.names, zdesign.names,
         weights=prep["weights"], tolerance=collinear_tol, mode=collinearity,
-        c_origins=cdesign.origins, e_origins=edesign.origins, z_origins=zdesign.origins,
         c_design=cdesign, e_design=edesign, z_design=zdesign,
     )
-    dof = _group_dof(prep, absorber, dof_method)
+    dof = group_dof(prep, absorber, dof_method)
     winfo = prep["winfo"]
     vce_kind = resolve_vce_for_weights(vce, winfo, has_clusters=bool(prep["clusters"]))
-    stage_callback = bind_callback(on_stage, c_names + e_names, y, df_absorbed=dof.df_absorbed)
     est = estimator.lower()
-    if est == "gmm2s":
-        beta, V, resid, rank, df_resid, first, diagnostics, meta = fit_iv_gmm2s(
-            yw, Cw, Ew, Zw, weights=prep["weights"], weight_info=winfo,
-            advanced_statistics=advanced_statistics, on_stage=stage_callback,
-            vce=vce_kind, clusters=prep["clusters"], df_absorbed=dof.df_absorbed,
-            nested_adj=int(dof.nested > 0), center=gmm_center, time=prep["time"],
-            panel=prep["panel"], bandwidth=bandwidth, kernel=kernel,
-        )
-    else:
-        beta, V, resid, rank, df_resid, first, diagnostics, meta = fit_iv_kclass(
-            yw, Cw, Ew, Zw, weights=prep["weights"], weight_info=winfo,
-            advanced_statistics=advanced_statistics, on_stage=stage_callback,
-            vce=vce_kind, clusters=prep["clusters"], df_absorbed=dof.df_absorbed,
-            nested_adj=int(dof.nested > 0), estimator=est, kappa=kappa, fuller=fuller,
-            time=prep["time"], panel=prep["panel"], bandwidth=bandwidth, kernel=kernel,
-        )
+    beta, V, resid, rank, df_resid, first, diagnostics, meta = _fit_dense_iv(
+        est, yw, Cw, Ew, Zw, kappa=kappa, fuller=fuller, center=gmm_center,
+        weights=prep["weights"], weight_info=winfo, advanced_statistics=advanced_statistics,
+        on_stage=bind_callback(on_stage, c_names + e_names, y, df_absorbed=dof.df_absorbed),
+        vce=vce_kind, clusters=prep["clusters"], df_absorbed=dof.df_absorbed,
+        nested_adj=int(dof.nested > 0), time=prep["time"], panel=prep["panel"],
+        bandwidth=bandwidth, kernel=kernel,
+    )
     fixed_effects = None
     if save_fe:
-        kc = C1_active.shape[1]
-        xb = np.zeros_like(y1, dtype=np.float64)
-        if kc:
-            xb += C1_active @ beta[:kc]
-        if E1_active.shape[1]:
-            xb += E1_active @ beta[kc:]
-        target = y1 - xb - resid
-        raw_terms, fe_meta = absorber.solve_effects(target)
-        fixed_effects = FixedEffectEstimates(
-            terms=tuple(
-                FixedEffectTermEstimate(prep["names"][i], intercept, slope_coef, contribution)
-                for i, (intercept, slope_coef, contribution) in enumerate(raw_terms)
-            ),
-            converged=bool(fe_meta["converged"]), iterations=int(fe_meta["iterations"]),
-            residual_norm=float(fe_meta["residual_norm"]),
-            reconstruction_error=float(fe_meta["reconstruction_error"]),
+        fixed_effects = recover_fixed_effects(
+            absorber, _fe_target(y1, C1_active, E1_active, beta, resid), prep["names"],
         )
-    has_intercept = bool(any(prep["intercepts"])) or bool(
-        prep.get("individual_spec") is not None and prep["individual_spec"].intercept
-    )
-    r2_stats = reghdfe_r2_statistics(
-        y1, yw, resid, weights=prep["weights"], effective_n=winfo.effective_n,
-        rank=rank, df_absorbed=dof.df_absorbed, df_nested=dof.nested,
-        has_intercept=has_intercept,
-    )
-    fit_stats = ivreghdfe_model_statistics(
-        yw, resid, beta, V, weights=prep["weights"], effective_n=winfo.effective_n,
-        rank=rank, df_absorbed=dof.df_absorbed, df_nested=dof.nested,
-        df_resid_inference=df_resid,
-    )
-    return RegressionResult(
-        params=beta, vcov=V, stderr=np.sqrt(np.clip(np.diag(V), 0, None)),
-        residuals=resid, fitted=y1-resid, nobs=int(round(winfo.effective_n)), rank=rank,
-        df_resid=df_resid, df_absorbed=dof.df_absorbed, converged=info.converged,
-        iterations=info.iterations, dropped_singletons=prep["dropped"],
-        names=tuple(c_names + e_names), first_stage=first,
-        diagnostics=diagnostics, estimator=meta.get("estimator", est), estimator_info=meta,
-        dof_info=dof, weight_type=winfo.kind, sum_weights=winfo.sum_weights, nobs_raw=len(yw),
-        fixed_effects=fixed_effects, group_info=_group_info(prep, absorber, aggregation),
-        collinearity_info=collin_info,
-        vce=vce_kind, cluster_counts=_cluster_counts(prep["clusters"]), fe_names=tuple(prep["names"]),
-        r2=r2_stats["r2"], r2_within=r2_stats["r2_within"],
-        r2_adjusted=r2_stats["r2_adjusted"], r2_adjusted_within=r2_stats["r2_adjusted_within"],
-        rss=fit_stats["rss"], tss_within=fit_stats["tss_within"], rmse=fit_stats["rmse"],
-        f_statistic=fit_stats["f_statistic"], f_pvalue=fit_stats["f_pvalue"],
-        df_model=fit_stats["df_model"], df_resid_fit=fit_stats["df_resid_fit"], vcov_rank=(int(np.linalg.matrix_rank(V)) if V.size else 0),
+    return linear_result(
+        beta, V, resid, y=y1, y_within=yw, rank=rank, df_resid=df_resid, dof=dof, winfo=winfo,
+        clusters=prep["clusters"], vce=vce_kind, has_intercept=group_has_intercept(prep), iv=True,
+        converged=info.converged, iterations=info.iterations, dropped_singletons=prep["dropped"],
+        names=tuple(c_names + e_names), first_stage=first, diagnostics=diagnostics,
+        estimator=meta.get("estimator", est), estimator_info=meta, fixed_effects=fixed_effects,
+        group_info=group_info(prep, absorber, aggregation), collinearity_info=collin_info,
+        fe_names=tuple(prep["names"]),
         state=EstimationState(absorber, yw, np.column_stack([Cw, Ew]),
                               tuple(prep["clusters"] or ()), prep["weights"], winfo.kind)
         if keep_state else None,
@@ -180,25 +162,15 @@ def ivhdfe(
     units at estimation, first_stage, diagnostics and complete. Diagnostics
     may still fail after estimation; only complete denotes a finished fit.
     """
-    _t0 = perf_counter() if execution_config is not None and execution_config.profile != "off" else None
-    confidence_level = 0.95
-    advanced_statistics = True
+    clock = StageClock(execution_config)
     validate_callback(on_stage)
-    if hdfe_config is not None:
-        hdfe_config.validate()
-        method, tol, max_iter = hdfe_config.solver, hdfe_config.tolerance, hdfe_config.max_iter
-        dof_method, canonicalize_fe = hdfe_config.dof_method, hdfe_config.canonicalize
-    if inference_config is not None:
-        inference_config.validate()
-        confidence_level = inference_config.confidence_level
-        advanced_statistics = inference_config.iv_advanced_statistics
-        if inference_config.vce is not None:
-            vce = inference_config.vce
-    if execution_config is not None:
-        execution_config.validate()
-        memory_budget_mb = execution_config.memory_budget_mb
-        if execution_config.threads != "auto":
-            absorb_threads = execution_config.threads
+    (method, tol, max_iter, dof_method, canonicalize_fe, vce, memory_budget_mb,
+     absorb_threads) = apply_config_overrides(
+        hdfe_config, inference_config, execution_config, method=method, tol=tol,
+        max_iter=max_iter, dof_method=dof_method, canonicalize_fe=canonicalize_fe, vce=vce,
+        memory_budget_mb=memory_budget_mb, absorb_threads=absorb_threads,
+    )
+    advanced_statistics = True if inference_config is None else inference_config.iv_advanced_statistics
     if individual is not None and group is None:
         raise ValueError("individual= requires group=")
     identifier_levels = getattr(data, "identifier_levels", {})
@@ -211,18 +183,14 @@ def ivhdfe(
     if data_plan is not None:
         identifier_levels = data_plan.identifier_levels
 
-    collinearity = _check_collinearity_mode(collinearity)
+    collinearity = check_collinearity_mode(collinearity)
     if group is not None:
-        method_resolved, solver_selection = _resolve_method(
-            method, group_mode=True, individual=individual is not None, backend=backend
-        )
-        acceleration_resolved = _resolve_acceleration(method_resolved, acceleration, group_mode=True)
         result = _ivreghdfe_group_mode(
             data, y=y, exog=exog, endog=endog, instruments=instruments, absorb=absorb,
             group=group, individual=individual, aggregation=aggregation, weights=weights,
             weight_type=weight_type, cluster=cluster, vce=vce, drop_singletons=drop_singletons,
-            tol=tol, max_iter=max_iter, method=method_resolved, transform=transform,
-            acceleration=acceleration_resolved, preconditioner=preconditioner, backend=backend,
+            tol=tol, max_iter=max_iter, method=method, transform=transform,
+            acceleration=acceleration, preconditioner=preconditioner, backend=backend,
             pool_size=pool_size, memory_budget_mb=memory_budget_mb, dof_method=dof_method,
             estimator=estimator, kappa=kappa, fuller=fuller, gmm_center=gmm_center,
             keep_state=keep_state, time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
@@ -232,45 +200,32 @@ def ivhdfe(
             omit_exog=omit_exog, omit_endog=omit_endog, omit_instruments=omit_instruments,
             advanced_statistics=advanced_statistics, on_stage=on_stage,
         )
-        if not result.converged and not allow_nonconverged:
-            raise RuntimeError("group/individual FE absorption did not converge")
-        result.confidence_level = confidence_level
-        result.diagnostics_mode = inference_config.diagnostics if inference_config is not None else "off"
-        if _t0 is not None:
-            result.profile = {"total_seconds": perf_counter() - _t0, "mode": execution_config.profile}
-            if data_plan is not None:
-                result.profile["data_ingestion"] = data_plan.as_dict()
+        finish_group_mode(
+            result, allow_nonconverged=allow_nonconverged, inference_config=inference_config,
+            clock=clock, data_plan=data_plan,
+        )
         completed(on_stage, result, outcome=y)
         return result
 
-    y0 = require_numeric(_col(data, y), name=str(y), role=VariableRole.OUTCOME, ndim=1)
-    sample_state = EstimationSampleState(len(y0))
-    w0 = None if weights is None else require_numeric(_col(data, weights), name=str(weights), role=VariableRole.WEIGHT, ndim=1)
-    wkind = normalize_weight_type(weight_type, has_weights=w0 is not None)
-    _ = prepare_weights(w0, len(y0), wkind)  # validate before singleton pruning
-    groups, slopes, intercepts, fe_names, fe_plan, mask, dropped, inference_fe = _prepare_standard_fe_structure(
-        data, absorb, canonicalize_fe=canonicalize_fe, drop_singletons=drop_singletons,
-        weights=w0, weight_kind=wkind,
+    y0, w0, wkind, fe, sample_state = prepare_standard_sample(
+        data, y, weights, weight_type, absorb,
+        canonicalize_fe=canonicalize_fe, drop_singletons=drop_singletons,
     )
-    if dropped:
-        sample_state.keep(mask, stage="hdfe", reason="singleton_pruning")
-    method_resolved, solver_selection = _resolve_method(
+    groups, slopes, intercepts, mask = fe.groups, fe.slopes, fe.intercepts, fe.mask
+    method_resolved, solver_selection = resolve_method(
         method, groups, slopes, intercepts, backend=backend
     )
-    acceleration_resolved = _resolve_acceleration(method_resolved, acceleration)
-    all_kept = dropped == 0 and bool(np.all(mask))
-    active_mask = None if all_kept else mask
-    y1 = y0 if all_kept else y0[mask]
-    absorbed_intercept_groups = [g for g, has_i in zip(groups, intercepts, strict=False) if has_i]
-    absorbed_intercept_names = [n for n, has_i in zip(fe_names, intercepts, strict=False) if has_i]
-    vce_requested = "" if vce is None else str(vce).lower().replace("-", "_")
+    acceleration_resolved = resolve_acceleration(method_resolved, acceleration)
+    active_mask = None if fe.all_kept else mask
+    y1 = fe.active(y0)
+    absorbed_intercept_groups, absorbed_intercept_names = fe.absorbed_intercepts()
     hetero_candidate = any(is_heterogeneous_spec_candidate(s) for s in (exog, endog, instruments))
     block_solver_ok = (
         backend == "numpy" and all(s is None for s in slopes) and all(intercepts)
         and projection_backend == "auto" and transform == "symmetric"
         and preconditioner == "diagonal" and not keep_state and not save_fe
         and estimator.lower() != "gmm2s" and not gmm_center
-        and vce_requested in {"", "iid", "unadjusted", "homoskedastic", "robust", "hc1", "heteroskedastic", "cluster"}
+        and normalize_vce(vce, "") in BLOCK_VCE_KINDS
         and (method_resolved == "twoway" or (method_resolved == "map" and acceleration_resolved == "cg"))
         and hetero_candidate
     )
@@ -278,28 +233,24 @@ def ivhdfe(
     # interaction columns absorbed by the effective FE system need not be
     # materialized or residualized at all. Cross-role IV priority is still
     # resolved numerically below.
-    compiler = _execution_design if block_solver_ok else _design
-    common_exec = dict(groups=groups, expected_passes=2, memory_budget_mb=memory_budget_mb) if block_solver_ok else {}
-    cdesign = compiler(
-        data, exog, len(y0), "exog", row_mask=active_mask,
-        absorbed_groups=absorbed_intercept_groups, absorbed_names=absorbed_intercept_names,
-        structural=bool(structural_collinearity), omit=omit_exog, **common_exec,
+    compiler = compile_execution_design if block_solver_ok else compile_design
+    common = dict(
+        row_mask=active_mask, absorbed_groups=absorbed_intercept_groups,
+        absorbed_names=absorbed_intercept_names, structural=bool(structural_collinearity),
     )
+    if block_solver_ok:
+        common.update(groups=groups, expected_passes=2, memory_budget_mb=memory_budget_mb)
+    cdesign = compiler(data, exog, len(y0), "exog", omit=omit_exog, **common)
     edesign = compiler(
-        data, endog, len(y0), "endog", row_mask=active_mask,
-        absorbed_groups=absorbed_intercept_groups, absorbed_names=absorbed_intercept_names,
-        structural=bool(structural_collinearity), protected_terms=cdesign.structural_terms,
-        omit=omit_endog, **common_exec,
+        data, endog, len(y0), "endog", protected_terms=cdesign.structural_terms,
+        omit=omit_endog, **common,
     )
     zdesign = compiler(
-        data, instruments, len(y0), "z", row_mask=active_mask,
-        absorbed_groups=absorbed_intercept_groups, absorbed_names=absorbed_intercept_names,
-        structural=bool(structural_collinearity), protected_terms=cdesign.structural_terms,
-        omit=omit_instruments, **common_exec,
+        data, instruments, len(y0), "z", protected_terms=cdesign.structural_terms,
+        omit=omit_instruments, **common,
     )
     C1, E1, Z1 = cdesign.values, edesign.values, zdesign.values
-    w_active = w0 if (w0 is not None and all_kept) else (None if w0 is None else w0[mask])
-    winfo = prepare_weights(w_active, len(y1), wkind)
+    winfo = prepare_weights(None if w0 is None else fe.active(w0), len(y1), wkind)
     w1 = winfo.estimation
     block_native = any(isinstance(A, BlockDesign) for A in (C1, E1, Z1))
     absorber = None
@@ -308,7 +259,7 @@ def ivhdfe(
     refinement_metadata = None
     refinement_seconds = 0.0
     refine_controls = None
-    _projection_start = perf_counter() if _t0 is not None else None
+    clock.lap("preparation_seconds")
     if block_native:
         native_roles = tuple(A for A in (C1, E1, Z1) if isinstance(A, BlockDesign))
         if not same_row_partition(*native_roles):
@@ -323,9 +274,8 @@ def ivhdfe(
             Z1 = Z1 if isinstance(Z1, BlockDesign) else align_dense_to_blocks(Z1, template)
     if block_native:
         combined = hstack_block_designs(C1, E1, Z1)
-        fe_exec_plan = FEPlan.from_arrays(groups)
         block_projector = BlockWeightedFEProjector.from_design(
-            combined, fe_exec_plan,
+            combined, FEPlan.from_arrays(groups),
             engine="optimized" if method_resolved == "twoway" else "replica",
             method="map", max_iter=max_iter, absorb_threads=absorb_threads,
             projection_memory_budget_mb=memory_budget_mb,
@@ -341,52 +291,44 @@ def ivhdfe(
         Ew = projected.design.select_columns(np.arange(p, p + ke0)); p += ke0
         Zw = projected.design.select_columns(np.arange(p, p + kz0))
     else:
-        absorber = _make_standard_absorber(
+        absorber = make_standard_absorber(
             groups, slopes, intercepts, weights=w1, tol=tol, max_iter=max_iter,
             backend=backend, method=method_resolved, transform=transform, acceleration=acceleration_resolved,
             preconditioner=preconditioner, projection_backend=projection_backend,
             absorb_threads=absorb_threads, memory_budget_mb=memory_budget_mb,
         )
         block = np.column_stack([y1, C1, E1, Z1])
-        within, info = _residualize_blocks(
+        within, info = residualize_blocks(
             absorber, block, pool_size, memory_budget_mb,
             adaptive_auto=(str(method).lower() == "auto" and str(acceleration).lower() == "auto"),
         )
-        _check_absorption(info, allow_nonconverged=allow_nonconverged)
-        p = 1
+        check_absorption(info, allow_nonconverged=allow_nonconverged)
         yw = within[:, 0]
-        Cw = within[:, p:p+C1.shape[1]]; p += C1.shape[1]
-        Ew = within[:, p:p+E1.shape[1]]; p += E1.shape[1]
-        Zw = within[:, p:p+Z1.shape[1]]
+        Cw, Ew, Zw = _split_within(within, (C1.shape[1], E1.shape[1], Z1.shape[1]), 1)
         if estimator.lower() in {"2sls", "iv"} and not fuller and kappa is None:
             def refine_controls(original, controls):
                 nonlocal info, refinement_metadata, refinement_seconds
-                started = perf_counter() if _t0 is not None else None
+                started = perf_counter() if clock.enabled else None
                 controls, refinement_info, refinement_metadata = refine_iv_control_absorption(
                     absorber, original, controls, weights=w1,
                 )
                 if started is not None:
                     refinement_seconds = perf_counter() - started
                 if refinement_info is not None:
-                    _check_absorption(refinement_info, allow_nonconverged=allow_nonconverged)
+                    check_absorption(refinement_info, allow_nonconverged=allow_nonconverged)
                     info = replace(info, converged=info.converged and refinement_info.converged)
                 return controls
-    clusters = _cluster_arrays(data, cluster, mask)
-    _projection_end = perf_counter() if _t0 is not None else None
-    time1 = _masked_array(data, time, mask)
-    panel1 = _masked_array(data, panel, mask)
-    Cw, Ew, Zw, C1_active, E1_active, Z1_active, c_names, e_names, z_names, collin_info = _resolve_iv_columns(
+    clusters = cluster_arrays(data, cluster, mask)
+    clock.lap("absorption_seconds")
+    time1 = masked_array(data, time, mask)
+    panel1 = masked_array(data, panel, mask)
+    Cw, Ew, Zw, C1_active, E1_active, Z1_active, c_names, e_names, z_names, collin_info = resolve_iv_columns(
         Cw, Ew, Zw, C1, E1, Z1, cdesign.names, edesign.names, zdesign.names,
         weights=w1, tolerance=collinear_tol, mode=collinearity,
-        c_origins=cdesign.origins, e_origins=edesign.origins, z_origins=zdesign.origins,
         c_design=cdesign, e_design=edesign, z_design=zdesign,
         _refine_controls=refine_controls,
     )
-    dof = absorbed_dof(
-        inference_fe.groups, slopes=inference_fe.slopes, intercepts=inference_fe.intercepts,
-        clusters=clusters, method=dof_method, adjust_nested=bool(clusters),
-        adjust_continuous=True, groups_are_dense=True,
-    )
+    dof = standard_dof(fe, clusters, dof_method)
     vce_kind = resolve_vce_for_weights(vce, winfo, has_clusters=bool(clusters))
     if winfo.kind == "fweight" and vce_kind in {"hac", "newey_west", "neweywest", "dkraay", "driscoll_kraay", "dk"}:
         raise ValueError(
@@ -394,172 +336,82 @@ def ivhdfe(
             "ivreg2/ivreghdfe semantics; use robust/cluster VCE or another weight type"
         )
     est = estimator.lower()
-    _core_start = perf_counter() if _t0 is not None else None
+    clock.credit("control_refinement_seconds", refinement_seconds)
+    clock.lap("columns_and_dof_seconds")
+    stage_callback = bind_callback(on_stage, c_names + e_names, y, df_absorbed=dof.df_absorbed)
     if isinstance(Cw, BlockDesign):
         beta, V, resid, rank, df_resid, first, diagnostics, meta = fit_iv_kclass_block(
             yw, Cw, Ew, Zw, weights=w1, weight_info=winfo, vce=vce_kind, clusters=clusters,
-            advanced_statistics=advanced_statistics,
-            on_stage=bind_callback(on_stage, c_names + e_names, y, df_absorbed=dof.df_absorbed),
+            advanced_statistics=advanced_statistics, on_stage=stage_callback,
             df_absorbed=dof.df_absorbed, nested_adj=int(dof.nested > 0),
             estimator=est, kappa=kappa, fuller=fuller,
         )
-    elif est == "gmm2s":
-        beta, V, resid, rank, df_resid, first, diagnostics, meta = fit_iv_gmm2s(
-            yw, Cw, Ew, Zw, weights=w1, weight_info=winfo, vce=vce_kind, clusters=clusters,
-            advanced_statistics=advanced_statistics,
-            on_stage=bind_callback(on_stage, c_names + e_names, y, df_absorbed=dof.df_absorbed),
-            df_absorbed=dof.df_absorbed, nested_adj=int(dof.nested > 0),
-            center=gmm_center, time=time1, panel=panel1, bandwidth=bandwidth, kernel=kernel,
-        )
     else:
-        beta, V, resid, rank, df_resid, first, diagnostics, meta = fit_iv_kclass(
-            yw, Cw, Ew, Zw, weights=w1, weight_info=winfo, vce=vce_kind, clusters=clusters,
-            advanced_statistics=advanced_statistics,
-            on_stage=bind_callback(on_stage, c_names + e_names, y, df_absorbed=dof.df_absorbed),
+        beta, V, resid, rank, df_resid, first, diagnostics, meta = _fit_dense_iv(
+            est, yw, Cw, Ew, Zw, kappa=kappa, fuller=fuller, center=gmm_center,
+            weights=w1, weight_info=winfo, vce=vce_kind, clusters=clusters,
+            advanced_statistics=advanced_statistics, on_stage=stage_callback,
             df_absorbed=dof.df_absorbed, nested_adj=int(dof.nested > 0),
-            estimator=est, kappa=kappa, fuller=fuller, time=time1, panel=panel1,
-            bandwidth=bandwidth, kernel=kernel,
+            time=time1, panel=panel1, bandwidth=bandwidth, kernel=kernel,
         )
-    _core_end = perf_counter() if _t0 is not None else None
-    fitted = y1 - resid
+    clock.lap("core_seconds")
     fixed_effects = None
     if save_fe:
-        kc = C1_active.shape[1]
-        xb = np.zeros_like(y1, dtype=np.float64)
-        if kc:
-            xb += C1_active @ beta[:kc]
-        if E1_active.shape[1]:
-            xb += E1_active @ beta[kc:]
-        target = y1 - xb - resid
-        raw_terms, fe_meta = absorber.solve_effects(target)
-        fixed_effects = FixedEffectEstimates(
-            terms=tuple(
-                FixedEffectTermEstimate(fe_names[i], intercept, slope_coef, contribution)
-                for i, (intercept, slope_coef, contribution) in enumerate(raw_terms)
-            ),
-            converged=bool(fe_meta["converged"]),
-            iterations=int(fe_meta["iterations"]),
-            residual_norm=float(fe_meta["residual_norm"]),
-            reconstruction_error=float(fe_meta["reconstruction_error"]),
+        fixed_effects = recover_fixed_effects(
+            absorber, _fe_target(y1, C1_active, E1_active, beta, resid), fe.names,
         )
     names = tuple(c_names + e_names)
-    r2_stats = reghdfe_r2_statistics(
-        y1, yw, resid, weights=w1, effective_n=winfo.effective_n,
-        rank=rank, df_absorbed=dof.df_absorbed, df_nested=dof.nested,
-        has_intercept=bool(any(inference_fe.intercepts)),
-    )
-    fit_stats = ivreghdfe_model_statistics(
-        yw, resid, beta, V, weights=w1, effective_n=winfo.effective_n,
-        rank=rank, df_absorbed=dof.df_absorbed, df_nested=dof.nested,
-        df_resid_inference=df_resid,
-    )
     if isinstance(Cw, BlockDesign):
-        resources = block_projector.resource_info if block_projector is not None else {"blocks": ()}
-        actual_threads = [
-            int(item["projector"].get("actual_threads") or 1)
-            for item in resources.get("blocks", ()) if item.get("projector") is not None
-        ]
-        storage = {
-            "exog": cdesign.storage_plan.as_dict(),
-            "endog": edesign.storage_plan.as_dict(),
-            "instruments": zdesign.storage_plan.as_dict(),
-        }
-        absorb_info = {
-            "canonicalization": fe_plan.as_dict() if fe_plan is not None else None,
-            "method": method_resolved,
-            "transform": transform,
-            "acceleration": acceleration_resolved,
-            "projection_backend": "heterogeneous_components",
-            "absorb_threads": max(actual_threads, default=1),
-            "iterations": int(info.iterations),
-            "converged": bool(info.converged),
-            "convergence_metric": float(info.max_update),
-            "convergence_criterion": str(info.criterion),
-            "pool_size": int(Cw.ncols + Ew.ncols + Zw.ncols + 1),
-            "solver_selection": dict(solver_selection),
-            "heterogeneous_spec": {"storage": storage},
-        }
+        absorb_info = block_absorb_metadata(
+            fe.plan, block_projector, info, method=method_resolved, transform=transform,
+            acceleration=acceleration_resolved, pool_size=Cw.ncols + Ew.ncols + Zw.ncols + 1,
+            solver_selection=solver_selection,
+            heterogeneous_spec={"storage": {
+                "exog": cdesign.storage_plan.as_dict(),
+                "endog": edesign.storage_plan.as_dict(),
+                "instruments": zdesign.storage_plan.as_dict(),
+            }},
+        )
     else:
-        absorb_info = _absorb_metadata(
-            fe_plan, absorber, info,
-            _resolve_pool_size(absorber, block.shape[1], pool_size, memory_budget_mb),
+        absorb_info = absorb_metadata(
+            fe.plan, absorber, info,
+            resolve_pool_size(absorber, block.shape[1], pool_size, memory_budget_mb),
             solver_selection=solver_selection,
         )
         if refinement_metadata is not None and refinement_metadata["weak_directions"]:
             absorb_info["control_refinement"] = refinement_metadata
-    prediction_state = linear_prediction_state(
-        estimator=meta.get("estimator", est),
-        coefficient_names=names,
-        coefficient_roles=("exogenous", "endogenous"),
-        designs=(
-            design_state(
-                cdesign, role="exogenous",
-                active_indices=collin_info["exogenous"]["active_indices"],
-                identifier_levels=identifier_levels,
-            ),
-            design_state(
-                edesign, role="endogenous",
-                active_indices=collin_info["endogenous"]["active_indices"],
-                identifier_levels=identifier_levels,
-            ),
-            design_state(
-                zdesign, role="excluded_instrument",
-                active_indices=collin_info["excluded_instruments"]["active_indices"],
-                identifier_levels=identifier_levels,
-            ),
+    prediction = prediction_state(
+        meta.get("estimator", est), names, ("exogenous", "endogenous"),
+        tuple(
+            design_state(design, role=role, active_indices=collin_info[key]["active_indices"],
+                         identifier_levels=identifier_levels)
+            for design, (role, key) in zip((cdesign, edesign, zdesign), IV_DESIGN_ROLES)
         ),
-        sample_state=sample_state,
-        fe_plan=fe_plan,
-        fe_names=fe_names,
-        requested_fe_groups=inference_fe.groups,
-        effective_fe_groups=groups,
-        fe_intercepts=intercepts,
-        fe_slopes=slopes,
-        recovered_effects=fixed_effects,
+        fe, sample_state=sample_state, recovered_effects=fixed_effects,
     )
     if save_fe:
-        fe_state = saved_categorical_state(
-            prediction_state.fixed_effects, data=data, mask=mask,
-            inference=inference_fe, plan=fe_plan, groups=groups,
-            recovered=fixed_effects, beta=beta, identifier_levels=identifier_levels,
+        prediction = with_saved_effects(
+            prediction, fe, data=data, recovered=fixed_effects, beta=beta,
+            identifier_levels=identifier_levels,
         )
-        prediction_state = replace(prediction_state, fixed_effects=fe_state)
-    result = RegressionResult(
-        params=beta, vcov=V, stderr=np.sqrt(np.clip(np.diag(V), 0, None)),
-        residuals=resid, fitted=fitted, nobs=int(round(winfo.effective_n)), rank=rank,
-        df_resid=df_resid, df_absorbed=dof.df_absorbed,
-        converged=info.converged, iterations=info.iterations,
-        dropped_singletons=dropped, names=names, first_stage=first,
-        diagnostics=diagnostics, estimator=meta.get("estimator", est),
-        estimator_info=meta, dof_info=dof, weight_type=winfo.kind,
-        sum_weights=winfo.sum_weights, nobs_raw=len(yw), fixed_effects=fixed_effects,
-        absorb_info=absorb_info,
-        collinearity_info=collin_info,
-        vce=vce_kind, cluster_counts=_cluster_counts(clusters), fe_names=tuple(fe_names),
-        r2=r2_stats["r2"], r2_within=r2_stats["r2_within"],
-        r2_adjusted=r2_stats["r2_adjusted"], r2_adjusted_within=r2_stats["r2_adjusted_within"],
-        rss=fit_stats["rss"], tss_within=fit_stats["tss_within"], rmse=fit_stats["rmse"],
-        f_statistic=fit_stats["f_statistic"], f_pvalue=fit_stats["f_pvalue"],
-        df_model=fit_stats["df_model"], df_resid_fit=fit_stats["df_resid_fit"], vcov_rank=(int(np.linalg.matrix_rank(V)) if V.size else 0),
+    result = linear_result(
+        beta, V, resid, y=y1, y_within=yw, rank=rank, df_resid=df_resid, dof=dof, winfo=winfo,
+        clusters=clusters, vce=vce_kind, has_intercept=bool(any(fe.inference.intercepts)), iv=True,
+        converged=info.converged, iterations=info.iterations, dropped_singletons=fe.dropped,
+        names=names, first_stage=first, diagnostics=diagnostics,
+        estimator=meta.get("estimator", est), estimator_info=meta, fixed_effects=fixed_effects,
+        absorb_info=absorb_info, collinearity_info=collin_info, fe_names=tuple(fe.names),
         state=EstimationState(
             absorber, yw, np.column_stack([Cw, Ew]), tuple(clusters or ()), w1, winfo.kind
         ) if keep_state else None,
-        confidence_level=confidence_level,
-        diagnostics_mode=inference_config.diagnostics if inference_config is not None else "off",
-        prediction_state=prediction_state,
+        prediction_state=prediction, **reporting_options(inference_config),
     )
-    if _t0 is not None:
-        result.profile = {"total_seconds": perf_counter() - _t0, "mode": execution_config.profile}
+    if clock.enabled:
+        result.profile = clock.summary()
         if data_plan is not None:
             result.profile["data_ingestion"] = data_plan.as_dict()
         result.profile["sample"] = sample_state.summary()
-        result.profile["iv_stages"] = {
-            "preparation_seconds": _projection_start - _t0,
-            "absorption_seconds": _projection_end - _projection_start,
-            "control_refinement_seconds": refinement_seconds,
-            "columns_and_dof_seconds": _core_start - _projection_end - refinement_seconds,
-            "core_seconds": _core_end - _core_start,
-        }
+        result.profile["iv_stages"] = clock.stages
     completed(on_stage, result, outcome=y)
     return result
 

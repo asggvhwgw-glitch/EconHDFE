@@ -7,7 +7,7 @@ from typing import Any
 from ..config import ExecutionConfig
 from ..planner.resources import runtime_resources
 from ..planner.scheduler import current_allocation
-from ..session_cache import retained_array_bytes
+from .cache_accounting import retained_array_bytes
 
 
 @dataclass(slots=True)

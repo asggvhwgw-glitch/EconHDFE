@@ -6,25 +6,7 @@ from .reporting import inference_table, reproducibility_dict
 from .postestimation import linear_combination as _linear_combination, wald_test as _wald_test
 from .prediction import PredictionState
 from .errors import error_boundary
-
-
-@dataclass(slots=True)
-class DofInfo:
-    """Serializable degrees-of-freedom metadata shared by HDFE and results.
-
-    The type belongs to the result contract rather than the HDFE implementation so
-    data/cache infrastructure can persist result metadata without depending on the
-    numerical HDFE subsystem.
-    """
-    df_absorbed: int
-    initial: int
-    redundant: int
-    nested: int
-    k_by_component: tuple[int, ...]
-    m_by_component: tuple[int, ...]
-    exact_by_component: tuple[bool, ...]
-    nested_by_component: tuple[bool, ...]
-    method: str
+from .hdfe.dof import DofInfo  # public alias: econhdfe.results.DofInfo
 
 
 @dataclass(slots=True)

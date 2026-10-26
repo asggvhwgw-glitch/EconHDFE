@@ -20,7 +20,7 @@ def host(monkeypatch):
 
 
 def _standard(method='map'):
-    return pipeline._make_standard_absorber(
+    return pipeline.make_standard_absorber(
         [np.arange(100)%10, np.arange(100)%7], [None, None], [True, True],
         weights=None, tol=1e-10, max_iter=1000, backend='numpy', method=method,
         transform='symmetric', acceleration='cg', preconditioner='none',
@@ -33,7 +33,7 @@ def _group(individual=True, incidence='auto'):
                 individual_spec=SimpleNamespace(intercept=True) if individual else None,
                 membership_group=np.repeat(np.arange(100), 2),
                 individual_codes=np.arange(200)%13, individual_slopes=None)
-    return pipeline._make_group_absorber(
+    return pipeline.make_group_absorber(
         prep, method='lsmr', transform='symmetric', backend='numpy', acceleration='none',
         preconditioner='diagonal', tol=1e-10, max_iter=1000, aggregation='mean',
         incidence_backend=incidence, memory_budget_mb=32, absorb_threads=1,

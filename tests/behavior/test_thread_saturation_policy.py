@@ -60,7 +60,7 @@ def test_outer_parallelism_uses_cpu_envelope_not_bandwidth_saturation(runtime, m
 
 
 def test_factory_calibrates_before_memory_reservation(runtime, monkeypatch):
-    from econhdfe.pipeline import _make_standard_absorber
+    from econhdfe.pipeline import make_standard_absorber
     from econhdfe.hdfe.weighted_projection import WeightedFEProjector
     seen = []
     def measure(*, max_threads):
@@ -70,7 +70,7 @@ def test_factory_calibrates_before_memory_reservation(runtime, monkeypatch):
     monkeypatch.setattr(calibration, "calibrate_threads", measure)
     groups = [np.arange(100_000, dtype=np.int32) % 20]
     with scheduler.execution_scope(ExecutionConfig(threads="auto", memory_budget_mb=128)) as allocation:
-        absorber = _make_standard_absorber(
+        absorber = make_standard_absorber(
             groups, [None], [True], weights=None, tol=1e-8, max_iter=100,
             backend="numpy", method="map", transform="symmetric", acceleration="cg",
             preconditioner="diagonal", projection_backend="auto", absorb_threads=allocation.cpu_threads,

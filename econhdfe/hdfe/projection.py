@@ -1203,16 +1203,3 @@ def _max_relative_update_parallel(current, previous, eps):
         if thread_max[t] > out:
             out = thread_max[t]
     return out
-
-
-def max_relative_update(
-    current: np.ndarray,
-    previous: np.ndarray,
-    eps: float,
-    *,
-    threads: int | str | None = "auto",
-) -> float:
-    """Low-memory parallel convergence metric for NumPy MAP absorption."""
-    nthreads = resolve_threads(threads, nobs=current.shape[0])
-    with numba_thread_limit(nthreads):
-        return float(_max_relative_update_parallel(current, previous, float(eps)))

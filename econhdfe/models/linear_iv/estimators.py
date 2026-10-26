@@ -4,6 +4,7 @@ import scipy.linalg as la
 from scipy.stats import chi2
 from ...compute.vcov import kclass_vcov, gmm_vcov, score_covariance
 from ...compute.vcov import block_cluster_meat_xe, fix_psd, _cluster_meat_xe, _cluster_scale
+from ...compute.vcov import normalize_vce, is_iid_vce, cluster_df_resid, ROBUST_VCE_KINDS
 from ...compute.weights import robust_score_scale
 from ...compute.wls import weighted_arrays
 from ...compute.block_design import BlockDesign, hstack_block_designs
@@ -197,10 +198,10 @@ def _block_liml_kappa(y, C: BlockDesign, E: BlockDesign, Z: BlockDesign, w) -> f
 
 def _block_kclass_vcov(X: BlockDesign, Z: BlockDesign, resid, w, bread, *, kind,
                        clusters, k_total, nested_adj, effective_n, score_scale, kappa=1.0):
-    kind0 = "iid" if kind is None else str(kind).lower().replace("-", "_")
+    kind0 = normalize_vce(kind, "iid")
     resid = np.asarray(resid, dtype=np.float64)
     gamma = np.linalg.pinv(Z.gram(weights=w), hermitian=True) @ Z.cross_gram(X, weights=w)
-    if kind0 in {"iid", "unadjusted", "homoskedastic"}:
+    if is_iid_vce(kind0):
         sigma2 = float(np.dot(w * resid, resid)) / max(float(effective_n) - int(k_total), 1)
         if kappa in (0.0, 1.0):
             return bread * sigma2
@@ -212,7 +213,7 @@ def _block_kclass_vcov(X: BlockDesign, Z: BlockDesign, resid, w, bread, *, kind,
         gamma = np.vstack(((1 - kappa) * np.eye(X.ncols), kappa * gamma))
         Z = hstack_block_designs(X, Z)
     score = w * resid
-    if kind0 in {"robust", "hc1", "heteroskedastic"}:
+    if kind0 in ROBUST_VCE_KINDS:
         base = score if score_scale is None else score * np.asarray(score_scale, dtype=np.float64)
         Sz = Z.gram(weights=base * base)
         Sz *= float(effective_n) / max(float(effective_n) - int(k_total), 1)
@@ -335,9 +336,7 @@ def fit_iv_kclass_block(
     }
     diagnostics_ready(on_stage, diagnostics, advanced_statistics)
     meta = {"estimator": est, "kappa": float(est_kappa), "liml_kappa": liml_kappa, "fuller": float(fuller)}
-    df_resid = max(n_eff - k_total, 0.0)
-    if str(vce).lower().replace("-", "_") == "cluster" and clusters:
-        df_resid = min(df_resid, float(min(len(np.unique(c)) for c in clusters) - 1))
+    df_resid = cluster_df_resid(max(n_eff - k_total, 0.0), vce, clusters)
     beta, V = _restore_iv_units(beta, V, first, meta, xscale, zscale, escale)
     return beta, V, resid, rank, df_resid, first, diagnostics, meta
 
@@ -518,9 +517,7 @@ def fit_iv_kclass(
     meta = {"estimator": estimator, "kappa": float(est_kappa), "liml_kappa": liml_kappa, "fuller": float(fuller)}
     if stable is not None:
         meta["numerical_solver"] = "stable_tsqr"
-    df_resid = max(n_eff-k_total, 0.0)
-    if str(vce).lower().replace("-", "_") == "cluster" and clusters:
-        df_resid = min(df_resid, float(min(len(np.unique(c)) for c in clusters) - 1))
+    df_resid = cluster_df_resid(max(n_eff-k_total, 0.0), vce, clusters)
     beta, V = _restore_iv_units(beta, V, first, meta, xscale, zscale, escale)
     return beta, V, resid, rank, df_resid, first, diagnostics, meta
 
@@ -529,7 +526,7 @@ def fit_iv_kclass(
 def _gmm_weight_matrix(Zw, ew, *, kind, clusters=None, center=False, time=None, panel=None,
                        bandwidth=None, kernel="bartlett", effective_n=None, score_scale=None):
     n = len(ew)
-    if kind in (None, "iid", "unadjusted", "homoskedastic"):
+    if is_iid_vce(kind):
         e0 = ew - ew.mean()
         sigma2 = float(e0 @ e0) / float(n if effective_n is None else effective_n)
         return sigma2 * (Zw.T @ Zw)
@@ -641,9 +638,7 @@ def fit_iv_gmm2s(
     }
     diagnostics_ready(on_stage, diagnostics, advanced_statistics)
     meta = {"estimator": "gmm2s", "center": bool(center), "first_step_params": b1, "weight_matrix": W}
-    df_resid = max(n_eff-k_total, 0.0)
-    if str(vce).lower().replace("-", "_") == "cluster" and clusters:
-        df_resid = min(df_resid, float(min(len(np.unique(c)) for c in clusters) - 1))
+    df_resid = cluster_df_resid(max(n_eff-k_total, 0.0), vce, clusters)
     beta, V = _restore_iv_units(beta, V, first, meta, xscale, zscale, escale)
     return beta, V, resid, rank, df_resid, first, diagnostics, meta
 

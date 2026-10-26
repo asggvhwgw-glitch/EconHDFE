@@ -86,16 +86,16 @@ def unknown_memory(monkeypatch):
 
 
 def test_auto_cg_memory_inventory_and_failure_preserve_input(unknown_memory):
-    from econhdfe.pipeline import _absorption_workspace_cost, _residualize_blocks
+    from econhdfe.pipeline import _absorption_workspace_cost, residualize_blocks
     groups, rhs = groups_and_rhs()
     a = HDFEAbsorber(groups, acceleration="auto", projection_backend="indexed", absorb_threads=2)
     fixed, per_col = _absorption_workspace_cost(a)
     assert per_col >= 4 * rhs.shape[0] * 8 and fixed >= a.index_bytes
     original = rhs.copy()
     with pytest.raises(SpecificationError):
-        _residualize_blocks(a, rhs, 5, memory_budget_mb=(fixed + per_col * 4) / 1024**2)
+        residualize_blocks(a, rhs, 5, memory_budget_mb=(fixed + per_col * 4) / 1024**2)
     np.testing.assert_array_equal(rhs, original)
-    _, info = _residualize_blocks(a, rhs, "auto", memory_budget_mb=(fixed + per_col * 4) / 1024**2)
+    _, info = residualize_blocks(a, rhs, "auto", memory_budget_mb=(fixed + per_col * 4) / 1024**2)
     assert info.converged and a.execution_plan.pool_size == 4
     assert a.execution_memory["estimated_solver_bytes"] <= a.execution_memory["budget_bytes"]
 

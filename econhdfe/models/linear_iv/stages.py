@@ -2,6 +2,7 @@
 from copy import deepcopy
 import numpy as np
 from ...errors import SpecificationError
+from ...compute.vcov import cluster_df_resid
 
 
 def validate_callback(callback):
@@ -27,9 +28,7 @@ def estimation_ready(callback, beta, vcov, scale, *, nobs_raw, effective_n,
                      rank, df_absorbed, vce, clusters):
     if callback is None:
         return
-    df = max(effective_n - rank - df_absorbed, 0.)
-    if str(vce).lower().replace("-", "_") == "cluster" and clusters:
-        df = min(df, float(min(len(np.unique(c)) for c in clusters) - 1))
+    df = cluster_df_resid(max(effective_n - rank - df_absorbed, 0.), vce, clusters)
     # The cores have not restored units. Independent small arrays also keep
     # callbacks from mutating the ongoing fit.
     params = beta / scale

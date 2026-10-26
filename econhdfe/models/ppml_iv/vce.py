@@ -3,7 +3,11 @@ import numpy as np
 from ...errors import InferenceError
 from ...compute.clusters import normalize_vce_clusters
 from ...compute.stable_linalg import equilibrated_gram_inverse
-from ...compute.vcov import cluster_subset_meats_xe, fix_psd
+from ...compute.vcov import cluster_subset_meats_xe, fix_psd, normalize_vce, IID_VCE_KINDS
+
+
+# IV-PPML names implemented by the robust sandwich.
+_ROBUST_VCE_KINDS = ("robust", "model", *IID_VCE_KINDS)
 
 
 def _bread(Xhat, X, w):
@@ -13,8 +17,8 @@ def _bread(Xhat, X, w):
 
 def normalize_ivppml_vce(kind):
     """Return the implemented variance convention, not a legacy alias."""
-    key = "robust" if kind is None else str(kind).lower().replace("-", "_")
-    if key in {"robust", "unadjusted", "iid", "model", "homoskedastic"}:
+    key = normalize_vce(kind, "robust")
+    if key in _ROBUST_VCE_KINDS:
         return "robust"
     if key == "cluster":
         return key
@@ -41,7 +45,7 @@ def ivppml_vcov(
     kind0 = normalize_ivppml_vce(kind)
     score_scalar = irls_w * residual
 
-    if kind0 in {"robust", "unadjusted", "iid", "model", "homoskedastic"}:
+    if kind0 in _ROBUST_VCE_KINDS:
         # Frequency weights represent physical replication.  The robust meat
         # therefore contains one power of the user weight, whereas probability
         # weights retain the usual squared-score convention.

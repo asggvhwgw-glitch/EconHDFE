@@ -75,38 +75,6 @@ def fe_names_from_metadata(metadata) -> tuple[str, ...]:
     return tuple(out)
 
 
-def weighted_r2(y, residuals, weights=None) -> float:
-    y = np.asarray(y, dtype=np.float64)
-    e = np.asarray(residuals, dtype=np.float64)
-    if weights is None:
-        w = np.ones(len(y), dtype=np.float64)
-    else:
-        w = np.asarray(weights, dtype=np.float64)
-    sw = float(np.sum(w))
-    if sw <= 0:
-        return float("nan")
-    mean = float(np.sum(w * y) / sw)
-    tss = float(np.sum(w * (y - mean) ** 2))
-    rss = float(np.sum(w * e ** 2))
-    if tss <= np.finfo(float).eps:
-        return float("nan")
-    return 1.0 - rss / tss
-
-
-def within_r2(y_within, residuals, weights=None) -> float:
-    y = np.asarray(y_within, dtype=np.float64)
-    e = np.asarray(residuals, dtype=np.float64)
-    if weights is None:
-        w = np.ones(len(y), dtype=np.float64)
-    else:
-        w = np.asarray(weights, dtype=np.float64)
-    denom = float(np.sum(w * y ** 2))
-    rss = float(np.sum(w * e ** 2))
-    if denom <= np.finfo(float).eps:
-        return float("nan")
-    return 1.0 - rss / denom
-
-
 def reghdfe_r2_statistics(
     y, y_within, residuals, *, weights=None, effective_n=None, rank=0,
     df_absorbed=0, df_nested=0, has_intercept=True,
