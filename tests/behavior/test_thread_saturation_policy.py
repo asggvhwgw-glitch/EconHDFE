@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 
 from econhdfe import ExecutionConfig
+from econhdfe.compute import execution
 from econhdfe.compute.execution import _plan_workspace
 from econhdfe.hdfe import projection
 from econhdfe.planner import calibration, core, scheduler
@@ -14,6 +15,7 @@ def runtime(monkeypatch, tmp_path):
     resources = lambda: RuntimeResources(4, 1024**3, 0)
     monkeypatch.setattr(scheduler, "runtime_resources", resources)
     monkeypatch.setattr(calibration, "runtime_resources", resources)
+    monkeypatch.setattr(execution, "runtime_resources", resources)
     monkeypatch.setattr(calibration, "effective_cpu_count", lambda: 4)
     monkeypatch.setattr(projection, "effective_cpu_count", lambda: 4)
     monkeypatch.setattr(scheduler, "_rss", lambda: 0)

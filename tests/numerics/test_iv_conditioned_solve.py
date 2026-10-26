@@ -337,10 +337,16 @@ def test_hdfe_shared_loading_preserves_weak_control_direction(fe_topology):
     y = c @ np.array([.7, -.4]) + 1.1 * e[:, 0] + .3 * q[:, 4] + .4 * q[:, 5]
     y += dummy @ rng.normal(size=dummy.shape[1])
     cluster = rng.permutation(n) % 24
-    # Project the actual rounded inputs, not the latent within-DGP variables.
-    within = residualize(np.column_stack((y, c, e, z)))
-    expected = _cluster_reference(within[:, 0], within[:, 1:3], within[:, 3:4],
-                                  within[:, 4:6], cluster, df_absorbed=fe_rank)
+    # Project actual rounded inputs in well-scaled contrast coordinates. Doing
+    # two independent FE subtractions on nearly identical controls amplifies
+    # the reference's rounding error by 1e5, obscuring the solver error tested.
+    contrast = np.column_stack((c[:, 0], (c[:, 1] - c[:, 0]) * 1e5))
+    within = residualize(np.column_stack((y, contrast, e, z)))
+    beta, covariance, residual = _cluster_reference(
+        within[:, 0], within[:, 1:3], within[:, 3:4], within[:, 4:6],
+        cluster, df_absorbed=fe_rank)
+    units = np.array([[1., -1e5, 0.], [0., 1e5, 0.], [0., 0., 1.]])
+    expected = units @ beta, units @ covariance @ units.T, residual
     got = ivhdfe(y=y, exog=c, endog=e, instruments=z, absorb=groups,
                  cluster=[cluster], vce="cluster", dof_method="exact",
                  drop_singletons=False, tol=1e-12, **execution,
