@@ -1,0 +1,12 @@
+{
+  "source_archive": "hyperfe_cross_structure_validation_20261026.zip",
+  "source_archive_sha256": "9055f20e9fbc6410f6c8be5348ea38da431b4306ed585565df42e32d54317437",
+  "baseline_commit": "45ab1bc9dc69ef6fb4b85d263cc65d24b35d7692",
+  "source_files": {
+    "src/budget_preconditioner.py": "2b030ff141ed5d198aeb6607f0c7e39316652e9fce4f95dbe721284f258f815d",
+    "src/cases.py": "3b79002dd4414aff2824bb4bf1cbd838b8c1f3d68e1f7fa0745f6eb77eb501ee",
+    "src/scalable_hyperfe.py": "c9ef8be7fcebdec8456da87393d07d29e5a4e9823b62ab1f8ff186aa79ede571",
+    "src/validation.py": "37051f75f2d5610f44b1ace15bae694d2c868cc63c73edb8473a030f51e13e0f"
+  },
+  "changes": "Only benchmark argument validation, portable runner, documentation and integration-contract tests added; numerical kernels retained verbatim. Historical results were not rerun as a full suite during PR packaging."
+}

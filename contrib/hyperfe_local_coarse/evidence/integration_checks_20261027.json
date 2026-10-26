@@ -1,0 +1,32 @@
+{
+  "date": "2026-10-27",
+  "integration_base_commit": "15eda97b75532937c682c1b52482baa00e85d46e",
+  "reviewed_pr_head": "3b7eb41968e1e2aba5ef09981c638351686567ff",
+  "econhdfe_version": "0.9.1",
+  "scope": "Standalone research prototype only; no estimator backend or default route integration",
+  "changes": [
+    "Include second-solve convergence, projection audit and finite all-RHS linearity error in reuse and overall passed",
+    "Eight small CLI regression cases: success/nonconvergence/audit/linearity, each for local and native paths",
+    "Refresh generated architecture maps on the current main branch"
+  ],
+  "local_checks": {
+    "prototype_tests_passed": 46,
+    "core_tests_passed": 468,
+    "version_gate": "passed",
+    "architecture_map_check": "passed"
+  },
+  "environment": {
+    "python": "3.12.15",
+    "platform": "Darwin arm64",
+    "within-py": "0.4.0",
+    "numerical_threads": 1
+  },
+  "benchmark_sha256": "226870991057329730ac27aaa410cd0412973587035f10c6bf925f8f90147af9",
+  "regression_test_sha256": "9c49021864695b50ef429cd89ae44480eb0b7b0f3be951e0cba8473eb0865543",
+  "limitations": [
+    "Historical numerical kernel hashes remain in provenance.json and are unchanged",
+    "Small fault-injection cases are control-flow checks, not performance evidence",
+    "No million-row timing rerun during this integration; prior evidence is retained separately",
+    "Remote CI must be checked on the final commit; this record reports local execution only"
+  ]
+}
