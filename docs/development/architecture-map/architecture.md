@@ -44,7 +44,7 @@ flowchart TB
   n_frontend -->|"1 imports"| n_hdfe
   n_frontend -->|"2 imports"| n_interface
   n_hdfe -->|"7 imports"| n_compute
-  n_hdfe -->|"6 imports"| n_contracts
+  n_hdfe -->|"7 imports"| n_contracts
   n_hdfe -->|"1 imports"| n_interface
   n_hdfe -->|"5 imports"| n_planner
   n_interface -->|"1 imports"| n_cluster_inference
@@ -52,7 +52,7 @@ flowchart TB
   n_interface -->|"11 imports"| n_contracts
   n_interface -->|"3 imports"| n_data
   n_interface -->|"7 imports"| n_frontend
-  n_interface -->|"12 imports"| n_hdfe
+  n_interface -->|"13 imports"| n_hdfe
   n_interface -->|"3 imports"| n_linear_iv
   n_interface -->|"3 imports"| n_ols
   n_interface -->|"3 imports"| n_planner
@@ -195,7 +195,7 @@ Files/modules: 2. econhdfe/models/__init__.py, econhdfe/models/poisson.py
 
 Controls for large sets of fixed effects and heterogeneous FE structures without estimating/reporting every nuisance coefficient explicitly.
 
-Files/modules: 24. econhdfe/effects/__init__.py, econhdfe/effects/adapters.py, econhdfe/effects/diagnostics.py, econhdfe/effects/prediction.py, econhdfe/effects/recover.py, … (+19)
+Files/modules: 25. econhdfe/effects/__init__.py, econhdfe/effects/adapters.py, econhdfe/effects/diagnostics.py, econhdfe/effects/prediction.py, econhdfe/effects/recover.py, … (+20)
 
 ### Generic IV primitives
 
@@ -245,7 +245,7 @@ Files/modules: 17. econhdfe/compute/__init__.py, econhdfe/compute/backend.py, ec
 | Frontend validation | HDFE infrastructure | 1 | `econhdfe.frontend.columns → econhdfe.hdfe.specs` |
 | Frontend validation | Public interface & orchestration | 2 | `econhdfe.frontend.columns → econhdfe.design`<br>`econhdfe.frontend.columns → econhdfe.factorvars` |
 | HDFE infrastructure | Compute/runtime kernels | 7 | `econhdfe.effects.adapters → econhdfe.compute.encoding`<br>`econhdfe.effects.diagnostics → econhdfe.compute.encoding`<br>`econhdfe.hdfe.absorber → econhdfe.compute.backend`<br>`econhdfe.hdfe.block_projection → econhdfe.compute.block_design`<br>`econhdfe.hdfe.block_projection → econhdfe.compute.design_plan` |
-| HDFE infrastructure | Shared contracts | 6 | `econhdfe.effects.diagnostics → econhdfe.errors`<br>`econhdfe.effects.prediction → econhdfe.prediction`<br>`econhdfe.hdfe.absorber → econhdfe.errors`<br>`econhdfe.hdfe.dof → econhdfe.results`<br>`econhdfe.hdfe.factorvars → econhdfe.errors` |
+| HDFE infrastructure | Shared contracts | 7 | `econhdfe.effects.diagnostics → econhdfe.errors`<br>`econhdfe.effects.prediction → econhdfe.prediction`<br>`econhdfe.hdfe.absorber → econhdfe.errors`<br>`econhdfe.hdfe.dof → econhdfe.results`<br>`econhdfe.hdfe.factorvars → econhdfe.errors` |
 | HDFE infrastructure | Public interface & orchestration | 1 | `econhdfe.hdfe.factorvars → econhdfe.factorvars` |
 | HDFE infrastructure | Execution planner | 5 | `econhdfe.hdfe.block_projection → econhdfe.planner`<br>`econhdfe.hdfe.projection → econhdfe.planner`<br>`econhdfe.hdfe.projection → econhdfe.planner.calibration`<br>`econhdfe.hdfe.projection → econhdfe.planner.scheduler`<br>`econhdfe.hdfe.weighted_projection → econhdfe.planner` |
 | Public interface & orchestration | Cluster inference | 1 | `econhdfe.bootstrap → econhdfe.inference.cluster` |
@@ -253,7 +253,7 @@ Files/modules: 17. econhdfe/compute/__init__.py, econhdfe/compute/backend.py, ec
 | Public interface & orchestration | Shared contracts | 11 | `econhdfe.api → econhdfe.config`<br>`econhdfe.api → econhdfe.reporting`<br>`econhdfe.design → econhdfe.prediction`<br>`econhdfe.design → econhdfe.errors`<br>`econhdfe.factorvars → econhdfe.errors` |
 | Public interface & orchestration | Econometric data layer | 3 | `econhdfe.sessions → econhdfe.data.dataset`<br>`econhdfe.sessions → econhdfe.data.persistent`<br>`econhdfe.sessions → econhdfe.data.source` |
 | Public interface & orchestration | Frontend validation | 7 | `econhdfe.design → econhdfe.frontend.validate`<br>`econhdfe.design → econhdfe.frontend.roles`<br>`econhdfe.pipeline → econhdfe.frontend.validate`<br>`econhdfe.pipeline → econhdfe.frontend.roles`<br>`econhdfe.sessions → econhdfe.frontend.columns` |
-| Public interface & orchestration | HDFE infrastructure | 12 | `econhdfe.pipeline → econhdfe.hdfe.absorber`<br>`econhdfe.pipeline → econhdfe.hdfe.two_way`<br>`econhdfe.pipeline → econhdfe.hdfe.group_individual`<br>`econhdfe.pipeline → econhdfe.hdfe.dof`<br>`econhdfe.pipeline → econhdfe.hdfe.structure` |
+| Public interface & orchestration | HDFE infrastructure | 13 | `econhdfe.pipeline → econhdfe.hdfe.absorber`<br>`econhdfe.pipeline → econhdfe.hdfe.two_way`<br>`econhdfe.pipeline → econhdfe.hdfe.group_individual`<br>`econhdfe.pipeline → econhdfe.hdfe.dof`<br>`econhdfe.pipeline → econhdfe.hdfe.structure` |
 | Public interface & orchestration | Linear IV model | 3 | `econhdfe.api → econhdfe.models.linear_iv.api`<br>`econhdfe.sessions → econhdfe.models.linear_iv.estimators`<br>`econhdfe.sessions → econhdfe.models.linear_iv.stages` |
 | Public interface & orchestration | OLS model | 3 | `econhdfe.api → econhdfe.models.ols`<br>`econhdfe.bootstrap → econhdfe.models.ols_bootstrap`<br>`econhdfe.sessions → econhdfe.models.ols` |
 | Public interface & orchestration | Execution planner | 3 | `econhdfe.pipeline → econhdfe.planner`<br>`econhdfe.sessions → econhdfe.planner.scheduler`<br>`econhdfe.sessions → econhdfe.planner.resources` |
@@ -472,12 +472,12 @@ flowchart LR
 
 | Area | Files | Python | Markdown |
 | --- | ---: | ---: | ---: |
-| `econhdfe/` | 131 | 129 | 2 |
+| `econhdfe/` | 132 | 130 | 2 |
 | `pyreghdfe/` | 2 | 2 | 0 |
 | `tests/` | 81 | 81 | 0 |
 | `validation/` | 25 | 8 | 3 |
 | `benchmarks/` | 116 | 29 | 8 |
-| `docs/` | 108 | 1 | 75 |
+| `docs/` | 110 | 1 | 76 |
 | `scripts/` | 22 | 19 | 0 |
 | `skills/` | 17 | 4 | 12 |
 | `compatibility/` | 32 | 0 | 0 |
