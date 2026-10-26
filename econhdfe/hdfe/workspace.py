@@ -5,6 +5,8 @@ from .projection import estimate_index_bytes
 
 def _absorption_workspace_cost(absorber):
     """Conservative byte inventory for pooled CPU absorption, excluding input."""
+    if getattr(absorber, "method", None) == "within":
+        return absorber.workspace_cost()
     arrays = {}
 
     def add(a):

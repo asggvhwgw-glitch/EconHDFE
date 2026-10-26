@@ -63,6 +63,70 @@ def test_unknown_memory_requires_explicit_budget(host):
     assert scheduler.resolve_allocation(ExecutionConfig(memory_budget_mb=64)).memory_budget_bytes == 64*MIB
 
 
+def test_relaxed_policy_uses_live_headroom_and_inherits_without_leaking(host, monkeypatch):
+    from econhdfe.compute import execution
+    monkeypatch.setattr(execution, "runtime_resources", lambda: host["resources"])
+    host["resources"] = RuntimeResources(8, 8192*MIB, 7168*MIB)
+    with scheduler.execution_scope(ExecutionConfig(memory_budget_mb=2048, memory_policy="relaxed")) as allocation:
+        assert allocation.memory_budget_bytes == 2048*MIB
+        reserve = int(.03*8192*MIB)
+        assert allocation.reserve_bytes == reserve
+        assert allocation.remaining_memory_bytes() == 1024*MIB-reserve
+        execution._check_allocation_headroom(512*MIB)
+        with pytest.raises(SpecificationError):
+            execution._check_allocation_headroom(1024*MIB)
+        with pytest.raises(SpecificationError):
+            with scheduler.reserve_memory(1024*MIB):
+                pass
+        # Newly available host memory can be used up to the explicit budget.
+        host["resources"] = RuntimeResources(8, 8192*MIB, 4096*MIB)
+        assert allocation.remaining_memory_bytes() == 2048*MIB
+        with scheduler.execution_scope() as nested:
+            assert nested.config.memory_policy == "relaxed"
+            assert nested.reserve_bytes == reserve
+            plan = plan_memory(requested_budget_bytes=4096*MIB, resources=host["resources"])
+            assert plan.reserve_bytes == reserve
+            assert plan.effective_budget_bytes == 2048*MIB
+        # A lower live headroom still overrides an explicit large budget.
+        host["resources"] = RuntimeResources(8, 8192*MIB, 8100*MIB)
+        assert allocation.remaining_memory_bytes() == 0
+    host["resources"] = RuntimeResources(8, 8192*MIB, 4096*MIB)
+    assert scheduler.resolve_allocation().reserve_bytes == int(.12*8192*MIB)
+
+
+def test_relaxed_policy_rejects_exhausted_host_and_invalid_policy(host):
+    host["resources"] = RuntimeResources(8, 8192*MIB, 8100*MIB)
+    with pytest.raises(SpecificationError):
+        scheduler.resolve_allocation(ExecutionConfig(memory_budget_mb=8192, memory_policy="relaxed"))
+    with pytest.raises(SpecificationError, match="memory_policy"):
+        ExecutionConfig(memory_policy="unlimited").validate()
+
+
+@pytest.mark.parametrize("estimator", ["ols", "iv"])
+def test_relaxed_policy_preserves_estimates(estimator):
+    import pandas as pd
+    from econhdfe import olshdfe, ivhdfe
+    rng = np.random.default_rng(24619)
+    n = 400
+    x, z, u = rng.normal(size=(3, n))
+    d = z + .3*u + rng.normal(size=n)
+    frame = pd.DataFrame(dict(y=2*x+d+u, x=x, z=z, d=d,
+                              fe1=np.arange(n)%20, fe2=np.arange(n)//20))
+    kwargs = dict(data=frame, y="y", absorb=["fe1", "fe2"], cluster="fe1")
+    fit = olshdfe if estimator == "ols" else ivhdfe
+    if estimator == "iv":
+        kwargs.update(exog=["x"], endog=["d"], instruments=["z"])
+    else:
+        kwargs.update(x=["x"])
+    results = [fit(**kwargs, execution_config=ExecutionConfig(
+        threads=1, memory_budget_mb=256, memory_policy=policy))
+        for policy in ("conservative", "relaxed")]
+    left, right = results
+    assert (left.nobs, left.rank, left.df_absorbed) == (right.nobs, right.rank, right.df_absorbed)
+    for name in ("params", "stderr", "residuals"):
+        np.testing.assert_allclose(getattr(left, name), getattr(right, name), rtol=1e-10, atol=1e-12)
+
+
 def test_exception_restores_process_limits_and_model_policy(host, monkeypatch):
     events = []
     class Limits:

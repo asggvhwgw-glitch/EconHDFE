@@ -32,14 +32,15 @@ def plan_memory(
     headroom = None
     effective = requested
     reason = "user_budget"
+    active = current_allocation()
     if r.memory_limit_bytes is not None and r.memory_current_bytes is not None:
-        reserve = max(0, int(r.memory_limit_bytes * max(0.0, float(reserve_fraction))))
+        reserve = (active.reserve_bytes if active is not None else
+                   max(0, int(r.memory_limit_bytes * max(0.0, float(reserve_fraction)))))
         headroom = max(0, int(r.memory_limit_bytes - r.memory_current_bytes - reserve))
         effective = max(1, min(requested, headroom))
         if effective < requested:
             reason = "runtime_headroom_tighter_than_user_budget"
 
-    active = current_allocation()
     if active is not None:
         remaining = active.remaining_memory_bytes()
         effective = min(effective, remaining)

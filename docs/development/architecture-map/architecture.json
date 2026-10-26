@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "econhdfe",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "evidence": {
     "topology": "Python AST import analysis; package __init__ re-export imports excluded from aggregated dependency counts.",
     "execution_flows": "Explicit semantic overlays reviewed against estimator orchestration modules; not presented as import edges."
@@ -293,9 +293,10 @@
         "econhdfe/hdfe/structure.py",
         "econhdfe/hdfe/two_way.py",
         "econhdfe/hdfe/weighted_projection.py",
+        "econhdfe/hdfe/within_backend.py",
         "econhdfe/hdfe/workspace.py"
       ],
-      "module_count": 24
+      "module_count": 25
     },
     {
       "id": "iv",
@@ -561,7 +562,7 @@
     {
       "source": "hdfe",
       "target": "contracts",
-      "count": 5,
+      "count": 6,
       "examples": [
         "econhdfe.effects.diagnostics → econhdfe.errors",
         "econhdfe.effects.prediction → econhdfe.prediction",
@@ -640,7 +641,7 @@
     {
       "source": "interface",
       "target": "hdfe",
-      "count": 13,
+      "count": 14,
       "examples": [
         "econhdfe.pipeline → econhdfe.hdfe.absorber",
         "econhdfe.pipeline → econhdfe.hdfe.two_way",
@@ -2521,6 +2522,14 @@
       "reexport_surface": false
     },
     {
+      "source_module": "econhdfe.hdfe.plan",
+      "source_path": "econhdfe/hdfe/plan.py",
+      "source_group": "hdfe",
+      "target_module": "econhdfe.hdfe.within_backend",
+      "target_group": "hdfe",
+      "reexport_surface": false
+    },
+    {
       "source_module": "econhdfe.hdfe.projection",
       "source_path": "econhdfe/hdfe/projection.py",
       "source_group": "hdfe",
@@ -2619,6 +2628,38 @@
     {
       "source_module": "econhdfe.hdfe.weighted_projection",
       "source_path": "econhdfe/hdfe/weighted_projection.py",
+      "source_group": "hdfe",
+      "target_module": "econhdfe.errors",
+      "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.hdfe.weighted_projection",
+      "source_path": "econhdfe/hdfe/weighted_projection.py",
+      "source_group": "hdfe",
+      "target_module": "econhdfe.hdfe.within_backend",
+      "target_group": "hdfe",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.hdfe.within_backend",
+      "source_path": "econhdfe/hdfe/within_backend.py",
+      "source_group": "hdfe",
+      "target_module": "econhdfe.hdfe.absorber",
+      "target_group": "hdfe",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.hdfe.within_backend",
+      "source_path": "econhdfe/hdfe/within_backend.py",
+      "source_group": "hdfe",
+      "target_module": "econhdfe.hdfe.projection",
+      "target_group": "hdfe",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.hdfe.within_backend",
+      "source_path": "econhdfe/hdfe/within_backend.py",
       "source_group": "hdfe",
       "target_module": "econhdfe.errors",
       "target_group": "contracts",
@@ -5081,6 +5122,14 @@
       "reexport_surface": false
     },
     {
+      "source_module": "econhdfe.pipeline",
+      "source_path": "econhdfe/pipeline.py",
+      "source_group": "interface",
+      "target_module": "econhdfe.hdfe.within_backend",
+      "target_group": "hdfe",
+      "reexport_surface": false
+    },
+    {
       "source_module": "econhdfe.planner",
       "source_path": "econhdfe/planner/__init__.py",
       "source_group": "planner",
@@ -6160,8 +6209,8 @@
   "repo_areas": [
     {
       "name": "econhdfe",
-      "files": 131,
-      "python_files": 129,
+      "files": 132,
+      "python_files": 130,
       "markdown_files": 2
     },
     {
@@ -6178,15 +6227,15 @@
     },
     {
       "name": "benchmarks",
-      "files": 116,
+      "files": 119,
       "python_files": 29,
       "markdown_files": 8
     },
     {
       "name": "docs",
-      "files": 109,
+      "files": 111,
       "python_files": 1,
-      "markdown_files": 75
+      "markdown_files": 77
     },
     {
       "name": "scripts",
@@ -6202,7 +6251,7 @@
     },
     {
       "name": "compatibility",
-      "files": 33,
+      "files": 34,
       "python_files": 0,
       "markdown_files": 0
     }

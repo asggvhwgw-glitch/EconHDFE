@@ -1,0 +1,28 @@
+[package]
+name = "econhdfe-within"
+version = "0.1.0-alpha.2"
+edition = "2021"
+rust-version = "1.85"
+license = "BSD-3-Clause"
+publish = false
+
+[lib]
+name = "_econhdfe_within"
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+python = ["dep:pyo3", "dep:numpy", "dep:within", "dep:ndarray", "dep:rayon"]
+extension-module = ["python", "pyo3/extension-module"]
+
+[dependencies]
+pyo3 = { version = "0.29", optional = true, features = ["abi3-py310"] }
+numpy = { version = "0.29", optional = true }
+ndarray = { version = "0.17", optional = true }
+rayon = { version = "1.12", optional = true }
+within = { git = "https://github.com/py-econometrics/within", rev = "fc44282cea6124f5f18bb142908605a656d35a7c", optional = true }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1

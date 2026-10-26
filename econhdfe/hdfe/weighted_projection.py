@@ -48,6 +48,8 @@ class WeightedFEProjector:
         self._active_kind: str | None = None
 
     def _kind(self, weights) -> str:
+        if self.method == "within":
+            return "within" if np.all(np.asarray(weights) > 0) else "generic"
         if (
             self.engine == "optimized"
             and len(self.groups) == 2
@@ -58,6 +60,13 @@ class WeightedFEProjector:
         return "generic"
 
     def _build(self, weights, tol, kind: str):
+        if kind == "within":
+            from .within_backend import WithinFEAbsorber
+            return WithinFEAbsorber(
+                self.groups, weights=weights, tol=tol, max_iter=self.max_iter,
+                absorb_threads=self.absorb_threads_requested,
+                projection_memory_budget_mb=self.projection_memory_budget_mb,
+            )
         if kind == "twoway":
             out = TwoWayFEAbsorber(self.groups, weights=weights, tol=tol, max_iter=self.max_iter)
             out._configure_execution(absorb_threads=self.absorb_threads_requested)
@@ -67,7 +76,7 @@ class WeightedFEProjector:
             weights=weights,
             tol=tol,
             max_iter=self.max_iter,
-            method=self.method,
+            method="lsmr" if self.method == "within" else self.method,
             transform="symmetric",
             acceleration="cg" if self.method == "map" else "none",
             projection_backend="auto",
