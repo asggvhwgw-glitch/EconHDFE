@@ -18,8 +18,8 @@ class HDFEConfig:
     canonicalize: bool = True
 
     def validate(self) -> None:
-        if self.solver not in {"auto", "map", "lsmr", "twoway"}:
-            raise SpecificationError("HDFE solver must be auto/map/lsmr/twoway")
+        if self.solver not in {"auto", "map", "lsmr", "twoway", "within"}:
+            raise SpecificationError("HDFE solver must be auto/map/lsmr/twoway/within")
         if not 0 < self.tolerance <= 1:
             raise SpecificationError("HDFE tolerance must lie in (0, 1]")
         if self.max_iter < 1:

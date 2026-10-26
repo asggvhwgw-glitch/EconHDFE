@@ -142,6 +142,9 @@ class FEPlan:
     def absorber(self, weights, *, tol, engine="replica", method="map"):
         if not self.groups:
             return None
+        if method == "within":
+            from .within_backend import WithinFEAbsorber
+            return WithinFEAbsorber(self.groups, weights=weights, tol=tol)
         if engine == "optimized" and len(self.groups) == 2 and method != "lsmr":
             return TwoWayFEAbsorber(self.groups, weights=weights, tol=tol)
         return HDFEAbsorber(
