@@ -97,12 +97,15 @@ def _check_allocation_headroom(nbytes):
     active = current_allocation()
     if active is not None and int(nbytes) > active.remaining_memory_bytes():
         raise SpecificationError("Allocation exceeds the remaining shared computation budget.",
-                                 code="resource.memory", stage="execution")
+                                 code="resource.memory", stage="execution",
+                                 details={"allocation_bytes": int(nbytes),
+                                          "headroom_bytes": active.remaining_memory_bytes()})
     resources = runtime_resources()
     if resources.memory_limit_bytes is None or resources.memory_current_bytes is None:
         return
-    headroom = max(0, resources.memory_limit_bytes - resources.memory_current_bytes
-                   - int(0.12 * resources.memory_limit_bytes))
+    reserve = (active.reserve_bytes if active is not None else
+               int(0.12 * resources.memory_limit_bytes))
+    headroom = max(0, resources.memory_limit_bytes - resources.memory_current_bytes - reserve)
     if int(nbytes) > headroom:
         raise SpecificationError(
             "Insufficient available memory for the dense HDFE design block.",

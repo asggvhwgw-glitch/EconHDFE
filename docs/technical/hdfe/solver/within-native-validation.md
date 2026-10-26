@@ -91,6 +91,35 @@ executed source archive and wheel are in GitHub Actions run **40272121466**, art
 **12629006778**. The run trigger SHA precedes a controlled feature-branch generated-
 file commit; `native-results/source-sha.txt` records the actual tested SHA above.
 
+## Additional 5M full-IV retry with relaxed memory admission
+
+A subsequent local run using `memory_policy="relaxed"`, 8192 MiB requested
+workspace, four threads and the unchanged `tol=1e-12` cleared the earlier
+memory-admission failure. It did **not** complete estimation: the native
+original-row gate reported `convergence.hdfe` after 202 iterations, with a
+metric of `1.0456878418718674e-12`. Fit time before failure was 243.153 seconds;
+process peak RSS was 3.439 GiB. The configured iteration cap was 16000, so this
+was not exhaustion of that cap. The native wrapper permits only two residual
+replacement passes before final certification. No tolerance was loosened.
+
+This result does not establish a numerical regression, but it prevents a claim
+that the 5M full-IV specification is validated. There is no successful 5M
+within timing or speedup. Smaller validated models and projection-only
+microbenchmarks do not override this failure.
+
+The default backend subsequently completed the same specification in 970.075
+seconds (single cold-process fit, excluding loading), with N=4,850,080,
+rank=21, 149,920 singletons dropped and absorbed DoF=1,094,160. Sample/rank,
+coefficients, residuals, RSS and covariance conditional on the reported DoF
+passed the existing independent reference. Maximum scaled coefficient error
+was 1.32e-8 and relative residual L2 error was 1.68e-10. Peak RSS was 4.088 GiB.
+Both runs used the same source and numerical settings; this confirms that
+relaxed admission removes the resource blocker, not that native convergence
+is validated. The local candidate was then relabelled 0.9.1 to preserve the
+immutable 0.9.0 public-contract snapshot; no solver code changed after timing.
+Machine-readable results and resource counters are in
+`benchmarks/hdfe/within_native_macos_091_5m_20261026.json`.
+
 ## Opt-in usage from this PR checkout
 
 ```bash

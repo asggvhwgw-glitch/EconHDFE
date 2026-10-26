@@ -27,6 +27,25 @@ The planner now unifies four execution responsibilities that were previously dis
 
 Explicit integer thread counts always override calibration. Calibration controls only execution resources; it cannot change the model, sample, FE, instruments, weights, clustering, covariance formula, or convergence criterion.
 
+For a monitored large run, opt in with
+`ExecutionConfig(memory_policy="relaxed", memory_budget_mb=8192)`.
+The default `"conservative"` policy remains unchanged. Relaxed mode reserves
+the smaller of 3% of effective total memory and 512 MiB, instead of 12%.
+An explicit budget remains the requested whole-call incremental workspace
+ceiling rather than being permanently clipped to initial host headroom.
+Every allocation/reservation still obeys live host/container headroom, RSS
+growth, outstanding reservations, and worker slices. Thus newly reclaimed host
+memory can become usable during a call, but an explicit large budget cannot
+override live memory pressure. With `memory_budget_mb="auto"`, the initial
+safe headroom still determines the budget. Nested calls and workers inherit
+the root policy; it is restored at scope exit.
+
+This option does not limit total process RSS, guarantee completion, or change
+statistical semantics. Lower system reserve leaves less room for other apps;
+use external memory monitoring for large workloads. Concurrent reservation
+accounting remains conservative because RSS cannot be attributed exactly to
+individual workers.
+
 HDFE hot kernels now inherit the resolved outer thread context; they do not
 perform another calibration lookup per FE sweep. Two-way standard factories
 also propagate the requested thread policy.

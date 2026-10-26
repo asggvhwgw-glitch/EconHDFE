@@ -1,81 +1,81 @@
 {
   "schema_version": 1,
-  "release_version": "0.9.0",
-  "previous_version": "0.8.5",
+  "release_version": "0.9.1",
+  "previous_version": "0.9.0",
   "checks": {
     "frontend_api": {
       "status": "changed",
-      "evidence": "PPML/IV-PPML signatures unified (data= first, cluster=); config conflict rule via config.resolve_override; pyreghdfe removed; tests/contracts/test_ppml_api.py, test_configuration.py",
+      "evidence": "Additive trailing ExecutionConfig.memory_policy; existing estimator call signatures unchanged.",
       "description": "Public call signatures, exports, aliases, CLI/front-end validation and compatibility."
     },
     "backend_compute": {
       "status": "changed",
-      "evidence": "0.9 shared stages and Linux OpenBLAS guard retained; optional pinned Rust within adapter for CPU categorical-intercept OLS/IV/sessions, original-row inference and default routing preserved; native session conditioning uses entry.fe.groups.",
+      "evidence": "Relaxed root reserve and explicit-budget admission; live headroom, RSS, reservations and worker slices retained. Native adapter inherited from PR25; no numerical solver changes in this follow-up.",
       "description": "Solver/compute/cache/backend contracts, numerical defaults and resource controls."
     },
     "errors": {
       "status": "changed",
-      "evidence": "Non-converged group/BlockDesign absorption raises HDFEConvergenceError (convergence.hdfe); new codes specification.config_conflict, specification.array_only_option, input.data_type",
+      "evidence": "resource.memory includes allocation/headroom counters; exception classes and codes unchanged. 5M within convergence.hdfe remains a reported failure.",
       "description": "Structured exception classes, codes, stages, suggestions and public error boundaries."
     },
     "public_contract": {
       "status": "changed",
-      "evidence": "12 approved changes vs 0.8.5 (PPML/IV-PPML/SPJ result schemas and signatures, publication_output); snapshot econhdfe-0.9.0.json",
+      "evidence": "Three reviewed ExecutionConfig schema/signature changes versus immutable 0.9.0; new 0.9.1 snapshot captured.",
       "description": "Public exports/signatures, result/config schemas and stable structured-error compatibility."
     },
     "skill": {
-      "status": "changed",
-      "evidence": "skills/econhdfe references and smoke_test updated for new PPML API, config rule and pyreghdfe removal",
+      "status": "reviewed",
+      "evidence": "Existing default commands and strategy routing remain valid; advanced opt-in is documented in docs/development/execution-planner.md. No installed or central skill modified.",
       "description": "Agent skill commands, examples, decision rules and newly exposed controls."
     },
     "linked_modules": {
       "status": "changed",
-      "evidence": "Dependency contract extended to all modules; DofInfo moved to hdfe/dof.py, design_specs.py, compute/cache_accounting.py; forwarding modules removed; data.persistent registered exception",
+      "evidence": "Config policy inherited by scheduler/core/design admission and nested/worker scopes; generated architecture map checked.",
       "description": "Cross-module imports, shared schemas, adapters, compatibility shims and downstream consumers."
     },
     "results_reporting": {
       "status": "changed",
-      "evidence": "PPMLResult/IVPPMLResult/SPJResult coef->params; publication_output include_profile=None follows diagnostics=full",
+      "evidence": "resource_schedule reports memory_policy; coefficient/inference result schemas unchanged.",
       "description": "Result fields, publication output, diagnostics metadata and serialization-facing schemas."
     },
     "config_defaults": {
       "status": "changed",
-      "evidence": "Scalar/config precedence: conflict raises, otherwise the set side wins; defaults unchanged; vce defaults keep upstream conventions",
+      "evidence": "Default memory_policy=conservative preserves existing reserve and initial cap; relaxed is explicit, validated and inherited.",
       "description": "Config objects, defaults, deprecations, aliases and backwards-compatible behavior."
     },
     "cache_state": {
       "status": "reviewed",
-      "evidence": "Session cache entry layout changed (StandardFEStructure) with equal byte accounting; persistent result ABI unchanged; session persistent-cache cases identical in d-equivalence",
+      "evidence": "No cache formats or numerical cache keys changed; worker/nested inheritance and scope restoration tested.",
       "description": "Reusable state/cache invalidation, fingerprints, lifecycle semantics and stale-state hazards."
     },
     "tests_validation": {
       "status": "changed",
-      "evidence": "464 base and 43 native tests pass locally on macOS arm64; five Rust tests; native Session weak-design prewarm/mutation/persistent-cache regressions added; native CI Linux/macOS matrix; independent 100k composite IV reference passes.",
+      "evidence": "511 tests passed (468 base plus 43 native), four expected omission warnings. Added relaxed admission/inheritance/live-pressure and OLS/IV numerical parity tests. New 0.9.1 snapshot preserves immutable 0.9.0.",
       "description": "Regression tests, install smoke tests, golden/parity coverage and failure-path tests."
     },
     "performance": {
       "status": "changed",
-      "evidence": "Existing 100k composite IV: 11.523s default versus 4.070s native (2.83x); existing 500k OLS/IV near parity and four-spec Session about 23% slower; three-run medians in benchmarks/hdfe/within_native_macos_090_20261026.json. 5M blocked by available-memory admission, no timing claim.",
+      "evidence": "5M default full IV completed in 970.075s with relaxed admission; N=4850080 and independent coefficient/residual/conditional-covariance checks pass. Native failed original 1e-12 convergence gate after 243.153s; no speedup claim.",
       "description": "Representative benchmark/resource regressions for code paths materially changed by the release."
     },
     "docs_migration": {
       "status": "changed",
-      "evidence": "docs/release/migration.md 0.9.0 section; CHANGELOG 0.9.0; architecture.md dependency rule; identified-fixed-effects.md singleton rules",
+      "evidence": "CHANGELOG, execution-planner memory-policy documentation, native validation limitations and benchmark records updated.",
       "description": "README/architecture/changelog/migration/versioning documentation and user-visible examples."
     },
     "packaging_dependencies": {
-      "status": "changed",
-      "evidence": "Base package remains pure Python with unchanged runtime dependencies. Optional econhdfe-within 0.1.0a2 built from native/within-accel with Cargo.lock and pinned upstream fc44282; macOS arm64 abi3 wheel built and tested locally; no publication.",
+      "status": "reviewed",
+      "evidence": "Version advanced with controlled tool to 0.9.1; runtime dependencies and native wheel unchanged. No new wheel built or published.",
       "description": "Python/dependency matrix, optional extras, wheel/source contents and build metadata."
     },
     "external_validation": {
-      "status": "changed",
-      "evidence": "Singleton/N counts compared with local Stata 18 reghdfe 6.12.5 / ppmlhdfe 2.3.0 on constructed cases; IV-PPML source-only; external corpus not rerun",
+      "status": "reviewed",
+      "evidence": "Existing independent analytic IV reference used for 5M, covariance conditional on reported DoF; no new licensed Stata/R corpus run or external certification claimed.",
       "description": "Licensed/reference-environment parity gates and explicitly deferred external certification."
     },
     "release_artifacts": {
       "status": "not_applicable",
-      "evidence": "Source candidate only; no wheel or release bundle built or published",
+      "evidence": "User authorized merging source PR25 after validation; no public wheel/tag/PyPI publication requested. Remote CI validates candidate artifacts; prior-head checks do not replace final-head validation.",
       "description": "Version consistency, source/wheel parity, hashes, clean install and reproducible bundle contents."
     }
   }

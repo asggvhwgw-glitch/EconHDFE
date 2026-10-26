@@ -73,8 +73,11 @@ class ExecutionConfig:
     profile: str = "off"  # off | summary | full
     cache: str = "auto"   # auto | on | off
     cache_validation: str = "signature"  # signature | none
+    memory_policy: str = "conservative"  # conservative | relaxed
 
     def validate(self) -> None:
+        if self.memory_policy not in {"conservative", "relaxed"}:
+            raise SpecificationError("memory_policy must be conservative/relaxed")
         if self.threads != "auto" and (not isinstance(self.threads, int) or self.threads < 1):
             raise SpecificationError("threads must be 'auto' or a positive integer")
         if self.memory_budget_mb != "auto" and (

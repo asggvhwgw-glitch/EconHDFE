@@ -40,10 +40,11 @@ def _rss():
     return int(psutil.Process().memory_info().rss)
 
 
-def _headroom(resources):
+def _headroom(resources, reserve_bytes=None):
     if resources.memory_limit_bytes is None or resources.memory_current_bytes is None:
         return None
-    reserve = int(resources.memory_limit_bytes * _RESERVE_FRACTION)
+    reserve = (int(resources.memory_limit_bytes * _RESERVE_FRACTION)
+               if reserve_bytes is None else reserve_bytes)
     return max(0, resources.memory_limit_bytes - resources.memory_current_bytes - reserve)
 
 
@@ -77,7 +78,7 @@ class ResourceAllocation:
         own = sum(self._ledger.claims.get(key, 0) for key in _RESERVATIONS.get())
         charged = total - own if credit_own else total
         available = max(0, root.memory_budget_bytes - used - charged)
-        live = _headroom(runtime_resources())
+        live = _headroom(runtime_resources(), root.reserve_bytes)
         if live is not None:
             available = min(available, max(0, live - charged))
         # Siblings share the root remainder, but retain their static slices.
@@ -111,6 +112,7 @@ class ResourceAllocation:
 
     def as_dict(self):
         return {"scope": "whole_call_incremental_workspace", "cpu_threads": self.cpu_threads,
+                "memory_policy": self.config.memory_policy,
                 "thread_policy": "auto" if self.auto_threads else "explicit",
                 "memory_budget_bytes": self.memory_budget_bytes, "reserve_bytes": self.reserve_bytes,
                 "remaining_memory_bytes": self.remaining_memory_bytes(),
@@ -150,7 +152,13 @@ def resolve_allocation(config=None):
     threads = resources.cpu_threads if config.threads == "auto" else min(config.threads, resources.cpu_threads)
     if parent is not None:
         threads = min(threads, parent.cpu_threads)
-    available = _headroom(resources)
+    reserve = int((resources.memory_limit_bytes or 0) * _RESERVE_FRACTION)
+    if config.memory_policy == "relaxed":
+        reserve = min(512 * _MIB, int((resources.memory_limit_bytes or 0) * 0.03))
+    if parent is not None:
+        reserve = parent.reserve_bytes
+        config = replace(config, memory_policy=parent.config.memory_policy)
+    available = _headroom(resources, reserve)
     if parent is not None:
         # Nested calls share an admitted envelope; do not reapply the public
         # 32 MiB admission floor to the already partly consumed remainder.
@@ -162,8 +170,12 @@ def resolve_allocation(config=None):
         budget = available
     else:
         budget = int(config.memory_budget_mb * _MIB)
-        if available is not None:
+        if available is not None and (config.memory_policy == "conservative" or parent is not None):
             budget = min(budget, available)
+        elif available is not None and available < 32 * _MIB:
+            raise SpecificationError("Insufficient safe memory headroom for estimation.",
+                                     code="resource.memory", stage="execution",
+                                     details={"available_bytes": available})
     if budget < 32 * _MIB:
         raise SpecificationError("Insufficient safe memory headroom for estimation.",
                                  code="resource.memory", stage="execution",
@@ -171,7 +183,7 @@ def resolve_allocation(config=None):
                                  suggestion="Free memory or reduce concurrent work before retrying.")
     resolved = replace(config, threads=max(1, threads), memory_budget_mb=budget / _MIB)
     return ResourceAllocation(resolved, max(1, threads), budget, _rss(),
-                              int((resources.memory_limit_bytes or 0) * _RESERVE_FRACTION), parent,
+                              reserve, parent,
                               auto_threads=auto_threads)
 
 
