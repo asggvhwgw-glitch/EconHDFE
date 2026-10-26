@@ -51,11 +51,10 @@ Do not replace the static Markdown companion with HTML alone. A visualization is
 1. Recover topology from code/configuration before drawing it. Never invent a module, dependency, datastore or execution hop to fill visual space.
 2. Keep import topology and execution/data flow semantically separate. Imports are AST-derived evidence; execution flows are reviewed overlays.
 3. Prefer stable architectural groups over file-by-file spaghetti. File-level evidence stays available in JSON/node details.
-4. Keep role categories small and meaningful: public/interface surface, estimator model, reusable infrastructure, low-level compute kernel, compatibility layer.
-5. Treat `pyreghdfe` as a compatibility surface, not a second implementation.
-6. Preserve architectural invariants in prose as well as diagrams, especially deliberate absences such as generic `iv` not depending on outcome models.
-7. If a flow cannot be verified from code, mark it partial or omit it. Do not infer a framework-default path.
-8. The HTML must remain self-contained: no remote scripts, fonts, analytics or network fetches.
+4. Keep role categories small and meaningful: public/interface surface, estimator model, reusable infrastructure, low-level compute kernel.
+5. Preserve architectural invariants in prose as well as diagrams, especially deliberate absences such as generic `iv` not depending on outcome models.
+6. If a flow cannot be verified from code, mark it partial or omit it. Do not infer a framework-default path.
+7. The HTML must remain self-contained: no remote scripts, fonts, analytics or network fetches.
 
 ## Visual layout requirements
 

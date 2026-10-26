@@ -13,7 +13,7 @@ from ...hdfe.plan import FEPlan
 from .irls import fit_irls
 from ...compute.linalg import independent_columns, weighted_lstsq
 from .results import PPMLResult
-from .separation import detect_separation
+from .separation import detect_separation, initial_sample_mask
 from .standardize import Standardization
 from ...compute.vcov import normalize_vce
 from .vce import ppml_vcov, MODEL_VCE_KINDS
@@ -83,7 +83,9 @@ def fit_arrays(
         X = np.column_stack([X, np.ones(n)])
         names = tuple(names) + ("_cons",)
 
-    singleton = plan.singleton_mask() if plan.groups else np.zeros(n, dtype=bool)
+    # ppmlhdfe first stage: singletons (row counts) and, with "fe", FE
+    # separation pruned jointly; e(num_singletons) counts both.
+    singleton, n_fe_separated = initial_sample_mask(y, plan, config)
     has_singletons = bool(np.any(singleton))
     if has_singletons:
         active0 = ~singleton
@@ -120,8 +122,10 @@ def fit_arrays(
     standardizer = standardizer.select_columns(keep)
 
     sep0 = detect_separation(y0s, X0s, p0, w0, config, execution)
-    survivor0 = ~sep0.separated
-    any_sep = bool(np.any(sep0.separated))
+    if "fe" in sep0.by_method:
+        sep0.by_method["fe"] = n_fe_separated
+    survivor0 = ~(sep0.separated | sep0.singletons)
+    any_sep = not bool(np.all(survivor0))
     if not np.any(survivor0) or not np.any(y0s[survivor0] > 0):
         raise InputError(
             "PPML has no finite estimable sample after separation",
@@ -195,8 +199,12 @@ def fit_arrays(
     if np.any(mu_sep):
         current = np.flatnonzero(sample)
         separation[current[mu_sep]] = True
-        sample[current[mu_sep]] = False
         keep_mu = ~mu_sep
+        if ps_requested.groups:
+            # ppmlhdfe trims mu-separated rows and reloads the HDFE, pruning
+            # the singletons this creates (counted as singletons).
+            keep_mu[np.flatnonzero(keep_mu)[ps_requested.subset(keep_mu).singleton_mask()]] = False
+        sample[current[~keep_mu]] = False
         ystd, Xstd = ystd[keep_mu], Xstd[keep_mu]
         ys_orig, ws, offs = ys_orig[keep_mu], ws[keep_mu], offs[keep_mu]
         ps_requested = ps_requested.subset(keep_mu) if ps_requested.groups else ps_requested
@@ -290,7 +298,7 @@ def fit_arrays(
         full_eta[sample] = eta_orig
 
     return PPMLResult(
-        coef=beta, vcov=V, stderr=se, names=tuple(names), converged=True,
+        params=beta, vcov=V, stderr=se, names=tuple(names), converged=True,
         iterations=state.iterations, deviance=deviance, loglike=ll,
         nobs=int(np.sum(sample)), n_separated=int(np.sum(separation)),
         sample_mask=sample, separation_mask=separation, mu=full_mu, eta=full_eta,
@@ -309,7 +317,7 @@ def fit_arrays(
                 "memory_budget_mb": execution.memory_budget_mb,
                 "cache": execution.cache,
             },
-            "n_singletons": int(np.sum(singleton)),
+            "n_singletons": int(n - np.sum(sample) - np.sum(separation)),
             "absorb_iterations": state.absorb_iterations,
             "epsilon": state.epsilon,
             "standardized": config.standardize,
@@ -323,5 +331,5 @@ def fit_arrays(
         fe_names=fe_names_from_metadata(ps_requested.metadata),
         weight_type="none" if np.allclose(ws, 1.0) else "weight",
         sum_weights=float(np.sum(ws)),
-        n_singletons=int(np.sum(singleton)),
+        n_singletons=int(n - np.sum(sample) - np.sum(separation)),
     )

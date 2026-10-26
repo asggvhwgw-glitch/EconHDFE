@@ -3,14 +3,19 @@
 ``olshdfe``/``ivhdfe`` and the repeated-spec sessions run the same pipeline
 (:mod:`econhdfe.pipeline`) and differ in their estimation kernel. This module
 owns the remaining common steps, so direct and session fits cannot drift
-apart: config precedence, estimation-sample preparation, group()-mode
+apart: config/scalar precedence, estimation-sample preparation, group()-mode
 completion, FE recovery, fit statistics with ``RegressionResult`` assembly,
 prediction metadata and the profile stopwatch.
 """
 from __future__ import annotations
-from dataclasses import replace
+from dataclasses import fields, replace
+from functools import wraps
+from inspect import signature
 from time import perf_counter
 import numpy as np
+from ..config import ExecutionConfig, HDFEConfig, InferenceConfig, resolve_override
+from ..errors import ConvergenceError
+from ..hdfe.absorber import HDFEConvergenceError
 from ..data import EstimationSampleState
 from ..frontend.validate import require_numeric
 from ..frontend.roles import VariableRole
@@ -72,30 +77,106 @@ class StageClock:
         return {"total_seconds": perf_counter() - self.start, "mode": self.mode}
 
 
-def apply_config_overrides(
-    hdfe_config, inference_config, execution_config, *, method, tol, max_iter,
-    dof_method, canonicalize_fe, vce, memory_budget_mb, absorb_threads,
-):
-    """Validate config objects and let each replace its scalar arguments.
+# (config class, ((config field, scalar argument), ...)) for every config field
+# that has a scalar counterpart on olshdfe/ivhdfe. Fields without one
+# (confidence_level, diagnostics, iv_advanced_statistics, profile, cache,
+# cache_validation) are always read from the config object.
+CONFIG_SCALAR_FIELDS = (
+    (HDFEConfig, (("solver", "method"), ("tolerance", "tol"), ("max_iter", "max_iter"),
+                  ("dof_method", "dof_method"), ("canonicalize", "canonicalize_fe"))),
+    (InferenceConfig, (("vce", "vce"),)),
+    (ExecutionConfig, (("memory_budget_mb", "memory_budget_mb"), ("threads", "absorb_threads"))),
+)
+CONFIG_SCALAR_ARGUMENTS = tuple(arg for _, pairs in CONFIG_SCALAR_FIELDS for _, arg in pairs)
+CONFIG_FIELD_DEFAULTS = {
+    cls: {f.name: f.default for f in fields(cls)} for cls, _ in CONFIG_SCALAR_FIELDS
+}
 
-    A supplied ``HDFEConfig`` replaces all solver scalars, ``ExecutionConfig``
-    replaces the memory budget (and threads unless ``"auto"``), and
-    ``InferenceConfig`` replaces ``vce`` only when it sets one.
+
+def signature_defaults(func, names=CONFIG_SCALAR_ARGUMENTS):
+    """Declared defaults of ``names`` in ``func``'s signature (the "unset" values)."""
+    parameters = signature(func).parameters
+    return {name: parameters[name].default for name in names}
+
+
+def resolve_config_scalar(config, field_name, argument, value, default):
+    """Resolve one scalar argument against its field of a validated config object."""
+    return resolve_override(
+        argument, value, default, getattr(config, field_name),
+        CONFIG_FIELD_DEFAULTS[type(config)][field_name],
+    )
+
+
+def config_precedence(function):
+    """Merge ``hdfe_config``/``inference_config``/``execution_config`` with scalars.
+
+    Each config field with a scalar counterpart (``CONFIG_SCALAR_FIELDS``) is
+    resolved by :func:`econhdfe.config.resolve_override`: a value equal to its
+    own default (the estimator's signature default for the scalar, the
+    dataclass default for the field) counts as unset, the set side wins, and
+    two different set values raise ``SpecificationError`` with code
+    ``specification.config_conflict``. Resolved HDFE/inference values are
+    passed on as the scalar arguments; resolved execution values are written
+    into ``execution_config``.
+
+    Apply it outside ``managed_execution``: resource admission sizes the call
+    from ``execution_config`` and then overwrites ``memory_budget_mb`` and
+    ``absorb_threads`` with the admitted values, so the execution fields must
+    be merged before admission.
     """
-    if hdfe_config is not None:
-        hdfe_config.validate()
-        method, tol, max_iter = hdfe_config.solver, hdfe_config.tolerance, hdfe_config.max_iter
-        dof_method, canonicalize_fe = hdfe_config.dof_method, hdfe_config.canonicalize
-    if inference_config is not None:
-        inference_config.validate()
-        if inference_config.vce is not None:
-            vce = inference_config.vce
-    if execution_config is not None:
-        execution_config.validate()
-        memory_budget_mb = execution_config.memory_budget_mb
-        if execution_config.threads != "auto":
-            absorb_threads = execution_config.threads
-    return method, tol, max_iter, dof_method, canonicalize_fe, vce, memory_budget_mb, absorb_threads
+    sig = signature(function)
+    defaults = signature_defaults(function)
+    config_names = ("hdfe_config", "inference_config", "execution_config")
+
+    @wraps(function)
+    def wrapped(*args, **kwargs):
+        bound = sig.bind(*args, **kwargs)
+        arguments = bound.arguments
+        for config_name, (_, pairs) in zip(config_names, CONFIG_SCALAR_FIELDS):
+            config = arguments.get(config_name)
+            if config is None:
+                continue
+            config.validate()
+            resolved = {
+                argument: resolve_config_scalar(
+                    config, field_name, argument, arguments.get(argument, defaults[argument]),
+                    defaults[argument],
+                )
+                for field_name, argument in pairs
+            }
+            if config_name == "execution_config":
+                updates = {
+                    field_name: resolved[argument] for field_name, argument in pairs
+                    if resolved[argument] != getattr(config, field_name)
+                }
+                if updates:
+                    arguments[config_name] = replace(config, **updates)
+            else:
+                arguments.update(resolved)
+        return function(*bound.args, **bound.kwargs)
+
+    return wrapped
+
+
+def nonconvergence_error(message, *, iterations, metric=None, info=None):
+    """``HDFEConvergenceError`` for an estimator-level FE absorption failure.
+
+    ``HDFEConvergenceError(info)`` formats its own message from a solver info
+    object; estimator stages keep their established message verbatim, so the
+    exception is initialised through ``ConvergenceError`` directly with the
+    same code, stage and structured details.
+    """
+    details = {"iterations": int(iterations)}
+    if metric is not None:
+        details["metric"] = float(metric)
+    exc = HDFEConvergenceError.__new__(HDFEConvergenceError)
+    ConvergenceError.__init__(
+        exc, message, code="convergence.hdfe", stage="hdfe", details=details,
+        suggestion="Increase max_iter, try another solver, or pass allow_nonconverged=True "
+                   "to keep the unconverged fit.",
+    )
+    exc.info = info
+    return exc
 
 
 def reporting_options(inference_config):
@@ -130,7 +211,9 @@ def prepare_standard_sample(data, y, weights, weight_type, absorb, *, canonicali
 
 def finish_group_mode(result, *, allow_nonconverged, inference_config, clock, data_plan):
     if not result.converged and not allow_nonconverged:
-        raise RuntimeError("group/individual FE absorption did not converge")
+        raise nonconvergence_error(
+            "group/individual FE absorption did not converge", iterations=result.iterations,
+        )
     options = reporting_options(inference_config)
     result.confidence_level = options["confidence_level"]
     result.diagnostics_mode = options["diagnostics_mode"]

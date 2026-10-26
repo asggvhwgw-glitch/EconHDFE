@@ -76,11 +76,11 @@ def test_ppml_can_request_exact_three_way_dof():
     n = len(groups[0])
     y = np.linspace(1.0, 3.0, n)
     X = np.linspace(-1.0, 1.0, n)[:, None]
-    pair = ppmlhdfe(y, X, absorb=groups, names=("x",), config=PPMLConfig(separation=("fe",), dof_method="pairwise"))
-    exact = ppmlhdfe(y, X, absorb=groups, names=("x",), config=PPMLConfig(separation=("fe",), dof_method="exact"))
+    pair = ppmlhdfe(y=y, x=X, absorb=groups, names=("x",), config=PPMLConfig(separation=("fe",), dof_method="pairwise"))
+    exact = ppmlhdfe(y=y, x=X, absorb=groups, names=("x",), config=PPMLConfig(separation=("fe",), dof_method="exact"))
     assert pair.df_absorbed == 5
     assert exact.df_absorbed == 4
-    np.testing.assert_allclose(pair.coef, exact.coef, atol=1e-9, rtol=1e-9)
+    np.testing.assert_allclose(pair.params, exact.params, atol=1e-9, rtol=1e-9)
 
 
 def test_ivppml_can_request_exact_three_way_dof():
@@ -105,4 +105,4 @@ def test_ivppml_can_request_exact_three_way_dof():
     exact = ivppmlhdfe(**common, config=IVPPMLConfig(**base_cfg, dof_method="exact"))
     assert pair.df_absorbed == 5
     assert exact.df_absorbed == 4
-    np.testing.assert_allclose(pair.coef, exact.coef, atol=2e-8, rtol=2e-8)
+    np.testing.assert_allclose(pair.params, exact.params, atol=2e-8, rtol=2e-8)

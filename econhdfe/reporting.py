@@ -279,12 +279,12 @@ class PublicationResult(Protocol):
     def model_stats(self) -> dict[str, Any]: ...
     def publication_output(self, *, level: float | None = None,
                            include_diagnostics: bool | None = None,
-                           include_profile: bool = False) -> dict[str, Any]: ...
+                           include_profile: bool | None = None) -> dict[str, Any]: ...
 
 
 def publication_output(result: PublicationResult, *, level: float | None = None,
                        include_diagnostics: bool | None = None,
-                       include_profile: bool = False) -> dict[str, Any]:
+                       include_profile: bool | None = None) -> dict[str, Any]:
     return result.publication_output(
         level=level,
         include_diagnostics=include_diagnostics,

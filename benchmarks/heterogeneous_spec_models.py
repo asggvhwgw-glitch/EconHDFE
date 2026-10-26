@@ -71,10 +71,10 @@ def main():
     mu=np.exp(np.clip(.08*df.c0.to_numpy()+.25*eta,-2,2)); df['y_pp']=rng.poisson(mu)
     pcfg=PPMLConfig(separation=('fe',),standardize=False,tolerance=1e-8,target_inner_tol=1e-9,max_iter=200,engine='optimized')
     pm=PPMLHDFE(df,absorb=['g'],config=pcfg)
-    t_pp_s,r_pp_s=medtime(lambda: pm.fit('y_pp',X=specs,vce='robust'),a.reps)
+    t_pp_s,r_pp_s=medtime(lambda: pm.fit('y_pp',x=specs,vce='robust'),a.reps)
     def pp_dense():
         d=build_design(df,specs,n,structural=False)
-        return ppmlhdfe(df.y_pp.to_numpy(),d.values,absorb=[g],vce='robust',config=pcfg)
+        return ppmlhdfe(y=df.y_pp.to_numpy(),x=d.values,absorb=[g],vce='robust',config=pcfg)
     t_pp_d,r_pp_d=medtime(pp_dense,a.reps)
 
     # IV-PPML
@@ -86,7 +86,7 @@ def main():
         C=build_design(df,['c0','c1'],n,structural=False).values
         E=build_design(df,end,n,structural=False).values
         Z=build_design(df,ins,n,structural=False).values
-        return ivppmlhdfe(df.y_ivpp.to_numpy(),exog=C,endog=E,instruments=Z,absorb=[g],vce='robust',config=icfg)
+        return ivppmlhdfe(y=df.y_ivpp.to_numpy(),exog=C,endog=E,instruments=Z,absorb=[g],vce='robust',config=icfg)
     t_ip_d,r_ip_d=medtime(ip_dense,a.reps)
 
     def rec(td,ts,err):
@@ -101,8 +101,8 @@ def main():
       },
       'ols':rec(t_ols_d,t_ols_s,np.max(np.abs(r_ols_d.params-r_ols_s.params))),
       'linear_iv':rec(t_iv_d,t_iv_s,np.max(np.abs(r_iv_d.params-r_iv_s.params))),
-      'ppml':rec(t_pp_d,t_pp_s,np.max(np.abs(r_pp_d.coef-r_pp_s.coef))),
-      'ivppml':rec(t_ip_d,t_ip_s,np.max(np.abs(r_ip_d.coef-r_ip_s.coef))),
+      'ppml':rec(t_pp_d,t_pp_s,np.max(np.abs(r_pp_d.params-r_pp_s.params))),
+      'ivppml':rec(t_ip_d,t_ip_s,np.max(np.abs(r_ip_d.params-r_ip_s.params))),
       'notes':[
         'Development microbenchmark; not a release performance claim.',
         'PPML/IV-PPML use FE-only separation so shared coefficients remain on the certified structured path.',

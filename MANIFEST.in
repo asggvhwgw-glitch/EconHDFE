@@ -2,7 +2,6 @@ include README.md README.zh-CN.md TODO.md CHANGELOG.md LICENSE NOTICE.md CONTRIB
 include compatibility/APPROVED_CHANGES.json
 graft compatibility/baselines
 graft econhdfe
-graft pyreghdfe
 graft tests
 graft scripts
 graft skills

@@ -31,7 +31,7 @@ LOWER = {
 # Estimator composition, result/report surfaces and orchestration.  They may
 # import any lower layer; sibling estimator families stay independent.
 UPPER = (
-    'econhdfe', 'api', 'bootstrap', 'collinearity', 'design', 'design_structure',
+    'econhdfe', 'api', 'collinearity', 'design', 'design_structure',
     'pipeline', 'postestimation', 'prediction_api', 'reporting', 'results',
     'sessions', 'support_reports',
     'models', 'models.linear_iv', 'models.ppml', 'models.ppml_iv',

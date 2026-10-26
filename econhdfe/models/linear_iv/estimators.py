@@ -641,12 +641,3 @@ def fit_iv_gmm2s(
     df_resid = cluster_df_resid(max(n_eff-k_total, 0.0), vce, clusters)
     beta, V = _restore_iv_units(beta, V, first, meta, xscale, zscale, escale)
     return beta, V, resid, rank, df_resid, first, diagnostics, meta
-
-
-
-def fit_iv_2sls(y, exog, endog, instruments, **kwargs):
-    """Backward-compatible 2SLS entry point."""
-    beta, V, resid, rank, df, first, _, _ = fit_iv_kclass(
-        y, exog, endog, instruments, estimator="2sls", **kwargs
-    )
-    return beta, V, resid, rank, df, first

@@ -7,7 +7,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-from pyreghdfe import reghdfe, factor, reg_interaction, omit_level, omit_column
+from econhdfe import reghdfe, factor, reg_interaction, omit_level, omit_column
 
 
 def max_rss_mib():

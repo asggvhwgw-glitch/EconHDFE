@@ -48,4 +48,4 @@ def test_class_b_and_c_spj_run_with_expected_fit_counts():
     c = ivppml_spj(d, panel=SPJPanel.class_c(), y="y", exog=("x2",), endog=("x1",), instruments=("z",), config=cfg(), seed=12)
     assert b.fit_count == 5 and c.fit_count == 15
     assert b.names == c.names == ("x2", "x1")
-    assert np.all(np.isfinite(b.coef)) and np.all(np.isfinite(c.coef))
+    assert np.all(np.isfinite(b.params)) and np.all(np.isfinite(c.params))

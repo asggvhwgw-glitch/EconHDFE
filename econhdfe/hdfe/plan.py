@@ -5,7 +5,7 @@ import numpy as np
 from .absorber import HDFEAbsorber, iterative_singleton_mask
 from .absorb_spec import absorb_columns, term_columns
 from .two_way import TwoWayFEAbsorber
-from .encoding import factorize_1d, factorize_interaction
+from ..compute.encoding import factorize_1d, factorize_interaction
 from .dof import absorbed_dof
 from .structure import canonicalize_fixed_effects, FEPartitionMeta
 
@@ -91,12 +91,18 @@ class FEPlan:
             raise ValueError("FEPlan subset mask must have one value per observation")
         return self.take(np.flatnonzero(mask))
 
-    def singleton_mask(self) -> np.ndarray:
+    def singleton_mask(self, *, frequency_weights=None, positive=None) -> np.ndarray:
         """Iteratively flag observations in singleton FE levels.
 
-        Degrees are unweighted row counts, whatever the estimator weights.
+        Degrees are row counts, or frequency-weight mass when
+        ``frequency_weights`` is given (reghdfe's fweight rule).  A boolean
+        ``positive`` outcome mask also flags levels without a positive
+        outcome in the same fixed point (ppmlhdfe's ``separation(fe)`` stage).
         """
-        keep, _ = iterative_singleton_mask(self.groups)
+        keep, _ = iterative_singleton_mask(
+            self.groups, frequency_weights, frequency_weights=frequency_weights is not None,
+            positive=positive,
+        )
         return ~keep
 
     def canonicalized(self) -> tuple["FEPlan", dict]:

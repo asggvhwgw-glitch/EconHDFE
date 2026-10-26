@@ -7,7 +7,7 @@ from ..ppml.results import _PoissonResultMethods
 
 @dataclass(slots=True)
 class IVPPMLResult(_PoissonResultMethods):
-    coef: np.ndarray
+    params: np.ndarray
     vcov: np.ndarray
     stderr: np.ndarray
     names: tuple[str, ...]
@@ -40,7 +40,7 @@ class IVPPMLResult(_PoissonResultMethods):
     diagnostics_mode: str = "off"
 
     def coef_table(self, level=None):
-        table = inference_table(self.names, self.coef, self.stderr,
+        table = inference_table(self.names, self.params, self.stderr,
                                 level=self.confidence_level if level is None else level,
                                 distribution="normal")
         normalized = np.array([name == "_cons" for name in self.names]) & (self.stderr == 0)

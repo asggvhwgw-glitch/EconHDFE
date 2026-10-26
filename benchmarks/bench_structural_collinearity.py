@@ -7,8 +7,8 @@ if str(ROOT) not in sys.path:
 
 import numpy as np
 import pandas as pd
-from pyreghdfe import factor, reg_interaction
-from pyreghdfe.design import build_design
+from econhdfe import factor, reg_interaction
+from econhdfe.design import build_design
 
 
 def main(n=150_000, seed=733):

@@ -29,7 +29,7 @@ def test_ivppml_standardization_is_numerically_invariant():
     )
     raw = ivppmlhdfe(**kwargs, config=ivcfg(engine="optimized", standardize=False))
     std = ivppmlhdfe(**kwargs, config=ivcfg(engine="optimized", standardize=True))
-    np.testing.assert_allclose(raw.coef, std.coef, atol=2e-8, rtol=2e-8)
+    np.testing.assert_allclose(raw.params, std.params, atol=2e-8, rtol=2e-8)
     np.testing.assert_allclose(raw.stderr, std.stderr, atol=2e-8, rtol=2e-8)
 
 
@@ -46,7 +46,7 @@ def test_ivppml_rechecks_identification_after_instrument_pruning():
     y = rng.poisson(np.exp(a[g] + .15*e1 - .12*e2))
     with np.testing.assert_raises_regex(ValueError, "not identified"):
         ivppmlhdfe(
-            y, exog=None, endog=E, instruments=Z, absorb=[g],
+            y=y, exog=None, endog=E, instruments=Z, absorb=[g],
             vce="robust", config=ivcfg(),
         )
 
@@ -62,7 +62,7 @@ def test_ivppml_mu_separation_keeps_sample_and_reports_mask():
     e[-1] = 35.0
     y[-1] = 0
     r = ivppmlhdfe(
-        y, exog=None, endog=e, instruments=z,
+        y=y, exog=None, endog=e, instruments=z,
         config=ivcfg(separation=("mu",), tolerance=1e-8, target_inner_tol=1e-9),
         vce="robust",
     )
@@ -81,4 +81,4 @@ def test_ivppml_nonconvergence_fails_loudly():
     y = rng.poisson(np.exp(.2 + .3*e))
     cfg = ivcfg(max_iter=1, tolerance=1e-12, target_inner_tol=1e-12)
     with np.testing.assert_raises_regex(RuntimeError, "failed to converge"):
-        ivppmlhdfe(y, exog=None, endog=e, instruments=z, vce="robust", config=cfg)
+        ivppmlhdfe(y=y, exog=None, endog=e, instruments=z, vce="robust", config=cfg)

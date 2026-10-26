@@ -28,7 +28,10 @@ from .hdfe.factorvars import compile_absorb_factor_variable
 from .hdfe.specs import Interaction
 from .factorvars import FactorVariableExpression
 from .models.ols import fit_ols_in_basis
-from .models.linear import IV_DESIGN_ROLES, linear_result, prediction_state, reporting_options
+from .models.linear import (
+    IV_DESIGN_ROLES, linear_result, prediction_state, reporting_options, resolve_config_scalar,
+    signature_defaults,
+)
 from .compute.stable_linalg import _absorption_basis
 from .collinearity import _weighted_gram
 from .models.linear_iv.estimators import fit_iv_gmm2s, fit_iv_kclass
@@ -215,6 +218,12 @@ class _LinearHDFESessionBase:
     different FE/sample signatures. Adding or removing an FE therefore creates
     (or reuses) a distinct compiled FE entry rather than applying an invalid
     sequential-projection shortcut.
+
+    ``vce`` and ``InferenceConfig.vce`` follow the estimator precedence rule:
+    a value equal to its default counts as unset, the set side wins, and two
+    different set values raise ``SpecificationError``
+    (``code="specification.config_conflict"``) at construction. All other
+    numerical and execution choices come from the config objects.
     """
 
     def __init__(
@@ -266,6 +275,8 @@ class _LinearHDFESessionBase:
         self.inference = inference_config or InferenceConfig(vce=vce)
         self.execution = execution_config or ExecutionConfig()
         self.hdfe.validate(); self.inference.validate(); self.execution.validate()
+        # ``vce`` is the only constructor scalar backed by a config field.
+        resolve_config_scalar(self.inference, "vce", "vce", vce, _SESSION_DEFAULTS["vce"])
         self.collinearity = check_collinearity_mode(collinearity)
         self.collinear_tol = float(collinear_tol)
         self._entries: dict[tuple, _FECacheEntry] = {}
@@ -833,6 +844,10 @@ class _LinearHDFESessionBase:
         if result_key is not None:
             self._persistent_store.save_result(result_key, result)
         return result
+
+
+# Signature default of the config-backed constructor scalar (``vce``).
+_SESSION_DEFAULTS = signature_defaults(_LinearHDFESessionBase.__init__, ("vce",))
 
 
 class OLSHDFESession(_LinearHDFESessionBase):

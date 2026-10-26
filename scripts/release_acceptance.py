@@ -25,7 +25,7 @@ REQUIRED = (
     'support_matrix', 'dependency_floor', 'reference_claims', 'final_artifacts',
 )
 STATUSES = {'not_run', 'blocked', 'failed', 'passed'}
-CODE_ROOTS = ('econhdfe', 'pyreghdfe', 'scripts', 'tests', 'skills', '.github', 'compatibility')
+CODE_ROOTS = ('econhdfe', 'scripts', 'tests', 'skills', '.github', 'compatibility')
 ROOT_FILES = ('pyproject.toml', 'MANIFEST.in')
 
 

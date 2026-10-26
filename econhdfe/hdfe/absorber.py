@@ -1289,14 +1289,18 @@ class HDFEAbsorber:
         return AbsorbInfo(False, self.max_iter, float(max_update))
 
 
-def singleton_rows(groups, levels, idx, frequency_weights=None) -> np.ndarray:
+def singleton_rows(groups, levels, idx, frequency_weights=None, positive=None) -> np.ndarray:
     """One pruning pass: flag active rows ``idx`` whose level has degree one in any group.
 
     Degree is the active row count, or the active frequency mass when
     ``frequency_weights`` (full-length) is given. Row counts are integers, so
     the mass tolerance ``<= 1 + 1e-12`` is exactly ``== 1`` for them.
+    With a full-length boolean ``positive`` outcome mask, levels without an
+    active positive outcome are flagged as well (ppmlhdfe's FE-separation
+    rule, applied jointly with singletons).
     """
     flags = np.zeros(len(idx), dtype=bool)
+    pos = None if positive is None else positive[idx]
     for g, nlev in zip(groups, levels, strict=True):
         active = g[idx]
         if frequency_weights is None:
@@ -1304,11 +1308,13 @@ def singleton_rows(groups, levels, idx, frequency_weights=None) -> np.ndarray:
         else:
             counts = np.bincount(active, weights=frequency_weights[idx], minlength=nlev)
         flags |= counts[active] <= 1.0 + 1e-12
+        if pos is not None:
+            flags |= np.bincount(active[pos], minlength=nlev)[active] == 0
     return flags
 
 
 def iterative_singleton_mask(
-    groups: list[np.ndarray], weights=None, *, frequency_weights: bool = False
+    groups: list[np.ndarray], weights=None, *, frequency_weights: bool = False, positive=None,
 ) -> tuple[np.ndarray, int]:
     """Iteratively remove observations singleton in any absorbed FE group.
 
@@ -1316,6 +1322,9 @@ def iterative_singleton_mask(
     matching the dataset that would be obtained by physically expanding the
     rows. Analytic/probability/generic weights must leave ``frequency_weights``
     false because a weighted row still counts as one sampled observation.
+    ``positive`` (boolean outcome mask) additionally removes levels with no
+    positive outcome inside the same fixed point, as ppmlhdfe's first stage
+    does with ``separation(fe)``.
     """
     if not groups:
         return np.ones(0, dtype=bool), 0
@@ -1328,12 +1337,17 @@ def iterative_singleton_mask(
         fw = np.asarray(weights, dtype=np.float64)
         if len(fw) != n:
             raise ValueError("frequency weights length mismatch")
+    pos = None
+    if positive is not None:
+        pos = np.asarray(positive, dtype=bool)
+        if len(pos) != n:
+            raise ValueError("positive outcome mask length mismatch")
     levels = [int(g.max()) + 1 if len(g) else 0 for g in groups]
     dropped_total = 0
     while True:
         drop = np.zeros(n, dtype=bool)
         idx = np.flatnonzero(keep)
-        drop[idx] = singleton_rows(groups, levels, idx, fw)
+        drop[idx] = singleton_rows(groups, levels, idx, fw, pos)
         new = drop & keep
         c = int(new.sum())
         if c == 0:

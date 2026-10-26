@@ -41,7 +41,7 @@ For an economics-facing explanation of every runtime module, use `docs/developme
 
 ```text
 upper       models/*, design, design_structure, collinearity, pipeline, results,
-            postestimation, prediction_api, reporting, sessions, api, bootstrap,
+            postestimation, prediction_api, reporting, sessions, api,
             support_reports, package __init__        (may import every unit below)
 post-fit    effects   ──► hdfe, compute, prediction
             inference ──► compute, hdfe, planner, resampling
@@ -67,7 +67,7 @@ The direction is strict:
 - `prediction` is the frozen fitted-state schema and imports no other package module. `effects` (post-estimation FE recovery) may depend on `hdfe`, `compute` and `prediction`; `inference` on `compute`, `hdfe`, `planner` and `resampling`.
 - Upper layers compose all of the above. `models` owns estimating equations; `models.linear_iv` and `models.ppml` must not import each other or `models.ppml_iv`.
 - `results` exposes thin result methods; `postestimation` owns coefficient inference, `prediction` owns frozen state, `prediction_api` owns new-row reconstruction/evaluation, and `effects/prediction` builds fit-time FE certificates. These are distinct responsibilities.
-- Root-level `pipeline` and `design` are substantial orchestration/compilation modules, not thin wrappers; `collinearity` owns active-column policy. Root `bootstrap.py` is compatibility-only.
+- Root-level `pipeline` and `design` are substantial orchestration/compilation modules, not thin wrappers; `collinearity` owns active-column policy.
 - Registered exceptions are listed with reasons in the test: `data.persistent` encodes/decodes cached session results (`results`, `prediction`) until that codec moves to the session layer, and `planner.report` reads the package `__version__` as a metadata fallback.
 - See the [0.7 architecture review](architecture-review-0.7.md) for measured complexity and scoped follow-up work.
 
@@ -104,7 +104,6 @@ econhdfe/
       diagnostics.py         # cluster balance/score concentration diagnostics
       wild.py                # one-way OLS WCR11/WCU11
       results.py
-  bootstrap.py               # compatibility re-exports
 
   models/
     ols.py
@@ -137,7 +136,7 @@ econhdfe/
     results.py              # level-sized effect/result contracts
 
   hdfe/
-    specs.py / encoding.py
+    specs.py
     structure.py / plan.py
     absorber.py / numerical_core.py / projection.py
     two_way.py / weighted_projection.py
@@ -151,7 +150,7 @@ econhdfe/
   compute/
     backend.py / encoding.py / clusters.py / kernels.py
     linalg.py / wls.py / vcov.py / weights.py
-    runtime.py / execution.py / context.py / cache_accounting.py
+    execution.py / context.py / cache_accounting.py
 ```
 
 ## Econometric data-layer boundary
@@ -188,7 +187,7 @@ SPJ bias correction and bootstrap remain model-specific in `models.ppml_iv.bias`
 from econhdfe import olshdfe, ppmlhdfe, ivhdfe, ivppmlhdfe
 ```
 
-`ivhdfe` remains the public linear-IV estimator for compatibility. The nonlinear IV-PPML estimator is exposed explicitly as `ivppmlhdfe`; `ivhdfe` remains the linear-IV estimator. Legacy `reghdfe`, `ivreghdfe`, and `pyreghdfe` remain compatibility shims.
+`ivhdfe` remains the public linear-IV estimator for compatibility. The nonlinear IV-PPML estimator is exposed explicitly as `ivppmlhdfe`; `ivhdfe` remains the linear-IV estimator. `reghdfe` and `ivreghdfe` remain Stata-style aliases of `olshdfe` and `ivhdfe`.
 
 ## Error boundary rule
 
@@ -202,7 +201,9 @@ CRV3/cluster jackknife is intentionally not public in 0.4.6. The current prototy
 
 ## Result/reporting boundary
 
-Estimator results expose a common `PublicationResult` protocol: `coef_table()`, `model_stats()`, and `publication_output()`. The default publication output contains econometric quantities suitable for regression tables and appendices, while internal solver diagnostics/profile traces remain opt-in. Linear-IV publication output retains reportable first-stage and identification/over-identification tests without returning large observation-level fitted first-stage arrays.
+Linear estimators and sessions merge config objects with scalar arguments field by field (`models/linear.py::config_precedence`, built on `config.resolve_override`): a value equal to its default counts as unset, the set side wins, and two different set values raise `SpecificationError(code="specification.config_conflict")`. Execution fields are merged before resource admission, because `managed_execution` sizes the call from `execution_config`. FE absorption that fails to converge raises `HDFEConvergenceError` (a `ConvergenceError`) unless `allow_nonconverged=True`.
+
+Estimator results expose a common `PublicationResult` protocol: `coef_table()`, `model_stats()`, and `publication_output()`. The default publication output contains econometric quantities suitable for regression tables and appendices, while internal solver diagnostics/profile traces remain opt-in: `InferenceConfig(diagnostics="publication")` adds the stored diagnostics, `diagnostics="full"` additionally defaults `include_profile` to True, and explicit `include_diagnostics`/`include_profile` arguments take precedence. Linear-IV publication output retains reportable first-stage and identification/over-identification tests without returning large observation-level fitted first-stage arrays.
 
 ## Configuration and execution lifecycle
 

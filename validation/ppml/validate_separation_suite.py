@@ -7,9 +7,9 @@ import urllib.request
 import numpy as np
 import pandas as pd
 
-from pyreghdfe import PPMLConfig
-from pyreghdfe.fe_plan import FEPlan
-from pyreghdfe.ppml.separation import detect_separation
+from econhdfe import PPMLConfig
+from econhdfe.hdfe.plan import FEPlan
+from econhdfe.models.ppml.separation import detect_separation
 
 BASE = "https://raw.githubusercontent.com/sergiocorreia/ppmlhdfe/master/guides/separation_datasets/{:02d}.csv"
 

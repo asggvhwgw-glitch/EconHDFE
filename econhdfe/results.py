@@ -209,7 +209,15 @@ class RegressionResult:
 
     def publication_output(self, *, level: float | None = None,
                            include_diagnostics: bool | None = None,
-                           include_profile: bool = False) -> dict[str, Any]:
+                           include_profile: bool | None = None) -> dict[str, Any]:
+        """Reportable estimates, model statistics and reproducibility metadata.
+
+        ``include_diagnostics``/``include_profile`` default to the fit's
+        ``InferenceConfig.diagnostics`` mode: ``"off"`` shows neither,
+        ``"publication"`` adds solver/estimation diagnostics, and ``"full"``
+        also adds the profile trace (present only when profiling was enabled).
+        Explicit arguments take precedence.
+        """
         out: dict[str, Any] = {
             "coefficients": self.coef_table(level),
             "model": self.model_stats(),
@@ -239,7 +247,8 @@ class RegressionResult:
         show_diag = self.diagnostics_mode != "off" if include_diagnostics is None else bool(include_diagnostics)
         if show_diag and self.diagnostics is not None:
             out["diagnostics"] = self.diagnostics
-        if include_profile and self.profile is not None:
+        show_profile = self.diagnostics_mode == "full" if include_profile is None else bool(include_profile)
+        if show_profile and self.profile is not None:
             out["profile"] = self.profile
         out["reproducibility"] = self.reproducibility or reproducibility_dict(
             solver=(self.absorb_info or {}).get("method") if isinstance(self.absorb_info, dict) else None,

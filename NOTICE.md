@@ -1,6 +1,6 @@
 # Provenance and validation notice
 
-`pyreghdfe` is implemented as a Python-native clean-room codebase. Public documentation, papers, command help and source behavior from the `reghdfe` / `ivreghdfe` / `ivreg2` ecosystem are used as econometric compatibility references; external source files are not vendored into this repository.
+`econhdfe` (formerly distributed as `pyreghdfe`) is implemented as a Python-native clean-room codebase. Public documentation, papers, command help and source behavior from the `reghdfe` / `ivreghdfe` / `ivreg2` ecosystem are used as econometric compatibility references; external source files are not vendored into this repository.
 
 The project names `reghdfe`, `ivreghdfe` and `ivreg2` refer to independent Stata software maintained by their respective authors. Users requiring exact command parity should run the version-pinned golden harness in `validation/` against their licensed Stata installation.
 

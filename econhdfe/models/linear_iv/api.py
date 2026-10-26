@@ -16,8 +16,9 @@ from ...pipeline import (
     block_absorb_metadata, resolve_pool_size,
 )
 from ..linear import (
-    IV_DESIGN_ROLES, StageClock, apply_config_overrides, reporting_options, prepare_standard_sample,
-    finish_group_mode, recover_fixed_effects, linear_result, prediction_state, with_saved_effects,
+    IV_DESIGN_ROLES, StageClock, config_precedence, reporting_options,
+    prepare_standard_sample, finish_group_mode, nonconvergence_error, recover_fixed_effects,
+    linear_result, prediction_state, with_saved_effects,
 )
 from ...compute.weights import prepare_weights, resolve_vce_for_weights
 from ...compute.vcov import normalize_vce, BLOCK_VCE_KINDS
@@ -133,6 +134,7 @@ def _ivreghdfe_group_mode(
     )
 
 @error_boundary("linear_iv")
+@config_precedence
 @managed_execution
 def ivhdfe(
     data=None, *, y, exog=None, endog, instruments, absorb,
@@ -161,15 +163,22 @@ def ivhdfe(
     ``on_stage(event)`` receives synchronous independent snapshots in original
     units at estimation, first_stage, diagnostics and complete. Diagnostics
     may still fail after estimation; only complete denotes a finished fit.
+
+    Config objects and scalar arguments are merged field by field:
+    ``HDFEConfig`` solver/tolerance/max_iter/dof_method/canonicalize pair with
+    ``method``/``tol``/``max_iter``/``dof_method``/``canonicalize_fe``,
+    ``InferenceConfig.vce`` with ``vce`` and ``ExecutionConfig``
+    memory_budget_mb/threads with ``memory_budget_mb``/``absorb_threads``. A
+    value equal to its default counts as unset and the set side wins; setting
+    both sides to different values raises ``SpecificationError``
+    (``code="specification.config_conflict"``). Remaining config fields have
+    no scalar counterpart and always apply.
+
+    FE absorption that does not converge raises ``HDFEConvergenceError`` (a
+    ``ConvergenceError``) unless ``allow_nonconverged=True``.
     """
     clock = StageClock(execution_config)
     validate_callback(on_stage)
-    (method, tol, max_iter, dof_method, canonicalize_fe, vce, memory_budget_mb,
-     absorb_threads) = apply_config_overrides(
-        hdfe_config, inference_config, execution_config, method=method, tol=tol,
-        max_iter=max_iter, dof_method=dof_method, canonicalize_fe=canonicalize_fe, vce=vce,
-        memory_budget_mb=memory_budget_mb, absorb_threads=absorb_threads,
-    )
     advanced_statistics = True if inference_config is None else inference_config.iv_advanced_statistics
     if individual is not None and group is None:
         raise ValueError("individual= requires group=")
@@ -284,7 +293,10 @@ def ivhdfe(
         projected = block_projector.residualize_response_design(y1, combined, wproj, tol=tol)
         info = projected
         if not info.converged and not allow_nonconverged:
-            raise RuntimeError("heterogeneous-spec IV FE projection did not converge")
+            raise nonconvergence_error(
+                "heterogeneous-spec IV FE projection did not converge",
+                iterations=info.iterations, metric=info.max_update, info=info,
+            )
         yw = projected.response
         p = 0; kc0 = C1.ncols; ke0 = E1.ncols; kz0 = Z1.ncols
         Cw = projected.design.select_columns(np.arange(p, p + kc0)); p += kc0

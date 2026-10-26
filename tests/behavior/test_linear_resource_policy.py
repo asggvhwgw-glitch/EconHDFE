@@ -7,6 +7,8 @@ from econhdfe import (
     ExecutionConfig, HDFEConfig, InferenceConfig, OLSHDFESession,
     IVHDFESession, factor, reg_interaction, olshdfe, ivhdfe,
 )
+from econhdfe.errors import ConvergenceError
+from econhdfe.hdfe.absorber import HDFEConvergenceError
 import econhdfe.pipeline as pipeline
 import econhdfe.sessions as sessions
 
@@ -58,11 +60,38 @@ def test_block_design_honors_iteration_limit(data, iv):
     kw = dict(hdfe_config=HDFEConfig(solver="map", max_iter=1, canonicalize=False),
               execution_config=ExecutionConfig(threads=1),
               inference_config=InferenceConfig(iv_advanced_statistics=False))
-    with pytest.raises(RuntimeError, match="did not converge"):
+    message = "heterogeneous-spec IV FE projection" if iv else "heterogeneous-spec FE projection"
+    with pytest.raises(HDFEConvergenceError, match=f"^{message} did not converge$") as info:
         fit(data, **specification(iv, block=True), **kw)
+    assert isinstance(info.value, ConvergenceError)
+    assert info.value.code == "convergence.hdfe" and info.value.stage == "hdfe"
+    assert info.value.details["iterations"] >= 1 and "metric" in info.value.details
     result = fit(data, **specification(iv, block=True), allow_nonconverged=True, **kw)
     assert not result.converged
     assert result.absorb_info["iterations"] <= 10
+
+
+@pytest.mark.parametrize("iv", [False, True])
+def test_group_mode_nonconvergence_raises_convergence_error(iv):
+    rng = np.random.default_rng(503)
+    n_groups, n_ind = 120, 30
+    group = np.repeat(np.arange(n_groups), 3)
+    individual = np.asarray([(g + s) % n_ind for g in range(n_groups) for s in (0, 7, 13)])
+    zg = rng.normal(size=n_groups)
+    dg = zg + rng.normal(size=n_groups)
+    df = pd.DataFrame({
+        "group": group, "ind": individual, "year": (np.arange(n_groups) % 8)[group],
+        "y": (0.5 * dg + rng.normal(size=n_groups))[group], "d": dg[group], "z": zg[group],
+    })
+    spec = dict(exog=[], endog=["d"], instruments=["z"]) if iv else dict(x=["d"])
+    fit = ivhdfe if iv else olshdfe
+    kw = dict(y="y", absorb=["year", "ind"], group="group", individual="ind", method="lsmr",
+              drop_singletons=False, max_iter=1, **spec)
+    with pytest.raises(HDFEConvergenceError, match="^group/individual FE absorption did not converge$") as info:
+        fit(df, **kw)
+    assert isinstance(info.value, ConvergenceError)
+    assert info.value.code == "convergence.hdfe" and info.value.details["iterations"] >= 1
+    assert not fit(df, **kw, allow_nonconverged=True).converged
 
 
 @pytest.mark.parametrize("iv", [False, True])

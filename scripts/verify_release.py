@@ -152,9 +152,10 @@ def main() -> None:
         subprocess.run([sys.executable, str(src / "scripts/release_acceptance.py"),
                         "check", "--mode", "candidate"], check=True, cwd=src)
 
-        for pkg in ("econhdfe", "pyreghdfe"):
-            if py_digests(src / pkg) != py_digests(whl_dir / pkg):
-                raise SystemExit(f"source/wheel mismatch: {pkg}")
+        if py_digests(src / "econhdfe") != py_digests(whl_dir / "econhdfe"):
+            raise SystemExit("source/wheel mismatch: econhdfe")
+        if (whl_dir / "pyreghdfe").exists():
+            raise SystemExit("wheel still ships the removed pyreghdfe package")
 
         # Technical-innovation registry and manuscripts are source/release audit artifacts, never wheel payload.
         for rel in (INNOVATION_REGISTRY, INNOVATION_AUDIT):

@@ -57,9 +57,9 @@ def test_public_nonlinear_phases_share_scope(model, automatic, phases):
     execution = ExecutionConfig() if automatic else ExecutionConfig(threads=1, memory_budget_mb=32)
     kwargs = dict(absorb=[data.group.to_numpy()], execution_config=execution)
     if model == 'ppml':
-        result = ppmlhdfe(data.y, data.x, config=PPMLConfig(separation=('fe',)), **kwargs)
+        result = ppmlhdfe(y=data.y, x=data.x, config=PPMLConfig(separation=('fe',)), **kwargs)
     else:
-        result = ivppmlhdfe(data.y, endog=data.x, instruments=data.z,
+        result = ivppmlhdfe(y=data.y, endog=data.x, instruments=data.z,
                            config=IVPPMLConfig(separation=('fe',)), **kwargs)
     assert result.converged
     assert {'absorber', 'detect_separation'} <= {stage for stage, _, _ in phases}

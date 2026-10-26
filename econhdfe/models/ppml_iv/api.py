@@ -11,22 +11,14 @@ from ...compute.wls import as_2d
 from ...compute.weights import prepare_weights
 from ...hdfe.plan import FEPlan
 from ..poisson import prepare_poisson_base
-from ..ppml.api import _ReusableFEModel, _finish_result, _resolve_call_configs
+from ..ppml.api import (
+    _ReusableFEModel, _finish_result, _require_frame, _resolve_call_configs, _spec_tuple,
+    resolve_ppml_vce,
+)
 from .config import IVPPMLConfig
 from .estimator import fit_arrays
 from .heterogeneous import fit_structured_dataframe
 from ...design import build_design, is_heterogeneous_spec_candidate
-
-
-def _spec_tuple(value):
-    """Role specification as a term tuple; a single term may be passed unwrapped."""
-    if value is None:
-        return ()
-    if isinstance(value, str):
-        return (value,)
-    if isinstance(value, (tuple, list)):
-        return tuple(value)
-    return (value,)
 
 
 def _prepare(y, exog, endog, instruments, *, offset, exposure, weights, weight_type, exog_names, endog_names, instrument_names):
@@ -55,15 +47,57 @@ def _prepare(y, exog, endog, instruments, *, offset, exposure, weights, weight_t
 
 
 @error_boundary("ivppml")
-@managed_execution
 def ivppmlhdfe(
-    y, *, exog=None, endog=None, instruments=None, absorb=None,
-    offset=None, exposure=None, weights=None, weight_type=None, vce="robust", clusters=None,
+    data=None, *, y, exog=None, endog=None, instruments=None, absorb=None,
+    offset=None, exposure=None, weights=None, weight_type=None, vce="robust", cluster=None,
     exog_names=None, endog_names=None, instrument_names=None,
     config: IVPPMLConfig | None = None, inference_config: InferenceConfig | None = None,
     execution_config: ExecutionConfig | None = None, warm_start=None,
 ):
-    """Estimate additive-moment IV-PPML with optional high-dimensional FEs."""
+    """Estimate additive-moment IV-PPML with optional high-dimensional FEs.
+
+    With a DataFrame ``data``, ``y``/``exog``/``endog``/``instruments``/
+    ``absorb``/``offset``/``exposure``/``weights``/``cluster`` are column
+    specifications (roles may contain ``factor()``/interaction terms) and the
+    call is exactly ``IVPPMLHDFE(data, absorb=...).fit(y, ...)``.  With
+    ``data=None`` they are arrays; ``absorb``/``cluster`` are sequences of
+    1-D arrays and ``*_names`` label the role matrices.
+
+    ``vce`` defaults to ``"robust"`` (Stata ivppmlhdfe's default), unlike
+    OLS/IV whose ``None`` default is reghdfe's unadjusted VCE.  A non-default
+    ``vce`` and a different ``inference_config.vce`` raise
+    ``specification.config_conflict``; either one alone takes effect.
+    """
+    if data is None:
+        return _ivppmlhdfe_arrays(
+            y, exog=exog, endog=endog, instruments=instruments, absorb=absorb,
+            offset=offset, exposure=exposure, weights=weights, weight_type=weight_type,
+            vce=vce, cluster=cluster, exog_names=exog_names, endog_names=endog_names,
+            instrument_names=instrument_names, config=config,
+            inference_config=inference_config, execution_config=execution_config,
+            warm_start=warm_start,
+        )
+    _require_frame(
+        data, "ivppmlhdfe", exog_names=exog_names, endog_names=endog_names,
+        instrument_names=instrument_names,
+    )
+    model = IVPPMLHDFE(
+        data, absorb=_spec_tuple(absorb), config=config,
+        inference_config=inference_config, execution_config=execution_config,
+    )
+    return model.fit(
+        y, exog=exog, endog=endog, instruments=instruments, offset=offset,
+        exposure=exposure, weights=weights, weight_type=weight_type, vce=vce,
+        cluster=cluster, warm_start=warm_start,
+    )
+
+
+@managed_execution
+def _ivppmlhdfe_arrays(
+    y, *, exog, endog, instruments, absorb, offset, exposure, weights, weight_type, vce,
+    cluster, exog_names, endog_names, instrument_names, config, inference_config,
+    execution_config, warm_start,
+):
     vce, config, execution_config, context, t0 = _resolve_call_configs(
         vce, config, IVPPMLConfig, inference_config, execution_config,
     )
@@ -76,7 +110,7 @@ def ivppmlhdfe(
     if plan.groups and plan.nobs != len(yv):
         raise ShapeError("absorb arrays must have nobs rows", details={"expected": len(yv), "actual": plan.nobs})
     result = fit_arrays(
-        yv, C, E, I, plan, offset=off, true_w=w, weight_kind=wkind, vce=vce, clusters=clusters,
+        yv, C, E, I, plan, offset=off, true_w=w, weight_kind=wkind, vce=vce, clusters=cluster,
         exog_names=cn, endog_names=en, instrument_names=zn, config=config,
         warm_start=warm_start, execution_config=execution_config, execution_context=context,
     )
@@ -95,12 +129,16 @@ class IVPPMLHDFE(_ReusableFEModel):
     @error_boundary("ivppml")
     @managed_execution
     def fit(self, y: str, *, exog=(), endog=(), instruments=(), offset=None, exposure=None,
-            weights=None, weight_type=None, vce="robust", clusters=None, warm_start=None):
+            weights=None, weight_type=None, vce="robust", cluster=None, warm_start=None):
+        """Fit one IV-PPML specification on the model's DataFrame.
+
+        ``vce`` defaults to ``"robust"`` (ivppmlhdfe's default); it conflicts
+        with a different non-default ``inference_config.vce``.
+        """
         self._ensure_plan_current()
+        vce = resolve_ppml_vce(vce, self.inference_config)
         with self.context.maintain(self.execution_config, protected=(self.plan, self.data)):
             ccols, ecols, zcols = _spec_tuple(exog), _spec_tuple(endog), _spec_tuple(instruments)
-            if self.inference_config.vce is not None:
-                vce = self.inference_config.vce
             t0 = perf_counter() if self.execution_config.profile != "off" else None
 
             result = None
@@ -108,7 +146,7 @@ class IVPPMLHDFE(_ReusableFEModel):
                 result = fit_structured_dataframe(
                     self.data, y=y, exog=ccols, endog=ecols, instruments=zcols, plan=self.plan,
                     offset=offset, exposure=exposure, weights=weights, weight_type=weight_type,
-                    vce=vce, clusters=clusters, config=self.config,
+                    vce=vce, clusters=cluster, config=self.config,
                     execution_config=self.execution_config, warm_start=warm_start,
                 )
 
@@ -127,8 +165,8 @@ class IVPPMLHDFE(_ReusableFEModel):
                 )
                 yv, C, E, I, off, w, wkind, cn, en, zn = vals
                 cls = None
-                if clusters is not None:
-                    cvars = (clusters,) if isinstance(clusters, str) else tuple(clusters)
+                if cluster is not None:
+                    cvars = (cluster,) if isinstance(cluster, str) else tuple(cluster)
                     cls = [self.data[c].to_numpy() if isinstance(c, str) else np.asarray(c) for c in cvars]
                 result = fit_arrays(
                     yv, C, E, I, self.plan, offset=off, true_w=w, weight_kind=wkind, vce=vce, clusters=cls,

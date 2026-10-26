@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from pyreghdfe import factor, reg_interaction, omit_level, reghdfe
+from econhdfe import factor, reg_interaction, omit_level, reghdfe
 
 
 def _event_fixture(seed=7501, n=40000):

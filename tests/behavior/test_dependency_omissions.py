@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from pyreghdfe import reghdfe, factor, OmittedVariableWarning
+from econhdfe import reghdfe, factor, OmittedVariableWarning
 
 
 def _hierarchy_df(seed=740, n=12000):

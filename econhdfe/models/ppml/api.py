@@ -1,7 +1,8 @@
 from __future__ import annotations
+from dataclasses import fields
 from time import perf_counter
-from ...errors import error_boundary, SpecificationError, ShapeError
-from ...config import InferenceConfig, ExecutionConfig
+from ...errors import error_boundary, SpecificationError, ShapeError, DataTypeError
+from ...config import InferenceConfig, ExecutionConfig, resolve_override
 from ...compute.context import ExecutionContext
 from ...planner.scheduler import managed_execution
 from ...frontend.validate import require_numeric
@@ -29,12 +30,28 @@ def _prepare_inputs(y, X, *, offset, exposure, weights, names):
     return y, X, off, w, names
 
 
+#: PPML-family default VCE. It deliberately differs from OLS/IV (``None``,
+#: reghdfe's unadjusted default) because Stata's ppmlhdfe defaults to robust.
+PPML_DEFAULT_VCE = "robust"
+
+
+def resolve_ppml_vce(vce, inference_config):
+    """Combine the scalar ``vce`` argument with ``InferenceConfig.vce``.
+
+    Each source counts as unset at its own default (``"robust"`` for the
+    argument, the ``InferenceConfig`` field default for the config); setting
+    both to different values raises ``specification.config_conflict``.
+    """
+    config_default = next(f.default for f in fields(InferenceConfig) if f.name == "vce")
+    config_value = config_default if inference_config is None else inference_config.vce
+    return resolve_override("vce", vce, PPML_DEFAULT_VCE, config_value, config_default)
+
+
 def _resolve_call_configs(vce, config, config_type, inference_config, execution_config):
-    """Validate functional-entry configs; an explicit inference VCE wins."""
+    """Validate functional-entry configs and resolve the VCE request."""
     if inference_config is not None:
         inference_config.validate()
-        if inference_config.vce is not None:
-            vce = inference_config.vce
+    vce = resolve_ppml_vce(vce, inference_config)
     execution_config = ExecutionConfig() if execution_config is None else execution_config
     execution_config.validate()
     context = ExecutionContext(execution_config)
@@ -97,37 +114,101 @@ class _ReusableFEModel:
             self.context.put(self.plan.fingerprint, self.plan)
 
 
+def _require_frame(data, estimator, **array_only):
+    """DataFrame-mode guard: reject non-frames and array-only label options."""
+    if not isinstance(data, pd.DataFrame):
+        raise DataTypeError(
+            f"{estimator} data must be a pandas DataFrame or None",
+            code="input.data_type", details={"actual_type": type(data).__name__},
+            suggestion="Pass data=None with array inputs, or a DataFrame with column-name specifications.",
+        )
+    given = sorted(name for name, value in array_only.items() if value is not None)
+    if given:
+        raise SpecificationError(
+            f"{', '.join(given)} only label array inputs; DataFrame columns supply the names",
+            code="specification.array_only_option", stage="specification",
+            details={"options": given},
+        )
+
+
+def _spec_tuple(value):
+    """Role specification as a term tuple; a single term may be passed unwrapped."""
+    if value is None:
+        return ()
+    if isinstance(value, str):
+        return (value,)
+    if isinstance(value, (tuple, list)):
+        return tuple(value)
+    return (value,)
+
+
 @error_boundary("ppml")
-@managed_execution
 def ppmlhdfe(
-    y,
-    X=None,
+    data=None,
     *,
+    y,
+    x=None,
     absorb=None,
     offset=None,
     exposure=None,
     weights=None,
     vce="robust",
-    clusters=None,
+    cluster=None,
     names=None,
     config: PPMLConfig | None = None,
     inference_config: InferenceConfig | None = None,
     execution_config: ExecutionConfig | None = None,
     warm_start=None,
 ):
-    """Estimate PPML with optional high-dimensional categorical fixed effects."""
+    """Estimate PPML with optional high-dimensional categorical fixed effects.
+
+    With a DataFrame ``data``, ``y``/``x``/``absorb``/``offset``/``exposure``/
+    ``weights``/``cluster`` are column specifications (``x`` may contain
+    ``factor()``/interaction terms) and the call is exactly
+    ``PPMLHDFE(data, absorb=...).fit(y, x, ...)``.  With ``data=None`` they
+    are arrays: ``absorb`` and ``cluster`` are sequences of 1-D arrays and
+    ``names`` labels the columns of ``x``.
+
+    ``vce`` defaults to ``"robust"`` (Stata ppmlhdfe's default), unlike
+    OLS/IV whose ``None`` default is reghdfe's unadjusted VCE.  A non-default
+    ``vce`` and a different ``inference_config.vce`` raise
+    ``specification.config_conflict``; either one alone takes effect.
+    """
+    if data is None:
+        return _ppmlhdfe_arrays(
+            y, x, absorb=absorb, offset=offset, exposure=exposure, weights=weights,
+            vce=vce, cluster=cluster, names=names, config=config,
+            inference_config=inference_config, execution_config=execution_config,
+            warm_start=warm_start,
+        )
+    _require_frame(data, "ppmlhdfe", names=names)
+    model = PPMLHDFE(
+        data, absorb=_spec_tuple(absorb), config=config,
+        inference_config=inference_config, execution_config=execution_config,
+    )
+    return model.fit(
+        y, _spec_tuple(x), offset=offset, exposure=exposure, weights=weights,
+        vce=vce, cluster=cluster, warm_start=warm_start,
+    )
+
+
+@managed_execution
+def _ppmlhdfe_arrays(
+    y, x, *, absorb, offset, exposure, weights, vce, cluster, names,
+    config, inference_config, execution_config, warm_start,
+):
     vce, config, execution_config, context, t0 = _resolve_call_configs(
         vce, config, PPMLConfig, inference_config, execution_config,
     )
     y, X, off, w, names = _prepare_inputs(
-        y, X, offset=offset, exposure=exposure, weights=weights, names=names,
+        y, x, offset=offset, exposure=exposure, weights=weights, names=names,
     )
     plan = FEPlan.from_arrays(absorb or ())
     if plan.groups and plan.nobs != len(y):
         raise ShapeError("absorb arrays must have nobs rows", details={"expected": len(y), "actual": plan.nobs})
     result = fit_arrays(
         y, X, plan, offset=off, true_w=w, vce=vce,
-        clusters=clusters, names=names, config=config, warm_start=warm_start,
+        clusters=cluster, names=names, config=config, warm_start=warm_start,
         execution_config=execution_config, execution_context=context,
     )
     return _finish_result(result, inference_config, execution_config, t0)
@@ -144,21 +225,27 @@ class PPMLHDFE(_ReusableFEModel):
 
     @error_boundary("ppml")
     @managed_execution
-    def fit(self, y: str, X=(), *, offset=None, exposure=None, weights=None, vce="robust", clusters=None, warm_start=None):
+    def fit(self, y: str, x=(), *, offset=None, exposure=None, weights=None, vce="robust", cluster=None, warm_start=None):
+        """Fit one PPML specification on the model's DataFrame.
+
+        ``vce`` defaults to ``"robust"`` (ppmlhdfe's default); it conflicts
+        with a different non-default ``inference_config.vce``.
+        """
         self._ensure_plan_current()
+        vce = resolve_ppml_vce(vce, self.inference_config)
         with self.context.maintain(self.execution_config, protected=(self.plan, self.data)):
-            if is_heterogeneous_spec_candidate(X):
+            if is_heterogeneous_spec_candidate(x):
                 result, _ = fit_structured_dataframe(
-                    self.data, y=y, x=X, plan=self.plan,
+                    self.data, y=y, x=x, plan=self.plan,
                     offset=offset, exposure=exposure, weights=weights,
-                    vce=self.inference_config.vce if self.inference_config.vce is not None else vce,
-                    clusters=clusters, config=self.config,
+                    vce=vce,
+                    clusters=cluster, config=self.config,
                     execution_config=self.execution_config,
                     warm_start=warm_start,
                 )
                 return _finish_result(result, self.inference_config, self.execution_config, None)
 
-            cols = tuple(X)
+            cols = tuple(x)
             yv, Xv, off, w, names = _prepare_inputs(
                 self.data[y].to_numpy(),
                 self.data[list(cols)].to_numpy() if cols else None,
@@ -168,11 +255,9 @@ class PPMLHDFE(_ReusableFEModel):
                 names=cols,
             )
             cluster_arrays = None
-            if clusters is not None:
-                ccols = (clusters,) if isinstance(clusters, str) else tuple(clusters)
+            if cluster is not None:
+                ccols = (cluster,) if isinstance(cluster, str) else tuple(cluster)
                 cluster_arrays = [self.data[c].to_numpy() for c in ccols]
-            if self.inference_config.vce is not None:
-                vce = self.inference_config.vce
             t0 = perf_counter() if self.execution_config.profile != "off" else None
             result = fit_arrays(
                 yv, Xv, self.plan, offset=off, true_w=w, vce=vce,

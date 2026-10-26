@@ -86,7 +86,7 @@ def test_model_off_clears_before_root_admission_and_policy_changes_drop_old_keys
     model.execution_config = replace(policy, memory_budget_mb=64)
     second = fit()
     assert all(all(value is not prior for prior in old) for value in model.context.cache.values())
-    np.testing.assert_allclose(second.coef, first.coef, atol=1e-9)
+    np.testing.assert_allclose(second.params, first.params, atol=1e-9)
     model.execution_config = replace(policy, cache='off')
     original = scheduler.resolve_allocation
     def check(config=None):
@@ -95,7 +95,7 @@ def test_model_off_clears_before_root_admission_and_policy_changes_drop_old_keys
     monkeypatch.setattr(scheduler, 'resolve_allocation', check)
     third = fit()
     assert not model.context.cache
-    np.testing.assert_allclose(third.coef, first.coef, atol=1e-9)
+    np.testing.assert_allclose(third.params, first.params, atol=1e-9)
 
 
 def test_capacity_shrinks_with_active_unreserved_memory(capacity, monkeypatch):

@@ -9,12 +9,8 @@ class _PoissonResultMethods:
 
     __slots__ = ()
 
-    @property
-    def params(self) -> dict[str, float]:
-        return dict(zip(self.names, map(float, self.coef), strict=False))
-
     def coef_table(self, level=None):
-        return inference_table(self.names, self.coef, self.stderr,
+        return inference_table(self.names, self.params, self.stderr,
                                level=self.confidence_level if level is None else level,
                                distribution="normal")
 
@@ -25,9 +21,12 @@ class _PoissonResultMethods:
     def conf_int(self, level=None):
         t = self.coef_table(level); return t[["ci_low", "ci_high"]].to_numpy()
 
-    def publication_output(self, *, level=None, include_diagnostics=None, include_profile=False):
+    def publication_output(self, *, level=None, include_diagnostics=None, include_profile=None):
+        """Publication tables; ``diagnostics="full"`` also includes the profile by default."""
         out = {"coefficients": self.coef_table(level), "model": self.model_stats()}
         show_diag = self.diagnostics_mode != "off" if include_diagnostics is None else bool(include_diagnostics)
+        if include_profile is None:
+            include_profile = self.diagnostics_mode == "full"
         if show_diag: out["diagnostics"] = self.diagnostics
         if include_profile and self.profile is not None: out["profile"] = self.profile
         out["reproducibility"] = self.reproducibility or reproducibility_dict()
@@ -36,7 +35,7 @@ class _PoissonResultMethods:
 
 @dataclass(slots=True)
 class PPMLResult(_PoissonResultMethods):
-    coef: np.ndarray
+    params: np.ndarray
     vcov: np.ndarray
     stderr: np.ndarray
     names: tuple[str, ...]

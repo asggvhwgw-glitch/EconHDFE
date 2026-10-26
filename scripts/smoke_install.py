@@ -9,7 +9,7 @@ if "--in-place" in sys.argv:
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
 
-from pyreghdfe import (
+from econhdfe import (
     reghdfe, ivreghdfe, ppmlhdfe, ivppmlhdfe, PPMLConfig, IVPPMLConfig, factor, reg_interaction, fv, omit_level, __version__
 )
 
@@ -65,25 +65,25 @@ assert fv_fit.names == ('g[1]', 'g[2]', 'x0', 'g[1]#x0', 'g[2]#x0')
 mu = np.exp(.15*x[:, 0] + .10*x[:, 1] + .15*fe)
 y_count = rng.poisson(mu)
 pp = ppmlhdfe(
-    y_count, x[:, :2], absorb=[f, t], vce="model",
+    y=y_count, x=x[:, :2], absorb=[f, t], vce="model",
     config=PPMLConfig(engine="optimized", separation=(), tolerance=1e-8, target_inner_tol=1e-9),
 )
 assert pp.converged
-assert np.max(np.abs(pp.coef[:2] - np.array([.15, .10]))) < .08
+assert np.max(np.abs(pp.params[:2] - np.array([.15, .10]))) < .08
 
 # IV-PPML smoke: the nonlinear model must be present in the installed wheel and
 # must use the same FE/runtime stack rather than a source-tree-only path.
 iv_mu = np.exp(.12*x[:, 0] + .20*endog + .10*fe)
 iv_count = rng.poisson(iv_mu)
 ivpp = ivppmlhdfe(
-    iv_count, exog=x[:, 0], endog=endog, instruments=z, absorb=[f, t],
+    y=iv_count, exog=x[:, 0], endog=endog, instruments=z, absorb=[f, t],
     vce="robust",
     config=IVPPMLConfig(engine="optimized", separation=(), tolerance=1e-8, target_inner_tol=1e-9),
 )
 assert ivpp.converged
-assert abs(ivpp.coef[-2] - .20) < .12
+assert abs(ivpp.params[-2] - .20) < .12
 
 print(
-    f"pyreghdfe {__version__}: smoke PASS; OLS iter={r.iterations}; "
+    f"econhdfe {__version__}: smoke PASS; OLS iter={r.iterations}; "
     f"IV beta={iv.params[-1]:.6f}; event-ref/fv PASS; PPML iter={pp.iterations}; IV-PPML iter={ivpp.iterations}"
 )

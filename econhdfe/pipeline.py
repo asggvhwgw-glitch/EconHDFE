@@ -817,7 +817,11 @@ def prepare_group_mode(data, *, group, individual, absorb, arrays, weights, clus
 
     if drop_singletons:
         if indiv_spec is None:
-            keep, dropped = iterative_singleton_mask(std_groups0)
+            # reghdfe applies the fweight-mass rule to group()-level FEs too.
+            keep, dropped = iterative_singleton_mask(
+                std_groups0, w0 if wkind == "fweight" else None,
+                frequency_weights=(wkind == "fweight"),
+            )
         else:
             keep, dropped = group_individual_singleton_mask(
                 std_groups0, comp.row_to_group, indiv_codes0

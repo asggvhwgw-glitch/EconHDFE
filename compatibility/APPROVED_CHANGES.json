@@ -1,85 +1,79 @@
 {
   "approved": [
     {
-      "id": "078c58469b20c462",
+      "id": "0354de33d0b3b094",
       "kind": "changed",
-      "path": "config_schemas.ExecutionConfig",
-      "reason": "Intentional 0.8.5 shared resource scheduling contract; migration and explicit legacy-budget options documented in docs/release/migration.md."
+      "path": "exported_dataclass_schemas.SPJResult",
+      "reason": "0.9.0: PPML/IV-PPML API unified with OLS/IV (data= first, cluster=, params field); see docs/release/migration.md"
     },
     {
-      "id": "207df9178a01b774",
+      "id": "064f14d2af0807ed",
       "kind": "changed",
-      "path": "signatures.ivhdfe",
-      "reason": "Intentional 0.8.5 shared resource scheduling contract; migration and explicit legacy-budget options documented in docs/release/migration.md."
+      "path": "signatures.PPMLResult",
+      "reason": "0.9.0: PPML/IV-PPML API unified with OLS/IV (data= first, cluster=, params field); see docs/release/migration.md"
     },
     {
-      "id": "289b16e049cb874a",
+      "id": "2e97e0f457799f34",
       "kind": "changed",
-      "path": "signatures.reghdfe",
-      "reason": "Intentional 0.8.5 shared resource scheduling contract; migration and explicit legacy-budget options documented in docs/release/migration.md."
+      "path": "signatures.SPJResult",
+      "reason": "0.9.0: PPML/IV-PPML API unified with OLS/IV (data= first, cluster=, params field); see docs/release/migration.md"
     },
     {
-      "id": "54d3dd3f7ceedefa",
+      "id": "3967b097731401cc",
       "kind": "changed",
-      "path": "signatures.wild_cluster_bootstrap_ols",
-      "reason": "Intentional 0.8.5 shared resource scheduling contract; migration and explicit legacy-budget options documented in docs/release/migration.md."
+      "path": "result_schemas.IVPPMLResult",
+      "reason": "0.9.0: PPML/IV-PPML API unified with OLS/IV (data= first, cluster=, params field); see docs/release/migration.md"
     },
     {
-      "id": "743312e378a9de99",
+      "id": "4ef5efb81d40c33e",
       "kind": "changed",
-      "path": "signatures.olshdfe",
-      "reason": "Intentional 0.8.5 shared resource scheduling contract; migration and explicit legacy-budget options documented in docs/release/migration.md."
+      "path": "signatures.ppmlhdfe",
+      "reason": "0.9.0: PPML/IV-PPML API unified with OLS/IV (data= first, cluster=, params field); see docs/release/migration.md"
     },
     {
-      "id": "80b21682dcca9973",
+      "id": "5667557da59b4360",
       "kind": "changed",
-      "path": "signatures.ExecutionConfig",
-      "reason": "Intentional 0.8.5 shared resource scheduling contract; migration and explicit legacy-budget options documented in docs/release/migration.md."
+      "path": "exported_dataclass_schemas.IVPPMLResult",
+      "reason": "0.9.0: PPML/IV-PPML API unified with OLS/IV (data= first, cluster=, params field); see docs/release/migration.md"
     },
     {
-      "id": "95e5b0fb3224d142",
+      "id": "6659d7c521048986",
       "kind": "changed",
-      "path": "signatures.wild_bootstrap",
-      "reason": "Intentional 0.8.5 shared resource scheduling contract; migration and explicit legacy-budget options documented in docs/release/migration.md."
+      "path": "result_schemas.SPJResult",
+      "reason": "0.9.0: PPML/IV-PPML API unified with OLS/IV (data= first, cluster=, params field); see docs/release/migration.md"
     },
     {
-      "id": "b1970daa61b4775d",
+      "id": "77d711e168f013de",
       "kind": "changed",
-      "path": "signatures.parallel_pairs_bootstrap",
-      "reason": "Intentional 0.8.5 shared resource scheduling contract; migration and explicit legacy-budget options documented in docs/release/migration.md."
+      "path": "signatures.publication_output",
+      "reason": "0.9.0: include_profile defaults to None and follows InferenceConfig.diagnostics='full'; see docs/release/migration.md"
     },
     {
-      "id": "c918f9d2e80baeb5",
+      "id": "86938f51cffbf5c5",
       "kind": "changed",
-      "path": "exported_dataclass_schemas.ExecutionConfig",
-      "reason": "Intentional 0.8.5 shared resource scheduling contract; migration and explicit legacy-budget options documented in docs/release/migration.md."
+      "path": "signatures.ivppmlhdfe",
+      "reason": "0.9.0: PPML/IV-PPML API unified with OLS/IV (data= first, cluster=, params field); see docs/release/migration.md"
     },
     {
-      "id": "d1bfbf35128963f5",
+      "id": "8e4f887aadca3b1a",
       "kind": "changed",
-      "path": "signatures.ivreghdfe",
-      "reason": "Intentional 0.8.5 shared resource scheduling contract; migration and explicit legacy-budget options documented in docs/release/migration.md."
+      "path": "exported_dataclass_schemas.PPMLResult",
+      "reason": "0.9.0: PPML/IV-PPML API unified with OLS/IV (data= first, cluster=, params field); see docs/release/migration.md"
     },
     {
-      "id": "db7a343cffafee22",
+      "id": "a0462cc3f6dc733c",
       "kind": "changed",
-      "path": "signatures.HDFEAbsorber",
-      "reason": "Intentional 0.8.5 shared resource scheduling contract; migration and explicit legacy-budget options documented in docs/release/migration.md."
+      "path": "signatures.IVPPMLResult",
+      "reason": "0.9.0: PPML/IV-PPML API unified with OLS/IV (data= first, cluster=, params field); see docs/release/migration.md"
     },
     {
-      "id": "e909d7033bf4c068",
+      "id": "acd9de6a757f7c33",
       "kind": "changed",
-      "path": "signatures.wild_cluster_test_ols",
-      "reason": "Intentional 0.8.5 shared resource scheduling contract; migration and explicit legacy-budget options documented in docs/release/migration.md."
-    },
-    {
-      "id": "fe1c4537e6d1715e",
-      "kind": "changed",
-      "path": "exported_dataclass_schemas.ExecutionContext",
-      "reason": "Intentional 0.8.5 shared resource scheduling contract; migration and explicit legacy-budget options documented in docs/release/migration.md."
+      "path": "result_schemas.PPMLResult",
+      "reason": "0.9.0: PPML/IV-PPML API unified with OLS/IV (data= first, cluster=, params field); see docs/release/migration.md"
     }
   ],
-  "baseline_version": "0.8.4",
-  "release_version": "0.8.5",
+  "baseline_version": "0.8.5",
+  "release_version": "0.9.0",
   "schema_version": 1
 }

@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from pyreghdfe import FixedEffect, HDFEConvergenceError, interaction, reghdfe
+from econhdfe import FixedEffect, HDFEConvergenceError, interaction, reghdfe
 
 
 def _interaction_fixture(seed=701, n=24000):
@@ -83,7 +83,7 @@ def test_twoway_schur_iv_matches_map_cg():
     df = pd.DataFrame({"firm":firm,"year":year,"city":city,"z":z,"w":w,"x":endog,"y":y})
     kw = dict(data=df, y="y", exog=["w"], endog=["x"], instruments=["z"],
               absorb=["firm", "year", interaction("city", "year")], tol=1e-10)
-    from pyreghdfe import ivreghdfe
+    from econhdfe import ivreghdfe
     a = ivreghdfe(**kw, method="map", acceleration="cg")
     b = ivreghdfe(**kw, method="twoway")
     np.testing.assert_allclose(a.params, b.params, atol=3e-9, rtol=3e-9)

@@ -62,6 +62,8 @@ retain their numerical ABI. See [the implementation and validation note](iv-pari
 
 Current `ppmlhdfe` reports N/full N, separated/singleton counts, model/absorbed/residual DoF, covariance rank, deviance, log pseudolikelihood, null log pseudolikelihood, pseudo-R2 and model Wald chi-square.
 
+Sample definition follows `ppmlhdfe` 2.3.0: `fixed_effects(absorb, touse, "iweight", depvar)` prunes singletons (row counts) and zero-outcome FE levels jointly, all counted in `e(num_singletons)`; simplex/ReLU/mu trims then reload the HDFE and prune new singletons into `e(num_singletons)`, while `e(num_separated)` counts only rows the separation methods flag. IV-PPML follows `ivppmlhdfe` 0.9.4, which counts post-trim singletons in `e(num_separated)`. Small Stata 18 reference cases are pinned in `tests/behavior/test_singleton_upstream.py`.
+
 The audit found one correctness bug: when `PPMLConfig.standardize=True`, `econhdfe` unscaled coefficients, covariance, `mu`, `eta`, and log likelihood but returned deviance in standardized-outcome units. Poisson deviance scales linearly when both `y` and `mu` are scaled, and current `ppmlhdfe` explicitly multiplies converged deviance by the outcome scale before posting it. `econhdfe` now performs the same unscaling.
 
 The result also now reports:

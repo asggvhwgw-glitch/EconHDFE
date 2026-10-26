@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from pyreghdfe import reghdfe, FixedEffect, factor
+from econhdfe import reghdfe, FixedEffect, factor
 
 
 def _df(seed=730, n=8000):
