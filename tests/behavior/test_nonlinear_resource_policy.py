@@ -33,18 +33,25 @@ def absorber_calls(monkeypatch):
 
 @pytest.mark.parametrize('model', ['ppml', 'ivppml'])
 @pytest.mark.parametrize('engine', ['replica', 'optimized'])
-def test_post_separation_rank_filter_preserves_resources(model, engine, absorber_calls):
+@pytest.mark.parametrize('method', ['fe', 'relu'])
+def test_post_separation_rank_filter_preserves_resources(model, engine, method, absorber_calls):
     y, endog, instrument, group = _data(True)
     kwargs = dict(absorb=[group], execution_config=ExecutionConfig(threads=1, memory_budget_mb=32))
     if model == 'ppml':
-        result = ppmlhdfe(y, endog, config=PPMLConfig(engine=engine, separation=('fe',)), **kwargs)
+        result = ppmlhdfe(y=y, x=endog, config=PPMLConfig(engine=engine, separation=(method,)), **kwargs)
     else:
-        result = ivppmlhdfe(y, endog=endog, instruments=instrument,
-                           config=IVPPMLConfig(engine=engine, separation=('fe',)), **kwargs)
+        result = ivppmlhdfe(y=y, endog=endog, instruments=instrument,
+                           config=IVPPMLConfig(engine=engine, separation=(method,)), **kwargs)
     assert result.converged
-    assert np.sum(result.separation_mask) == 50
-    # Confirm a new absorber handles the changed sample rather than a stale cache.
-    assert {n for n, _, _ in absorber_calls} == {600, 550}
+    if method == 'fe':
+        # Upstream first stage: the all-zero level is pruned with singletons
+        # (e(num_singletons)), before any absorber is built.
+        assert np.sum(result.separation_mask) == 0 and result.n_singletons == 50
+        assert {n for n, _, _ in absorber_calls} == {550}
+    else:
+        assert np.sum(result.separation_mask) == 50 and result.n_singletons == 0
+        # Confirm a new absorber handles the changed sample rather than a stale cache.
+        assert {n for n, _, _ in absorber_calls} == {600, 550}
     assert all(threads == 1 and memory == 32 for _, threads, memory in absorber_calls)
 
 
@@ -73,6 +80,8 @@ def test_structured_iv_rank_filters_preserve_resources(separated, engine, absorb
         execution_config=ExecutionConfig(threads=1, memory_budget_mb=32),
     )
     assert result.converged
-    assert np.sum(result.separation_mask) == (50 if separated else 0)
+    # FE separation is part of the upstream first stage and counts as singletons.
+    assert np.sum(result.separation_mask) == 0
+    assert result.n_singletons == (50 if separated else 0)
     assert {n for n, _, _ in absorber_calls} == ({250, 300} if separated else {300})
     assert all(threads == 1 and memory == 32 for _, threads, memory in absorber_calls)

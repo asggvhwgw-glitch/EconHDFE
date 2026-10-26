@@ -62,9 +62,9 @@ def main():
             shutil.copy2(root/'tests'/filename, target)
         (temp/'pytest.ini').write_text('[pytest]\n',encoding='utf-8')
         env=os.environ.copy();env['PYTHONPATH']=str(site);env['PYTHONNOUSERSITE']='1'
-        code=("import econhdfe,pyreghdfe,pathlib; "
+        code=("import econhdfe,pathlib; "
               f"target=pathlib.Path({str(site)!r}).resolve(); "
-              "assert all(target in pathlib.Path(m.__file__).resolve().parents for m in (econhdfe,pyreghdfe)); "
+              "assert target in pathlib.Path(econhdfe.__file__).resolve().parents; "
               "print('wheel import provenance:',econhdfe.__file__)")
         subprocess.run([sys.executable,'-c',code],env=env,cwd=temp,check=True)
         command=[sys.executable,'-m','pytest','-q',str(tests)]

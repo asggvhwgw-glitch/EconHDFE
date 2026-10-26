@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from pyreghdfe import reghdfe
+from econhdfe import reghdfe
 
 
 def test_singleton_pruning_can_reveal_new_exact_nesting():

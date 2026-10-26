@@ -1,5 +1,48 @@
 # Native within validation — 2026-10-26
 
+## Integration on 0.9.0 and local macOS validation
+
+The backend was integrated on main `45ab1bc9dc69ef6fb4b85d263cc65d24b35d7692`
+(PR #26). The Session conflict preserves both the new `entry.fe.groups` layout
+and weak-design conditioning for `method="within"`; generated architecture maps
+were rebuilt. Base/default estimator routing is unchanged.
+
+On macOS arm64 with research Python 3.12, a locally compiled abi3 wheel passed
+5 Rust tests, **43 native/integration tests**, and **464 base tests**. The four
+new native Session cases exercise weak and hidden weak directions, weighted and
+unweighted fits, prewarm, reordered columns, data mutation and persistent cache
+reuse against the established standalone backend. Native CI now includes Linux
+and macOS; these local results are not Windows native certification.
+
+Whole-estimator comparisons use the existing project samples, four threads and
+a 512 MiB workspace budget. Timings exclude data loading/imports. Each row
+passed coefficient, SE/covariance, residual, sample and rank checks; the complex
+IV case additionally uses its existing independent observation-space reference.
+
+| Existing sample | Default median | Native median | Interpretation |
+|---|---:|---:|---|
+| 100k composite IV, 21 parameters, three FEs | 11.523 s | 4.070 s | 2.83x faster |
+| 500k two-FE OLS, four controls | 0.152 s | 0.157 s | about 3% slower |
+| 500k two-FE IV | 0.284 s | 0.289 s | about 2% slower |
+| 500k Session, construction + four specifications | 0.319 s | 0.392 s | about 23% slower |
+
+These are three-run medians (alternating backend order for the 500k rows).
+The 100k comparison uses tol=1e-12, retains 97,056 observations after 2,944
+singleton deletions, and keeps rank 21 and absorbed DoF 26,890. All independent
+reference gates pass; numerical tolerances were not relaxed. The 500k runs use
+tol=1e-10 and preserve the refactor benchmark's seed and DGP.
+
+The original 5M composite IV attempt was rejected during design materialization
+by available-memory admission, at both 512 and 2048 MiB requested budgets.
+It supplies no completed model timing or speedup claim. Native peak RSS and
+Schwarz fill-in remain outside a strict workspace-memory guarantee.
+
+Machine-readable results, runtime source hash and same-wrapper 1M microbenchmarks
+are in `benchmarks/hdfe/within_native_macos_090_20261026.json`. The mixed results
+support keeping this backend explicitly opt-in rather than changing defaults.
+High-level PPML/IV-PPML, slopes, GPU and group/individual routes remain outside
+this native adapter's scope. No package publication was performed.
+
 ## What actually ran
 
 Runtime commit: `266bee7717857773e48b67e0e93ab6b7dca4bd7b`.

@@ -1,3 +1,22 @@
+"""Linear HDFE pipeline stages shared by OLS, linear IV and repeated-spec sessions.
+
+Public (un-prefixed) names are the internal stage interface; underscore names
+are local helpers. Stages, in execution order:
+
+* data access: ``column_values``, ``cluster_arrays``, ``masked_array``;
+* sample and FE preparation: ``prepare_standard_fe_structure`` (returns a
+  ``StandardFEStructure``), ``standard_dof``, ``prepare_group_mode``,
+  ``group_dof``, ``group_info``, ``group_has_intercept``;
+* design compilation: ``compile_design``, ``compile_execution_design``;
+* absorption: ``resolve_method``, ``resolve_acceleration``,
+  ``make_standard_absorber``, ``make_group_absorber``, ``residualize_blocks``,
+  ``residualize_in_basis``, ``check_absorption``;
+* collinearity: ``check_collinearity_mode``, ``resolve_ols_columns``,
+  ``resolve_iv_columns``, ``collinearity_metadata``,
+  ``design_collinearity_metadata``;
+* absorption metadata: ``absorb_metadata``, ``block_absorb_metadata``,
+  ``conditioning_info``, ``resolve_pool_size``.
+"""
 from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -14,9 +33,8 @@ from .hdfe.group_individual import (
 from .hdfe.dof import absorbed_dof
 from .compute.encoding import factorize_1d, factorize_interaction, combine_dense_codes
 from .hdfe.structure import FEPartitionMeta, canonicalize_fixed_effects, identity_fixed_effect_plan
-from .hdfe.specs import FixedEffect, Interaction
-from .hdfe.factorvars import compile_absorb_factor_variable
-from .factorvars import FactorVariableExpression
+from .hdfe.specs import Interaction
+from .hdfe.absorb_spec import absorb_terms, expand_factor_variables, fixed_effect_spec
 from .design import build_design, Factor, RegressorInteraction, _compile_execution_design
 from .compute.block_design import BlockDesign
 from .collinearity import resolve_collinearity, OmittedVariableWarning, format_omission_warning
@@ -25,11 +43,12 @@ from .hdfe.projection import estimate_index_bytes, resolve_threads
 from .hdfe.workspace import _absorption_workspace_cost, _absorption_build_cost
 from .planner import scheduler
 from .compute.weights import normalize_weight_type, prepare_weights, resolve_vce_for_weights
+from .compute.stable_linalg import _apply_absorption_basis
 from .frontend.validate import require_numeric, require_identifier
 from .frontend.roles import VariableRole
 
 
-def _col(data, spec):
+def column_values(data, spec):
     if isinstance(spec, str):
         if data is None:
             raise ValueError(f"column name {spec!r} requires data")
@@ -50,38 +69,8 @@ def _matrix(data, specs, n=None):
         return np.empty((n, 0), dtype=np.float64)
     if data is not None and all(isinstance(s, str) for s in specs):
         return require_numeric(data[specs].to_numpy(), name="regressors", role=VariableRole.REGRESSOR, ndim=2)
-    cols = [require_numeric(_col(data, s), name=str(s), role=VariableRole.REGRESSOR, ndim=1) for s in specs]
+    cols = [require_numeric(column_values(data, s), name=str(s), role=VariableRole.REGRESSOR, ndim=1) for s in specs]
     return np.column_stack(cols)
-
-
-def _as_absorb_list(absorb):
-    if isinstance(absorb, (str, FixedEffect, Interaction, FactorVariableExpression)):
-        return [absorb]
-    if isinstance(absorb, np.ndarray) and absorb.ndim == 1:
-        return [absorb]
-    return list(absorb)
-
-
-def _normalize_fe_spec(raw_spec):
-    if isinstance(raw_spec, FixedEffect):
-        return raw_spec
-    if isinstance(raw_spec, Interaction):
-        return FixedEffect(raw_spec)
-    if isinstance(raw_spec, (tuple, list)) and len(raw_spec) >= 2 and all(
-        isinstance(v, str) for v in raw_spec
-    ):
-        return FixedEffect(Interaction(*raw_spec))
-    if isinstance(raw_spec, dict):
-        group = raw_spec.get("group")
-        if isinstance(group, (tuple, list)) and len(group) >= 2 and all(
-            isinstance(v, str) for v in group
-        ):
-            group = Interaction(*group)
-        return FixedEffect(
-            group, raw_spec.get("slopes", ()),
-            raw_spec.get("intercept", True), raw_spec.get("name")
-        )
-    return FixedEffect(raw_spec)
 
 
 def _encode_absorb(data, absorb, *, component_cache=None):
@@ -93,21 +82,14 @@ def _encode_absorb(data, absorb, *, component_cache=None):
         hit = component_cache.get(key)
         if hit is not None:
             return hit
-        raw = require_identifier(_col(data, part), name=str(part), role=VariableRole.FE)
+        raw = require_identifier(column_values(data, part), name=str(part), role=VariableRole.FE)
         codes, nlev = factorize_1d(raw)
         hit = (codes, int(nlev))
         component_cache[key] = hit
         return hit
 
-    expanded_absorb = []
-    for raw_spec in _as_absorb_list(absorb):
-        if isinstance(raw_spec, FactorVariableExpression):
-            expanded_absorb.extend(compile_absorb_factor_variable(raw_spec))
-        else:
-            expanded_absorb.append(raw_spec)
-
-    for i, raw_spec in enumerate(expanded_absorb):
-        spec = _normalize_fe_spec(raw_spec)
+    for i, raw_spec in enumerate(expand_factor_variables(absorb_terms(absorb))):
+        spec = fixed_effect_spec(raw_spec)
         components = ()
         if isinstance(spec.group, Interaction):
             dense = [component_codes(part) for part in spec.group.parts]
@@ -168,7 +150,42 @@ class StandardFEInference:
     metadata: tuple[FEPartitionMeta, ...] = ()
 
 
-def _prepare_standard_fe_structure(
+@dataclass(slots=True)
+class StandardFEStructure:
+    """Solver FE system on the final estimation sample.
+
+    ``groups``/``slopes``/``intercepts``/``names``/``plan`` describe the
+    canonicalized partitions the absorber solves; ``inference`` keeps the
+    requested topology (``None`` when nothing is absorbed). ``mask`` selects
+    the estimation sample from the input rows after singleton pruning.
+    """
+
+    groups: list[np.ndarray]
+    slopes: list[np.ndarray | None]
+    intercepts: list[bool]
+    names: list[str]
+    plan: object
+    mask: np.ndarray
+    dropped: int
+    inference: StandardFEInference | None
+
+    @property
+    def all_kept(self) -> bool:
+        return self.dropped == 0 and bool(np.all(self.mask))
+
+    def active(self, values):
+        """Restrict an input-row array to the estimation sample."""
+        return values if self.all_kept else values[self.mask]
+
+    def absorbed_intercepts(self):
+        """Intercept FEs (and their names) that can structurally absorb design columns."""
+        return (
+            [g for g, has_i in zip(self.groups, self.intercepts, strict=False) if has_i],
+            [n for n, has_i in zip(self.names, self.intercepts, strict=False) if has_i],
+        )
+
+
+def prepare_standard_fe_structure(
     data, absorb, *, canonicalize_fe, drop_singletons, weights, weight_kind,
     canonical_sample_size=32_768, component_cache=None,
 ):
@@ -217,12 +234,20 @@ def _prepare_standard_fe_structure(
         groups, slopes = _dense_active(pre_groups, pre_slopes, mask)
         intercepts, names, plan = pre_intercepts, pre_names, pre_plan
 
-    return groups, slopes, intercepts, names, plan, mask, dropped, inference
+    return StandardFEStructure(groups, slopes, intercepts, names, plan, mask, dropped, inference)
 
 
-def _cluster_arrays(data, cluster, mask):
-    if cluster is None:
-        return None
+def standard_dof(fe, clusters, method):
+    """Absorbed DoF of the requested FE topology on the estimation sample."""
+    return absorbed_dof(
+        fe.inference.groups, slopes=fe.inference.slopes, intercepts=fe.inference.intercepts,
+        clusters=clusters, method=method, adjust_nested=bool(clusters),
+        adjust_continuous=True, groups_are_dense=True,
+    )
+
+
+def _cluster_specs(cluster):
+    """One column spec per cluster dimension."""
     if isinstance(cluster, str):
         specs = [cluster]
     elif isinstance(cluster, np.ndarray):
@@ -236,22 +261,29 @@ def _cluster_arrays(data, cluster, mask):
         specs = list(cluster)
     if len(specs) > 10:
         raise ValueError("at most 10 cluster dimensions are supported, matching reghdfe")
+    return specs
+
+
+def cluster_arrays(data, cluster, mask):
+    if cluster is None:
+        return None
+    specs = _cluster_specs(cluster)
     out = []
     all_kept = bool(np.all(mask))
     for c in specs:
-        raw = require_identifier(_col(data, c), name=str(c), role=VariableRole.CLUSTER)
+        raw = require_identifier(column_values(data, c), name=str(c), role=VariableRole.CLUSTER)
         codes, _ = factorize_1d(raw if all_kept else raw[mask])
         out.append(codes)
     return out
 
 
-def _masked_array(data, spec, mask):
+def masked_array(data, spec, mask):
     if spec is None:
         return None
-    return np.asarray(_col(data, spec))[mask]
+    return np.asarray(column_values(data, spec))[mask]
 
 
-def _resolve_pool_size(absorber, ncols, pool_size, memory_budget_mb):
+def resolve_pool_size(absorber, ncols, pool_size, memory_budget_mb):
     # Report the actual execution plan, rather than running a second,
     # inconsistent memory heuristic after absorption.
     if hasattr(absorber, "execution_plan"):
@@ -266,7 +298,7 @@ def _resolve_pool_size(absorber, ncols, pool_size, memory_budget_mb):
 
 
 
-def _residualize_blocks(
+def residualize_blocks(
     absorber, matrix, pool_size, memory_budget_mb=512, *, adaptive_auto=False,
     profile=False,
 ):
@@ -367,7 +399,7 @@ def _residualize_blocks(
     return matrix, worst
 
 
-def _resolve_method(method, groups=None, slopes=None, intercepts=None, *, backend="numpy", group_mode=False, individual=False):
+def resolve_method(method, groups=None, slopes=None, intercepts=None, *, backend="numpy", group_mode=False, individual=False):
     """Resolve the execution method after FE canonicalization.
 
     ``auto`` is deliberately conservative: use the specialized two-way solver
@@ -400,18 +432,42 @@ def _resolve_method(method, groups=None, slopes=None, intercepts=None, *, backen
     }
 
 
-def _resolve_acceleration(method, acceleration, *, group_mode=False):
+def resolve_acceleration(method, acceleration, *, group_mode=False):
     if acceleration == "auto":
         return "none" if group_mode or method != "map" else "cg"
     return acceleration
 
 
-def _check_absorption(info, *, allow_nonconverged=False):
+def check_absorption(info, *, allow_nonconverged=False):
     if not info.converged and not allow_nonconverged:
         raise HDFEConvergenceError(info)
 
 
-def _absorb_metadata(plan, absorber, info, pool_size, solver_selection=None):
+def residualize_in_basis(absorber, y, X, basis, pool_size, memory_budget_mb,
+                         *, adaptive_auto=False, allow_nonconverged=False):
+    """Reproject original columns without changing a shared solver's tolerance."""
+    block = np.column_stack((y, X))
+    _apply_absorption_basis(block[:, 1:], basis)
+    requested_tol = absorber.tol
+    try:
+        absorber.tol = min(requested_tol, 1e-11)
+        within, info = residualize_blocks(
+            absorber, block, pool_size, memory_budget_mb, adaptive_auto=adaptive_auto,
+        )
+        check_absorption(info, allow_nonconverged=allow_nonconverged)
+    finally:
+        absorber.tol = requested_tol
+    _apply_absorption_basis(within[:, 1:], basis, restore=True)
+    return within[:, 0], within[:, 1:], info
+
+
+def conditioning_info(basis, stage, tolerance):
+    """``absorb_info["conditioning"]`` for a weak-direction absorption basis."""
+    return {"basis": "symmetric_weak_direction_scaling", "stage": stage,
+            "condition": basis[3], "tolerance": tolerance}
+
+
+def absorb_metadata(plan, absorber, info, pool_size, solver_selection=None):
     out = {
         "canonicalization": plan.as_dict() if plan is not None else None,
         "method": absorber.method,
@@ -444,8 +500,33 @@ def _absorb_metadata(plan, absorber, info, pool_size, solver_selection=None):
     return out
 
 
+def block_absorb_metadata(plan, projector, info, *, method, transform, acceleration,
+                          pool_size, solver_selection, heterogeneous_spec):
+    """``absorb_info`` for a heterogeneous-spec (``BlockDesign``) projection."""
+    resources = projector.resource_info if projector is not None else {"blocks": ()}
+    actual_threads = [
+        int(item["projector"].get("actual_threads") or 1)
+        for item in resources.get("blocks", ()) if item.get("projector") is not None
+    ]
+    return {
+        "canonicalization": plan.as_dict() if plan is not None else None,
+        "method": method,
+        "transform": transform,
+        "acceleration": acceleration,
+        "projection_backend": "heterogeneous_components",
+        "absorb_threads": max(actual_threads, default=1),
+        "iterations": int(info.iterations),
+        "converged": bool(info.converged),
+        "convergence_metric": float(info.max_update),
+        "convergence_criterion": str(info.criterion),
+        "pool_size": int(pool_size),
+        "solver_selection": dict(solver_selection),
+        "heterogeneous_spec": heterogeneous_spec,
+    }
 
-def _design(data, specs, n, prefix, *, row_mask=None, absorbed_groups=(), absorbed_names=(), structural=True, protected_terms=(), omit=None):
+
+
+def compile_design(data, specs, n, prefix, *, row_mask=None, absorbed_groups=(), absorbed_names=(), structural=True, protected_terms=(), omit=None):
     return build_design(
         data, specs, n, prefix=prefix, row_mask=row_mask,
         absorbed_groups=absorbed_groups, absorbed_names=absorbed_names,
@@ -453,7 +534,7 @@ def _design(data, specs, n, prefix, *, row_mask=None, absorbed_groups=(), absorb
     )
 
 
-def _execution_design(
+def compile_execution_design(
     data, specs, n, prefix, *, groups=(), expected_passes=1,
     memory_budget_mb=None, row_mask=None, absorbed_groups=(), absorbed_names=(),
     structural=True, protected_terms=(), omit=None,
@@ -461,7 +542,7 @@ def _execution_design(
     """Compile a design for execution, using heterogeneous-spec storage when useful.
 
     This is an internal performance contract. Statistical parsing and omission
-    semantics are identical to ``_design``; only the physical representation
+    semantics are identical to ``compile_design``; only the physical representation
     may become a row-partitioned ``BlockDesign`` when an exact certificate and
     the storage planner both justify it.
     """
@@ -480,7 +561,7 @@ def _select_design_columns(X, idx):
     return X[:, idx]
 
 
-def _check_collinearity_mode(mode):
+def check_collinearity_mode(mode):
     mode = str(mode).lower()
     if mode not in {"warn", "drop", "raise"}:
         raise ValueError("collinearity must be 'warn', 'drop', or 'raise'")
@@ -499,7 +580,7 @@ def _enforce_collinearity_mode(plan, mode, structural_plan=None):
         warnings.warn(format_omission_warning(items), OmittedVariableWarning, stacklevel=4)
 
 
-def _collinearity_metadata(
+def collinearity_metadata(
     plan, origins=None, *, structural_plan=None, requested_origins=None, requested_names=None, role="regressor", user_omissions=()
 ):
     out = plan.as_dict()
@@ -563,7 +644,16 @@ def _collinearity_metadata(
     return out
 
 
-def _resolve_ols_columns(Xw, X0, names, *, weights, tolerance, mode, structural_plan=None, _grams=None):
+def design_collinearity_metadata(plan, design, role):
+    """Collinearity metadata of one compiled design role, including structural/user omissions."""
+    return collinearity_metadata(
+        plan, design.origins, structural_plan=design.structural_plan,
+        requested_origins=design.requested_origins, requested_names=design.requested_names,
+        role=role, user_omissions=design.user_omissions,
+    )
+
+
+def resolve_ols_columns(Xw, X0, names, *, weights, tolerance, mode, structural_plan=None, _grams=None):
     plan = resolve_collinearity(
         Xw, names=names, role="regressor", original=X0, weights=weights,
         tolerance=tolerance,
@@ -577,7 +667,7 @@ def _resolve_ols_columns(Xw, X0, names, *, weights, tolerance, mode, structural_
     return _select_design_columns(Xw, idx), _select_design_columns(X0, idx), plan
 
 
-def _resolve_iv_columns(Cw, Ew, Zw, C0, E0, Z0, c_names, e_names, z_names, *, weights, tolerance, mode, c_origins=None, e_origins=None, z_origins=None, c_design=None, e_design=None, z_design=None, _refine_controls=None):
+def resolve_iv_columns(Cw, Ew, Zw, C0, E0, Z0, c_names, e_names, z_names, *, weights, tolerance, mode, c_design=None, e_design=None, z_design=None, _refine_controls=None):
     cplan = resolve_collinearity(
         Cw, names=c_names, role="exogenous", original=C0, weights=weights, tolerance=tolerance,
     )
@@ -618,19 +708,15 @@ def _resolve_iv_columns(Cw, Ew, Zw, C0, E0, Z0, c_names, e_names, z_names, *, we
             f"underidentified after collinearity resolution: {Zwa.shape[1]} active excluded "
             f"instruments for {Ewa.shape[1]} active endogenous regressors"
         )
-    def meta(plan, origins, design, role):
+    def meta(plan, design, role):
         if design is None:
-            return _collinearity_metadata(plan, origins, role=role)
-        return _collinearity_metadata(
-            plan, origins, structural_plan=design.structural_plan,
-            requested_origins=design.requested_origins, requested_names=design.requested_names,
-            role=role, user_omissions=design.user_omissions,
-        )
+            return collinearity_metadata(plan, role=role)
+        return design_collinearity_metadata(plan, design, role)
 
     info = {
-        "exogenous": meta(cplan, c_origins, c_design, "exogenous"),
-        "endogenous": meta(eplan, e_origins, e_design, "endogenous"),
-        "excluded_instruments": meta(zplan, z_origins, z_design, "excluded_instrument"),
+        "exogenous": meta(cplan, c_design, "exogenous"),
+        "endogenous": meta(eplan, e_design, "endogenous"),
+        "excluded_instruments": meta(zplan, z_design, "excluded_instrument"),
     }
     return Cwa, Ewa, Zwa, C0a, E0a, Z0a, cn, en, zn, info
 
@@ -649,13 +735,7 @@ def _same_fe_group(a, b):
 
 
 def _split_individual_absorb(absorb, individual):
-    raw_specs = []
-    for value in _as_absorb_list(absorb):
-        if isinstance(value, FactorVariableExpression):
-            raw_specs.extend(compile_absorb_factor_variable(value))
-        else:
-            raw_specs.append(value)
-    specs = [_normalize_fe_spec(v) for v in raw_specs]
+    specs = [fixed_effect_spec(v) for v in expand_factor_variables(absorb_terms(absorb))]
     if individual is None:
         return specs, None
     hits = [i for i, spec in enumerate(specs) if _same_fe_group(spec.group, individual)]
@@ -671,7 +751,7 @@ def _split_individual_absorb(absorb, individual):
 def _encode_absorb_grouped(data, specs, comp):
     groups, slopes, intercepts, names = [], [], [], []
     for i, spec in enumerate(specs):
-        raw_group = _col(data, spec.group)
+        raw_group = column_values(data, spec.group)
         group_value = compress_constant(raw_group, comp, name=f"absorbed FE {spec.group!r}")
         codes, _ = factorize_1d(group_value)
         S = None
@@ -690,22 +770,10 @@ def _encode_absorb_grouped(data, specs, comp):
 def _group_cluster_arrays(data, cluster, comp, keep):
     if cluster is None:
         return None
-    if isinstance(cluster, str):
-        specs = [cluster]
-    elif isinstance(cluster, np.ndarray):
-        if cluster.ndim == 1:
-            specs = [cluster]
-        elif cluster.ndim == 2:
-            specs = [cluster[:, j] for j in range(cluster.shape[1])]
-        else:
-            raise ValueError("cluster array must be 1d or 2d")
-    else:
-        specs = list(cluster)
-    if len(specs) > 10:
-        raise ValueError("at most 10 cluster dimensions are supported, matching reghdfe")
+    specs = _cluster_specs(cluster)
     out = []
     for c in specs:
-        vals = compress_constant(_col(data, c), comp, name=f"cluster {c!r}")[keep]
+        vals = compress_constant(column_values(data, c), comp, name=f"cluster {c!r}")[keep]
         codes, _ = factorize_1d(vals)
         out.append(codes)
     return out
@@ -714,12 +782,12 @@ def _group_cluster_arrays(data, cluster, comp, keep):
 def _group_optional_array(data, spec, comp, keep, label):
     if spec is None:
         return None
-    return np.asarray(compress_constant(_col(data, spec), comp, name=label))[keep]
+    return np.asarray(compress_constant(column_values(data, spec), comp, name=label))[keep]
 
 
-def _prepare_group_mode(data, *, group, individual, absorb, arrays, weights, cluster, time, panel,
+def prepare_group_mode(data, *, group, individual, absorb, arrays, weights, cluster, time, panel,
                         drop_singletons, weight_type, aggregation):
-    raw_group = _col(data, group)
+    raw_group = column_values(data, group)
     group_codes, _ = factorize_1d(raw_group)
     comp = group_compression(group_codes)
     standard_specs, indiv_spec = _split_individual_absorb(absorb, individual)
@@ -728,7 +796,7 @@ def _prepare_group_mode(data, *, group, individual, absorb, arrays, weights, clu
     compressed_arrays = [compress_constant(a, comp, name=name) for name, a in arrays]
     w0 = None
     if weights is not None:
-        w0 = compress_constant(_col(data, weights), comp, name="weights").astype(np.float64, copy=False)
+        w0 = compress_constant(column_values(data, weights), comp, name="weights").astype(np.float64, copy=False)
     wkind = normalize_weight_type(weight_type, has_weights=w0 is not None)
     if indiv_spec is not None and wkind == "fweight":
         # Current reghdfe's Factor_Indiv.mata explicitly notes that fweights are
@@ -739,7 +807,7 @@ def _prepare_group_mode(data, *, group, individual, absorb, arrays, weights, clu
     indiv_codes0 = None
     indiv_slopes0 = None
     if indiv_spec is not None:
-        raw_ind = _col(data, indiv_spec.group)
+        raw_ind = column_values(data, indiv_spec.group)
         indiv_codes0, _ = factorize_1d(raw_ind)
         validate_unique_memberships(comp.row_to_group, indiv_codes0)
         if indiv_spec.slopes:
@@ -751,7 +819,11 @@ def _prepare_group_mode(data, *, group, individual, absorb, arrays, weights, clu
 
     if drop_singletons:
         if indiv_spec is None:
-            keep, dropped = iterative_singleton_mask(std_groups0)
+            # reghdfe applies the fweight-mass rule to group()-level FEs too.
+            keep, dropped = iterative_singleton_mask(
+                std_groups0, w0 if wkind == "fweight" else None,
+                frequency_weights=(wkind == "fweight"),
+            )
         else:
             keep, dropped = group_individual_singleton_mask(
                 std_groups0, comp.row_to_group, indiv_codes0
@@ -792,7 +864,18 @@ def _prepare_group_mode(data, *, group, individual, absorb, arrays, weights, clu
     }
 
 
-def _make_standard_absorber(
+def _slope_build_bytes(groups, slopes):
+    """Slope copies, centered vectors, means and Gram/inverse work of slope FEs."""
+    total = 0
+    for codes, slope in zip(groups, slopes, strict=True):
+        if slope is not None:
+            width = 1 if slope.ndim == 1 else slope.shape[1]
+            levels = int(codes.max()) + 1 if len(codes) else 0
+            total += 8 * (len(codes) * (width + 5) + levels * (3 * width**2 + width))
+    return total
+
+
+def make_standard_absorber(
     groups, slopes, intercepts, *, weights, tol, max_iter, backend, method,
     transform, acceleration, preconditioner, projection_backend, absorb_threads,
     memory_budget_mb,
@@ -809,12 +892,7 @@ def _make_standard_absorber(
                 "after FE canonicalization"
             )
     build_bytes = _absorption_build_cost(groups, "twoway" if method == "twoway" else "generic")
-    for codes, slope in zip(groups, slopes, strict=True):
-        if slope is not None:
-            width = 1 if slope.ndim == 1 else slope.shape[1]
-            levels = int(codes.max()) + 1 if len(codes) else 0
-            # Slope copies, centered vectors, means and Gram/inverse work.
-            build_bytes += 8 * (len(codes) * (width + 5) + levels * (3 * width**2 + width))
+    build_bytes += _slope_build_bytes(groups, slopes)
     if backend == "numpy" and groups:
         # Warm the saturation cache before construction reserves workspace.
         # Small samples/explicit requests do not run a calibration probe.
@@ -839,10 +917,10 @@ def _make_standard_absorber(
         )
 
 
-def _make_group_absorber(prep, *, method, transform, backend, acceleration, preconditioner, tol, max_iter, aggregation, incidence_backend, memory_budget_mb, projection_backend="auto", absorb_threads="auto"):
+def make_group_absorber(prep, *, method, transform, backend, acceleration, preconditioner, tol, max_iter, aggregation, incidence_backend, memory_budget_mb, projection_backend="auto", absorb_threads="auto"):
     indiv = prep["individual_spec"]
     if indiv is None:
-        return _make_standard_absorber(
+        return make_standard_absorber(
             prep["groups"], prep["slopes"], prep["intercepts"],
             weights=prep["weights"], tol=tol, max_iter=max_iter, backend=backend,
             method=method, transform=transform, acceleration=acceleration,
@@ -878,11 +956,7 @@ def _make_group_absorber(prep, *, method, transform, backend, acceleration, prec
                              and csr_bytes <= available) else "matrix_free"
     build_bytes = csr_bytes if selected == "csr" else base_bytes + _absorption_build_cost(prep["groups"], "generic")
     if selected != "csr":
-        for codes, slope in zip(prep["groups"], prep["slopes"], strict=True):
-            if slope is not None:
-                width = 1 if slope.ndim == 1 else slope.shape[1]
-                levels = int(codes.max()) + 1 if len(codes) else 0
-                build_bytes += 8 * (len(codes) * (width + 5) + levels * (3 * width**2 + width))
+        build_bytes += _slope_build_bytes(prep["groups"], prep["slopes"])
     with scheduler.reserve_memory(build_bytes, label="group_individual_build"):
         return GroupIndividualAbsorber(
             prep["groups"], standard_slopes=prep["slopes"], standard_intercepts=prep["intercepts"],
@@ -894,7 +968,7 @@ def _make_group_absorber(prep, *, method, transform, backend, acceleration, prec
         )
 
 
-def _group_dof(prep, absorber, dof_method):
+def group_dof(prep, absorber, dof_method):
     if prep["individual_spec"] is None:
         return absorbed_dof(
             prep["groups"], slopes=prep["slopes"], intercepts=prep["intercepts"],
@@ -910,7 +984,14 @@ def _group_dof(prep, absorber, dof_method):
     )
 
 
-def _group_info(prep, absorber, aggregation):
+def group_has_intercept(prep):
+    """Whether the group()/individual() FE system contains an intercept."""
+    return bool(any(prep["intercepts"])) or bool(
+        prep.get("individual_spec") is not None and prep["individual_spec"].intercept
+    )
+
+
+def group_info(prep, absorber, aggregation):
     if prep["individual_spec"] is None:
         return GroupIndividualInfo(
             n_groups=int(prep["keep"].sum()), n_memberships=int(prep["member_keep"].sum()) if "member_keep" in prep else int(prep["comp"].n_memberships),

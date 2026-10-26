@@ -39,30 +39,6 @@ def _pow2_floor(n: int) -> int:
     return 1 << (int(n).bit_length() - 1)
 
 
-def plan_workspace(
-    *,
-    nobs: int,
-    ncols: int,
-    pool_size='auto',
-    memory_budget_mb: float = 512,
-    scratch_arrays_per_rhs: int = 1,
-    requested_threads='auto',
-    reserve_fraction: float = 0.12,
-) -> WorkspacePlan:
-    """Plan HDFE RHS workspace through the shared execution planner.
-
-    Statistical semantics are fixed before this function is called.  This
-    wrapper preserves the historical ``WorkspacePlan`` contract while CPU and
-    memory resource policy now comes from the package-wide planner layer.
-    """
-    return _plan_workspace(
-        nobs=nobs, ncols=ncols, pool_size=pool_size,
-        memory_budget_mb=memory_budget_mb, requested_threads=requested_threads,
-        reserve_fraction=reserve_fraction,
-        bytes_per_column=max(1, int(nobs) * 8 * max(1, int(scratch_arrays_per_rhs))),
-    )
-
-
 def _plan_workspace(
     *, nobs, ncols, pool_size, memory_budget_mb, requested_threads,
     bytes_per_column, resident_solver_bytes=0, reserve_fraction=0.12,

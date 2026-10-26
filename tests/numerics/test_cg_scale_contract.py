@@ -82,7 +82,7 @@ def test_pooled_plain_map_preserves_units_in_later_pools(monkeypatch):
         groups, weights=weights, acceleration="cg", tol=1e-10,
         projection_backend="indexed", core_reduction="off", absorb_threads=4,
     )
-    result, info = pipeline._residualize_blocks(
+    result, info = pipeline.residualize_blocks(
         absorber, rhs * scales, 2, adaptive_auto=True, profile=True,
     )
     assert info.converged and absorber.acceleration == "none"

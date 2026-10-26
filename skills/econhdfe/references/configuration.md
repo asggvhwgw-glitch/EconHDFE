@@ -151,7 +151,7 @@ Never silently reinterpret one weight type as another. Some estimator/VCE combin
 
 ## Covariance and clustering
 
-Use the public `vce`, `cluster`/`clusters`, `time`, `panel`, `bandwidth` and `kernel` controls supported by the chosen estimator. One- and multi-way clustering are distinct inference specifications; do not change them for speed.
+Use the public `vce`, `cluster`, `time`, `panel`, `bandwidth` and `kernel` controls supported by the chosen estimator. One- and multi-way clustering are distinct inference specifications; do not change them for speed.
 
 Standard one-/multi-way CRV1 is part of estimator covariance. `cluster_diagnostics()` and `wild_cluster_test_ols()` are post-estimation tools: the latter is currently one-way OLS only and must not be substituted for a substantively required multi-way cluster specification.
 

@@ -7,7 +7,7 @@ import scipy.linalg as la
 from scipy.stats import chi2
 
 from ...compute.encoding import factorize_interaction
-from ...compute.vcov import score_covariance, _cluster_scale, fix_psd
+from ...compute.vcov import score_covariance, _cluster_scale, fix_psd, normalize_vce, is_iid_vce, ROBUST_VCE_KINDS
 from ...errors import InferenceError
 
 
@@ -59,9 +59,9 @@ def stable_2sls_inference(factor, *, n_exog, kind="iid", clusters=None,
     k = factor.influence_coordinates.shape[1]
     ke = k - n_exog
     n_eff = float(n if effective_n is None else effective_n)
-    kind0 = "iid" if kind is None else str(kind).lower().replace("-", "_")
-    iid = kind0 in {"iid", "unadjusted", "homoskedastic"}
-    robust = kind0 in {"robust", "hc1", "heteroskedastic"}
+    kind0 = normalize_vce(kind, "iid")
+    iid = is_iid_vce(kind0)
+    robust = kind0 in ROBUST_VCE_KINDS
     p = l + k
     partial_coordinates = factor.diagnostic_coordinates
     coordinates = np.column_stack([

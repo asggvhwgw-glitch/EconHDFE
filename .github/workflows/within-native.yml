@@ -16,7 +16,11 @@ concurrency:
   cancel-in-progress: true
 jobs:
   native:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 40
     env:
       OPENBLAS_NUM_THREADS: "1"
@@ -43,7 +47,7 @@ jobs:
       - name: Rust unit tests
         run: |
           mkdir -p native-results
-          cargo test --release --manifest-path native/within-accel/Cargo.toml 2>&1 | tee native-results/rust-tests.log
+          cargo test --release --locked --manifest-path native/within-accel/Cargo.toml 2>&1 | tee native-results/rust-tests.log
       - name: Build and install native wheel
         run: |
           python -m pip wheel --no-deps ./native/within-accel -w native-wheels -v 2>&1 | tee native-results/build.log
@@ -74,7 +78,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: within-native-${{ github.run_id }}
+          name: within-native-${{ runner.os }}-${{ github.run_id }}
           path: |
             native-results/
             native-wheels/

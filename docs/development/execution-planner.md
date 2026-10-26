@@ -89,7 +89,7 @@ planner ─X─► data / compute / hdfe / iv / models
 
 `planner.calibration` benchmarks only package-generated synthetic memory traffic and imports no HDFE/model implementation. HDFE consumes the selected thread budget. `planner.report` consumes only contracts/aggregate result metadata and likewise does not define estimation logic.
 
-`planner.resources` remains the canonical runtime-resource contract. `compute.runtime` is a compatibility surface that re-exports it.
+`planner.resources` is the single runtime-resource contract; `econhdfe.compute` re-exports `runtime_resources` and `configure_numba_runtime` from it.
 
 ## Non-goals
 

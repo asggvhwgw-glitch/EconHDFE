@@ -78,7 +78,7 @@ def run(*, blocks=6, per_block=12_000, local_terms=18, shared_terms=6, seed=9060
         "dense_design_mib": dense.values.nbytes / (1024**2),
         "partitioned_payload_mib": execution_design.values.payload_bytes / (1024**2),
         "payload_reduction_fraction": 1.0 - execution_design.values.payload_bytes / dense.values.nbytes,
-        "max_abs_coef_diff": float(np.max(np.abs(dense_result.coef - structured_result.coef))),
+        "max_abs_coef_diff": float(np.max(np.abs(dense_result.params - structured_result.params))),
         "execution_reason": execution_design.execution_structure.reason,
         "detected_shared_columns": len(execution_design.execution_structure.shared_columns),
         "storage_plan": execution_design.storage_plan.as_dict(),

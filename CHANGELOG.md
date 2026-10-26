@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.9.0 — unreleased candidate
+
+- Add an optional, explicitly selected `method="within"` Rust backend for CPU categorical-intercept OLS/IV and sessions, with weighted reductions and bounded Schur/compression routes over pinned upstream within. Preserve default routing and weak-design conditioning. Local 0.9.0 integration tests and existing-sample comparisons show workload-dependent gains; see the native validation report for limitations.
+- Keep Linux OpenBLAS 0.3.28 single-threaded inside estimation calls to avoid reproduced TRTRS/QR crashes after thread-limit increases; other backends retain the requested CPU envelope, and all limits restore on exit. Stabilize the cross-platform thread fixture and ill-conditioned IV reference without loosening tolerances.
+- Remove the `pyreghdfe` compatibility package and the internal forwarding modules `econhdfe.bootstrap`, `econhdfe.compute.runtime` and `econhdfe.hdfe.encoding`.
+- Unify PPML/IV-PPML with OLS/IV: `data=` first with column-name specs, `cluster=` (was `clusters=`), and a `params` ndarray field (was `coef`); vce defaults keep the Stata upstream conventions.
+- Reject conflicting scalar/config settings with `specification.config_conflict` instead of letting config objects silently override scalars.
+- Raise `HDFEConvergenceError` for non-converged group/individual and BlockDesign absorption; make `InferenceConfig(diagnostics="full")` include the profile in publication output.
+- Align singleton pruning with reghdfe 6.12.5, ppmlhdfe 2.3.0 and ivppmlhdfe 0.9.4 (group-mode fweight mass; joint PPML FE-separation/singleton pruning; post-separation singleton re-pruning and counters).
+- Refactor without behaviour change: shared linear estimation stages (`models/linear.py`, named `pipeline` interfaces) used by direct fits and sessions; PPML/IV-PPML shared helpers and result methods; one VCE normalization utility; one absorb-spec parser (`hdfe/absorb_spec.py`) and singleton kernel; corrected layering (`DofInfo` in `hdfe/dof.py`, `design_specs.py`, `compute/cache_accounting.py`) enforced by a whole-package dependency test; removal of dead code.
+- Bit-for-bit equivalence against 0.8.5 for all unchanged behaviour (OLS/IV/session, VCE, absorb parsing, PPML suites); PPML about 3% slower on a 500k-row benchmark. No package is published.
+
 ## 0.8.4 — unreleased candidate
 
 - Stabilize ill-conditioned dense 2SLS solving and inference with block QR/SVD and certified weak-control absorption refinement after redundant-control omission.

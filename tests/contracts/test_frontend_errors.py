@@ -23,7 +23,7 @@ def test_ivppml_underidentification_has_reason_code():
     endog = np.ones((n, 2))
     z = np.ones((n, 1))
     with pytest.raises(UnderidentifiedError) as err:
-        ivppmlhdfe(y, endog=endog, instruments=z, config=None)
+        ivppmlhdfe(y=y, endog=endog, instruments=z, config=None)
     assert err.value.code == "identification.underidentified"
     assert err.value.details["n_endog"] == 2
 

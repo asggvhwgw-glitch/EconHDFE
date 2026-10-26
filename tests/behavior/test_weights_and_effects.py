@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from pyreghdfe import reghdfe, ivreghdfe
+from econhdfe import reghdfe, ivreghdfe
 
 
 def _weighted_fixture(seed=880, n=1200):

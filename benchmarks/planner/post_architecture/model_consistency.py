@@ -20,7 +20,7 @@ def linear_rec(r):
                 solver=(r.absorb_info or {}).get('method'))
 
 def pp_rec(r):
-    return dict(names=list(r.names),coef=arr(r.coef),stderr=arr(r.stderr),vcov=np.asarray(r.vcov,float).tolist(),
+    return dict(names=list(r.names),coef=arr(r.params),stderr=arr(r.stderr),vcov=np.asarray(r.vcov,float).tolist(),
                 nobs=int(r.nobs),df_absorbed=int(r.df_absorbed),iterations=int(r.iterations),
                 n_separated=int(r.n_separated),cluster_counts=list(r.cluster_counts),converged=bool(r.converged))
 
@@ -53,10 +53,10 @@ def main():
     cases.append(('iv_2fe_robust',lambda:ivhdfe(df,y='yiv',exog=['c'],endog=['e'],instruments=['z1','z2'],absorb=['g1','g2'],vce='robust'),linear_rec))
     cases.append(('iv_3fe_cluster2',lambda:ivhdfe(df,y='yiv',exog=['c'],endog=['e'],instruments=['z1','z2'],absorb=['g1','g2','g3'],vce='cluster',cluster=['g1','g2']),linear_rec))
     pcfg=PPMLConfig(separation=('fe',),standardize=False,tolerance=1e-8,target_inner_tol=1e-9,max_iter=200,engine='optimized')
-    cases.append(('ppml_2fe_robust',lambda:ppmlhdfe(df.ypp.to_numpy(),df[['x1','x2','c']].to_numpy(),absorb=[g1,g2],vce='robust',names=('x1','x2','c'),config=pcfg),pp_rec))
-    cases.append(('ppml_3fe_cluster2',lambda:ppmlhdfe(df.ypp.to_numpy(),df[['x1','x2','c']].to_numpy(),absorb=[g1,g2,g3],vce='cluster',clusters=[g1,g2],names=('x1','x2','c'),config=pcfg),pp_rec))
+    cases.append(('ppml_2fe_robust',lambda:ppmlhdfe(y=df.ypp.to_numpy(),x=df[['x1','x2','c']].to_numpy(),absorb=[g1,g2],vce='robust',names=('x1','x2','c'),config=pcfg),pp_rec))
+    cases.append(('ppml_3fe_cluster2',lambda:ppmlhdfe(y=df.ypp.to_numpy(),x=df[['x1','x2','c']].to_numpy(),absorb=[g1,g2,g3],vce='cluster',cluster=[g1,g2],names=('x1','x2','c'),config=pcfg),pp_rec))
     icfg=IVPPMLConfig(separation=('fe',),standardize=False,tolerance=1e-8,target_inner_tol=1e-9,max_iter=250,engine='optimized')
-    cases.append(('ivppml_2fe_robust',lambda:ivppmlhdfe(df.yivpp.to_numpy(),exog=df[['c']].to_numpy(),endog=df[['e']].to_numpy(),instruments=df[['z1','z2']].to_numpy(),absorb=[g1,g2],vce='robust',exog_names=('c',),endog_names=('e',),instrument_names=('z1','z2'),config=icfg),pp_rec))
+    cases.append(('ivppml_2fe_robust',lambda:ivppmlhdfe(y=df.yivpp.to_numpy(),exog=df[['c']].to_numpy(),endog=df[['e']].to_numpy(),instruments=df[['z1','z2']].to_numpy(),absorb=[g1,g2],vce='robust',exog_names=('c',),endog_names=('e',),instrument_names=('z1','z2'),config=icfg),pp_rec))
     for name,fn,rec in cases:
         t,r=medtime(fn,a.reps); out['models'][name]=rec(r); out['timings'][name]=t
     Path(a.out).write_text(json.dumps(out,indent=2))

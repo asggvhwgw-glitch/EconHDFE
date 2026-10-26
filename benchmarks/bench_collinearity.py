@@ -6,7 +6,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-from pyreghdfe.collinearity import resolve_collinearity
+from econhdfe.collinearity import resolve_collinearity
 
 
 def main(n=1_000_000, k=20, seed=123):

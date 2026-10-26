@@ -19,6 +19,21 @@ def test_public_native_weak_design_keeps_stable_covariance(hidden, weighted, poo
     module.test_near_collinear_dense_fwl_and_covariance(hidden,weighted,pool,threads)
 
 
+@pytest.mark.parametrize('hidden,weighted', [(False, False), (False, True), (True, False), (True, True)])
+def test_native_session_conditioning_and_cache_lifecycle(hidden, weighted, tmp_path, monkeypatch):
+    from econhdfe import OLSHDFESession, HDFEConfig
+    root = Path(__file__).resolve().parents[3]
+    path = root / 'tests/numerics/test_conditioned_absorption.py'
+    spec = importlib.util.spec_from_file_location('native_session_oracle', path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    monkeypatch.setattr(module, 'OLSHDFESession', lambda *a, **kw: OLSHDFESession(
+        *a, **dict(kw, hdfe_config=HDFEConfig(solver='within'))))
+    # Standalone reference fits keep the established backend. Exercise prewarm,
+    # changed outcomes/column order, data mutation and persistent result reuse.
+    module.test_conditioned_sessions_batch_prewarm_mutation_and_persistence(hidden, weighted, tmp_path)
+
+
 def test_nearly_disconnected_small_schur_is_not_silently_solved():
     codes=np.array([[0,0],[0,0],[1,1],[1,1],[0,1],[0,1]],dtype=np.uint32)
     w=np.array([1.,1.,1.,1.,1e-12,1e-12])

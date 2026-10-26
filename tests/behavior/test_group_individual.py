@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from pyreghdfe import FixedEffect, ivreghdfe, reghdfe
+from econhdfe import FixedEffect, ivreghdfe, reghdfe
 
 
 def _membership_fixture(seed=501, n_groups=120, n_ind=30, size=3):

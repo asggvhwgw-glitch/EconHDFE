@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 
 from econhdfe import ExecutionConfig
+from econhdfe.compute import execution
 from econhdfe.compute.execution import _plan_workspace
 from econhdfe.hdfe import projection
 from econhdfe.planner import calibration, core, scheduler
@@ -14,6 +15,7 @@ def runtime(monkeypatch, tmp_path):
     resources = lambda: RuntimeResources(4, 1024**3, 0)
     monkeypatch.setattr(scheduler, "runtime_resources", resources)
     monkeypatch.setattr(calibration, "runtime_resources", resources)
+    monkeypatch.setattr(execution, "runtime_resources", resources)
     monkeypatch.setattr(calibration, "effective_cpu_count", lambda: 4)
     monkeypatch.setattr(projection, "effective_cpu_count", lambda: 4)
     monkeypatch.setattr(scheduler, "_rss", lambda: 0)
@@ -60,7 +62,7 @@ def test_outer_parallelism_uses_cpu_envelope_not_bandwidth_saturation(runtime, m
 
 
 def test_factory_calibrates_before_memory_reservation(runtime, monkeypatch):
-    from econhdfe.pipeline import _make_standard_absorber
+    from econhdfe.pipeline import make_standard_absorber
     from econhdfe.hdfe.weighted_projection import WeightedFEProjector
     seen = []
     def measure(*, max_threads):
@@ -70,7 +72,7 @@ def test_factory_calibrates_before_memory_reservation(runtime, monkeypatch):
     monkeypatch.setattr(calibration, "calibrate_threads", measure)
     groups = [np.arange(100_000, dtype=np.int32) % 20]
     with scheduler.execution_scope(ExecutionConfig(threads="auto", memory_budget_mb=128)) as allocation:
-        absorber = _make_standard_absorber(
+        absorber = make_standard_absorber(
             groups, [None], [True], weights=None, tol=1e-8, max_iter=100,
             backend="numpy", method="map", transform="symmetric", acceleration="cg",
             preconditioner="diagonal", projection_backend="auto", absorb_threads=allocation.cpu_threads,

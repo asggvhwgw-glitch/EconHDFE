@@ -220,7 +220,7 @@ The core mathematical statements of these three theorem-backed lines are now mac
 | Repeated specifications | Reusable OLS and linear-IV sessions with FE/sample-aware invalidation |
 | Post-estimation | Publication results, linear contrasts/Wald, chunked OLS/IV predictions and explicitly saved categorical FE (0.7.0) |
 | Execution | Projected data access, memory budgets, structured representations, bounded parallelism and automatic HDFE thread selection |
-| Compatibility | `reghdfe`, `ivreghdfe`, and legacy `pyreghdfe` entry points |
+| Compatibility | `reghdfe` and `ivreghdfe` aliases |
 | Agent interface | Native `econhdfe` Skill for agent-driven empirical and development workflows |
 
 ## Validation
@@ -265,14 +265,13 @@ New Python code should normally import directly from `econhdfe`:
 from econhdfe import olshdfe, ivhdfe, ppmlhdfe, ivppmlhdfe
 ```
 
-Compatibility entry points are also available:
+Stata-style aliases are also available:
 
 ```python
 from econhdfe import reghdfe, ivreghdfe
-import pyreghdfe
 ```
 
-These aliases are intended to ease migration and interoperability. They do not imply that every Stata syntax construct or every upstream edge case has completed external certification.
+The legacy `pyreghdfe` namespace was removed in 0.9.0; replace `pyreghdfe` imports with `econhdfe` (see the [migration guide](docs/release/migration.md)). These aliases are intended to ease migration and interoperability. They do not imply that every Stata syntax construct or every upstream edge case has completed external certification.
 
 ## Documentation
 

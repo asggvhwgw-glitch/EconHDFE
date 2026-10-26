@@ -6,7 +6,7 @@ inherits the envelope; parallel workers receive explicit slices of it.
 """
 from __future__ import annotations
 
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from contextvars import ContextVar
 from dataclasses import dataclass, field, replace
 from functools import wraps
@@ -15,7 +15,8 @@ from threading import RLock
 from operator import index
 
 import psutil
-from threadpoolctl import threadpool_limits
+import sys
+from threadpoolctl import ThreadpoolController, threadpool_limits
 
 from ..config import ExecutionConfig
 from ..errors import SpecificationError
@@ -190,7 +191,15 @@ def execution_scope(config=None):
             token = _CURRENT.set(allocation)
             try:
                 with threadpool_limits(limits=allocation.cpu_threads):
-                    yield allocation
+                    # Linux OpenBLAS 0.3.28 can segfault in TRTRS and QR after
+                    # raising its initial thread count. Restrict only that
+                    # backend, once at root admission, and restore on exit.
+                    # Workers inherit this process-wide setting unchanged.
+                    compatibility = (ThreadpoolController().select(internal_api="openblas")
+                                     .select(version="0.3.28").limit(limits=1)
+                                     if sys.platform == "linux" else nullcontext())
+                    with compatibility:
+                        yield allocation
             finally:
                 _CURRENT.reset(token)
 

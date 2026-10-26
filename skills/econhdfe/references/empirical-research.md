@@ -55,14 +55,18 @@ Included exogenous controls are part of the instrument set by construction. Befo
 from econhdfe import PPMLConfig, ppmlhdfe
 
 res = ppmlhdfe(
-    y,
-    X,
-    absorb=[firm, year],
-    clusters=[firm, year],
+    df,
+    y="trade",
+    x=["x1", "x2"],
+    absorb=["firm_id", "year"],
+    cluster=["firm_id", "year"],
     vce="cluster",
     config=PPMLConfig(engine="optimized"),
 )
+print(res.params)
 ```
+
+All four estimators share the calling form `estimator(data, *, y=..., ...)`: with a DataFrame the roles are column names (including `factor()` terms); with `data=None` they are arrays and `absorb`/`cluster` are lists of 1-D arrays. PPML/IV-PPML keep `vce="robust"` as the default (Stata ppmlhdfe/ivppmlhdfe), while OLS/IV default to `vce=None` (reghdfe's unadjusted VCE). A non-default `vce` that disagrees with `InferenceConfig(vce=...)` raises `specification.config_conflict`.
 
 Use PPML for the intended Poisson PML/multiplicative conditional-mean specification; do not choose it merely because the outcome has zeros.
 
@@ -72,11 +76,12 @@ Use PPML for the intended Poisson PML/multiplicative conditional-mean specificat
 from econhdfe import IVPPMLConfig, ivppmlhdfe
 
 res = ivppmlhdfe(
-    y,
-    exog=controls,
-    endog=endog,
-    instruments=z,
-    absorb=[firm, year],
+    df,
+    y="trade",
+    exog=["control1"],
+    endog=["endogenous_x"],
+    instruments=["z1"],
+    absorb=["firm_id", "year"],
     vce="robust",
     config=IVPPMLConfig(engine="optimized"),
 )

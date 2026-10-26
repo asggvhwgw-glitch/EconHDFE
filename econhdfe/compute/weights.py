@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import numpy as np
 from ..errors import InvalidWeightError, SpecificationError, ShapeError
+from .vcov import IID_VCE_KINDS, ROBUST_VCE_KINDS, normalize_vce
 
 
 _WEIGHT_ALIASES = {
@@ -114,8 +115,8 @@ def resolve_vce_for_weights(vce, info: WeightInfo, *, has_clusters: bool = False
     """Apply Stata's pweight => robust rule without overriding cluster/HAC VCE."""
     if vce is None:
         return "cluster" if has_clusters else ("robust" if info.force_robust else "iid")
-    kind = str(vce).lower().replace("-", "_")
-    if info.force_robust and kind in {"iid", "unadjusted", "homoskedastic"}:
+    kind = normalize_vce(vce)
+    if info.force_robust and kind in IID_VCE_KINDS:
         return "robust"
     return kind
 
@@ -130,7 +131,7 @@ def robust_score_scale(info: WeightInfo, vce_kind: str, n: int) -> np.ndarray | 
     scores are *not* adjusted because duplicates inside a cluster aggregate to
     ``w*x*e`` before the outer product.
     """
-    kind = str(vce_kind).lower().replace("-", "_")
-    if info.kind != "fweight" or kind not in {"robust", "hc1", "heteroskedastic"}:
+    kind = normalize_vce(vce_kind)
+    if info.kind != "fweight" or kind not in ROBUST_VCE_KINDS:
         return None
     return 1.0 / np.sqrt(np.asarray(info.estimation, dtype=np.float64))

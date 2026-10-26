@@ -82,12 +82,12 @@ def ivppml_spj_bootstrap(
             weights=weights, weight_type=weight_type, offset=offset, exposure=exposure,
             config=config, seed=int(rng.integers(0, 2**32 - 1)), _time_mid=time_mid, **kwargs,
         )
-        if r.names != point.names or not np.all(np.isfinite(r.coef)):
+        if r.names != point.names or not np.all(np.isfinite(r.params)):
             raise BootstrapError(
                 "bootstrap replicate changed the estimable coefficient set or returned non-finite coefficients",
                 code="resampling.invalid_draw", stage="resampling",
             )
-        return r.coef
+        return r.params
 
     batch = run_replicates(one, seeds, n_jobs=n_jobs)
     good = [np.asarray(x, dtype=np.float64) for x in batch.values]

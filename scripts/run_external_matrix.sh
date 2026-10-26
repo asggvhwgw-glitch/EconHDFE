@@ -9,7 +9,7 @@ python -m pytest -q
 TMPDIST="$(mktemp -d)"
 trap 'rm -rf "$TMPDIST"' EXIT
 python -m pip wheel . --no-deps --no-build-isolation -w "$TMPDIST"
-WHEEL="$(find "$TMPDIST" -maxdepth 1 -type f -name 'pyreghdfe-0.9.0a1-*.whl' -print -quit)"
+WHEEL="$(find "$TMPDIST" -maxdepth 1 -type f -name 'econhdfe-*.whl' -print -quit)"
 python scripts/verify_wheel_install.py "$WHEEL"
 
 if [[ "${RUN_CPU_BENCH:-1}" == "1" ]]; then

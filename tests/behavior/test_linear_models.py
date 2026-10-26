@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
-from pyreghdfe import reghdfe, ivreghdfe
+from econhdfe import reghdfe, ivreghdfe
 
 
 def test_parallel_wild_bootstrap_shape_and_reproducibility():
-    from pyreghdfe import wild_bootstrap
+    from econhdfe import wild_bootstrap
     rng=np.random.default_rng(42)
     n=1800; f=rng.integers(0,60,n); t=rng.integers(0,9,n); c=rng.integers(0,30,n)
     X=rng.normal(size=(n,2)); y=X@np.array([.5,-.25])+rng.normal(size=60)[f]+rng.normal(size=9)[t]+rng.normal(size=n)
@@ -16,7 +16,7 @@ def test_parallel_wild_bootstrap_shape_and_reproducibility():
 
 
 def test_heterogeneous_intercept_slope_matches_explicit_dummy():
-    from pyreghdfe import FixedEffect
+    from econhdfe import FixedEffect
     rng = np.random.default_rng(101)
     n = 5000
     f = rng.integers(0, 90, n); t = rng.integers(0, 12, n)
@@ -33,7 +33,7 @@ def test_heterogeneous_intercept_slope_matches_explicit_dummy():
 
 
 def test_heterogeneous_slope_only_matches_explicit_dummy():
-    from pyreghdfe import FixedEffect
+    from econhdfe import FixedEffect
     rng = np.random.default_rng(102)
     n = 3500
     f = rng.integers(0, 70, n); t = rng.integers(0, 10, n)

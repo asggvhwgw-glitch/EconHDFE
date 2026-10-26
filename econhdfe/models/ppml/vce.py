@@ -1,8 +1,12 @@
 from __future__ import annotations
 import numpy as np
-from ...compute.vcov import sandwich_vcov_xe
+from ...compute.vcov import sandwich_vcov_xe, normalize_vce, IID_VCE_KINDS
 from ...compute.clusters import normalize_vce_clusters
 from ...compute.stable_linalg import equilibrated_gram_inverse
+
+
+# PPML VCE names served by the model-based inverse Hessian.
+MODEL_VCE_KINDS = ("model", "asymptotic", *IID_VCE_KINDS)
 
 
 def _bread_streamed(X, w, *, chunk_rows=250_000):
@@ -29,8 +33,8 @@ def ppml_vcov(
     mu = np.asarray(mu, dtype=np.float64)
     tw = np.asarray(true_w, dtype=np.float64)
     bread = _bread_streamed(X, tw * mu)
-    kind0 = "model" if kind is None else str(kind).lower().replace("-", "_")
-    if kind0 in {"model", "iid", "asymptotic", "unadjusted", "homoskedastic"}:
+    kind0 = normalize_vce(kind, "model")
+    if kind0 in MODEL_VCE_KINDS:
         return bread
 
     if kind0 == "cluster":

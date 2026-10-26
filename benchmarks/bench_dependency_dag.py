@@ -7,7 +7,7 @@ if str(ROOT) not in sys.path:
 
 import time
 import numpy as np
-from pyreghdfe.design_structure import StructuralTerm, plan_structural_collinearity
+from econhdfe.design_structure import StructuralTerm, plan_structural_collinearity
 
 
 def _term(index, name, codes):
