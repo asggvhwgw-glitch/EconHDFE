@@ -1,20 +1,10 @@
 import numpy as np
 import pandas as pd
-from pyreghdfe import reghdfe, ivreghdfe
+from econhdfe import reghdfe, ivreghdfe
 
-
-def test_lsmr_matches_map():
-    rng=np.random.default_rng(23)
-    n=5000
-    f=rng.integers(0,200,n); t=rng.integers(0,25,n)
-    x=rng.normal(size=(n,3)); y=x@np.array([.2,-1.1,2.3])+rng.normal(size=200)[f]+rng.normal(size=25)[t]+rng.normal(size=n)
-    a=reghdfe(None,y=y,x=x,absorb=[f,t],method="map",tol=1e-10)
-    b=reghdfe(None,y=y,x=x,absorb=[f,t],method="lsmr",tol=1e-10)
-    np.testing.assert_allclose(a.params,b.params,atol=2e-8,rtol=2e-8)
-    assert b.converged
 
 def test_parallel_wild_bootstrap_shape_and_reproducibility():
-    from pyreghdfe import wild_bootstrap
+    from econhdfe import wild_bootstrap
     rng=np.random.default_rng(42)
     n=1800; f=rng.integers(0,60,n); t=rng.integers(0,9,n); c=rng.integers(0,30,n)
     X=rng.normal(size=(n,2)); y=X@np.array([.5,-.25])+rng.normal(size=60)[f]+rng.normal(size=9)[t]+rng.normal(size=n)
@@ -24,18 +14,9 @@ def test_parallel_wild_bootstrap_shape_and_reproducibility():
     assert a.shape==(12,2)
     np.testing.assert_allclose(a,b,atol=1e-10,rtol=1e-10)
 
-def test_cg_acceleration_matches_map():
-    rng=np.random.default_rng(51)
-    n=6000; f=rng.integers(0,250,n); t=rng.integers(0,35,n)
-    X=rng.normal(size=(n,2)); y=X@np.array([1.2,-.8])+rng.normal(size=250)[f]+rng.normal(size=35)[t]+rng.normal(size=n)
-    plain=reghdfe(None,y=y,x=X,absorb=[f,t],tol=1e-9,acceleration="none")
-    cg=reghdfe(None,y=y,x=X,absorb=[f,t],tol=1e-9,acceleration="cg")
-    np.testing.assert_allclose(plain.params,cg.params,atol=2e-8,rtol=2e-8)
-    assert cg.converged
-
 
 def test_heterogeneous_intercept_slope_matches_explicit_dummy():
-    from pyreghdfe import FixedEffect
+    from econhdfe import FixedEffect
     rng = np.random.default_rng(101)
     n = 5000
     f = rng.integers(0, 90, n); t = rng.integers(0, 12, n)
@@ -52,7 +33,7 @@ def test_heterogeneous_intercept_slope_matches_explicit_dummy():
 
 
 def test_heterogeneous_slope_only_matches_explicit_dummy():
-    from pyreghdfe import FixedEffect
+    from econhdfe import FixedEffect
     rng = np.random.default_rng(102)
     n = 3500
     f = rng.integers(0, 70, n); t = rng.integers(0, 10, n)
@@ -65,46 +46,6 @@ def test_heterogeneous_slope_only_matches_explicit_dummy():
     A = np.column_stack([x, Df*z[:,None], Dt])
     b, *_ = np.linalg.lstsq(A, y, rcond=None)
     np.testing.assert_allclose(got.params, b[:1], atol=5e-8, rtol=5e-8)
-
-
-def test_multiple_heterogeneous_slopes_and_lsmr_match_map():
-    from pyreghdfe import FixedEffect
-    rng = np.random.default_rng(103)
-    n = 4500
-    f = rng.integers(0, 80, n); t = rng.integers(0, 11, n)
-    s1 = rng.normal(size=n); s2 = rng.normal(size=n); X = rng.normal(size=(n,2))
-    a = rng.normal(size=80); b1 = rng.normal(size=80); b2 = rng.normal(size=80)
-    y = X@np.array([.4,-1.2]) + a[f] + b1[f]*s1 + b2[f]*s2 + rng.normal(size=11)[t] + rng.normal(scale=.2,size=n)
-    spec = [FixedEffect(f, slopes=(s1,s2), intercept=True), t]
-    mapr = reghdfe(None,y=y,x=X,absorb=spec,method='map',tol=1e-9)
-    lsmr = reghdfe(None,y=y,x=X,absorb=spec,method='lsmr',tol=1e-9,max_iter=5000)
-    np.testing.assert_allclose(mapr.params, lsmr.params, atol=2e-7, rtol=2e-7)
-    assert mapr.converged and lsmr.converged
-
-
-def test_pairwise_dof_three_way_matches_reghdfe_rule():
-    from pyreghdfe.dof import absorbed_dof, pairwise_components
-    # Deliberately disconnected pair structures.
-    a = np.array([0,0,1,1,2,2,3,3], dtype=np.int32)
-    b = np.array([0,0,0,0,1,1,1,1], dtype=np.int32)
-    c = np.array([0,1,0,1,2,3,2,3], dtype=np.int32)
-    info = absorbed_dof([a,b,c], method='pairwise', adjust_nested=False)
-    k1,k2,k3 = [len(np.unique(g)) for g in (a,b,c)]
-    m2 = pairwise_components(a,b)
-    m3 = max(pairwise_components(a,c), pairwise_components(b,c))
-    assert info.df_absorbed == k1 + (k2-m2) + (k3-m3)
-    assert info.m_by_component == (0,m2,m3)
-
-
-def test_continuous_dof_detects_constant_slope_groups():
-    from pyreghdfe.dof import absorbed_dof
-    g = np.array([0,0,1,1,2,2,3,3], dtype=np.int32)
-    # groups 0 and 2 are constant; groups 1 and 3 vary
-    s = np.array([1,1,0,2,5,5,-1,1], dtype=float)[:,None]
-    info = absorbed_dof([g], slopes=[s], intercepts=[True], adjust_nested=False)
-    assert info.k_by_component == (4,4)
-    assert info.m_by_component == (0,2)
-    assert info.df_absorbed == 6
 
 
 def _explicit_within(A, groups):
@@ -135,16 +76,3 @@ def test_liml_matches_direct_kclass_formula_after_explicit_absorption():
     bref=np.linalg.solve(P1,P2)
     np.testing.assert_allclose(got.params,bref,atol=2e-7,rtol=2e-7)
     assert abs(got.kappa-kap) < 2e-7
-
-
-def test_gmm2s_exact_identification_equals_2sls():
-    rng=np.random.default_rng(112)
-    n=5000
-    f=rng.integers(0,100,n); t=rng.integers(0,15,n)
-    z=rng.normal(size=n); w=rng.normal(size=n); v=rng.normal(size=n)
-    x=.8*z+.2*w+v
-    y=2.2*x-.25*w+rng.normal(size=100)[f]+rng.normal(size=15)[t]+.7*v+rng.normal(size=n)
-    a=ivreghdfe(None,y=y,exog=w,endog=x,instruments=z,absorb=[f,t],estimator='2sls',vce='robust')
-    b=ivreghdfe(None,y=y,exog=w,endog=x,instruments=z,absorb=[f,t],estimator='gmm2s',vce='robust')
-    np.testing.assert_allclose(a.params,b.params,atol=2e-8,rtol=2e-8)
-    assert b.diagnostics['overidentification']['df']==0

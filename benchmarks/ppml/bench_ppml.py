@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from pyreghdfe import PPMLConfig, ppmlhdfe
+from econhdfe import PPMLConfig, ppmlhdfe
 
 
 def _draw_y(rng, eta):
@@ -76,7 +76,7 @@ def run_one(scenario, n, engine, seed):
     y, X, absorb, names = SCENARIOS[scenario](n, seed)
     cfg = PPMLConfig(engine=engine, separation=(), max_iter=200)
     t0 = time.perf_counter()
-    result = ppmlhdfe(y, X, absorb=absorb, names=names, config=cfg, vce="robust")
+    result = ppmlhdfe(y=y, x=X, absorb=absorb, names=names, config=cfg, vce="robust")
     elapsed = time.perf_counter() - t0
     rss_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     return {
@@ -87,7 +87,7 @@ def run_one(scenario, n, engine, seed):
         "seconds": elapsed,
         "iterations": int(result.iterations),
         "peak_rss_mb_process": float(rss_kb / 1024.0),
-        "coef": result.coef.tolist(),
+        "coef": result.params.tolist(),
         "canonicalization": result.diagnostics.get("canonicalization", {}),
     }
 

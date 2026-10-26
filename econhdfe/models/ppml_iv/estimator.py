@@ -1,4 +1,5 @@
 from __future__ import annotations
+from ...planner.scheduler import managed_execution
 from ...compute.clusters import normalize_vce_clusters
 import math
 import numpy as np
@@ -10,7 +11,7 @@ from ...compute.linalg import independent_columns
 from ...hdfe.plan import FEPlan
 from ...iv.moments import additive_moments
 from ...iv.solve import weighted_2sls
-from ..ppml.separation import detect_separation
+from ..ppml.separation import detect_separation, initial_sample_mask
 from ..ppml.execution import resolve_execution, get_projector
 from .config import IVPPMLConfig
 from .irls import fit_iv_irls
@@ -71,6 +72,7 @@ def _prune_iv_columns(C, E, I, names_c, names_e, names_i, plan, weights, config,
     return C, E, I, names_c, names_e, names_i
 
 
+@managed_execution
 def fit_arrays(
     y, exog, endog, instruments, plan: FEPlan, *, offset, true_w, weight_kind="none", vce,
     clusters, exog_names, endog_names, instrument_names, config: IVPPMLConfig,
@@ -88,10 +90,13 @@ def fit_arrays(
 
     # No-FE IV-PPML is represented by a single constant FE, matching upstream
     # noabsorb semantics and keeping the IRLS-IV slope system intercept-free.
+    # ivppmlhdfe first stage: fixed_effects(..., "iweight", depvar) when
+    # separation includes "fe" -- singletons by row count (user weights never
+    # enter) pruned jointly with FE separation; all counted as singletons.
+    singleton, n_fe_separated = initial_sample_mask(y, plan, config)
     if not plan.groups:
         plan = FEPlan.from_arrays([np.zeros(n, dtype=np.int8)])
-
-    singleton = plan.singleton_mask()
+        singleton = plan.singleton_mask()
     active0 = ~singleton
     if not np.any(active0):
         raise InputError(
@@ -115,8 +120,14 @@ def fit_arrays(
         p0, w0, config, projector=pre_projector,
     )
     X0 = np.column_stack([C0, E0])
-    sep = detect_separation(y0, X0, p0, w0, config, execution)
-    keep_sep = ~sep.separated
+    sep = detect_separation(
+        y0, X0, p0, w0, config, execution, frequency_weights=(weight_kind == "fweight"),
+    )
+    if "fe" in sep.by_method:
+        sep.by_method["fe"] = n_fe_separated
+    # Upstream re-prunes singletons after simplex/ReLU trims (fweight mass for
+    # fweights) and counts them in num_separated (num_sep_advanced).
+    keep_sep = ~(sep.separated | sep.singletons)
     if not np.any(keep_sep) or not np.any(y0[keep_sep] > 0):
         raise InputError(
             "PPML has no finite estimable sample after separation",
@@ -131,16 +142,20 @@ def fit_arrays(
         )
 
     separation = np.zeros(n, dtype=bool)
-    if np.any(sep.separated):
+    if not np.all(keep_sep):
         idx0 = np.flatnonzero(active0)
         sample = np.zeros(n, dtype=bool)
         sample[idx0[keep_sep]] = True
-        separation[idx0[sep.separated]] = True
+        separation[idx0[~keep_sep]] = True
         y1, C1, E1, I1, w1, off1 = y0[keep_sep], C0[keep_sep], E0[keep_sep], I0[keep_sep], w0[keep_sep], off0[keep_sep]
         p1 = p0.subset(keep_sep)
+        pre_projector = get_projector(
+            p1, engine=config.engine, method="map", execution=execution,
+            context=exec_context, cache=False,
+        )
         C1, E1, I1, exog_names, endog_names, instrument_names = _prune_iv_columns(
             C1, E1, I1, exog_names, endog_names, instrument_names,
-            p1, w1, config,
+            p1, w1, config, projector=pre_projector,
         )
     else:
         sample = active0.copy()
@@ -153,9 +168,9 @@ def fit_arrays(
     Cs, Es = Xs[:, :kc], Xs[:, kc:]
 
     solver_plan, canonicalization = p1.for_engine(config.engine)
-    projector = get_projector(
+    projector = pre_projector if solver_plan is p1 else get_projector(
         solver_plan, engine=config.engine, method="map", execution=execution,
-        context=exec_context, cache=not bool(np.any(sep.separated)),
+        context=exec_context, cache=bool(np.all(keep_sep)),
     )
     initial_eta = None
     if warm_start is not None:

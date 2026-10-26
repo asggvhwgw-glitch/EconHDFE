@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from functools import wraps
 from dataclasses import asdict, dataclass, field
 import hashlib
 from time import perf_counter
@@ -10,6 +11,9 @@ import numpy as np
 import pandas as pd
 
 from .config import ExecutionConfig, HDFEConfig, InferenceConfig
+from .planner.scheduler import managed_execution, current_allocation, reserve_memory
+from .planner.resources import runtime_resources
+from .compute.cache_accounting import retained_array_bytes
 from .data.dataset import EncodedEconometricDataset, prepare_repeated_dataset
 from .data.persistent import PersistentSessionStore
 from .data.source import DataSource, as_data_source
@@ -18,33 +22,41 @@ from .errors import SpecificationError, error_boundary
 from .frontend.roles import VariableRole
 from .frontend.validate import require_numeric
 from .compute.weights import normalize_weight_type, prepare_weights, resolve_vce_for_weights
+from .hdfe.absorb_spec import absorb_columns, is_column_interaction
 from .hdfe.dof import absorbed_dof
 from .hdfe.factorvars import compile_absorb_factor_variable
 from .hdfe.specs import Interaction
 from .factorvars import FactorVariableExpression
-from .models.ols import _fit_ols
-from .models.linear_iv.estimators import fit_iv_gmm2s, fit_iv_kclass
-from .pipeline import (
-    _absorb_metadata,
-    _check_absorption,
-    _check_collinearity_mode,
-    _cluster_arrays,
-    _collinearity_metadata,
-    _make_standard_absorber,
-    _prepare_standard_fe_structure,
-    _resolve_acceleration,
-    _resolve_iv_columns,
-    _resolve_method,
-    _resolve_ols_columns,
-    _resolve_pool_size,
-    _residualize_blocks,
+from .models.ols import fit_ols_in_basis
+from .models.linear import (
+    IV_DESIGN_ROLES, linear_result, prediction_state, reporting_options, resolve_config_scalar,
+    signature_defaults,
 )
-from .reporting import (
-    cluster_counts as _cluster_counts, reghdfe_model_statistics, reghdfe_r2_statistics,
-    ivreghdfe_model_statistics,
+from .compute.stable_linalg import _absorption_basis
+from .collinearity import _weighted_gram
+from .models.linear_iv.estimators import fit_iv_gmm2s, fit_iv_kclass
+from .models.linear_iv.stages import bind_callback, completed, validate_callback
+from .pipeline import (
+    StandardFEStructure,
+    absorb_metadata,
+    check_absorption,
+    check_collinearity_mode,
+    cluster_arrays,
+    collinearity_metadata,
+    conditioning_info,
+    make_standard_absorber,
+    prepare_standard_fe_structure,
+    resolve_acceleration,
+    resolve_iv_columns,
+    resolve_method,
+    resolve_ols_columns,
+    resolve_pool_size,
+    residualize_blocks,
+    residualize_in_basis,
+    standard_dof,
 )
 from .results import RegressionResult
-from .prediction import SampleExclusionState, named_design_state, linear_prediction_state
+from .prediction import SampleExclusionState, named_design_state
 
 
 def _as_tuple(value) -> tuple:
@@ -72,7 +84,7 @@ def _normalize_absorb(absorb) -> tuple:
                     )
                 if isinstance(spec.group, str):
                     out.append(spec.group)
-                elif isinstance(spec.group, Interaction) and all(isinstance(x, str) for x in spec.group.parts):
+                elif isinstance(spec.group, Interaction) and is_column_interaction(spec.group.parts):
                     out.append(tuple(spec.group.parts))
                 else:
                     raise SpecificationError(
@@ -83,7 +95,7 @@ def _normalize_absorb(absorb) -> tuple:
                     )
         elif isinstance(term, str):
             out.append(term)
-        elif isinstance(term, (tuple, list)) and len(term) >= 2 and all(isinstance(x, str) for x in term):
+        elif is_column_interaction(term):
             out.append(tuple(term))
         else:
             raise SpecificationError(
@@ -91,26 +103,6 @@ def _normalize_absorb(absorb) -> tuple:
                 "use olshdfe()/ivhdfe() directly for slope FEs or array-valued FE specifications"
             )
     return tuple(out)
-
-
-def _hash_frame_columns(data: pd.DataFrame, columns: Sequence[str]) -> str:
-    h = hashlib.blake2b(digest_size=16)
-    h.update(np.asarray([len(data)], dtype=np.int64).tobytes())
-    cols = tuple(dict.fromkeys(columns))
-    if cols:
-        vals = pd.util.hash_pandas_object(data[list(cols)], index=True).to_numpy(dtype=np.uint64, copy=False)
-        h.update(np.ascontiguousarray(vals).view(np.uint8))
-    return h.hexdigest()
-
-
-def _absorb_columns(absorb: tuple) -> tuple[str, ...]:
-    cols: list[str] = []
-    for term in absorb:
-        parts = (term,) if isinstance(term, str) else tuple(term)
-        for c in parts:
-            if c not in cols:
-                cols.append(c)
-    return tuple(cols)
 
 
 @dataclass(frozen=True, slots=True)
@@ -178,14 +170,7 @@ class IVSpec:
 @dataclass(slots=True)
 class _FECacheEntry:
     absorb: tuple
-    mask: np.ndarray
-    dropped: int
-    groups: list[np.ndarray]
-    slopes: list[np.ndarray | None]
-    intercepts: list[bool]
-    fe_names: list[str]
-    fe_plan: object
-    inference_fe: object
+    fe: StandardFEStructure
     absorber: object
     weights: np.ndarray | None
     winfo: object
@@ -194,6 +179,8 @@ class _FECacheEntry:
     solver_selection: dict
     pool_size: int | str
     memory_budget_mb: int
+    execution_threads: int | str
+    execution_auto_threads: bool
     source_signature: str | None
     within: dict[str, np.ndarray] = field(default_factory=dict)
     raw_active: dict[str, np.ndarray] = field(default_factory=dict)
@@ -203,6 +190,27 @@ class _FECacheEntry:
     residualized_columns: int = 0
 
 
+def _session_cache_policy(method):
+    """Keep temporary reuse inside one call, but retain nothing with cache off."""
+    @wraps(method)
+    def wrapped(self, *args, **kwargs):
+        if self.execution.cache != "off":
+            self._trim_cache()
+            try:
+                return method(self, *args, **kwargs)
+            finally:
+                self._trim_cache()
+        self.clear_cache()
+        store = self._persistent_store
+        self._persistent_store = None
+        try:
+            return method(self, *args, **kwargs)
+        finally:
+            self.clear_cache()
+            self._persistent_store = store
+    return wrapped
+
+
 class _LinearHDFESessionBase:
     """Shared repeated-spec execution cache for linear HDFE estimators.
 
@@ -210,6 +218,12 @@ class _LinearHDFESessionBase:
     different FE/sample signatures. Adding or removing an FE therefore creates
     (or reuses) a distinct compiled FE entry rather than applying an invalid
     sequential-projection shortcut.
+
+    ``vce`` and ``InferenceConfig.vce`` follow the estimator precedence rule:
+    a value equal to its default counts as unset, the set side wins, and two
+    different set values raise ``SpecificationError``
+    (``code="specification.config_conflict"``) at construction. All other
+    numerical and execution choices come from the config objects.
     """
 
     def __init__(
@@ -261,15 +275,21 @@ class _LinearHDFESessionBase:
         self.inference = inference_config or InferenceConfig(vce=vce)
         self.execution = execution_config or ExecutionConfig()
         self.hdfe.validate(); self.inference.validate(); self.execution.validate()
-        self.collinearity = _check_collinearity_mode(collinearity)
+        # ``vce`` is the only constructor scalar backed by a config field.
+        resolve_config_scalar(self.inference, "vce", "vce", vce, _SESSION_DEFAULTS["vce"])
+        self.collinearity = check_collinearity_mode(collinearity)
         self.collinear_tol = float(collinear_tol)
         self._entries: dict[tuple, _FECacheEntry] = {}
         self._component_cache: dict = {}
-        self._prime_component_cache()
+        if self.execution.cache != "off":
+            self._prime_component_cache()
         self._raw_full: dict[str, np.ndarray] = {}
         self._raw_signatures: dict[str, str] = {}
         self._hits = 0
         self._misses = 0
+        self._cache_evictions = 0
+        self._cache_released_bytes = 0
+        self._cache_budget_last = 0
         self._validation_round: dict[str, str] = {}
 
     def enable_persistent_cache(self, root, *, source_validation: str = "strict") -> "_LinearHDFESessionBase":
@@ -278,6 +298,8 @@ class _LinearHDFESessionBase:
         The on-disk cache is never part of estimator semantics. Deleting it can
         only remove reuse. The method leaves constructor/public estimator
         signatures unchanged while this feature is validated experimentally.
+        ExecutionConfig(cache="off") takes precedence: calls neither read nor
+        write this store, and discard their temporary in-memory caches.
         """
         self._persistent_store = PersistentSessionStore(root, source_validation=source_validation)
         return self
@@ -377,14 +399,81 @@ class _LinearHDFESessionBase:
     def clear_cache(self) -> None:
         self._entries.clear()
         self._component_cache.clear()
-        self._prime_component_cache()
+        if self.execution.cache != "off":
+            self._prime_component_cache()
         self._raw_full.clear()
         self._raw_signatures.clear()
         self._validation_round.clear()
         self._hits = self._misses = 0
 
+    def _cache_bytes(self) -> int:
+        return retained_array_bytes(
+            (self._entries, self._component_cache, self._raw_full),
+            (self.data, self.weights_spec, self.cluster_spec),
+        )
+
+    def _cache_limit_bytes(self) -> int:
+        allocation = current_allocation()
+        if allocation is not None:
+            budget = allocation.memory_budget_bytes
+            available = allocation.unreserved_memory_bytes()
+        else:
+            resources = runtime_resources()
+            available = None if (resources.memory_limit_bytes is None or
+                                 resources.memory_current_bytes is None) else max(
+                0, resources.memory_limit_bytes - resources.memory_current_bytes
+                - int(resources.memory_limit_bytes * 0.12))
+            requested = self.execution.memory_budget_mb
+            budget = available if requested == "auto" else int(float(requested) * 1024**2)
+        # Retained, rebuildable caches use at most a quarter of the envelope,
+        # leaving room for the next design and its numerical workspaces.
+        limit = 0 if budget is None else budget // 4
+        if available is not None:
+            limit = 0 if available < 32 * 1024**2 else min(limit, available // 4)
+        return max(0, int(limit))
+
+    def _trim_cache(self, *, pending_bytes=0, protect=None) -> None:
+        limit = self._cache_limit_bytes()
+        self._cache_budget_last = limit
+        target = max(0, limit - int(pending_bytes))
+        before = self._cache_bytes()
+        if before <= target:
+            return
+        # Global lookup arrays are reconstructible; active entries hold their
+        # own references. Never alter an entry currently used by the caller.
+        self._component_cache.clear()
+        self._prune_raw_cache()
+        for key in tuple(self._entries):
+            if self._cache_bytes() <= target:
+                break
+            if self._entries[key] is protect:
+                continue
+            del self._entries[key]
+            self._prune_raw_cache()
+            self._cache_evictions += 1
+        self._cache_released_bytes += max(0, before - self._cache_bytes())
+
+    def _prune_raw_cache(self) -> None:
+        needed = {name for entry in self._entries.values()
+                  for name in (*entry.raw_active, *entry.within)}
+        for name in tuple(self._raw_full):
+            if name not in needed:
+                self._raw_full.pop(name, None)
+                self._raw_signatures.pop(name, None)
+
+    def _prepare_resource_admission(self) -> None:
+        """Called under scheduler admission lock, before resolving headroom."""
+        if self.execution.cache == "off":
+            self.clear_cache()
+        else:
+            self._trim_cache()
+
     def cache_info(self) -> dict:
         out = {
+            "retained_bytes": self._cache_bytes(),
+            "cache_budget_bytes": self._cache_budget_last,
+            "evictions": self._cache_evictions,
+            "released_bytes_estimate": self._cache_released_bytes,
             "fe_entries": len(self._entries),
             "hits": self._hits,
             "misses": self._misses,
@@ -430,7 +519,7 @@ class _LinearHDFESessionBase:
         source_sig = entry.source_signature
         if source_sig is None:
             source_sig = self._source_signature(self._entry_source_columns(entry.absorb))
-        mask_sig = self._hash_numeric_array(np.asarray(entry.mask, dtype=np.uint8))
+        mask_sig = self._hash_numeric_array(np.asarray(entry.fe.mask, dtype=np.uint8))
         payload = {
             "absorb": entry.absorb,
             "source_signature": source_sig,
@@ -439,7 +528,6 @@ class _LinearHDFESessionBase:
             "weight_type": self.weight_type,
             "drop_singletons": self.drop_singletons,
             "hdfe": asdict(self.hdfe),
-            "memory_budget_mb": self.execution.memory_budget_mb,
         }
         return self._persistent_store.within_signature(entry_payload=payload)
 
@@ -455,7 +543,8 @@ class _LinearHDFESessionBase:
         # A completed-result key is independent of the physical FE solver
         # object. Exact source/column signatures plus the full econometric and
         # numerical configuration determine the result, so a cache hit can be
-        # returned before rebuilding FE topology.
+        # returned before rebuilding FE topology. Resource budgets are excluded:
+        # live host headroom changes execution plans, not the mathematical result.
         source_names = list(names)
         source_names.extend(self._entry_source_columns(getattr(spec, "absorb", ())))
         variables = {name: self._column_signature(name) for name in dict.fromkeys(source_names)}
@@ -470,7 +559,6 @@ class _LinearHDFESessionBase:
             "drop_singletons": self.drop_singletons,
             "hdfe": asdict(self.hdfe),
             "inference": asdict(self.inference),
-            "memory_budget_mb": self.execution.memory_budget_mb,
             "collinearity": self.collinearity,
             "collinear_tol": self.collinear_tol,
             "extra": dict(extra or {}),
@@ -514,7 +602,7 @@ class _LinearHDFESessionBase:
         return absorb
 
     def _entry_source_columns(self, absorb: tuple) -> tuple[str, ...]:
-        cols = list(_absorb_columns(absorb))
+        cols = list(absorb_columns(absorb))
         if isinstance(self.weights_spec, str) and self.weights_spec not in cols:
             cols.append(self.weights_spec)
         cluster = self.cluster_spec
@@ -532,11 +620,28 @@ class _LinearHDFESessionBase:
     def _get_entry(self, absorb) -> _FECacheEntry:
         absorb = _normalize_absorb(absorb)
         key = self._entry_key(absorb)
+        allocation = current_allocation()
+        auto_threads = bool(allocation is not None and allocation.auto_threads)
+        self._trim_cache(protect=self._entries.get(key))
         validate = self.execution.cache_validation == "signature"
         source_cols = self._entry_source_columns(absorb)
         source_sig = self._source_signature(source_cols) if validate else None
         hit = self._entries.get(key)
         if hit is not None and (not validate or hit.source_signature == source_sig):
+            # Within columns depend on the model, but compiled scratch/index
+            # plans must follow this call's newly resolved resource allocation.
+            if (hit.memory_budget_mb != self.execution.memory_budget_mb
+                    or hit.execution_threads != self.execution.threads
+                    or hit.execution_auto_threads != auto_threads):
+                if hit.absorber is not None:
+                    hit.absorber = self._make_absorber(
+                        hit.fe, hit.weights, hit.solver_selection["resolved"],
+                    )
+                hit.memory_budget_mb = self.execution.memory_budget_mb
+                hit.execution_threads = self.execution.threads
+                hit.execution_auto_threads = auto_threads
+            self._entries.pop(key)
+            self._entries[key] = hit
             self._hits += 1
             return hit
         if hit is not None:
@@ -552,7 +657,7 @@ class _LinearHDFESessionBase:
         wkind = normalize_weight_type(self.weight_type, has_weights=w0 is not None)
         _ = prepare_weights(w0, len(self.data), wkind)
         if absorb:
-            groups, slopes, intercepts, fe_names, fe_plan, mask, dropped, inference_fe = _prepare_standard_fe_structure(
+            fe = prepare_standard_fe_structure(
                 self.data, absorb,
                 canonicalize_fe=self.hdfe.canonicalize,
                 drop_singletons=self.drop_singletons,
@@ -560,53 +665,62 @@ class _LinearHDFESessionBase:
                 weight_kind=wkind,
                 component_cache=self._component_cache,
             )
-            method, solver_selection = _resolve_method(
-                self.hdfe.solver, groups, slopes, intercepts, backend="numpy"
+            method, solver_selection = resolve_method(
+                self.hdfe.solver, fe.groups, fe.slopes, fe.intercepts, backend="numpy"
             )
-            acceleration = _resolve_acceleration(method, "auto")
-            all_kept = dropped == 0 and bool(np.all(mask))
-            w_active = w0 if (w0 is not None and all_kept) else (None if w0 is None else w0[mask])
-            winfo = prepare_weights(w_active, int(np.sum(mask)), wkind)
-            absorber = _make_standard_absorber(
-                groups, slopes, intercepts,
-                weights=winfo.estimation,
-                tol=self.hdfe.tolerance,
-                max_iter=self.hdfe.max_iter,
-                backend="numpy",
-                method=method,
-                transform="symmetric",
-                acceleration=acceleration,
-                preconditioner="diagonal",
-                projection_backend="auto",
-                absorb_threads=self.execution.threads,
-                memory_budget_mb=self.execution.memory_budget_mb,
-            )
-            clusters = _cluster_arrays(self.data, self.cluster_spec, mask)
-            dof = absorbed_dof(
-                inference_fe.groups, slopes=inference_fe.slopes, intercepts=inference_fe.intercepts,
-                clusters=clusters, method=self.hdfe.dof_method, adjust_nested=bool(clusters),
-                adjust_continuous=True, groups_are_dense=True,
-            )
+            winfo = prepare_weights(None if w0 is None else fe.active(w0), int(np.sum(fe.mask)), wkind)
+            absorber = self._make_absorber(fe, winfo.estimation, method)
+            clusters = cluster_arrays(self.data, self.cluster_spec, fe.mask)
+            dof = standard_dof(fe, clusters, self.hdfe.dof_method)
         else:
-            groups, slopes, intercepts, fe_names = [], [], [], []
-            fe_plan, inference_fe = None, None
-            mask = np.ones(len(self.data), dtype=bool); dropped = 0
-            method = "none"; solver_selection = {"requested": self.hdfe.solver, "resolved": "none", "reason": "no_fixed_effects"}
+            fe = StandardFEStructure([], [], [], [], None, np.ones(len(self.data), dtype=bool), 0, None)
+            solver_selection = {"requested": self.hdfe.solver, "resolved": "none", "reason": "no_fixed_effects"}
             winfo = prepare_weights(w0, len(self.data), wkind)
             absorber = None
-            clusters = _cluster_arrays(self.data, self.cluster_spec, mask)
+            clusters = cluster_arrays(self.data, self.cluster_spec, fe.mask)
             dof = absorbed_dof([], clusters=clusters, method=self.hdfe.dof_method, groups_are_dense=True)
         entry = _FECacheEntry(
-            absorb=absorb, mask=np.asarray(mask, dtype=bool), dropped=int(dropped),
-            groups=groups, slopes=slopes, intercepts=intercepts, fe_names=fe_names,
-            fe_plan=fe_plan, inference_fe=inference_fe, absorber=absorber,
+            absorb=absorb, fe=fe, absorber=absorber,
             weights=winfo.estimation, winfo=winfo, clusters=clusters, dof=dof,
             solver_selection=solver_selection, pool_size="auto",
             memory_budget_mb=self.execution.memory_budget_mb,
+            execution_threads=self.execution.threads,
+            execution_auto_threads=auto_threads,
             source_signature=source_sig,
         )
         self._entries[key] = entry
         return entry
+
+    def _make_absorber(self, fe, weights, method):
+        return make_standard_absorber(
+            fe.groups, fe.slopes, fe.intercepts,
+            weights=weights,
+            tol=self.hdfe.tolerance,
+            max_iter=self.hdfe.max_iter,
+            backend="numpy",
+            method=method,
+            transform="symmetric",
+            acceleration=resolve_acceleration(method, "auto"),
+            preconditioner="diagonal",
+            projection_backend="auto",
+            absorb_threads=self.execution.threads,
+            memory_budget_mb=self.execution.memory_budget_mb,
+        )
+
+    def _active_numeric(self, entry, full):
+        if bool(np.all(entry.fe.mask)):
+            return full
+        pending = int(np.sum(entry.fe.mask)) * int(full.dtype.itemsize)
+        self._trim_cache(pending_bytes=pending, protect=entry)
+        with reserve_memory(pending, label="session active column"):
+            return full[entry.fe.mask]
+
+    def _stack_columns(self, entry, columns):
+        nrows = int(np.sum(entry.fe.mask))
+        pending = nrows * len(columns) * 8
+        self._trim_cache(pending_bytes=pending, protect=entry)
+        with reserve_memory(pending, label="session dense design"):
+            return np.column_stack(columns) if columns else np.empty((nrows, 0))
 
     def _ensure_within(self, entry: _FECacheEntry, columns: Iterable[str]) -> None:
         cols = tuple(dict.fromkeys(map(str, columns)))
@@ -620,10 +734,13 @@ class _LinearHDFESessionBase:
                 sig = self._column_signature(name)
             if name in entry.within and (not validate or entry.variable_signatures.get(name) == sig):
                 continue
-            raw = full if bool(np.all(entry.mask)) else full[entry.mask]
+            raw = self._active_numeric(entry, full)
             entry.raw_active[name] = raw
             if self._persistent_store is not None and entry_sig is not None and sig is not None:
-                cached = self._persistent_store.load_within(entry_sig, name, sig, len(raw))
+                pending = len(raw) * 8
+                self._trim_cache(pending_bytes=pending, protect=entry)
+                with reserve_memory(pending, label="session persistent within column"):
+                    cached = self._persistent_store.load_within(entry_sig, name, sig, len(raw))
                 if cached is not None:
                     entry.within[name] = cached
                     entry.variable_signatures[name] = sig
@@ -631,38 +748,114 @@ class _LinearHDFESessionBase:
             missing.append(name)
         if not missing:
             return
-        block = np.column_stack([entry.raw_active[n] for n in missing])
-        if entry.absorber is None:
-            within, info = block.copy(), None
-        else:
-            within, info = _residualize_blocks(
-                entry.absorber, block, entry.pool_size, entry.memory_budget_mb,
-                adaptive_auto=(self.hdfe.solver == "auto"),
-            )
-            _check_absorption(info, allow_nonconverged=False)
-        entry.last_info = info
-        entry.residualize_calls += 1
-        entry.residualized_columns += len(missing)
-        for j, name in enumerate(missing):
-            entry.within[name] = within[:, j].copy()
-            sig = self._column_signature(name) if self._persistent_store is not None else self._raw_signatures.get(name)
-            if self.execution.cache_validation == "signature" or self._persistent_store is not None:
-                entry.variable_signatures[name] = sig
-            if self._persistent_store is not None and entry_sig is not None and sig is not None:
-                self._persistent_store.save_within(entry_sig, name, sig, entry.within[name])
+        pending = int(np.sum(entry.fe.mask)) * len(missing) * 8 * 3
+        self._trim_cache(pending_bytes=pending, protect=entry)
+        with reserve_memory(pending, label="session within block and retained columns"):
+            block = np.column_stack([entry.raw_active[n] for n in missing])
+            if entry.absorber is None:
+                within, info = block.copy(), None
+            else:
+                within, info = residualize_blocks(
+                    entry.absorber, block, entry.pool_size, entry.memory_budget_mb,
+                    adaptive_auto=(self.hdfe.solver == "auto"),
+                )
+                check_absorption(info, allow_nonconverged=False)
+            entry.last_info = info
+            entry.residualize_calls += 1
+            entry.residualized_columns += len(missing)
+            for j, name in enumerate(missing):
+                entry.within[name] = within[:, j].copy()
+                sig = self._column_signature(name) if self._persistent_store is not None else self._raw_signatures.get(name)
+                if self.execution.cache_validation == "signature" or self._persistent_store is not None:
+                    entry.variable_signatures[name] = sig
+                if self._persistent_store is not None and entry_sig is not None and sig is not None:
+                    self._persistent_store.save_within(entry_sig, name, sig, entry.within[name])
 
     @error_boundary("session")
+    @managed_execution
+    @_session_cache_policy
     def prewarm(self, *, absorb, columns: Sequence[str]) -> None:
         self._ensure_source_specs([{"x": tuple(columns), "absorb": absorb}])
         self._start_validation_round()
         entry = self._get_entry(absorb)
         self._ensure_within(entry, columns)
 
+    def _cached_and_grouped(self, parsed):
+        """Persistent completed-result hits by position; remaining specs grouped by FE set."""
+        cached: dict[int, RegressionResult] = {}
+        if self._persistent_store is not None and self.execution.profile == "off":
+            for i, spec in enumerate(parsed):
+                key = self._result_key(spec)
+                if key is not None:
+                    hit = self._persistent_store.load_result(key)
+                    if hit is not None:
+                        cached[i] = hit
+        grouped: dict[tuple, list] = defaultdict(list)
+        for i, spec in enumerate(parsed):
+            if i not in cached:
+                grouped[spec.absorb].append(spec)
+        return cached, grouped
+
+    # Result assembly shared by the OLS and IV sessions; the estimator-specific
+    # parts are passed through to ``linear_result``.
+    def _vce_kind(self, entry):
+        return resolve_vce_for_weights(
+            self.inference.vce if self.inference.vce is not None else self.vce,
+            entry.winfo, has_clusters=bool(entry.clusters),
+        )
+
+    def _absorb_info(self, entry, info, ncols):
+        if info is None:
+            return None
+        return absorb_metadata(
+            entry.fe.plan, entry.absorber, info,
+            resolve_pool_size(entry.absorber, max(ncols, 1), "auto", entry.memory_budget_mb),
+            solver_selection=entry.solver_selection,
+        )
+
+    def _prediction_state(self, entry, estimator, names, roles, designs):
+        fe = entry.fe
+        sample_history = (
+            SampleExclusionState("hdfe", "singleton_pruning", fe.dropped, int(np.sum(fe.mask))),
+        ) if fe.dropped else ()
+        return prediction_state(
+            estimator, names, roles, designs, fe, sample_mask=fe.mask, sample_history=sample_history,
+        )
+
+    def _result(self, entry, info, beta, V, resid, **fields):
+        return linear_result(
+            beta, V, resid, dof=entry.dof, winfo=entry.winfo, clusters=entry.clusters,
+            has_intercept=bool(any(entry.fe.intercepts)),
+            converged=True if info is None else bool(info.converged),
+            iterations=0 if info is None else int(info.iterations),
+            dropped_singletons=entry.fe.dropped, fe_names=tuple(entry.fe.names),
+            **reporting_options(self.inference), **fields,
+        )
+
+    def _finish(self, result, entry, started, result_key):
+        if self.execution.profile != "off":
+            result.profile = {
+                "total_seconds": perf_counter() - started,
+                "mode": self.execution.profile,
+                "repeated_spec": True,
+                "fe_cache_entries": len(self._entries),
+                "within_cache_columns": len(entry.within),
+            }
+        if result_key is not None:
+            self._persistent_store.save_result(result_key, result)
+        return result
+
+
+# Signature default of the config-backed constructor scalar (``vce``).
+_SESSION_DEFAULTS = signature_defaults(_LinearHDFESessionBase.__init__, ("vce",))
+
 
 class OLSHDFESession(_LinearHDFESessionBase):
     """Repeated OLS-HDFE specifications with exact FE/sample-aware caching."""
 
     @error_boundary("session")
+    @managed_execution
+    @_session_cache_policy
     def fit(self, *, y: str, x=(), absorb=()) -> RegressionResult:
         spec = OLSSpec(str(y), tuple(map(str, _as_tuple(x))), _normalize_absorb(absorb))
         self._ensure_source_specs([{"y": spec.y, "x": spec.x, "absorb": spec.absorb}])
@@ -675,147 +868,146 @@ class OLSHDFESession(_LinearHDFESessionBase):
         return self.fit_many(specs)
 
     @error_boundary("session")
+    @managed_execution
+    @_session_cache_policy
     def fit_many(self, specs: Sequence[OLSSpec | Mapping]) -> list[RegressionResult]:
         parsed = [OLSSpec.from_any(s) for s in specs]
         self._ensure_source_specs([{"y": s.y, "x": s.x, "absorb": s.absorb} for s in parsed])
         self._start_validation_round()
-        cached: dict[int, RegressionResult] = {}
-        if self._persistent_store is not None and self.execution.profile == "off":
-            for i, spec in enumerate(parsed):
-                key = self._persistent_result_key("ols", spec)
-                if key is not None:
-                    hit = self._persistent_store.load_result(key)
-                    if hit is not None:
-                        cached[i] = hit
-        grouped: dict[tuple, list[OLSSpec]] = defaultdict(list)
-        for i, s in enumerate(parsed):
-            if i not in cached:
-                grouped[s.absorb].append(s)
-        # One multi-RHS within transform per FE specification for all newly
-        # requested outcomes/regressors. This is the main batch speed path.
+        cached, grouped = self._cached_and_grouped(parsed)
+        # Ordinary specifications still share one multi-RHS transform. A raw
+        # ill-conditioned design must be projected jointly before caching any
+        # of its columns at the ordinary tolerance.
+        bases = {}
         for absorb in sorted(grouped, key=len):
             group = grouped[absorb]
             entry = self._get_entry(absorb)
             cols: list[str] = []
-            for s in group:
-                cols.append(s.y); cols.extend(s.x)
-            self._ensure_within(entry, cols)
+            designs = {}
+            for spec in group:
+                key = tuple(spec.x)
+                if key not in designs:
+                    X0 = self._raw_design(entry, key)
+                    gram = _weighted_gram(X0, entry.weights)
+                    designs[key] = (self._basis(entry, X0, gram=gram), gram)
+                basis, gram = designs[key]
+                bases[id(spec)] = (basis, gram)
+                if basis is None:
+                    cols.append(spec.y)
+                    cols.extend(spec.x)
+            if cols:
+                self._ensure_within(entry, cols)
         out = []
-        for i, s in enumerate(parsed):
-            out.append(cached[i] if i in cached else self._fit_spec(s, prewarmed=True))
+        for i, spec in enumerate(parsed):
+            out.append(cached[i] if i in cached else self._fit_spec(
+                spec, prewarmed=True, raw_basis=bases[id(spec)][0], raw_gram=bases[id(spec)][1],
+            ))
         return out
 
-    def _fit_spec(self, spec: OLSSpec, *, prewarmed=False) -> RegressionResult:
+    def _raw_design(self, entry, names):
+        columns = []
+        for name in names:
+            full = self._full_numeric(name)
+            raw = self._active_numeric(entry, full)
+            entry.raw_active[name] = raw
+            columns.append(raw)
+        return self._stack_columns(entry, columns)
+
+    def _basis(self, entry, X, *, gram=None):
+        if len(entry.fe.groups) > 1 and entry.solver_selection["resolved"] in {"map", "within"}:
+            return _absorption_basis(X, entry.weights, rank_tolerance=self.collinear_tol, gram=gram)
+        return None
+
+    def _result_key(self, spec):
+        return self._persistent_result_key("ols", spec)
+
+    def _fit_spec(self, spec: OLSSpec, *, prewarmed=False, raw_basis=None, raw_gram=None) -> RegressionResult:
         t0 = perf_counter()
-        result_key = self._persistent_result_key("ols", spec)
+        result_key = self._result_key(spec)
         if result_key is not None:
             cached = self._persistent_store.load_result(result_key)
             if cached is not None:
                 return cached
         entry = self._get_entry(spec.absorb)
-        if not prewarmed:
-            self._ensure_within(entry, (spec.y, *spec.x))
-        yw = entry.within[spec.y]
-        y1 = entry.raw_active[spec.y]
-        if spec.x:
-            Xw0 = np.column_stack([entry.within[n] for n in spec.x])
-            X0 = np.column_stack([entry.raw_active[n] for n in spec.x])
+        X0 = self._raw_design(entry, spec.x)
+        y1 = self._raw_design(entry, (spec.y,))[:, 0]
+        if raw_gram is None:
+            raw_gram = _weighted_gram(X0, entry.weights)
+        basis = raw_basis if prewarmed else self._basis(entry, X0, gram=raw_gram)
+        conditioning = None
+        if basis is not None:
+            yw, Xw0, info = residualize_in_basis(
+                entry.absorber, y1, X0, basis, entry.pool_size, entry.memory_budget_mb,
+                adaptive_auto=(self.hdfe.solver == "auto"),
+            )
+            entry.residualize_calls += 1
+            entry.residualized_columns += len(spec.x) + 1
+            conditioning = conditioning_info(basis, "before_absorption", min(self.hdfe.tolerance, 1e-11))
         else:
-            Xw0 = np.empty((len(yw), 0), dtype=np.float64)
-            X0 = Xw0.copy()
-        Xw, _, collin_plan = _resolve_ols_columns(
+            if not prewarmed or any(name not in entry.within for name in (spec.y, *spec.x)):
+                self._ensure_within(entry, (spec.y, *spec.x))
+            yw = entry.within[spec.y]
+            Xw0 = self._stack_columns(entry, [entry.within[n] for n in spec.x])
+            info = entry.last_info
+        within_gram = _weighted_gram(Xw0, entry.weights)
+        Xw, Xactive, collin_plan = resolve_ols_columns(
             Xw0, X0, spec.x, weights=entry.weights,
             tolerance=self.collinear_tol, mode=self.collinearity,
+            _grams=(within_gram, raw_gram),
         )
-        vce_kind = resolve_vce_for_weights(
-            self.inference.vce if self.inference.vce is not None else self.vce,
-            entry.winfo, has_clusters=bool(entry.clusters),
-        )
-        beta, V, resid, rank, df_resid = _fit_ols(
-            yw, Xw, weights=entry.weights, weight_info=entry.winfo, vce=vce_kind,
+        if conditioning is None:
+            active = np.ix_(collin_plan.active_indices, collin_plan.active_indices)
+            basis = self._basis(entry, Xw, gram=within_gram[active])
+            if basis is not None:
+                yw, Xw, corrected_info = residualize_in_basis(
+                    entry.absorber, y1, Xactive, basis, entry.pool_size, entry.memory_budget_mb,
+                )
+                if info is not None:
+                    corrected_info.iterations += info.iterations
+                info = corrected_info
+                entry.residualize_calls += 1
+                entry.residualized_columns += Xactive.shape[1] + 1
+                conditioning = conditioning_info(basis, "after_absorption", min(self.hdfe.tolerance, 1e-11))
+        elif len(basis[0]) != Xw.shape[1]:
+            basis = self._basis(entry, Xw)
+        vce_kind = self._vce_kind(entry)
+        beta, V, resid, rank, df_resid = fit_ols_in_basis(
+            yw, Xw, basis=basis, weights=entry.weights, weight_info=entry.winfo, vce=vce_kind,
             clusters=entry.clusters, df_absorbed=entry.dof.df_absorbed,
             nested_adj=int(entry.dof.nested > 0),
         )
-        fit_stats = reghdfe_model_statistics(
-            y1, yw, resid, beta, V, weights=entry.weights, effective_n=entry.winfo.effective_n,
-            rank=rank, df_absorbed=entry.dof.df_absorbed, df_nested=entry.dof.nested,
-            df_resid_inference=df_resid, has_intercept=bool(any(entry.intercepts)),
+        absorb_info = self._absorb_info(entry, info, len(spec.x) + 1)
+        if conditioning is not None:
+            absorb_info["conditioning"] = conditioning
+        prediction = self._prediction_state(
+            entry, "ols", collin_plan.active_names, ("regressor",),
+            (named_design_state(spec.x, role="regressor", active_indices=collin_plan.active_indices),),
         )
-        info = entry.last_info
-        absorb_info = None
-        if info is not None:
-            absorb_info = _absorb_metadata(
-                entry.fe_plan, entry.absorber, info,
-                _resolve_pool_size(entry.absorber, max(len(spec.x) + 1, 1), "auto", entry.memory_budget_mb),
-                solver_selection=entry.solver_selection,
-            )
-        sample_history = (
-            SampleExclusionState("hdfe", "singleton_pruning", entry.dropped, int(np.sum(entry.mask))),
-        ) if entry.dropped else ()
-        prediction_state = linear_prediction_state(
-            estimator="ols",
-            coefficient_names=collin_plan.active_names,
-            coefficient_roles=("regressor",),
-            designs=(
-                named_design_state(
-                    spec.x, role="regressor", active_indices=collin_plan.active_indices,
-                ),
-            ),
-            fe_plan=entry.fe_plan,
-            fe_names=entry.fe_names,
-            requested_fe_groups=() if entry.inference_fe is None else entry.inference_fe.groups,
-            effective_fe_groups=entry.groups,
-            fe_intercepts=entry.intercepts,
-            fe_slopes=entry.slopes,
-            sample_mask=entry.mask,
-            sample_history=sample_history,
+        result = self._result(
+            entry, info, beta, V, resid, y=y1, y_within=yw, rank=rank, df_resid=df_resid,
+            vce=vce_kind, names=tuple(collin_plan.active_names), estimator="ols",
+            absorb_info=absorb_info, collinearity_info=collinearity_metadata(collin_plan, role="regressor"),
+            prediction_state=prediction,
         )
-        result = RegressionResult(
-            params=beta, vcov=V, stderr=np.sqrt(np.clip(np.diag(V), 0, None)),
-            residuals=resid, fitted=y1-resid, nobs=int(round(entry.winfo.effective_n)), rank=rank,
-            df_resid=df_resid, df_absorbed=entry.dof.df_absorbed,
-            converged=True if info is None else bool(info.converged),
-            iterations=0 if info is None else int(info.iterations),
-            dropped_singletons=entry.dropped, names=tuple(collin_plan.active_names), estimator="ols",
-            dof_info=entry.dof, weight_type=entry.winfo.kind, sum_weights=entry.winfo.sum_weights,
-            nobs_raw=len(yw), absorb_info=absorb_info,
-            collinearity_info=_collinearity_metadata(collin_plan, role="regressor"),
-            vce=vce_kind, cluster_counts=_cluster_counts(entry.clusters), fe_names=tuple(entry.fe_names),
-            r2=fit_stats["r2"], r2_within=fit_stats["r2_within"],
-            r2_adjusted=fit_stats["r2_adjusted"], r2_adjusted_within=fit_stats["r2_adjusted_within"],
-            rss=fit_stats["rss"], tss=fit_stats["tss"], tss_within=fit_stats["tss_within"],
-            mss=fit_stats["mss"], rmse=fit_stats["rmse"], loglike=fit_stats["loglike"],
-            loglike_null=fit_stats["loglike_null"], f_statistic=fit_stats["f_statistic"],
-            f_pvalue=fit_stats["f_pvalue"], df_model=fit_stats["df_model"],
-            df_resid_fit=fit_stats["df_resid_fit"], vcov_rank=(int(np.linalg.matrix_rank(V)) if V.size else 0),
-            confidence_level=self.inference.confidence_level,
-            diagnostics_mode=self.inference.diagnostics,
-            prediction_state=prediction_state,
-        )
-        if self.execution.profile != "off":
-            result.profile = {
-                "total_seconds": perf_counter() - t0,
-                "mode": self.execution.profile,
-                "repeated_spec": True,
-                "fe_cache_entries": len(self._entries),
-                "within_cache_columns": len(entry.within),
-            }
-        if result_key is not None:
-            self._persistent_store.save_result(result_key, result)
-        return result
+        return self._finish(result, entry, t0, result_key)
 
 
 class IVHDFESession(_LinearHDFESessionBase):
     """Repeated linear-IV HDFE specifications with FE/within-column caching."""
 
-    def __init__(self, *args, estimator="2sls", kappa=None, fuller=0.0, gmm_center=False, **kwargs):
+    def __init__(self, *args, estimator="2sls", kappa=None, fuller=0.0, gmm_center=False,
+                 on_stage=None, **kwargs):
+        validate_callback(on_stage)
         super().__init__(*args, **kwargs)
         self.estimator = str(estimator).lower()
         self.kappa = kappa
         self.fuller = float(fuller)
         self.gmm_center = bool(gmm_center)
+        self.on_stage = on_stage
 
     @error_boundary("session")
+    @managed_execution
+    @_session_cache_policy
     def fit(self, *, y: str, exog=(), endog=(), instruments=(), absorb=()) -> RegressionResult:
         spec = IVSpec(
             str(y), tuple(map(str, _as_tuple(exog))), tuple(map(str, _as_tuple(endog))),
@@ -829,6 +1021,8 @@ class IVHDFESession(_LinearHDFESessionBase):
         return self._fit_spec(spec)
 
     @error_boundary("session")
+    @managed_execution
+    @_session_cache_policy
     def fit_many(self, specs: Sequence[IVSpec | Mapping]) -> list[RegressionResult]:
         parsed = [IVSpec.from_any(s) for s in specs]
         self._ensure_source_specs([{
@@ -836,26 +1030,7 @@ class IVHDFESession(_LinearHDFESessionBase):
             "instruments": s.instruments, "absorb": s.absorb,
         } for s in parsed])
         self._start_validation_round()
-        cached: dict[int, RegressionResult] = {}
-        if self._persistent_store is not None and self.execution.profile == "off":
-            for i, spec in enumerate(parsed):
-                key = self._persistent_result_key(
-                    "linear_iv", spec,
-                    extra={
-                        "estimator": self.estimator,
-                        "kappa": self.kappa,
-                        "fuller": self.fuller,
-                        "gmm_center": self.gmm_center,
-                    },
-                )
-                if key is not None:
-                    hit = self._persistent_store.load_result(key)
-                    if hit is not None:
-                        cached[i] = hit
-        grouped: dict[tuple, list[IVSpec]] = defaultdict(list)
-        for i, s in enumerate(parsed):
-            if i not in cached:
-                grouped[s.absorb].append(s)
+        cached, grouped = self._cached_and_grouped(parsed)
         for absorb in sorted(grouped, key=len):
             group = grouped[absorb]
             entry = self._get_entry(absorb)
@@ -865,14 +1040,13 @@ class IVHDFESession(_LinearHDFESessionBase):
             self._ensure_within(entry, cols)
         out = []
         for i, s in enumerate(parsed):
+            if i in cached:
+                completed(self.on_stage, cached[i], outcome=s.y, cached=True)
             out.append(cached[i] if i in cached else self._fit_spec(s, prewarmed=True))
         return out
 
-    def _fit_spec(self, spec: IVSpec, *, prewarmed=False) -> RegressionResult:
-        if not spec.endog or not spec.instruments:
-            raise SpecificationError("IVHDFESession requires at least one endogenous regressor and excluded instrument")
-        t0 = perf_counter()
-        result_key = self._persistent_result_key(
+    def _result_key(self, spec):
+        return self._persistent_result_key(
             "linear_iv", spec,
             extra={
                 "estimator": self.estimator,
@@ -881,13 +1055,20 @@ class IVHDFESession(_LinearHDFESessionBase):
                 "gmm_center": self.gmm_center,
             },
         )
+
+    def _fit_spec(self, spec: IVSpec, *, prewarmed=False) -> RegressionResult:
+        if not spec.endog or not spec.instruments:
+            raise SpecificationError("IVHDFESession requires at least one endogenous regressor and excluded instrument")
+        t0 = perf_counter()
+        result_key = self._result_key(spec)
         if result_key is not None:
             cached = self._persistent_store.load_result(result_key)
             if cached is not None:
+                completed(self.on_stage, cached, outcome=spec.y, cached=True)
                 return cached
         entry = self._get_entry(spec.absorb)
         cols = (spec.y, *spec.exog, *spec.endog, *spec.instruments)
-        if not prewarmed:
+        if not prewarmed or any(name not in entry.within for name in cols):
             self._ensure_within(entry, cols)
         yw = entry.within[spec.y]
         y1 = entry.raw_active[spec.y]
@@ -896,108 +1077,48 @@ class IVHDFESession(_LinearHDFESessionBase):
             if not names:
                 return np.empty((len(yw), 0), dtype=np.float64), np.empty((len(yw), 0), dtype=np.float64)
             return (
-                np.column_stack([entry.within[n] for n in names]),
-                np.column_stack([entry.raw_active[n] for n in names]),
+                self._stack_columns(entry, [entry.within[n] for n in names]),
+                self._stack_columns(entry, [entry.raw_active[n] for n in names]),
             )
 
         Cw0, C0 = stack(spec.exog); Ew0, E0 = stack(spec.endog); Zw0, Z0 = stack(spec.instruments)
-        Cw, Ew, Zw, _, _, _, cn, en, _zn, collin_info = _resolve_iv_columns(
+        Cw, Ew, Zw, _, _, _, cn, en, _zn, collin_info = resolve_iv_columns(
             Cw0, Ew0, Zw0, C0, E0, Z0, spec.exog, spec.endog, spec.instruments,
             weights=entry.weights, tolerance=self.collinear_tol, mode=self.collinearity,
         )
-        vce_kind = resolve_vce_for_weights(
-            self.inference.vce if self.inference.vce is not None else self.vce,
-            entry.winfo, has_clusters=bool(entry.clusters),
-        )
+        vce_kind = self._vce_kind(entry)
+        stage_callback = bind_callback(self.on_stage, cn + en, spec.y, df_absorbed=entry.dof.df_absorbed)
         if self.estimator == "gmm2s":
             beta, V, resid, rank, df_resid, first, diagnostics, meta = fit_iv_gmm2s(
                 yw, Cw, Ew, Zw, weights=entry.weights, weight_info=entry.winfo,
+                advanced_statistics=self.inference.iv_advanced_statistics, on_stage=stage_callback,
                 vce=vce_kind, clusters=entry.clusters, df_absorbed=entry.dof.df_absorbed,
                 nested_adj=int(entry.dof.nested > 0), center=self.gmm_center,
             )
         else:
             beta, V, resid, rank, df_resid, first, diagnostics, meta = fit_iv_kclass(
                 yw, Cw, Ew, Zw, weights=entry.weights, weight_info=entry.winfo,
+                advanced_statistics=self.inference.iv_advanced_statistics, on_stage=stage_callback,
                 vce=vce_kind, clusters=entry.clusters, df_absorbed=entry.dof.df_absorbed,
                 nested_adj=int(entry.dof.nested > 0), estimator=self.estimator,
                 kappa=self.kappa, fuller=self.fuller,
             )
-        r2_stats = reghdfe_r2_statistics(
-            y1, yw, resid, weights=entry.weights, effective_n=entry.winfo.effective_n,
-            rank=rank, df_absorbed=entry.dof.df_absorbed, df_nested=entry.dof.nested,
-            has_intercept=bool(any(entry.intercepts)),
-        )
-        fit_stats = ivreghdfe_model_statistics(
-            yw, resid, beta, V, weights=entry.weights, effective_n=entry.winfo.effective_n,
-            rank=rank, df_absorbed=entry.dof.df_absorbed, df_nested=entry.dof.nested,
-            df_resid_inference=df_resid,
-        )
         info = entry.last_info
-        absorb_info = None
-        if info is not None:
-            absorb_info = _absorb_metadata(
-                entry.fe_plan, entry.absorber, info,
-                _resolve_pool_size(entry.absorber, max(len(cols), 1), "auto", entry.memory_budget_mb),
-                solver_selection=entry.solver_selection,
-            )
-        sample_history = (
-            SampleExclusionState("hdfe", "singleton_pruning", entry.dropped, int(np.sum(entry.mask))),
-        ) if entry.dropped else ()
-        prediction_state = linear_prediction_state(
-            estimator=meta.get("estimator", self.estimator),
-            coefficient_names=tuple(cn + en),
-            coefficient_roles=("exogenous", "endogenous"),
-            designs=(
-                named_design_state(
-                    spec.exog, role="exogenous",
-                    active_indices=collin_info["exogenous"]["active_indices"],
-                ),
-                named_design_state(
-                    spec.endog, role="endogenous",
-                    active_indices=collin_info["endogenous"]["active_indices"],
-                ),
-                named_design_state(
-                    spec.instruments, role="excluded_instrument",
-                    active_indices=collin_info["excluded_instruments"]["active_indices"],
-                ),
+        estimator = meta.get("estimator", self.estimator)
+        prediction = self._prediction_state(
+            entry, estimator, tuple(cn + en), ("exogenous", "endogenous"),
+            tuple(
+                named_design_state(names, role=role, active_indices=collin_info[key]["active_indices"])
+                for names, (role, key) in zip((spec.exog, spec.endog, spec.instruments), IV_DESIGN_ROLES)
             ),
-            fe_plan=entry.fe_plan,
-            fe_names=entry.fe_names,
-            requested_fe_groups=() if entry.inference_fe is None else entry.inference_fe.groups,
-            effective_fe_groups=entry.groups,
-            fe_intercepts=entry.intercepts,
-            fe_slopes=entry.slopes,
-            sample_mask=entry.mask,
-            sample_history=sample_history,
         )
-        result = RegressionResult(
-            params=beta, vcov=V, stderr=np.sqrt(np.clip(np.diag(V), 0, None)),
-            residuals=resid, fitted=y1-resid, nobs=int(round(entry.winfo.effective_n)), rank=rank,
-            df_resid=df_resid, df_absorbed=entry.dof.df_absorbed,
-            converged=True if info is None else bool(info.converged),
-            iterations=0 if info is None else int(info.iterations), dropped_singletons=entry.dropped,
-            names=tuple(cn + en), first_stage=first, diagnostics=diagnostics,
-            estimator=meta.get("estimator", self.estimator), estimator_info=meta,
-            dof_info=entry.dof, weight_type=entry.winfo.kind, sum_weights=entry.winfo.sum_weights,
-            nobs_raw=len(yw), absorb_info=absorb_info, collinearity_info=collin_info,
-            vce=vce_kind, cluster_counts=_cluster_counts(entry.clusters), fe_names=tuple(entry.fe_names),
-            r2=r2_stats["r2"], r2_within=r2_stats["r2_within"],
-            r2_adjusted=r2_stats["r2_adjusted"], r2_adjusted_within=r2_stats["r2_adjusted_within"],
-            rss=fit_stats["rss"], tss_within=fit_stats["tss_within"], rmse=fit_stats["rmse"],
-            f_statistic=fit_stats["f_statistic"], f_pvalue=fit_stats["f_pvalue"],
-            df_model=fit_stats["df_model"], df_resid_fit=fit_stats["df_resid_fit"], vcov_rank=(int(np.linalg.matrix_rank(V)) if V.size else 0),
-            confidence_level=self.inference.confidence_level,
-            diagnostics_mode=self.inference.diagnostics,
-            prediction_state=prediction_state,
+        result = self._result(
+            entry, info, beta, V, resid, y=y1, y_within=yw, rank=rank, df_resid=df_resid,
+            vce=vce_kind, iv=True, names=tuple(cn + en), first_stage=first, diagnostics=diagnostics,
+            estimator=estimator, estimator_info=meta,
+            absorb_info=self._absorb_info(entry, info, len(cols)), collinearity_info=collin_info,
+            prediction_state=prediction,
         )
-        if self.execution.profile != "off":
-            result.profile = {
-                "total_seconds": perf_counter() - t0,
-                "mode": self.execution.profile,
-                "repeated_spec": True,
-                "fe_cache_entries": len(self._entries),
-                "within_cache_columns": len(entry.within),
-            }
-        if result_key is not None:
-            self._persistent_store.save_result(result_key, result)
+        self._finish(result, entry, t0, result_key)
+        completed(self.on_stage, result, outcome=spec.y)
         return result

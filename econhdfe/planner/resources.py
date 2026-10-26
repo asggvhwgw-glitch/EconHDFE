@@ -4,6 +4,7 @@ import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+import psutil
 
 
 def _read_text(path: str) -> str | None:
@@ -70,8 +71,26 @@ def _memory_value(path: str) -> int | None:
 
 
 def runtime_resources() -> RuntimeResources:
+    limit = _memory_value('/sys/fs/cgroup/memory.max')
+    current = _memory_value('/sys/fs/cgroup/memory.current')
+    try:
+        host = psutil.virtual_memory()
+    except (OSError, NotImplementedError):
+        # Some sandboxes deny host counters; retain cgroup data when present.
+        host = None
+    if host is not None:
+        host_limit = int(host.total)
+        host_current = max(0, host_limit - int(host.available))
+        if limit is None or current is None:
+            limit, current = host_limit, host_current
+        else:
+            # Keep the tighter available headroom without weakening a
+            # container limit when the host is also under memory pressure.
+            headroom = min(max(0, limit - current), int(host.available))
+            limit = min(limit, host_limit)
+            current = max(0, limit - headroom)
     return RuntimeResources(
         cpu_threads=effective_cpu_count(),
-        memory_limit_bytes=_memory_value('/sys/fs/cgroup/memory.max'),
-        memory_current_bytes=_memory_value('/sys/fs/cgroup/memory.current'),
+        memory_limit_bytes=limit,
+        memory_current_bytes=current,
     )

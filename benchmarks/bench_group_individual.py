@@ -4,7 +4,7 @@ import argparse
 import resource
 import time
 import numpy as np
-from pyreghdfe import reghdfe
+from econhdfe import reghdfe
 
 
 def main():

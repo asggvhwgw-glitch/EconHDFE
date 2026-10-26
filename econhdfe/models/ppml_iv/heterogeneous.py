@@ -1,4 +1,5 @@
 from __future__ import annotations
+from ...planner.scheduler import managed_execution
 
 """Internal heterogeneous-specification execution path for IV-PPML.
 
@@ -28,7 +29,9 @@ from ...hdfe.plan import FEPlan
 from ...iv.solve import weighted_2sls_block
 from ...reporting import cluster_counts as _cluster_counts, fe_names_from_metadata
 from ..poisson import exp_clip_into, poisson_deviance, prepare_poisson_base, working_state
+from ..ppml.execution import resolve_execution
 from ..ppml.heterogeneous import detect_separation_block
+from ..ppml.separation import initial_sample_mask
 from .config import IVPPMLConfig
 from .results import IVPPMLResult
 from .standardize import IVPPMLStandardization
@@ -56,11 +59,13 @@ def _slice_roles(design: BlockDesign, kc: int, ke: int):
     return C, E, I
 
 
-def _prune_iv_columns_block(C, E, I, names_c, names_e, names_i, plan, weights, config):
+def _prune_iv_columns_block(C, E, I, names_c, names_e, names_i, plan, weights, config, execution):
     """Post-FE rank pruning while preserving included-exogenous instrument roles."""
     combined = hstack_block_designs(C, E, I)
     projector = BlockWeightedFEProjector.from_design(
-        combined, plan, engine=config.engine, method="map"
+        combined, plan, engine=config.engine, method="map",
+        absorb_threads=execution.threads,
+        projection_memory_budget_mb=execution.memory_budget_mb,
     )
     within = projector.residualize_design(combined, weights, tol=config.target_inner_tol)
     Cw, Ew, Iw = _slice_roles(within, C.ncols, E.ncols)
@@ -271,12 +276,14 @@ def _ivppml_vcov_block(
     return fix_psd(V) if len(clusters) > 1 else V
 
 
+@managed_execution
 def fit_block_arrays(
     y, C: BlockDesign, E: BlockDesign, I: BlockDesign, plan: FEPlan, *, offset,
     true_w, weight_kind="none", vce="robust", clusters=None, exog_names=(),
     endog_names=(), instrument_names=(), config: IVPPMLConfig, warm_start=None,
     execution_config=None,
 ):
+    execution, _ = resolve_execution(execution_config, None)
     if not plan.groups:
         raise ValueError("structured IV-PPML requires absorbed FE")
     y = np.asarray(y, dtype=np.float64)
@@ -286,7 +293,7 @@ def fit_block_arrays(
     if any(A.nobs != n for A in (C, E, I)) or w.shape != (n,) or off.shape != (n,):
         raise ShapeError("structured IV-PPML inputs have incompatible observation counts")
 
-    singleton = plan.singleton_mask()
+    singleton, n_fe_separated = initial_sample_mask(y, plan, config)
     active0 = ~singleton
     if not np.any(active0):
         raise InputError(
@@ -303,11 +310,15 @@ def fit_block_arrays(
         p0 = plan.subset(active0)
 
     C0, E0, I0, exog_names, endog_names, instrument_names = _prune_iv_columns_block(
-        C0, E0, I0, exog_names, endog_names, instrument_names, p0, w0, config
+        C0, E0, I0, exog_names, endog_names, instrument_names, p0, w0, config, execution
     )
     X0 = hstack_block_designs(C0, E0)
-    sep = detect_separation_block(y0, X0, p0, w0, config, execution_config)
-    keep_sep = ~sep.separated
+    sep = detect_separation_block(
+        y0, X0, p0, w0, config, execution, frequency_weights=(weight_kind == "fweight"),
+    )
+    if "fe" in sep.by_method:
+        sep.by_method["fe"] = n_fe_separated
+    keep_sep = ~(sep.separated | sep.singletons)
     if not np.any(keep_sep) or not np.any(y0[keep_sep] > 0):
         raise InputError(
             "PPML has no finite estimable sample after separation",
@@ -322,16 +333,16 @@ def fit_block_arrays(
         )
 
     separation = np.zeros(n, dtype=bool)
-    if np.any(sep.separated):
+    if not np.all(keep_sep):
         idx0 = np.flatnonzero(active0)
         sample = np.zeros(n, dtype=bool)
         sample[idx0[keep_sep]] = True
-        separation[idx0[sep.separated]] = True
+        separation[idx0[~keep_sep]] = True
         y1, w1, off1 = y0[keep_sep], w0[keep_sep], off0[keep_sep]
         C1, E1, I1 = C0.subset_rows(keep_sep), E0.subset_rows(keep_sep), I0.subset_rows(keep_sep)
         p1 = p0.subset(keep_sep)
         C1, E1, I1, exog_names, endog_names, instrument_names = _prune_iv_columns_block(
-            C1, E1, I1, exog_names, endog_names, instrument_names, p1, w1, config
+            C1, E1, I1, exog_names, endog_names, instrument_names, p1, w1, config, execution
         )
     else:
         sample = active0.copy()
@@ -346,8 +357,8 @@ def fit_block_arrays(
     combined = hstack_block_designs(Cs, Es, Is)
     projector = BlockWeightedFEProjector.from_design(
         combined, p1, engine=config.engine, method="map",
-        absorb_threads=getattr(execution_config, "threads", "auto") if execution_config is not None else "auto",
-        projection_memory_budget_mb=getattr(execution_config, "memory_budget_mb", 512) if execution_config is not None else 512,
+        absorb_threads=execution.threads,
+        projection_memory_budget_mb=execution.memory_budget_mb,
     )
     initial_eta = None
     if warm_start is not None:

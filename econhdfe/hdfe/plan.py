@@ -2,9 +2,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 import hashlib
 import numpy as np
-from .absorber import HDFEAbsorber
+from .absorber import HDFEAbsorber, iterative_singleton_mask
+from .absorb_spec import absorb_columns, term_columns
 from .two_way import TwoWayFEAbsorber
-from .encoding import factorize_1d, factorize_interaction
+from ..compute.encoding import factorize_1d, factorize_interaction
 from .dof import absorbed_dof
 from .structure import canonicalize_fixed_effects, FEPartitionMeta
 
@@ -51,7 +52,7 @@ class FEPlan:
     def from_dataframe(cls, data, absorb) -> "FEPlan":
         dense, levels, meta = [], [], []
         for term in absorb or ():
-            cols = (term,) if isinstance(term, str) else tuple(term)
+            cols = term_columns(term)
             arrays = [data[c].to_numpy() for c in cols]
             c, L = factorize_1d(arrays[0]) if len(arrays) == 1 else factorize_interaction(arrays)
             dense.append(c); levels.append(int(L))
@@ -64,12 +65,7 @@ class FEPlan:
     def source_fingerprint(data, absorb) -> str:
         """Hash DataFrame FE source columns for reusable-model cache invalidation."""
         import pandas as pd
-        cols = []
-        for term in absorb or ():
-            parts = (term,) if isinstance(term, str) else tuple(term)
-            for c in parts:
-                if isinstance(c, str) and c not in cols:
-                    cols.append(c)
+        cols = list(absorb_columns(absorb or ()))
         h = hashlib.blake2b(digest_size=16)
         h.update(np.asarray([len(data)], dtype=np.int64).tobytes())
         if cols:
@@ -95,20 +91,19 @@ class FEPlan:
             raise ValueError("FEPlan subset mask must have one value per observation")
         return self.take(np.flatnonzero(mask))
 
-    def singleton_mask(self) -> np.ndarray:
-        """Iteratively flag observations in singleton FE levels."""
-        if not self.groups:
-            return np.zeros(0, dtype=bool)
-        active = np.ones(self.nobs, dtype=bool)
-        while True:
-            drop = np.zeros(self.nobs, dtype=bool)
-            for g, L in zip(self.groups, self.levels, strict=False):
-                counts = np.bincount(g[active], minlength=L)
-                drop |= active & (counts[g] == 1)
-            if not np.any(drop):
-                break
-            active[drop] = False
-        return ~active
+    def singleton_mask(self, *, frequency_weights=None, positive=None) -> np.ndarray:
+        """Iteratively flag observations in singleton FE levels.
+
+        Degrees are row counts, or frequency-weight mass when
+        ``frequency_weights`` is given (reghdfe's fweight rule).  A boolean
+        ``positive`` outcome mask also flags levels without a positive
+        outcome in the same fixed point (ppmlhdfe's ``separation(fe)`` stage).
+        """
+        keep, _ = iterative_singleton_mask(
+            self.groups, frequency_weights, frequency_weights=frequency_weights is not None,
+            positive=positive,
+        )
+        return ~keep
 
     def canonicalized(self) -> tuple["FEPlan", dict]:
         """Drop exactly redundant pure-intercept FE partitions."""
@@ -142,6 +137,9 @@ class FEPlan:
     def absorber(self, weights, *, tol, engine="replica", method="map"):
         if not self.groups:
             return None
+        if method == "within":
+            from .within_backend import WithinFEAbsorber
+            return WithinFEAbsorber(self.groups, weights=weights, tol=tol)
         if engine == "optimized" and len(self.groups) == 2 and method != "lsmr":
             return TwoWayFEAbsorber(self.groups, weights=weights, tol=tol)
         return HDFEAbsorber(

@@ -7,7 +7,7 @@ from __future__ import annotations
 import argparse
 import time
 import numpy as np
-from pyreghdfe import reghdfe, interaction
+from econhdfe import reghdfe, interaction
 
 
 def make_data(n, n_firms, n_cities, n_years, mobility, seed):

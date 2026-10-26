@@ -1,7 +1,7 @@
 from __future__ import annotations
 import argparse, resource, time
 import numpy as np
-from pyreghdfe import reghdfe
+from econhdfe import reghdfe
 
 p = argparse.ArgumentParser(description="Large ordinary-HDFE stress benchmark")
 p.add_argument("--n", type=int, default=10_000_000)

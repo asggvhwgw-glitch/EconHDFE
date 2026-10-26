@@ -3,9 +3,9 @@ import argparse
 from pathlib import Path
 import numpy as np
 import pandas as pd
-from pyreghdfe import PPMLConfig, ppmlhdfe
-from pyreghdfe.ppml.separation_relu import relu_separation
-from pyreghdfe.fe_plan import FEPlan
+from econhdfe import PPMLConfig, ppmlhdfe
+from econhdfe.models.ppml.separation_relu import relu_separation
+from econhdfe.hdfe.plan import FEPlan
 
 
 def cfg(engine="replica"):
@@ -26,13 +26,13 @@ def python_results(df):
         absorb=[df[c].to_numpy() for c in s["absorb"]]
         clusters=[df[c].to_numpy() for c in s.get("clusters",())] or None
         r=ppmlhdfe(
-            df[s["y"]].to_numpy(), X, absorb=absorb,
+            y=df[s["y"]].to_numpy(), x=X, absorb=absorb,
             exposure=None if "exposure" not in s else df[s["exposure"]].to_numpy(),
-            vce=s["vce"], clusters=clusters, names=("x1","x2"), config=cfg(),
+            vce=s["vce"], cluster=clusters, names=("x1","x2"), config=cfg(),
         )
         for term in ("x1","x2") + (("_cons",) if model=="m01_no_fe" else ()):
             j=r.names.index(term)
-            rows.append(dict(model=model,term=term,b=r.coef[j],se=r.stderr[j],N=r.nobs,df_a=r.df_absorbed,num_sep=r.n_separated,iters=r.iterations))
+            rows.append(dict(model=model,term=term,b=r.params[j],se=r.stderr[j],N=r.nobs,df_a=r.df_absorbed,num_sep=r.n_separated,iters=r.iterations))
     return pd.DataFrame(rows)
 
 

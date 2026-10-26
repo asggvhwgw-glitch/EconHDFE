@@ -5,7 +5,7 @@ import numpy as np
 from scipy.sparse import coo_matrix, hstack
 from scipy.sparse.linalg import LinearOperator, lsmr, lsqr
 
-from .absorber import AbsorbInfo, HDFEAbsorber
+from .absorber import AbsorbInfo, HDFEAbsorber, singleton_rows
 from .dof import DofInfo, absorbed_dof
 
 
@@ -111,6 +111,8 @@ def group_individual_singleton_mask(
     ng = int(mg.max()) + 1 if mg.size else (len(standard_groups[0]) if standard_groups else 0)
     keep = np.ones(ng, dtype=bool)
     nind = int(ind.max()) + 1 if ind.size else 0
+    std = [np.asarray(g, dtype=np.int32) for g in standard_groups]
+    std_levels = [int(g.max()) + 1 if g.size else 0 for g in std]
     dropped = 0
     while True:
         drop = np.zeros(ng, dtype=bool)
@@ -118,11 +120,7 @@ def group_individual_singleton_mask(
         if active_groups.size == 0:
             break
 
-        for g in standard_groups:
-            gg = np.asarray(g, dtype=np.int32)
-            nlev = int(gg.max()) + 1 if gg.size else 0
-            counts = np.bincount(gg[active_groups], minlength=nlev)
-            drop[active_groups] |= counts[gg[active_groups]] <= 1
+        drop[active_groups] = singleton_rows(std, std_levels, active_groups)
 
         active_membership = keep[mg]
         degree = np.bincount(ind[active_membership], minlength=nind)
@@ -281,7 +279,7 @@ class GroupIndividualAbsorber:
             std_nnz += self.nobs * (int(has_int) + (0 if S is None else S.shape[1]))
         ind_nnz = self.membership_group.size * self._ind_q
         estimated_peak = 32.0 * (std_nnz + ind_nnz) + 16.0 * self.nobs
-        budget = max(self.memory_budget_mb, 64.0) * (1024.0**2)
+        budget = max(self.memory_budget_mb, 0.0) * (1024.0**2)
         if incidence_backend == "auto":
             # CSR is substantially faster for the common sparse incidence case,
             # but COO->CSR construction temporarily holds multiple index/data
@@ -303,6 +301,7 @@ class GroupIndividualAbsorber:
                     max_iter=self.max_iter,
                     method="lsmr",
                     preconditioner=self.preconditioner,
+                    projection_memory_budget_mb=self.memory_budget_mb,
                 )
                 self._std_op, self._std_inv_scales, self._std_offsets, _ = self._std_absorber._lsmr_operator()
                 self._std_width = int(self._std_op.shape[1])

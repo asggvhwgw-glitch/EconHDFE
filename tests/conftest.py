@@ -1,4 +1,5 @@
 """Small deterministic data for public workflow contracts; no shared mutable caches."""
+
 import numpy as np
 import pandas as pd
 import pytest

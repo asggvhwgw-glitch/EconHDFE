@@ -7,7 +7,7 @@ import hashlib
 import numpy as np
 import pandas as pd
 
-from .source import DataSource, as_data_source
+from .source import DataSource, DataFrameSource, as_data_source
 from .planner import DataIngestionPlan, estimate_frame_bytes_per_row
 from .encoding import StableCategoricalEncoder
 from ..errors import DataTypeError, MissingDataError, SpecificationError
@@ -455,6 +455,19 @@ def materialize_required_data(
     # perform a separate preview pass merely to choose a chunk size; that is
     # valuable for scan/out-of-core execution but can dominate fast binary
     # formats such as Stata.
+    from ..compute.execution import _check_allocation_headroom
+    from ..planner import plan_memory
+
+    budget = plan_memory(
+        requested_budget_bytes=max(int(float(memory_budget_mb) * 1024**2), 1),
+    ).effective_budget_bytes
+    # Only inspect already resident columns; unknown-size file sources retain
+    # their single-pass fast path. This is admission, not a hard RSS guarantee.
+    if isinstance(src, DataFrameSource):
+        projected_bytes = sum(
+            int(src.frame[name].memory_usage(index=False, deep=True)) for name in cols
+        )
+        _check_allocation_headroom(projected_bytes)
     t0 = perf_counter()
     frame = src.materialize(cols)
     levels: dict[str, tuple[object, ...]] = {}
@@ -464,6 +477,9 @@ def materialize_required_data(
         if missing_ids:
             raise KeyError(f"identifier columns not present after projection: {missing_ids}")
         # Never mutate an in-memory source frame through a projected view.
+        # Encoding retains the original column while creating codes and
+        # factorization scratch; account for this known-size temporary work.
+        _check_allocation_headroom(len(frame) * 24)
         frame = frame.copy(deep=False)
         for name in idcols:
             enc = StableCategoricalEncoder()
@@ -473,7 +489,6 @@ def materialize_required_data(
     elapsed = perf_counter() - t0
     nbytes = int(frame.memory_usage(index=False, deep=True).sum())
     bpr = estimate_frame_bytes_per_row(frame)
-    budget = max(int(float(memory_budget_mb) * 1024**2), 1)
     target = max(int(budget * min(max(float(batch_fraction), 0.01), 0.80)), 1)
     plan = DataIngestionPlan(
         required_columns=cols, memory_budget_bytes=budget, target_batch_bytes=target,

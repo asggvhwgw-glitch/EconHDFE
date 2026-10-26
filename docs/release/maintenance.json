@@ -1,81 +1,81 @@
 {
   "schema_version": 1,
-  "release_version": "0.7.0",
-  "previous_version": "0.7.0.dev0",
+  "release_version": "0.9.1",
+  "previous_version": "0.9.0",
   "checks": {
     "frontend_api": {
-      "status": "reviewed",
-      "evidence": "0.7.0.dev0→0.7.0 契约差异为空；0.6.x→0.7 增加 prediction_state/predict 及线性后估计；原拟合签名保持。",
+      "status": "changed",
+      "evidence": "Additive trailing ExecutionConfig.memory_policy; existing estimator call signatures unchanged.",
       "description": "Public call signatures, exports, aliases, CLI/front-end validation and compatibility."
     },
     "backend_compute": {
-      "status": "reviewed",
-      "evidence": "0.7 维护：effects 拓扑复用 hdfe.rank 已有同体 union-find 内核，无数值公式/容差/公开签名变化；完整回归另登记。",
+      "status": "changed",
+      "evidence": "Relaxed root reserve and explicit-budget admission; live headroom, RSS, reservations and worker slices retained. Native adapter inherited from PR25; no numerical solver changes in this follow-up.",
       "description": "Solver/compute/cache/backend contracts, numerical defaults and resource controls."
     },
     "errors": {
-      "status": "reviewed",
-      "evidence": "保留识别、数值秩亏与预测未知类别/未识别组合的显式错误；不放宽失败路径。",
+      "status": "changed",
+      "evidence": "resource.memory includes allocation/headroom counters; exception classes and codes unchanged. 5M within convergence.hdfe remains a reported failure.",
       "description": "Structured exception classes, codes, stages, suggestions and public error boundaries."
     },
     "public_contract": {
-      "status": "reviewed",
-      "evidence": "控制 bump 从 0.7.0.dev0 升为 0.7.0；diff 为空，新建当前版本快照，保留所有历史快照。",
+      "status": "changed",
+      "evidence": "Three reviewed ExecutionConfig schema/signature changes versus immutable 0.9.0; new 0.9.1 snapshot captured.",
       "description": "Public exports/signatures, result/config schemas and stable structured-error compatibility."
     },
     "skill": {
       "status": "reviewed",
-      "evidence": "现有 Skill 包含后估计/预测边界、隐私支持与发布流程；复核不扩张外部认证声明。",
+      "evidence": "Existing default commands and strategy routing remain valid; advanced opt-in is documented in docs/development/execution-planner.md. No installed or central skill modified.",
       "description": "Agent skill commands, examples, decision rules and newly exposed controls."
     },
     "linked_modules": {
-      "status": "reviewed",
-      "evidence": "effects 原已依赖 hdfe.rank，复用其私有 union-find 不增加反向层次依赖；生成图同步。",
+      "status": "changed",
+      "evidence": "Config policy inherited by scheduler/core/design admission and nested/worker scopes; generated architecture map checked.",
       "description": "Cross-module imports, shared schemas, adapters, compatibility shims and downstream consumers."
     },
     "results_reporting": {
-      "status": "reviewed",
-      "evidence": "保留线性组合/Wald、chunked response/xb/fe/stdp；stdp 只包含 beta 协方差。",
+      "status": "changed",
+      "evidence": "resource_schedule reports memory_policy; coefficient/inference result schemas unchanged.",
       "description": "Result fields, publication output, diagnostics metadata and serialization-facing schemas."
     },
     "config_defaults": {
-      "status": "reviewed",
-      "evidence": "不更改拟合/推断/执行默认；save_fe 仍需显式开启，新类别默认拒绝。",
+      "status": "changed",
+      "evidence": "Default memory_policy=conservative preserves existing reserve and initial cap; relaxed is explicit, validated and inherited.",
       "description": "Config objects, defaults, deprecations, aliases and backwards-compatible behavior."
     },
     "cache_state": {
       "status": "reviewed",
-      "evidence": "保留 linear-session-result-3 和 within ABI；版本收口不改变缓存状态语义。",
+      "evidence": "No cache formats or numerical cache keys changed; worker/nested inheritance and scope restoration tested.",
       "description": "Reusable state/cache invalidation, fingerprints, lifecycle semantics and stale-state hazards."
     },
     "tests_validation": {
-      "status": "reviewed",
-      "evidence": "冻结 0.7.0 指纹后重新执行完整本地测试及16环境 CI，证据登记于 detached manifest；此审阅不是执行证明。",
+      "status": "changed",
+      "evidence": "511 tests passed (468 base plus 43 native), four expected omission warnings. Added relaxed admission/inheritance/live-pressure and OLS/IV numerical parity tests. New 0.9.1 snapshot preserves immutable 0.9.0.",
       "description": "Regression tests, install smoke tests, golden/parity coverage and failure-path tests."
     },
     "performance": {
-      "status": "reviewed",
-      "evidence": "保留历史 benchmark 和 #14 调用内缓存；不新增全流程内存或普遍提速承诺。",
+      "status": "changed",
+      "evidence": "5M default full IV completed in 970.075s with relaxed admission; N=4850080 and independent coefficient/residual/conditional-covariance checks pass. Native failed original 1e-12 convergence gate after 243.153s; no speedup claim.",
       "description": "Representative benchmark/resource regressions for code paths materially changed by the release."
     },
     "docs_migration": {
       "status": "changed",
-      "evidence": "修正 README wald_test、版本/发布区别、迁移、当前验证/制品入口；保留历史记录；新增0.7架构审查及职责边界。",
+      "evidence": "CHANGELOG, execution-planner memory-policy documentation, native validation limitations and benchmark records updated.",
       "description": "README/architecture/changelog/migration/versioning documentation and user-visible examples."
     },
     "packaging_dependencies": {
       "status": "reviewed",
-      "evidence": "Python 3.10–3.13、运行依赖下限与包内容规则不变；由16环境与bundle实际验证。",
+      "evidence": "Version advanced with controlled tool to 0.9.1; runtime dependencies and native wheel unchanged. No new wheel built or published.",
       "description": "Python/dependency matrix, optional extras, wheel/source contents and build metadata."
     },
     "external_validation": {
       "status": "reviewed",
-      "evidence": "Alpha 研究发布；未新增 licensed-Stata/upstream 外部认证、浮点形式验证或历史原创性证明。",
+      "evidence": "Existing independent analytic IV reference used for 5M, covariance conditional on reported DoF; no new licensed Stata/R corpus run or external certification claimed.",
       "description": "Licensed/reference-environment parity gates and explicitly deferred external certification."
     },
     "release_artifacts": {
-      "status": "reviewed",
-      "evidence": "本轮仅提交维护PR，改变指纹后候选执行记录已重置；不得复用 e738333 冻结发布制品或detached验收，不自动合并/发布本PR。",
+      "status": "not_applicable",
+      "evidence": "User authorized merging source PR25 after validation; no public wheel/tag/PyPI publication requested. Remote CI validates candidate artifacts; prior-head checks do not replace final-head validation.",
       "description": "Version consistency, source/wheel parity, hashes, clean install and reproducible bundle contents."
     }
   }

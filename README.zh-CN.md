@@ -6,7 +6,14 @@
 
 `econhdfe` 是一个用于 OLS-HDFE、线性 IV-HDFE、PPML-HDFE 和 IV-PPML-HDFE 的 Python 包，面向大规模数据、高基数固定效应、聚类推断、复杂交互项以及大量相近规格的实证工作流。
 
-项目目前仍属于 **alpha 阶段研究软件**。本源码版本为 0.7.0，包含后估计、预测与 IV 正确性修复。仓库内已经进行了较广泛的验证，但 licensed Stata 对照和完整 upstream external certification 仍属于独立的外部验证边界。
+项目目前仍属于 **alpha 阶段研究软件**。本源码版本为 **0.8.4**。源码合并与公开发布分开登记，安装后应核对版本，参见[发布状态](docs/development/test-status.md)。仓库内已经进行了较广泛的验证，但 licensed Stata 对照和完整 upstream external certification 仍属于独立的外部验证边界。
+
+## 当前源码：0.8.4
+
+- **近共线 OLS**：补齐 CG 迭代保护、弱方向可逆缩放及稳定坐标下的协方差计算，OLS Session 使用相同保护；筛查复用全样本统计量。详见[求解说明](docs/technical/hdfe/solver/design.md)。
+- **线性 IV**：复用单次拟合内的计算；可通过 `on_stage` 同步读取阶段快照，或设置 `InferenceConfig(iv_advanced_statistics=False)` 跳过高级诊断。KP、普通首阶段 F、过度识别与识别检查仍保留，详见[分阶段结果与诊断开关](docs/development/iv-staged-diagnostics.md)。
+- **FE 吸收**：优化投影与 CG 执行，使显式线程数和求解工作区预算生效，修复小量纲变量的错误收敛。旧版持久数值缓存将重新计算，详见[迁移说明](docs/release/migration.md)。
+- **验证**：保留精简回归和独立数值参照；CI 继续在全部支持环境运行完整集。下方历史计时只对应其原工作负载，不代表 0.8.4 的新测量。
 
 ## 性能概览
 
@@ -85,8 +92,13 @@ OLS / IV / PPML / IV-PPML
 支持 Python 3.10–3.13。
 
 ```bash
-pip install econhdfe
+python -m pip install econhdfe
+python -c "import econhdfe; print(econhdfe.__version__)"
 ```
+
+使用当前源码时，在仓库根目录运行 `python -m pip install .`。包索引提供的版本
+可能不同。可选依赖 `.[io]` 提供文件格式后端，`.[gpu]` 提供 CUDA 12 CuPy 后端；
+是否能实际使用还取决于本机依赖与硬件。
 
 标准 OLS-HDFE 可以直接对 pandas DataFrame 调用：
 
@@ -236,14 +248,14 @@ $$\mathrm{DoF}_{\mathrm{FE}} = \mathrm{rank}(D_{\mathrm{FE}}).$$
 | 重复规格 | 可复用的 OLS 和 linear-IV session，并带 FE/sample-aware invalidation |
 | Post-estimation | 论文结果输出、线性组合/Wald、分块 OLS/IV 预测，以及显式保存的分类 FE（0.7.0） |
 | Execution | projected data access、memory budgets、structured representations、bounded parallelism、automatic HDFE thread selection |
-| Compatibility | `reghdfe`、`ivreghdfe` 与 legacy `pyreghdfe` 入口 |
+| Compatibility | `reghdfe` 与 `ivreghdfe` alias |
 | Agent interface | 项目原生 `econhdfe` Skill，用于 agent-driven empirical 与 development workflow |
 
 ## 验证
 
 性能优化只有在不改变模型时才有意义。因此 `econhdfe` 把公开接口测试、统计行为测试、独立数值 oracle 和 release engineering 分开管理。
 
-当前测试体系按照 **contracts、behavior、numerics、tooling** 组织，而不是按历史版本号组织。统计测试覆盖 realized sample、weights、singleton handling、FE semantics、omitted variables、clustering、DoF、PPML separation、result semantics 与 cache invalidation。
+当前采用约200项的精简回归集，按 **contracts、behavior、numerics、tooling** 组织。常驻范围与退出常驻的专项见[测试指南](docs/development/testing.md)。统计测试覆盖 realized sample、weights、singleton handling、FE semantics、omitted variables、clustering、DoF、PPML separation、result semantics 与 cache invalidation。
 
 关键数值路径还会与独立构造进行对照，例如：
 
@@ -257,7 +269,7 @@ $$\mathrm{DoF}_{\mathrm{FE}} = \mathrm{rank}(D_{\mathrm{FE}}).$$
 
 CI 覆盖 Linux、Windows 和 macOS，以及支持的 Python 版本和可行的最低依赖环境。source archive 与 installed wheel 也会脱离普通开发 import path 单独验证。
 
-边界仍然明确：仓库内部的大规模验证并不等价于完整 licensed-Stata 或 upstream external corpus certification。
+边界仍然明确：仓库内回归验证不等价于完整 licensed-Stata 或 upstream external corpus certification，代表案例也不能穷尽全部支持选项的交互。
 
 详见 [Testing](docs/development/testing.md) 和 [validation status](docs/development/test-status.md)。
 
@@ -271,7 +283,7 @@ CI 覆盖 Linux、Windows 和 macOS，以及支持的 Python 版本和可行的�
 新数据的 `response` 和 `fe` 要求通过 `save_fe=True` 显式保存受支持的分类固定效应；
 未知水平和未识别的新组合会被拒绝。本版本不支持 PPML/IV-PPML 预测、varying-slope
 或 group+individual FE 样本外预测，也不包含 margins 和 AME。
-详见[后估计契约](docs/development/postestimation-0.7.md)。这些功能要求 0.7.0。安装后用 `python -c "import econhdfe; print(econhdfe.__version__)"` 核对版本。0.7.0 wheel 公开后可安装对应版本；此前可在本源码目录运行 `python -m pip install .`。包索引可能仍提供旧版，见[发布状态与验证](docs/development/test-status.md)。
+详见[后估计契约](docs/development/postestimation-0.7.md)。这些功能从 0.7.0 起提供，在 0.8.4 中继续保留；源码与发行包的选择和版本核对见上方安装说明。
 
 ## 固定效应恢复
 
@@ -291,14 +303,13 @@ CI 覆盖 Linux、Windows 和 macOS，以及支持的 Python 版本和可行的�
 from econhdfe import olshdfe, ivhdfe, ppmlhdfe, ivppmlhdfe
 ```
 
-同时保留兼容入口：
+同时保留 Stata 风格 alias：
 
 ```python
 from econhdfe import reghdfe, ivreghdfe
-import pyreghdfe
 ```
 
-这些 alias 用于降低迁移和互操作成本，并不表示所有 Stata syntax 或 upstream edge case 都已经完成独立外部认证。
+旧 `pyreghdfe` 命名空间已于 0.9.0 移除；请把 `pyreghdfe` 导入改为 `econhdfe`（见[迁移说明](docs/release/migration.md)）。这些 alias 用于降低迁移和互操作成本，并不表示所有 Stata syntax 或 upstream edge case 都已经完成独立外部认证。
 
 ## 文档
 

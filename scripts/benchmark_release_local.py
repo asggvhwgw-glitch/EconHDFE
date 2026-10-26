@@ -49,10 +49,10 @@ def main():
         call=lambda:e.olshdfe(y=y,x=X,absorb=[g,h,j],vce='robust',tol=1e-10,absorb_threads=1)
     elif a.case=='ppml_2fe':
         cfg=e.PPMLConfig(separation=(),tolerance=1e-9,target_inner_tol=1e-10)
-        call=lambda:e.ppmlhdfe(yp,X[:,:2],absorb=[g,h],vce='robust',config=cfg)
+        call=lambda:e.ppmlhdfe(y=yp,x=X[:,:2],absorb=[g,h],vce='robust',config=cfg)
     else:
         cfg=e.IVPPMLConfig(separation=(),tolerance=1e-9,target_inner_tol=1e-10)
-        call=lambda:e.ivppmlhdfe(yp,exog=X[:,:1],endog=X[:,1:2],instruments=z,absorb=[g,h],config=cfg)
+        call=lambda:e.ivppmlhdfe(y=yp,exog=X[:,:1],endog=X[:,1:2],instruments=z,absorb=[g,h],config=cfg)
     t=perf_counter();r=call();warm=perf_counter()-t
     times=[]
     for _ in range(a.repeat):

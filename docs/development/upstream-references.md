@@ -3,7 +3,7 @@
 
 # Upstream compatibility references (checked 2026-09-10)
 
-`pyreghdfe` is a clean-room implementation. The files below were consulted as
+`econhdfe` (formerly `pyreghdfe`) is a clean-room implementation. The files below were consulted as
 behavioral/econometric references; their source code is not vendored here.
 
 ## reghdfe

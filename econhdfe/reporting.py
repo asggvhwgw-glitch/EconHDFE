@@ -75,38 +75,6 @@ def fe_names_from_metadata(metadata) -> tuple[str, ...]:
     return tuple(out)
 
 
-def weighted_r2(y, residuals, weights=None) -> float:
-    y = np.asarray(y, dtype=np.float64)
-    e = np.asarray(residuals, dtype=np.float64)
-    if weights is None:
-        w = np.ones(len(y), dtype=np.float64)
-    else:
-        w = np.asarray(weights, dtype=np.float64)
-    sw = float(np.sum(w))
-    if sw <= 0:
-        return float("nan")
-    mean = float(np.sum(w * y) / sw)
-    tss = float(np.sum(w * (y - mean) ** 2))
-    rss = float(np.sum(w * e ** 2))
-    if tss <= np.finfo(float).eps:
-        return float("nan")
-    return 1.0 - rss / tss
-
-
-def within_r2(y_within, residuals, weights=None) -> float:
-    y = np.asarray(y_within, dtype=np.float64)
-    e = np.asarray(residuals, dtype=np.float64)
-    if weights is None:
-        w = np.ones(len(y), dtype=np.float64)
-    else:
-        w = np.asarray(weights, dtype=np.float64)
-    denom = float(np.sum(w * y ** 2))
-    rss = float(np.sum(w * e ** 2))
-    if denom <= np.finfo(float).eps:
-        return float("nan")
-    return 1.0 - rss / denom
-
-
 def reghdfe_r2_statistics(
     y, y_within, residuals, *, weights=None, effective_n=None, rank=0,
     df_absorbed=0, df_nested=0, has_intercept=True,
@@ -288,7 +256,10 @@ def ivreghdfe_model_statistics(
     rss = float(np.sum(w * e ** 2))
     tss_within = float(np.sum(w * yw ** 2))
     n_eff = float(len(yw) if effective_n is None else effective_n)
-    df_fit = n_eff - float(df_absorbed) - float(df_nested) - float(rank)
+    # ivreg2-small excludes nested FE from the fit denominator; ivreghdfe
+    # retains one absorbed intercept when all FE are nested (df_a == 0).
+    iv_df = max(float(df_absorbed), float(df_nested > 0))
+    df_fit = n_eff - iv_df - float(rank)
     rmse = (float(np.sqrt(rss / df_fit))
             if rss >= 0 and np.isfinite(df_fit) and df_fit > 0 else float("nan"))
     infer_df = float("nan") if df_resid_inference is None else float(df_resid_inference)
@@ -308,12 +279,12 @@ class PublicationResult(Protocol):
     def model_stats(self) -> dict[str, Any]: ...
     def publication_output(self, *, level: float | None = None,
                            include_diagnostics: bool | None = None,
-                           include_profile: bool = False) -> dict[str, Any]: ...
+                           include_profile: bool | None = None) -> dict[str, Any]: ...
 
 
 def publication_output(result: PublicationResult, *, level: float | None = None,
                        include_diagnostics: bool | None = None,
-                       include_profile: bool = False) -> dict[str, Any]:
+                       include_profile: bool | None = None) -> dict[str, Any]:
     return result.publication_output(
         level=level,
         include_diagnostics=include_diagnostics,

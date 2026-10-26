@@ -3,7 +3,7 @@ from __future__ import annotations
 import resource
 import time
 import numpy as np
-from pyreghdfe import reghdfe, ivreghdfe
+from econhdfe import reghdfe, ivreghdfe
 
 
 def mib_rss():

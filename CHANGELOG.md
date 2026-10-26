@@ -1,5 +1,58 @@
 # Changelog
 
+## 0.9.1 — unreleased candidate
+
+- Add an optional, explicitly selected `method="within"` Rust backend for CPU categorical-intercept OLS/IV and sessions, with weighted reductions and bounded Schur/compression routes over pinned upstream within. Preserve default routing and weak-design conditioning. Local 0.9.0 integration tests and existing-sample comparisons show workload-dependent gains; see the native validation report for limitations.
+- Add opt-in `ExecutionConfig(memory_policy="relaxed")` for monitored large runs: reduce the system reserve and let explicit workspace budgets use subsequently available host memory, while retaining live headroom, RSS, reservation and worker-slice checks. Default conservative admission is unchanged.
+- With the relaxed policy, the existing 5M composite IV sample completes on the default backend and passes independent coefficient/residual/conditional-covariance checks; the within backend still fails its original-row convergence gate at the unchanged 1e-12 tolerance. No 5M native speedup is claimed.
+
+## 0.9.0 — unreleased candidate
+
+- Keep Linux OpenBLAS 0.3.28 single-threaded inside estimation calls to avoid reproduced TRTRS/QR crashes after thread-limit increases; other backends retain the requested CPU envelope, and all limits restore on exit. Stabilize the cross-platform thread fixture and ill-conditioned IV reference without loosening tolerances.
+- Remove the `pyreghdfe` compatibility package and the internal forwarding modules `econhdfe.bootstrap`, `econhdfe.compute.runtime` and `econhdfe.hdfe.encoding`.
+- Unify PPML/IV-PPML with OLS/IV: `data=` first with column-name specs, `cluster=` (was `clusters=`), and a `params` ndarray field (was `coef`); vce defaults keep the Stata upstream conventions.
+- Reject conflicting scalar/config settings with `specification.config_conflict` instead of letting config objects silently override scalars.
+- Raise `HDFEConvergenceError` for non-converged group/individual and BlockDesign absorption; make `InferenceConfig(diagnostics="full")` include the profile in publication output.
+- Align singleton pruning with reghdfe 6.12.5, ppmlhdfe 2.3.0 and ivppmlhdfe 0.9.4 (group-mode fweight mass; joint PPML FE-separation/singleton pruning; post-separation singleton re-pruning and counters).
+- Refactor without behaviour change: shared linear estimation stages (`models/linear.py`, named `pipeline` interfaces) used by direct fits and sessions; PPML/IV-PPML shared helpers and result methods; one VCE normalization utility; one absorb-spec parser (`hdfe/absorb_spec.py`) and singleton kernel; corrected layering (`DofInfo` in `hdfe/dof.py`, `design_specs.py`, `compute/cache_accounting.py`) enforced by a whole-package dependency test; removal of dead code.
+- Bit-for-bit equivalence against 0.8.5 for all unchanged behaviour (OLS/IV/session, VCE, absorb parsing, PPML suites); PPML about 3% slower on a 500k-row benchmark. No package is published.
+
+## 0.8.4 — unreleased candidate
+
+- Stabilize ill-conditioned dense 2SLS solving and inference with block QR/SVD and certified weak-control absorption refinement after redundant-control omission.
+- Add independent weighted-FE, degrees-of-freedom and multiway-cluster references; expose refinement timing and retain original accuracy gates.
+
+- Stabilize near-collinear dense OLS absorption and covariance with reversible weak-direction scaling and bounded CG true-residual restarts.
+- Align OLS sessions with standalone numerical protection, preserve shared ordinary column caches, and invalidate prior numerical/result caches.
+- Reuse full-data screening Gram matrices; retain QR/SVD verification, the existing omission policy and public interfaces.
+- Add independent FWL, session lifecycle and failure regressions; retain explicit limits on large-sample, external-reference and performance claims.
+- Advance from 0.8.3 through the controlled version workflow; reset execution acceptance. This source integration does not publish packages.
+
+## 0.8.3 — unreleased candidate
+
+- Advance from 0.8.1 through the controlled version workflow; freeze a new public-contract snapshot without API changes, reset execution acceptance, and retain prior snapshots. This source candidate does not create a tag or publish packages.
+
+- Reduce the regular suite from the intermediate 916-case checkpoint to 205 focused cases; archive the wider tests outside the source tree and document the narrower coverage. Preserve retained assertions/tolerances and installed-wheel provenance checks.
+
+- Replace redundant parameter products with explicit representative cases and retire smoke checks covered by independent numerical oracles; keep statistical failure regressions, tolerances and the full CI matrix.
+- Remove obsolete audit JSON side effects and architecture-rendering string checks; retain package provenance, generated-map freshness and release integrity checks.
+- Synchronize both READMEs, contributor/test instructions and the roadmap with the 0.8.3 source; distinguish current source, historical validation and published packages.
+
+## 0.8.1 — unreleased candidate
+
+- Optimize FE absorption with adaptive MAP-to-CG continuation, pooled projection kernels and CG vector fusion.
+- Enforce solver workspace budgets and effective thread counts; add host-memory accounting via psutil.
+- Correct small-scale false convergence with relative CG energy thresholds and MAP column normalization.
+- Invalidate persistent numerical caches with ABI 2; retain encoded-column reuse.
+- Retain 26 focused FE regressions and extend the existing cache-resume regression; public contracts are unchanged from 0.8.0. No new large-sample or external-certification claim.
+
+## 0.8.0 — unreleased candidate
+
+- Reuse linear-IV matrix products, residuals and cluster aggregates; retain numerical rank safeguards.
+- Add optional synchronous `on_stage` snapshots and `iv_advanced_statistics=True`; disabling advanced diagnostics retains KP and common diagnostics.
+- Correct nested-cluster small-sample/RMSE and efficient-GMM overidentification handling; invalidate full session result caches with ABI 4.
+- Record six additive public-contract changes against immutable 0.7.0 and freeze a new 0.8.0 snapshot. Reset execution acceptance; no publication or new external-certification claim.
+
 ## Unreleased — 0.7 maintenance
 
 - Correct README Wald API naming, source/publication status, migration and validation entrypoints; preserve older records under history.

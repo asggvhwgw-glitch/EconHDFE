@@ -1,12 +1,11 @@
 """Current public contracts: real fits across four families, not version smoke tests."""
+
 import importlib
-import inspect
 import numpy as np
 import pytest
 from numpy.testing import assert_allclose, assert_array_equal
 import econhdfe as e
 import econhdfe.api as api
-import pyreghdfe as legacy
 
 
 @pytest.fixture(params=['ols', 'iv', 'ppml', 'ivppml'])
@@ -33,23 +32,23 @@ def workflow(request, panel_data):
         cls = e.PPMLHDFE if family == 'ppml' else e.IVPPMLHDFE
         model = cls(df, absorb=['firm', 'period'], config=cfg)
         identity = id(model.plan)
-        roles = dict(X=list(xnames)) if family == 'ppml' else dict(exog=['c'], endog=['endog'], instruments=['z'])
-        named = model.fit('count', offset='offset', clusters=cluster_names, **roles, **common)
-        reused = model.fit('count', exposure='exposure', clusters=cluster_names, **roles, **common)
+        roles = dict(x=list(xnames)) if family == 'ppml' else dict(exog=['c'], endog=['endog'], instruments=['z'])
+        named = model.fit('count', offset='offset', cluster=cluster_names, **roles, **common)
+        reused = model.fit('count', exposure='exposure', cluster=cluster_names, **roles, **common)
         assert id(model.plan) == identity
         if family == 'ppml':
-            array = e.ppmlhdfe(df['count'].to_numpy(), df[list(xnames)].to_numpy(), names=xnames,
-                              absorb=groups, offset=df.offset.to_numpy(), clusters=clusters, config=cfg, **common)
+            array = e.ppmlhdfe(y=df['count'].to_numpy(), x=df[list(xnames)].to_numpy(), names=xnames,
+                              absorb=groups, offset=df.offset.to_numpy(), cluster=clusters, config=cfg, **common)
         else:
-            array = e.ivppmlhdfe(df['count'].to_numpy(), exog=df[['c']].to_numpy(),
+            array = e.ivppmlhdfe(y=df['count'].to_numpy(), exog=df[['c']].to_numpy(),
                                 endog=df[['endog']].to_numpy(), instruments=df[['z']].to_numpy(),
                                 exog_names=['c'], endog_names=['endog'], instrument_names=['z'],
-                                absorb=groups, offset=df.offset.to_numpy(), clusters=clusters, config=cfg, **common)
+                                absorb=groups, offset=df.offset.to_numpy(), cluster=clusters, config=cfg, **common)
     return family, df, named, array, reused
 
 
 def coefficients(result):
-    return result.params if isinstance(result, e.RegressionResult) else result.coef
+    return result.params
 
 
 def test_named_array_and_reusable_routes_align(workflow):
@@ -104,29 +103,8 @@ def test_publication_protocol_preserves_model_specific_semantics(workflow):
 
 def test_every_current_public_alias_has_one_implementation():
     assert e.reghdfe is e.olshdfe and e.ivreghdfe is e.ivhdfe
-    for name in e.__all__:
-        assert getattr(legacy, name) is getattr(e, name), name
     for name in api.__all__:
         assert getattr(api, name) is getattr(e, name), name
     effects = importlib.import_module('econhdfe.effects')
     assert len(effects.__all__) == len(set(effects.__all__))
     assert all(hasattr(effects, name) for name in effects.__all__)
-
-
-@pytest.mark.parametrize('name', ['olshdfe', 'ivhdfe', 'ppmlhdfe', 'ivppmlhdfe'])
-def test_estimator_specific_keyword_boundaries_are_explicit(name):
-    # Deliberately DO NOT pretend the four API signatures are interchangeable.
-    signature = inspect.signature(getattr(e, name))
-    params = signature.parameters
-    assert not any(p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values())
-    assert ('cluster' in params) == (name in {'olshdfe', 'ivhdfe'})
-    assert ('clusters' in params) == (name in {'ppmlhdfe', 'ivppmlhdfe'})
-    assert ('weight_type' in params) == (name != 'ppmlhdfe')
-    required = {key: None for key, p in params.items()
-                if p.default is inspect.Parameter.empty}
-    # Supply required arguments: failure must identify the unknown keyword,
-    # not pass accidentally because a required outcome argument was missing.
-    with pytest.raises(TypeError, match="unknown_keyword"):
-        signature.bind(**required, unknown_keyword=True)
-    with pytest.raises(TypeError, match="unknown_keyword"):
-        getattr(e, name)(**required, unknown_keyword=True)

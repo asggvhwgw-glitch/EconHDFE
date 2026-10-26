@@ -1,4 +1,5 @@
 """Independent dummy oracle for prediction levels and beta covariance."""
+
 import numpy as np
 import pandas as pd
 import pytest

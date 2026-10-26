@@ -1,0 +1,122 @@
+{
+  "date": "2026-10-26",
+  "candidate_version": "0.9.1",
+  "benchmark_version_label": "0.9.0",
+  "provenance": "Both runs used the same relaxed-policy source; relabelled to 0.9.1 afterwards to preserve immutable 0.9.0 API snapshot. Normalized source hash verified identical.",
+  "timing": "Single cold-process fit per backend; excludes loading and independent reference validation. Failed within timing is not a completed estimate.",
+  "independent_reference": "Existing analytic/numerical IV construction; covariance correction conditional on reported DoF; no new Stata/R run.",
+  "validation": {
+    "base_tests": 468,
+    "native_tests": 43,
+    "all_tests": 511
+  },
+  "runs": {
+    "auto": {
+      "result": {
+        "method": "auto",
+        "rows": 5000000,
+        "source_sha256": "f6645b11a8779601bd53475e2c6a8c8494ef0192dd5c4c67498989ec72737b78",
+        "version": "0.9.0",
+        "python": "3.12.15",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "loading_seconds": 32.22032362502068,
+        "threads": 4,
+        "memory_mb": 8192,
+        "memory_policy": "relaxed",
+        "tolerance": 1e-12,
+        "max_iter": 16000,
+        "runs": [
+          {
+            "repeat": 0,
+            "seconds": 970.0746400419157,
+            "nobs": 4850080,
+            "rank": 21,
+            "dropped_singletons": 149920,
+            "df_absorbed": 1094160,
+            "iterations": 1025,
+            "converged": true,
+            "comparison": {
+              "sample_pass": true,
+              "rank_pass": true,
+              "coefficient_pass": true,
+              "coefficient_max_abs_diff": 1.3161724210508652e-08,
+              "coefficient_max_relative_diff": 4.971973434142009e-08,
+              "coefficient_max_scaled_abs_diff": 1.3161724210508652e-08,
+              "failed_coefficient_positions": [],
+              "residual_relative_l2": 1.6771854247757328e-10,
+              "rss_relative": 5.231132243957766e-14,
+              "conditional_stderr_relative": 5.317822393566615e-10,
+              "conditional_vcov_correlation_scaled": 1.0635643456472302e-09,
+              "residual_pass": true,
+              "conditional_covariance_pass": true,
+              "passed": true
+            },
+            "peak_rss_bytes": 4389224448
+          }
+        ],
+        "source_unchanged": true
+      },
+      "resource_monitor": {
+        "running": false,
+        "phase": "validate_0",
+        "seconds": 1007.0828605000861,
+        "rss_gib": 0.4158935546875,
+        "sampled_peak_rss_gib": 3.605194091796875,
+        "process_peak_rss_gib": 4.0877838134765625,
+        "available_gib": 6.5791168212890625,
+        "minimum_available_gib": 2.4987945556640625,
+        "cpu_seconds": 1943.990342,
+        "system_swap_access": "unavailable_in_sandbox",
+        "system_swap_change_mib": null,
+        "stop_reason": null
+      }
+    },
+    "within": {
+      "result": {
+        "method": "within",
+        "rows": 5000000,
+        "source_sha256": "f6645b11a8779601bd53475e2c6a8c8494ef0192dd5c4c67498989ec72737b78",
+        "version": "0.9.0",
+        "python": "3.12.15",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "loading_seconds": 34.103620207868516,
+        "threads": 4,
+        "memory_mb": 8192,
+        "memory_policy": "relaxed",
+        "tolerance": 1e-12,
+        "max_iter": 16000,
+        "runs": [],
+        "failure": {
+          "type": "HDFEConvergenceError",
+          "message": "HDFE absorption did not converge after 202 iterations (last convergence metric=1.046e-12).",
+          "code": "convergence.hdfe",
+          "stage": "hdfe",
+          "details": {
+            "iterations": 202,
+            "metric": 1.0456878418718674e-12
+          },
+          "seconds": 243.15262920805253
+        },
+        "source_unchanged": true
+      },
+      "resource_monitor": {
+        "running": false,
+        "phase": "fit_0_within",
+        "seconds": 277.1279665408656,
+        "rss_gib": 1.02166748046875,
+        "sampled_peak_rss_gib": 2.9057769775390625,
+        "process_peak_rss_gib": 3.438629150390625,
+        "available_gib": 3.21087646484375,
+        "minimum_available_gib": 2.5233306884765625,
+        "cpu_seconds": 633.592348,
+        "system_swap_access": "unavailable_in_sandbox",
+        "system_swap_change_mib": null,
+        "stop_reason": null
+      }
+    }
+  },
+  "speedup": null,
+  "limitation": "within failed unchanged 1e-12 original-row stationarity gate; no successful 5M native estimate or speedup."
+}

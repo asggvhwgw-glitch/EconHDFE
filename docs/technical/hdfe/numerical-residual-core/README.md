@@ -17,8 +17,8 @@ This directory contains the project technical document for the arbitrary-multiwa
 exact_multiway_hdfe_residual_core.{tex,pdf}
         -> econhdfe/hdfe/numerical_core.py
         -> econhdfe/hdfe/absorber.py
-        -> tests/numerics/test_residual_core.py
-        -> tests/numerics/test_complex_fe_corpus.py
+        -> tests/numerics/test_exact_oracles.py
+        -> tests/numerics/test_weighted_reductions.py
         -> benchmarks/hdfe/solver_v044_integration.json
 ```
 

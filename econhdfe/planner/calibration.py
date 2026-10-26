@@ -7,6 +7,7 @@ import platform
 import sys
 import tempfile
 import time
+from threading import RLock
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -14,9 +15,9 @@ import numpy as np
 from numba import config as numba_config
 from numba import get_num_threads, njit, prange, set_num_threads
 
-from .resources import effective_cpu_count
+from .resources import effective_cpu_count, runtime_resources
 
-_SCHEMA_VERSION = 1
+_SCHEMA_VERSION = 2
 _DEFAULT_TARGET_BYTES = 96 * 1024 * 1024
 _DEFAULT_PASSES = 4
 _DEFAULT_REPEATS = 3
@@ -117,6 +118,10 @@ def runtime_thread_fingerprint(*, max_threads: int | None = None) -> str:
     except Exception:
         numba_version = "unknown"
     cap = _effective_numba_cap(max_threads)
+    try:
+        affinity = sorted(os.sched_getaffinity(0))
+    except (AttributeError, OSError):
+        affinity = None
     payload = {
         "schema": _SCHEMA_VERSION,
         "system": platform.system(),
@@ -128,13 +133,19 @@ def runtime_thread_fingerprint(*, max_threads: int | None = None) -> str:
         "effective_cpu_count": int(effective_cpu_count()),
         "numba_cap": int(numba_config.NUMBA_NUM_THREADS),
         "calibration_cap": int(cap),
+        "affinity": affinity,
+        "threading_layer": str(numba_config.THREADING_LAYER),
     }
     raw = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(raw.encode()).hexdigest()
 
 
 def _effective_numba_cap(max_threads: int | None = None) -> int:
+    from .scheduler import current_allocation
     cap = min(int(effective_cpu_count()), int(numba_config.NUMBA_NUM_THREADS))
+    active = current_allocation()
+    if active is not None:
+        cap = min(cap, active.cpu_threads)
     if max_threads is not None:
         cap = min(cap, max(1, int(max_threads)))
     return max(1, cap)
@@ -213,6 +224,21 @@ def _select_saturation_thread(candidates: tuple[int, ...], medians: tuple[float,
     return int(candidates[int(np.argmin(np.asarray(medians)))])
 
 
+def _allowed_probe_target(target_bytes=_DEFAULT_TARGET_BYTES):
+    """Leave temporary/JIT headroom while choosing the probe's main array."""
+    from .scheduler import current_allocation
+    target = max(8 * 1024 * 1024, int(target_bytes))
+    active = current_allocation()
+    if active is not None:
+        target = min(target, active.remaining_memory_bytes() // 2)
+    resources = runtime_resources()
+    if resources.memory_limit_bytes is not None and resources.memory_current_bytes is not None:
+        headroom = max(0, resources.memory_limit_bytes - resources.memory_current_bytes
+                       - int(0.12 * resources.memory_limit_bytes))
+        target = min(target, headroom // 2)
+    return target
+
+
 def calibrate_threads(
     *,
     max_threads: int | None = None,
@@ -231,51 +257,93 @@ def calibrate_threads(
             float(near_best_fraction), 0, 0, 0, "single_thread",
         )
 
-    target = max(8 * 1024 * 1024, int(target_bytes))
+    from .scheduler import current_allocation, has_memory_reservations, reserve_memory
+    active = current_allocation()
+    if has_memory_reservations() or _parallel_worker(active):
+        raise MemoryError("thread calibration is deferred during reserved or parallel work")
+    target = _allowed_probe_target(target_bytes)
+    if target < 8 * 1024 * 1024:
+        raise MemoryError("insufficient budget/headroom for thread calibration")
     cols = 8
     rows = max(16_384, target // (cols * 8))
     # Deterministic, non-random, non-user data.  The small variation prevents
     # the compiler from reducing the workload to a trivial constant expression.
-    base = np.arange(cols, dtype=np.float64)[None, :] + 1.0
-    x = np.empty((rows, cols), dtype=np.float64)
-    x[:] = base
-    x[:, 0] += (np.arange(rows, dtype=np.float64) % 17.0) * 1e-9
-    out = np.empty(rows, dtype=np.float64)
+    # Reserve all known arrays atomically; the ledger lock is released before
+    # initialization/JIT/timing. Compiler and runtime overhead is not modeled.
+    with reserve_memory(rows * (cols + 3) * 8 + cols * 8, label="thread calibration probe"):
+        base = np.arange(cols, dtype=np.float64)[None, :] + 1.0
+        x = np.empty((rows, cols), dtype=np.float64)
+        x[:] = base
+        x[:, 0] += (np.arange(rows, dtype=np.float64) % 17.0) * 1e-9
+        out = np.empty(rows, dtype=np.float64)
 
-    old = int(get_num_threads())
-    try:
-        set_num_threads(1)
-        _memory_bandwidth_probe(x[: min(rows, 32_768)], out[: min(rows, 32_768)], 1)  # JIT warmup
-        candidates = calibration_candidates(cap)
-        medians: list[float] = []
-        reps = max(1, int(repeats))
-        p = max(1, int(passes))
-        for nthreads in candidates:
-            set_num_threads(int(nthreads))
-            timings = []
-            for _ in range(reps):
-                t0 = time.perf_counter()
-                _memory_bandwidth_probe(x, out, p)
-                timings.append(time.perf_counter() - t0)
-            medians.append(float(np.median(np.asarray(timings, dtype=np.float64))))
-    finally:
-        set_num_threads(old)
+        old = int(get_num_threads())
+        try:
+            set_num_threads(1)
+            _memory_bandwidth_probe(x[: min(rows, 32_768)], out[: min(rows, 32_768)], 1)
+            candidates = calibration_candidates(cap)
+            medians: list[float] = []
+            reps = max(1, int(repeats))
+            p = max(1, int(passes))
+            for nthreads in candidates:
+                set_num_threads(int(nthreads))
+                timings = []
+                for _ in range(reps):
+                    t0 = time.perf_counter()
+                    _memory_bandwidth_probe(x, out, p)
+                    timings.append(time.perf_counter() - t0)
+                medians.append(float(np.median(np.asarray(timings, dtype=np.float64))))
+        finally:
+            set_num_threads(old)
+        measured_bytes = int(x.nbytes)
+        del x, out, base
 
     medians_t = tuple(medians)
     selected = _select_saturation_thread(candidates, medians_t, near_best_fraction)
     identity_payload = json.dumps(
         {"fp": fingerprint, "candidates": candidates, "medians": [round(x, 9) for x in medians_t],
-         "selected": selected, "near_best": near_best_fraction, "target": int(x.nbytes), "passes": p},
+         "selected": selected, "near_best": near_best_fraction, "target": measured_bytes, "passes": p},
         sort_keys=True, separators=(",", ":"),
     )
     cid = hashlib.sha256(identity_payload.encode()).hexdigest()[:16]
     return ThreadCalibration(
         _SCHEMA_VERSION, cid, fingerprint, cap, candidates, medians_t, selected,
-        float(near_best_fraction), int(x.nbytes), p, reps, "measured",
+        float(near_best_fraction), measured_bytes, p, reps, "measured",
     )
 
 
 _MEMORY_CACHE: dict[tuple[str, int], ThreadCalibration] = {}
+_CALIBRATION_LOCK = RLock()
+
+
+def _parallel_worker(allocation):
+    while allocation is not None:
+        if allocation.worker_divisor > 1:
+            return True
+        allocation = allocation.parent
+    return False
+
+
+def _valid_calibration(value, *, fingerprint, cap):
+    from .scheduler import current_allocation, has_memory_reservations
+    # A small probe can live in CPU cache. Reuse it under the same constrained
+    # budget, but revisit it when at least twice as much probe space is safe.
+    sufficient_probe = value.max_threads == 1 or value.target_bytes >= _DEFAULT_TARGET_BYTES
+    if not sufficient_probe:
+        deferred = has_memory_reservations() or _parallel_worker(current_allocation())
+        allowed = 0 if deferred else _allowed_probe_target()
+        sufficient_probe = deferred or allowed < min(_DEFAULT_TARGET_BYTES, 2 * value.target_bytes)
+    return (
+        value.schema_version == _SCHEMA_VERSION
+        and value.runtime_fingerprint == fingerprint and value.max_threads == cap
+        and value.source in {"measured", "cache", "single_thread"}
+        and value.selected_threads in value.candidates
+        and all(1 <= t <= cap for t in value.candidates)
+        and len(value.candidates) == len(value.median_seconds)
+        and all(np.isfinite(t) and t >= 0 for t in value.median_seconds)
+        and (cap == 1 or value.target_bytes >= 8 * 1024 * 1024)
+        and sufficient_probe
+    )
 
 
 def get_thread_calibration(
@@ -290,11 +358,18 @@ def get_thread_calibration(
     planner falls back to an in-memory measurement and never changes estimator
     semantics because calibration controls only the thread count.
     """
+    with _CALIBRATION_LOCK:
+        return _get_thread_calibration(max_threads=max_threads, force=force, cache_path=cache_path)
+
+
+def _get_thread_calibration(*, max_threads=None, force=False, cache_path=None):
     cap = _effective_numba_cap(max_threads)
     fp = runtime_thread_fingerprint(max_threads=cap)
     key = (fp, cap)
     if not force and key in _MEMORY_CACHE:
-        return _MEMORY_CACHE[key]
+        cached = _MEMORY_CACHE[key]
+        if _valid_calibration(cached, fingerprint=fp, cap=cap):
+            return cached
 
     path = default_calibration_cache_path() if cache_path is None else Path(cache_path)
     data = _load_cache(path)
@@ -303,25 +378,30 @@ def get_thread_calibration(
         if isinstance(raw, dict):
             try:
                 cached = ThreadCalibration.from_dict(raw, source="cache")
-                if cached.max_threads == cap and 1 <= cached.selected_threads <= cap:
+                if raw.get("source") != "fallback" and _valid_calibration(cached, fingerprint=fp, cap=cap):
                     _MEMORY_CACHE[key] = cached
                     return cached
             except (KeyError, TypeError, ValueError):
                 pass
 
     try:
+        from .scheduler import current_allocation, has_memory_reservations
+        if cap > 1 and (has_memory_reservations() or _parallel_worker(current_allocation())):
+            raise MemoryError("thread calibration is deferred during reserved or parallel work")
         measured = calibrate_threads(max_threads=cap)
     except Exception:
-        # Calibration must never make estimation unavailable.  The fallback is
-        # the historical policy: use the effective runtime cap.
+        # Temporary pressure/deferred probes are not saturation measurements.
+        # Stay serial now and retry at a later unreserved planning boundary.
         cid = hashlib.sha256(f"{fp}:fallback:{cap}".encode()).hexdigest()[:16]
         measured = ThreadCalibration(
-            _SCHEMA_VERSION, cid, fp, cap, (cap,), (0.0,), cap,
+            _SCHEMA_VERSION, cid, fp, cap, (1,), (0.0,), 1,
             _DEFAULT_NEAR_BEST, 0, 0, 0, "fallback",
         )
+        return measured
 
-    data.setdefault("entries", {})[fp] = measured.as_dict()
-    _write_cache(path, data)
+    if measured.max_threads == 1 or measured.target_bytes >= _DEFAULT_TARGET_BYTES:
+        data.setdefault("entries", {})[fp] = measured.as_dict()
+        _write_cache(path, data)
     _MEMORY_CACHE[key] = measured
     return measured
 

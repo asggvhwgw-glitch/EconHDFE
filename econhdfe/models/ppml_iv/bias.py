@@ -53,13 +53,13 @@ class SPJPanel:
         return ((self.exporter, self.importer), (self.exporter, self.time), (self.importer, self.time))
 
     @property
-    def clusters(self):
+    def cluster(self):
         return None if self.kind == "A" else (self.pair,)
 
 
 @dataclass(slots=True)
 class SPJResult:
-    coef: np.ndarray
+    params: np.ndarray
     names: tuple[str, ...]
     full_coef: np.ndarray
     bias: np.ndarray
@@ -67,10 +67,6 @@ class SPJResult:
     panel_class: str
     seed: int
     fit_count: int
-
-    @property
-    def params(self) -> dict[str, float]:
-        return dict(zip(self.names, map(float, self.coef), strict=False))
 
 
 def _combine_a(full, time_half, unit_half):
@@ -104,7 +100,7 @@ def _balanced_random_half(values, rng):
 def _slope_vector(result):
     names = tuple(n for n in result.names if n != "_cons")
     idx = [result.names.index(n) for n in names]
-    return np.asarray(result.coef[idx], dtype=np.float64), names
+    return np.asarray(result.params[idx], dtype=np.float64), names
 
 
 def _fit_frame(data, panel, *, y, exog, endog, instruments, config, weights, weight_type, offset, exposure):
@@ -114,7 +110,7 @@ def _fit_frame(data, panel, *, y, exog, endog, instruments, config, weights, wei
         weights=weights, weight_type=weight_type,
         offset=offset, exposure=exposure,
         vce="robust" if panel.kind == "A" else "cluster",
-        clusters=panel.clusters,
+        cluster=panel.cluster,
     )
 
 
@@ -216,7 +212,7 @@ def ivppml_spj(
             components.update(time_mean=time_mean, cross_mean=cross_mean)
 
     return SPJResult(
-        coef=np.asarray(coef), names=names, full_coef=full,
+        params=np.asarray(coef), names=names, full_coef=full,
         bias=full-np.asarray(coef), components=components,
         panel_class=panel.kind, seed=int(seed), fit_count=fit_count,
     )

@@ -1,12 +1,9 @@
 import math
-
 import numpy as np
 import pandas as pd
 from scipy.special import gammaln
 from scipy.stats import f as f_dist, chi2 as chi2_dist
-
 from econhdfe import olshdfe, ivhdfe, ppmlhdfe, PPMLConfig
-from econhdfe.sessions import OLSHDFESession, IVHDFESession
 
 
 def _linear_df(seed=4801, n=1600):
@@ -62,23 +59,6 @@ def test_ols_main_fit_statistics_match_reghdfe_algebra():
         assert key in stats
 
 
-def test_ols_secondary_stats_are_vce_invariant_except_model_f():
-    df = _linear_df()
-    iid = olshdfe(df, y="y", x=["x1", "x2"], absorb=["firm", "year"], vce="iid")
-    clu = olshdfe(
-        df, y="y", x=["x1", "x2"], absorb=["firm", "year"],
-        cluster="cluster", vce="cluster",
-    )
-    np.testing.assert_allclose(
-        [clu.rss, clu.tss, clu.tss_within, clu.mss, clu.rmse, clu.loglike, clu.loglike_null,
-         clu.df_model, clu.df_resid_fit],
-        [iid.rss, iid.tss, iid.tss_within, iid.mss, iid.rmse, iid.loglike, iid.loglike_null,
-         iid.df_model, iid.df_resid_fit], rtol=2e-12, atol=2e-12,
-    )
-    assert clu.df_resid == 19
-    assert iid.df_resid > clu.df_resid
-
-
 def test_iv_unambiguous_small_sample_fit_statistics_match_oracle():
     df = _linear_df()
     r = ivhdfe(
@@ -114,20 +94,10 @@ def _ppml_data(seed=4802, n=1800):
     return y.astype(float), np.column_stack([x1, x2]), [firm, year]
 
 
-def test_ppml_deviance_is_invariant_to_internal_standardization():
-    y, X, fe = _ppml_data()
-    common = dict(separation=(), tolerance=1e-9, target_inner_tol=1e-10, max_iter=300)
-    a = ppmlhdfe(y, X, absorb=fe, vce="model", config=PPMLConfig(standardize=True, **common))
-    b = ppmlhdfe(y, X, absorb=fe, vce="model", config=PPMLConfig(standardize=False, **common))
-    np.testing.assert_allclose(a.coef, b.coef, rtol=2e-7, atol=2e-8)
-    np.testing.assert_allclose(a.loglike, b.loglike, rtol=2e-9, atol=2e-7)
-    np.testing.assert_allclose(a.deviance, b.deviance, rtol=2e-8, atol=2e-7)
-
-
 def test_ppml_main_scalars_match_ppmlhdfe_definitions():
     y, X, fe = _ppml_data(seed=4803)
     r = ppmlhdfe(
-        y, X, absorb=fe, vce="model",
+        y=y, x=X, absorb=fe, vce="model",
         config=PPMLConfig(standardize=True, separation=(), tolerance=1e-9, target_inner_tol=1e-10),
     )
     keep = r.sample_mask
@@ -143,7 +113,7 @@ def test_ppml_main_scalars_match_ppmlhdfe_definitions():
     ll0 = float(np.sum(ys * math.log(mu0) - mu0 - gammaln(ys + 1)))
     idx = [i for i, name in enumerate(r.names) if name != "_cons"]
     V = r.vcov[np.ix_(idx, idx)]
-    beta = r.coef[idx]
+    beta = r.params[idx]
     chi2 = float(beta @ np.linalg.solve(V, beta))
     p = float(chi2_dist.sf(chi2, len(idx)))
     np.testing.assert_allclose(

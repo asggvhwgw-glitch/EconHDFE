@@ -1,4 +1,4 @@
-"""Compare pyreghdfe outputs with Stata golden results on identical fixtures.
+"""Compare econhdfe outputs with Stata golden results on identical fixtures.
 
 The comparator is intentionally strict about every statistic that Stata records:
 coefficients, standard errors, covariance, N, absorbed DoF, and available weak-ID
@@ -14,7 +14,7 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from pyreghdfe import (
+from econhdfe import (
     FixedEffect,
     OmittedVariableWarning,
     factor,

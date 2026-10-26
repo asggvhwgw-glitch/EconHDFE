@@ -1,5 +1,8 @@
 # EconHDFE Documentation
 
+This source checkout is **0.9.0**; see [migration notes](release/migration.md) for
+linear IV diagnostics/reuse, FE execution changes and numerical-cache invalidation.
+
 The documentation is organized by **current behavior**, **mathematical/technical foundations**, **development/validation**, and **release history**. Historical checkpoints are retained for provenance but are not the source of truth for current behavior.
 
 ## Start here
@@ -39,6 +42,8 @@ The documentation is organized by **current behavior**, **mathematical/technical
 ## Inference and specialized technical notes
 
 - [IV correctness closeout](development/iv-correctness-closeout.md) — identification checks, sensitive solves and weighted/fixed-kappa inference.
+- [IV 分阶段结果与诊断计算开关](development/iv-staged-diagnostics.md) — 常用诊断范围、同步回调和缓存行为。
+- [IV 单次拟合内计算复用](development/iv-performance-reuse.md) — 角色化求解、数值回退与矩/聚类聚合共享。
 
 - [Cluster inference](technical/cluster-inference.md)
 - [Heterogeneous specification optimization](technical/heterogeneous-specification-optimization.md)

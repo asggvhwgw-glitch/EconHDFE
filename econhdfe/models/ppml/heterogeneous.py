@@ -1,4 +1,5 @@
 from __future__ import annotations
+from ...planner.scheduler import managed_execution
 from ...compute.clusters import normalize_vce_clusters
 
 """Heterogeneous-specification PPML execution operators.
@@ -19,17 +20,18 @@ from ...compute.block_design import BlockDesign, DenseDesignBlock
 from ...compute.linalg import weighted_lstsq, independent_columns
 from ...compute.partitioned_lstsq import partitioned_weighted_lstsq
 from ...compute.stable_linalg import equilibrated_gram_inverse
-from ...compute.vcov import sandwich_vcov_block_xe
+from ...compute.vcov import sandwich_vcov_block_xe, normalize_vce
 from ...errors import ShapeError, InputError, ConvergenceError
 from ...hdfe.block_projection import BlockWeightedFEProjector
 from ...hdfe.plan import FEPlan
 from ..poisson import exp_clip_into, working_state, poisson_deviance
 from .config import PPMLConfig
 from .irls import IRLSState, _predict_eps
-from .separation import SeparationResult, detect_separation
+from .separation import SeparationResult, detect_separation, initial_sample_mask
 from .standardize import Standardization
 from .results import PPMLResult
 from .execution import resolve_execution
+from .vce import MODEL_VCE_KINDS
 from ...reporting import cluster_counts as _cluster_counts, fe_names_from_metadata
 from scipy.special import gammaln
 
@@ -57,6 +59,8 @@ def detect_separation_block(
     weights,
     config: PPMLConfig,
     execution_config=None,
+    *,
+    frequency_weights: bool = False,
 ) -> SeparationResult:
     """Exact component-wise wrapper around the established separation stack.
 
@@ -80,6 +84,7 @@ def detect_separation_block(
         raise ValueError("weights must have one value per BlockDesign observation")
 
     separated = np.zeros(X.nobs, dtype=bool)
+    singletons = np.zeros(X.nobs, dtype=bool)
     counts = {m: 0 for m in config.separation}
     timings = {m: 0.0 for m in config.separation}
     iterations = {m: 0 for m in config.separation}
@@ -91,9 +96,11 @@ def detect_separation_block(
     wall0 = perf_counter()
     for block, rows, local_plan in _component_layout(X, plan):
         local = detect_separation(
-            y0[rows], block.values, local_plan, w0[rows], config, execution_config
+            y0[rows], block.values, local_plan, w0[rows], config, execution_config,
+            frequency_weights=frequency_weights,
         )
         separated[rows] = local.separated
+        singletons[rows] = local.singletons
         for method in config.separation:
             counts[method] += int(local.by_method.get(method, 0))
             timings[method] += float(local.timings.get(method, 0.0))
@@ -105,7 +112,7 @@ def detect_separation_block(
     for method in config.separation:
         values = sorted(solver_sets[method])
         solvers[method] = values[0] if len(values) == 1 else "component[" + ",".join(values) + "]"
-    return SeparationResult(separated, counts, timings, iterations, solvers)
+    return SeparationResult(separated, counts, timings, iterations, solvers, singletons)
 
 
 
@@ -368,8 +375,8 @@ def ppml_vcov_block(
     mu = np.asarray(mu, dtype=np.float64)
     tw = np.asarray(true_w, dtype=np.float64)
     bread = equilibrated_gram_inverse(X_tilde.gram(weights=tw * mu))
-    kind0 = "model" if kind is None else str(kind).lower().replace("-", "_")
-    if kind0 in {"model", "iid", "asymptotic", "unadjusted", "homoskedastic"}:
+    kind0 = normalize_vce(kind, "model")
+    if kind0 in MODEL_VCE_KINDS:
         return bread
     score_scalar = tw * (y - mu)
     if kind0 == "cluster":
@@ -391,6 +398,7 @@ def _resource_block_projector(X: BlockDesign, plan: FEPlan, config: PPMLConfig, 
     )
 
 
+@managed_execution
 def fit_block_arrays(
     y,
     X: BlockDesign,
@@ -426,7 +434,7 @@ def fit_block_arrays(
     n = len(y)
     execution, _ = resolve_execution(execution_config, None)
 
-    singleton = plan.singleton_mask()
+    singleton, n_fe_separated = initial_sample_mask(y, plan, config)
     has_singletons = bool(np.any(singleton))
     if has_singletons:
         active0 = ~singleton
@@ -453,8 +461,10 @@ def fit_block_arrays(
     standardizer = standardizer.select_columns(keep)
 
     sep0 = detect_separation_block(y0s, B0s, p0, w0, config, execution)
-    survivor0 = ~sep0.separated
-    any_sep = bool(np.any(sep0.separated))
+    if "fe" in sep0.by_method:
+        sep0.by_method["fe"] = n_fe_separated
+    survivor0 = ~(sep0.separated | sep0.singletons)
+    any_sep = not bool(np.all(survivor0))
     if not np.any(survivor0) or not np.any(y0s[survivor0] > 0):
         raise InputError(
             "PPML has no finite estimable sample after separation",
@@ -517,8 +527,10 @@ def fit_block_arrays(
     if np.any(mu_sep):
         current = np.flatnonzero(sample)
         separation[current[mu_sep]] = True
-        sample[current[mu_sep]] = False
         keep_mu = ~mu_sep
+        # Upstream trim + HDFE reload also prunes the singletons this creates.
+        keep_mu[np.flatnonzero(keep_mu)[ps_requested.subset(keep_mu).singleton_mask()]] = False
+        sample[current[~keep_mu]] = False
         ystd, Bstd = ystd[keep_mu], Bstd.subset_rows(keep_mu)
         ys_orig, ws, offs = ys_orig[keep_mu], ws[keep_mu], offs[keep_mu]
         ps_requested = ps_requested.subset(keep_mu)
@@ -551,7 +563,7 @@ def fit_block_arrays(
     if clusters is not None:
         cls_list = clusters if isinstance(clusters, (list, tuple)) else [clusters]
         cls_s = [np.asarray(c)[sample] for c in cls_list]
-    if str(vce).lower() == "cluster":
+    if normalize_vce(vce) == "cluster":
         cls_s = normalize_vce_clusters(cls_s, nobs=len(ystd))
     dof = ps_requested.dof_info(clusters=cls_s, method=config.dof_method)
     df_a = int(dof.df_absorbed)
@@ -560,8 +572,7 @@ def fit_block_arrays(
         df_absorbed=df_a, nested_adj=int(dof.nested > 0),
     )
     V = standardizer.unscale_vcov(Vstd)
-    vce_key = "model" if vce is None else str(vce).lower().replace("-", "_")
-    if vce_key in {"model", "iid", "asymptotic", "unadjusted", "homoskedastic"}:
+    if normalize_vce(vce, "model") in MODEL_VCE_KINDS:
         V /= standardizer.y_scale
     se = np.sqrt(np.maximum(np.diag(V), 0.0))
 
@@ -588,7 +599,7 @@ def fit_block_arrays(
         full_eta[sample] = eta_orig
 
     return PPMLResult(
-        coef=beta, vcov=V, stderr=se, names=tuple(names), converged=True,
+        params=beta, vcov=V, stderr=se, names=tuple(names), converged=True,
         iterations=state.iterations, deviance=deviance, loglike=ll,
         nobs=int(np.sum(sample)), n_separated=int(np.sum(separation)),
         sample_mask=sample, separation_mask=separation, mu=full_mu, eta=full_eta,
@@ -607,7 +618,7 @@ def fit_block_arrays(
                 "memory_budget_mb": execution.memory_budget_mb,
                 "cache": execution.cache,
             },
-            "n_singletons": int(np.sum(singleton)),
+            "n_singletons": int(n - np.sum(sample) - np.sum(separation)),
             "absorb_iterations": state.absorb_iterations,
             "epsilon": state.epsilon,
             "standardized": config.standardize,
@@ -622,7 +633,7 @@ def fit_block_arrays(
         fe_names=fe_names_from_metadata(ps_requested.metadata),
         weight_type="none" if np.allclose(ws, 1.0) else "weight",
         sum_weights=float(np.sum(ws)),
-        n_singletons=int(np.sum(singleton)),
+        n_singletons=int(n - np.sum(sample) - np.sum(separation)),
     )
 
 

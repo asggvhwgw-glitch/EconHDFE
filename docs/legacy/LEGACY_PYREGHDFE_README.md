@@ -1,3 +1,5 @@
+> **Historical document:** the `pyreghdfe` compatibility package was removed in econhdfe 0.9.0. Import from `econhdfe` instead; see [docs/release/migration.md](../release/migration.md).
+
 # pyreghdfe 0.9.0a1
 
 `pyreghdfe` is a clean-room Python implementation of the econometric behavior

@@ -20,12 +20,6 @@ from pathlib import Path
 
 
 GROUPS = {
-    "compat": {
-        "label": "Compatibility shim",
-        "role": "compat",
-        "layer": "surface",
-        "description": "Preserves older reghdfe-style Python workflows so empirical projects can migrate without changing the econometric specification.",
-    },
     "interface": {
         "label": "Public interface & orchestration",
         "role": "surface",
@@ -119,7 +113,6 @@ GROUPS = {
 }
 
 LAYOUT = {
-    "compat": (40, 72, 190),
     "interface": (300, 72, 220),
     "frontend": (590, 72, 200),
     "contracts": (860, 72, 200),
@@ -162,7 +155,6 @@ def _wrap_label(label: str, max_chars: int = 21) -> list[str]:
 
 
 OVERVIEW_EDGES = [
-    ["compat", "interface"],
     ["interface", "frontend"],
     ["interface", "data"],
     ["interface", "contracts"],
@@ -306,7 +298,6 @@ INVARIANTS = [
     "resampling owns draw mechanics only; estimator/inference-specific statistics remain outside resampling.",
     "standard CRV1 covariance remains in compute/VCE; advanced cluster diagnostics and WCR/WCU live in inference/cluster.",
     "public boundaries expose structured EconHDFEError codes without masking programmer failures.",
-    "pyreghdfe is a compatibility surface; canonical implementation lives under econhdfe.",
 ]
 
 CODEMAP = [
@@ -352,8 +343,6 @@ def _module_name(root: Path, path: Path) -> str:
 
 
 def _group(module: str) -> str:
-    if module == "pyreghdfe" or module.startswith("pyreghdfe."):
-        return "compat"
     if module in {"econhdfe.errors", "econhdfe.config", "econhdfe.results", "econhdfe.reporting", "econhdfe.support_reports", "econhdfe.postestimation", "econhdfe.prediction", "econhdfe.prediction_api"}:
         return "contracts"
     if module.startswith("econhdfe.frontend"):
@@ -387,7 +376,7 @@ def _group(module: str) -> str:
 
 def _records(root: Path) -> list[ModuleRecord]:
     out: list[ModuleRecord] = []
-    for package in ("econhdfe", "pyreghdfe"):
+    for package in ("econhdfe",):
         base = root / package
         if not base.exists():
             continue
@@ -432,7 +421,7 @@ def _import_edges(root: Path, records: list[ModuleRecord]) -> tuple[list[dict], 
                 if target:
                     targets.append(target)
             for target in targets:
-                if not (target == "econhdfe" or target.startswith("econhdfe.") or target == "pyreghdfe" or target.startswith("pyreghdfe.")):
+                if not (target == "econhdfe" or target.startswith("econhdfe.")):
                     continue
                 # Map imports of symbols/subpaths to the deepest known module prefix.
                 resolved = target
@@ -490,7 +479,7 @@ def _public_exports(root: Path) -> list[str]:
 
 def _repo_areas(root: Path) -> list[dict]:
     areas = []
-    for name in ["econhdfe", "pyreghdfe", "tests", "validation", "benchmarks", "docs", "scripts", "skills", "compatibility"]:
+    for name in ["econhdfe", "tests", "validation", "benchmarks", "docs", "scripts", "skills", "compatibility"]:
         base = root / name
         if not base.exists():
             continue
@@ -658,15 +647,15 @@ def render_html(ir: dict) -> str:
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{title}</title>
 <style>
-:root{{--bg:#0b1017;--panel:#111821;--panel2:#151e29;--card:#172231;--card-hi:#1c2a3b;--text:#edf3f8;--muted:#94a3b8;--line:#74859a;--border:#29384a;--surface:#6aa7ff;--model:#c997ff;--infra:#68d391;--kernel:#f0c86a;--compat:#ff8a84;--active:#8bc3ff;--shadow:rgba(0,0,0,.32)}}
-:root.light{{--bg:#f5f7fa;--panel:#fff;--panel2:#f8fafc;--card:#fff;--card-hi:#f8fafc;--text:#152033;--muted:#64748b;--line:#8997aa;--border:#d2dae5;--surface:#0969da;--model:#8250df;--infra:#1a7f37;--kernel:#9a6700;--compat:#cf222e;--active:#0550ae;--shadow:rgba(15,23,42,.10)}}
-*{{box-sizing:border-box}}body{{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}}button{{font:inherit}}code{{overflow-wrap:anywhere}}.shell{{max-width:1580px;margin:auto;padding:24px}}.top{{display:flex;gap:18px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}}h1{{font-size:24px;line-height:1.2;margin:0 0 8px;letter-spacing:-.02em}}.sub{{color:var(--muted);max-width:920px}}.theme{{border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:9px;padding:9px 12px;cursor:pointer;min-height:40px}}.toolbar{{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 14px}}.toolbar button{{border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:999px;padding:8px 13px;cursor:pointer;min-height:38px}}.toolbar button:hover{{background:var(--panel2)}}.toolbar button[aria-pressed="true"]{{background:var(--panel2);border-color:var(--active);box-shadow:inset 0 0 0 1px var(--active)}}.layout{{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;align-items:start}}.stage{{background:var(--panel);border:1px solid var(--border);border-radius:14px;overflow:auto;min-width:0;box-shadow:0 14px 36px var(--shadow)}}svg{{display:block;width:100%;min-width:1180px;height:auto}}.lane{{fill:var(--panel2);stroke:var(--border);stroke-width:1}}.lane-label{{fill:var(--muted);font-size:11px;font-weight:700;letter-spacing:.12em}}.edge-halo{{fill:none;stroke:var(--panel);stroke-width:5.8;stroke-linecap:round;stroke-linejoin:round;opacity:.90;pointer-events:none;vector-effect:non-scaling-stroke}}.edge{{fill:none;stroke:var(--line);stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round;opacity:.44;vector-effect:non-scaling-stroke;transition:opacity .15s,stroke-width .15s,stroke .15s}}.edge.overview{{stroke-width:1.5;opacity:.60}}.edge.all{{stroke-width:1.0;opacity:.20}}.edge.on{{stroke:var(--active);stroke-width:2.4;opacity:.98}}.edge-halo.on{{stroke-width:6.8;opacity:.96}}.node{{cursor:pointer;opacity:.78;transition:opacity .15s}}.node:hover,.node:focus,.node.on{{opacity:1}}.node .card{{fill:var(--card);stroke:var(--border);stroke-width:1.4;filter:url(#nodeShadow)}}.node:hover .card,.node:focus .card{{fill:var(--card-hi)}}.node.on .card{{stroke:var(--active);stroke-width:2.3}}.node .rolebar{{stroke:none}}.node .title{{fill:var(--text);font-size:13.5px;font-weight:650;letter-spacing:-.01em;pointer-events:none}}.node .small{{fill:var(--muted);font-size:10.5px;pointer-events:none}}.node[data-role="surface"] .rolebar{{fill:var(--surface)}}.node[data-role="model"] .rolebar{{fill:var(--model)}}.node[data-role="infra"] .rolebar{{fill:var(--infra)}}.node[data-role="kernel"] .rolebar{{fill:var(--kernel)}}.node[data-role="compat"] .rolebar{{fill:var(--compat)}}.side{{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:17px;min-width:0;box-shadow:0 10px 28px var(--shadow)}}.side h2{{font-size:17px;line-height:1.25;margin:0 0 7px}}.meta{{color:var(--muted);font-size:12px}}.filelist,.edgelist{{padding-left:18px;max-height:210px;overflow:auto;overflow-wrap:anywhere}}.filelist li,.edgelist li{{margin:3px 0}}.flowdesc{{margin:13px 0;padding:11px 12px;background:var(--panel2);border:1px solid var(--border);border-radius:10px}}.steps{{padding-left:20px}}.steps li{{margin:5px 0}}.legend{{display:flex;gap:13px;flex-wrap:wrap;margin:11px 0 4px;color:var(--muted);font-size:12px}}.dot{{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}}.repo{{margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}}.repo div{{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px}}.repo b{{display:block;margin-bottom:4px}}.note{{margin-top:14px;color:var(--muted);font-size:12px}}@media(max-width:980px){{.layout{{grid-template-columns:1fr}}.side{{order:-1}}.shell{{padding:14px}}}}@media(prefers-reduced-motion:reduce){{*{{transition:none!important}}}}
+:root{{--bg:#0b1017;--panel:#111821;--panel2:#151e29;--card:#172231;--card-hi:#1c2a3b;--text:#edf3f8;--muted:#94a3b8;--line:#74859a;--border:#29384a;--surface:#6aa7ff;--model:#c997ff;--infra:#68d391;--kernel:#f0c86a;--active:#8bc3ff;--shadow:rgba(0,0,0,.32)}}
+:root.light{{--bg:#f5f7fa;--panel:#fff;--panel2:#f8fafc;--card:#fff;--card-hi:#f8fafc;--text:#152033;--muted:#64748b;--line:#8997aa;--border:#d2dae5;--surface:#0969da;--model:#8250df;--infra:#1a7f37;--kernel:#9a6700;--active:#0550ae;--shadow:rgba(15,23,42,.10)}}
+*{{box-sizing:border-box}}body{{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}}button{{font:inherit}}code{{overflow-wrap:anywhere}}.shell{{max-width:1580px;margin:auto;padding:24px}}.top{{display:flex;gap:18px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}}h1{{font-size:24px;line-height:1.2;margin:0 0 8px;letter-spacing:-.02em}}.sub{{color:var(--muted);max-width:920px}}.theme{{border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:9px;padding:9px 12px;cursor:pointer;min-height:40px}}.toolbar{{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 14px}}.toolbar button{{border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:999px;padding:8px 13px;cursor:pointer;min-height:38px}}.toolbar button:hover{{background:var(--panel2)}}.toolbar button[aria-pressed="true"]{{background:var(--panel2);border-color:var(--active);box-shadow:inset 0 0 0 1px var(--active)}}.layout{{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;align-items:start}}.stage{{background:var(--panel);border:1px solid var(--border);border-radius:14px;overflow:auto;min-width:0;box-shadow:0 14px 36px var(--shadow)}}svg{{display:block;width:100%;min-width:1180px;height:auto}}.lane{{fill:var(--panel2);stroke:var(--border);stroke-width:1}}.lane-label{{fill:var(--muted);font-size:11px;font-weight:700;letter-spacing:.12em}}.edge-halo{{fill:none;stroke:var(--panel);stroke-width:5.8;stroke-linecap:round;stroke-linejoin:round;opacity:.90;pointer-events:none;vector-effect:non-scaling-stroke}}.edge{{fill:none;stroke:var(--line);stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round;opacity:.44;vector-effect:non-scaling-stroke;transition:opacity .15s,stroke-width .15s,stroke .15s}}.edge.overview{{stroke-width:1.5;opacity:.60}}.edge.all{{stroke-width:1.0;opacity:.20}}.edge.on{{stroke:var(--active);stroke-width:2.4;opacity:.98}}.edge-halo.on{{stroke-width:6.8;opacity:.96}}.node{{cursor:pointer;opacity:.78;transition:opacity .15s}}.node:hover,.node:focus,.node.on{{opacity:1}}.node .card{{fill:var(--card);stroke:var(--border);stroke-width:1.4;filter:url(#nodeShadow)}}.node:hover .card,.node:focus .card{{fill:var(--card-hi)}}.node.on .card{{stroke:var(--active);stroke-width:2.3}}.node .rolebar{{stroke:none}}.node .title{{fill:var(--text);font-size:13.5px;font-weight:650;letter-spacing:-.01em;pointer-events:none}}.node .small{{fill:var(--muted);font-size:10.5px;pointer-events:none}}.node[data-role="surface"] .rolebar{{fill:var(--surface)}}.node[data-role="model"] .rolebar{{fill:var(--model)}}.node[data-role="infra"] .rolebar{{fill:var(--infra)}}.node[data-role="kernel"] .rolebar{{fill:var(--kernel)}}.side{{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:17px;min-width:0;box-shadow:0 10px 28px var(--shadow)}}.side h2{{font-size:17px;line-height:1.25;margin:0 0 7px}}.meta{{color:var(--muted);font-size:12px}}.filelist,.edgelist{{padding-left:18px;max-height:210px;overflow:auto;overflow-wrap:anywhere}}.filelist li,.edgelist li{{margin:3px 0}}.flowdesc{{margin:13px 0;padding:11px 12px;background:var(--panel2);border:1px solid var(--border);border-radius:10px}}.steps{{padding-left:20px}}.steps li{{margin:5px 0}}.legend{{display:flex;gap:13px;flex-wrap:wrap;margin:11px 0 4px;color:var(--muted);font-size:12px}}.dot{{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}}.repo{{margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}}.repo div{{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px}}.repo b{{display:block;margin-bottom:4px}}.note{{margin-top:14px;color:var(--muted);font-size:12px}}@media(max-width:980px){{.layout{{grid-template-columns:1fr}}.side{{order:-1}}.shell{{padding:14px}}}}@media(prefers-reduced-motion:reduce){{*{{transition:none!important}}}}
 </style>
 </head>
 <body>
 <main class="shell" id="app">
 <div class="top"><div><h1>{title}</h1><div class="sub">AST-derived internal import topology with code-verified execution-flow overlays. Re-export-only <code>__init__.py</code> imports are excluded from dependency counts.</div></div><button class="theme" id="theme" type="button">Toggle theme</button></div>
-<div class="legend"><span><i class="dot" style="background:var(--surface)"></i>surface</span><span><i class="dot" style="background:var(--model)"></i>model</span><span><i class="dot" style="background:var(--infra)"></i>infrastructure</span><span><i class="dot" style="background:var(--kernel)"></i>kernel</span><span><i class="dot" style="background:var(--compat)"></i>compatibility</span></div>
+<div class="legend"><span><i class="dot" style="background:var(--surface)"></i>surface</span><span><i class="dot" style="background:var(--model)"></i>model</span><span><i class="dot" style="background:var(--infra)"></i>infrastructure</span><span><i class="dot" style="background:var(--kernel)"></i>kernel</span></div>
 <div class="toolbar" id="flows"></div>
 <div class="layout"><section class="stage" aria-label="Architecture graph"><svg id="graph" viewBox="0 0 1240 835" role="img" aria-label="econhdfe architecture dependency graph"><defs><filter id="nodeShadow" x="-15%" y="-20%" width="130%" height="150%"><feDropShadow dx="0" dy="4" stdDeviation="5" flood-opacity=".16"/></filter><marker id="arrow" viewBox="0 0 10 10" markerWidth="8" markerHeight="8" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 1.5 1.5 L 8.5 5 L 1.5 8.5" fill="none" stroke="var(--line)" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"/></marker><marker id="arrowOn" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 1.2 1.2 L 8.8 5 L 1.2 8.8" fill="none" stroke="var(--active)" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g id="lanes"></g><g id="edges"></g><g id="nodes"></g></svg></section><aside class="side" id="details" aria-live="polite"></aside></div>
 <section><h2 style="font-size:16px;margin:20px 0 8px">Repository areas</h2><div class="repo" id="repo"></div></section>

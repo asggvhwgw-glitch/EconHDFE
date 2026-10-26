@@ -1,6 +1,25 @@
 {
-  "approved": [],
-  "baseline_version": "0.7.0.dev0",
-  "release_version": "0.7.0",
+  "approved": [
+    {
+      "id": "b18a4c775ea9cb97",
+      "kind": "changed",
+      "path": "signatures.ExecutionConfig",
+      "reason": "Optional memory_policy keyword exposes the monitored relaxed strategy without altering numerical tolerances or estimator specification."
+    },
+    {
+      "id": "e04401650a13e005",
+      "kind": "changed",
+      "path": "config_schemas.ExecutionConfig",
+      "reason": "User-requested opt-in relaxed memory policy; conservative default and live safeguards retained; documented in docs/development/execution-planner.md."
+    },
+    {
+      "id": "f564745b4a9d3820",
+      "kind": "changed",
+      "path": "exported_dataclass_schemas.ExecutionConfig",
+      "reason": "Additive trailing ExecutionConfig field; existing calls and default policy unchanged."
+    }
+  ],
+  "baseline_version": "0.9.0",
+  "release_version": "0.9.1",
   "schema_version": 1
 }

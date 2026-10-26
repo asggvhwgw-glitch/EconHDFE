@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import numpy as np
+from ..errors import SpecificationError
+from ..planner.scheduler import current_allocation, inner_thread_request
 
 from ..planner import (
     PlanCertificate, RepresentationCandidate, choose_representation,
@@ -37,38 +39,49 @@ def _pow2_floor(n: int) -> int:
     return 1 << (int(n).bit_length() - 1)
 
 
-def plan_workspace(
-    *,
-    nobs: int,
-    ncols: int,
-    pool_size='auto',
-    memory_budget_mb: float = 512,
-    scratch_arrays_per_rhs: int = 1,
-    requested_threads='auto',
-    reserve_fraction: float = 0.12,
-) -> WorkspacePlan:
-    """Plan HDFE RHS workspace through the shared execution planner.
-
-    Statistical semantics are fixed before this function is called.  This
-    wrapper preserves the historical ``WorkspacePlan`` contract while CPU and
-    memory resource policy now comes from the package-wide planner layer.
-    """
+def _plan_workspace(
+    *, nobs, ncols, pool_size, memory_budget_mb, requested_threads,
+    bytes_per_column, resident_solver_bytes=0, reserve_fraction=0.12,
+):
+    """Internal byte-based plan; resident solver state shares the user budget."""
     nobs = int(nobs); ncols = max(1, int(ncols))
+    requested_threads = inner_thread_request(requested_threads)
+    budget = int(float(memory_budget_mb) * 1024**2)
+    if budget <= 0:
+        raise SpecificationError("memory_budget_mb must be positive")
     resources = runtime_resources()
     execution = plan_execution(
-        requested_budget_bytes=int(max(float(memory_budget_mb), 64.0) * (1024**2)),
-        requested_threads=requested_threads, resources=resources,
+        requested_budget_bytes=budget,
+        requested_threads=1 if requested_threads in (None, "auto") and nobs < 100_000 else requested_threads,
+        resources=resources,
         reserve_fraction=reserve_fraction, calibrate_auto_threads=(requested_threads in (None, "auto") and nobs >= 100_000),
     )
     threads = execution.parallel.inner_threads
-    if pool_size not in (None, 'auto'):
-        p = max(1, min(int(pool_size), ncols))
-        return WorkspacePlan('full_width_memory' if p == ncols else 'pooled_memory', p, threads,
-                             resources.memory_limit_bytes, resources.memory_current_bytes, None, 'explicit_pool_size')
-
     memory = execution.memory
-    per_col = max(1, nobs * 8 * max(1, int(scratch_arrays_per_rhs)))
-    cap = max(1, int(memory.effective_budget_bytes // per_col))
+    # Resident state is already reflected in runtime current usage. Charge it
+    # against the configured solver budget, not twice against host headroom.
+    usable = budget - int(resident_solver_bytes)
+    if memory.headroom_bytes is not None:
+        usable = min(usable, memory.headroom_bytes)
+    per_col = max(1, int(bytes_per_column))
+    cap = max(0, usable // per_col)
+    explicit = pool_size not in (None, 'auto')
+    requested = max(1, min(int(pool_size), ncols)) if explicit else 1
+    if requested > cap:
+        raise SpecificationError(
+            "Requested HDFE workspace does not fit the memory budget or available headroom.",
+            code="resource.memory", stage="execution",
+            details={"pool_size": requested, "bytes_per_column": per_col,
+                     "resident_solver_bytes": int(resident_solver_bytes),
+                     "requested_budget_bytes": budget, "available_workspace_bytes": max(0, usable)},
+            suggestion="Reduce pool_size or use 'auto'; if one column cannot fit, increase the budget or free memory.",
+        )
+    if pool_size not in (None, 'auto'):
+        p = requested
+        return WorkspacePlan('full_width_memory' if p == ncols else 'pooled_memory', p, threads,
+                             resources.memory_limit_bytes, resources.memory_current_bytes,
+                             memory.headroom_bytes, 'explicit_pool_size')
+
     raw = max(1, min(ncols, cap))
     p = min(ncols, _pow2_floor(raw))
     mode = 'full_width_memory' if p >= ncols else 'pooled_memory'
@@ -77,6 +90,29 @@ def plan_workspace(
         mode, p, threads, resources.memory_limit_bytes, resources.memory_current_bytes,
         memory.headroom_bytes, reason,
     )
+
+
+def _check_allocation_headroom(nbytes):
+    """Check a known upcoming allocation; inputs are not a solver-workspace budget."""
+    active = current_allocation()
+    if active is not None and int(nbytes) > active.remaining_memory_bytes():
+        raise SpecificationError("Allocation exceeds the remaining shared computation budget.",
+                                 code="resource.memory", stage="execution",
+                                 details={"allocation_bytes": int(nbytes),
+                                          "headroom_bytes": active.remaining_memory_bytes()})
+    resources = runtime_resources()
+    if resources.memory_limit_bytes is None or resources.memory_current_bytes is None:
+        return
+    reserve = (active.reserve_bytes if active is not None else
+               int(0.12 * resources.memory_limit_bytes))
+    headroom = max(0, resources.memory_limit_bytes - resources.memory_current_bytes - reserve)
+    if int(nbytes) > headroom:
+        raise SpecificationError(
+            "Insufficient available memory for the dense HDFE design block.",
+            code="resource.memory", stage="execution",
+            details={"allocation_bytes": int(nbytes), "headroom_bytes": headroom},
+            suggestion="Free memory or reduce the design width before estimation.",
+        )
 
 
 def should_probe_plain_map(*, nobs: int, ncols: int, method: str, acceleration: str, plan: WorkspacePlan) -> bool:
@@ -94,7 +130,9 @@ class ReusableRHSWorkspace:
 
     def load(self, source: np.ndarray, lo: int, hi: int) -> np.ndarray:
         width = int(hi - lo)
-        view = self.array[:, :width]
+        # A short final pool must not retain the full pool row stride.
+        nobs = self.array.shape[0]
+        view = self.array.reshape(-1)[:nobs * width].reshape(nobs, width)
         np.copyto(view, source[:, lo:hi])
         return view
 

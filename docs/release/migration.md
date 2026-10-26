@@ -1,5 +1,221 @@
 # Migration guide
 
+## 0.8.5 → 0.9.0 candidate — breaking API cleanup and upstream singleton parity
+
+### `pyreghdfe` removed
+
+The `pyreghdfe` compatibility package is gone (no deprecation period). Replace
+`import pyreghdfe` / `from pyreghdfe import X` with `econhdfe`; the objects are
+the same. Old submodules map to `econhdfe.hdfe.*` (absorber, two_way,
+group_individual, dof, rank, specs, weighted_projection; `fe_projection`,
+`fe_structure`, `fe_plan` → `hdfe.projection`, `hdfe.structure`, `hdfe.plan`),
+`econhdfe.compute.*` (encoding, backend, kernels, linalg, execution, weights,
+vcov), `econhdfe.planner.resources` (runtime), `econhdfe.models.linear_iv.*`
+(diagnostics, stock_yogo) and `econhdfe.models.ppml*` (ppml, ppml_iv). The
+internal `pyreghdfe.linear.fit_*` helpers are not provided; use `olshdfe` /
+`ivhdfe(..., estimator=...)`. The forwarding modules `econhdfe.bootstrap`,
+`econhdfe.compute.runtime` and `econhdfe.hdfe.encoding` are also removed;
+top-level names such as `econhdfe.wild_bootstrap` are unchanged.
+
+### PPML / IV-PPML call shape matches OLS / IV
+
+| 0.8.5 | 0.9.0 |
+|---|---|
+| `ppmlhdfe(y, X, absorb=[g1, g2], clusters=[c])` | `ppmlhdfe(y=y, x=X, absorb=[g1, g2], cluster=[c])` or `ppmlhdfe(df, y="y", x=["x1"], absorb=["g1", "g2"], cluster="c")` |
+| `ivppmlhdfe(y, exog=C, endog=E, instruments=Z, clusters=[c])` | `ivppmlhdfe(y=y, exog=C, endog=E, instruments=Z, cluster=[c])` or the DataFrame form |
+| `PPMLHDFE(...).fit("y", X=[...], clusters="c")` | `.fit("y", x=[...], cluster="c")` |
+| `IVPPMLHDFE(...).fit(..., clusters=...)` | `.fit(..., cluster=...)` |
+| `SPJPanel.clusters` | `SPJPanel.cluster` |
+| `res.coef` (PPMLResult, IVPPMLResult, SPJResult) | `res.params` (ndarray) |
+| `res.params` (dict) | `dict(zip(res.names, res.params))` |
+
+`vce` defaults stay as in the Stata upstreams: OLS/IV `None` (reghdfe
+unadjusted), PPML/IV-PPML `"robust"` (ppmlhdfe). In the DataFrame form,
+`names` / `*_names` are rejected (`specification.array_only_option`).
+
+### Scalar arguments versus config objects
+
+Config objects no longer silently override scalar arguments. Fields are merged
+pairwise — `HDFEConfig.solver/tolerance/max_iter/dof_method/canonicalize` ↔
+`method/tol/max_iter/dof_method/canonicalize_fe`, `InferenceConfig.vce` ↔ `vce`,
+`ExecutionConfig.memory_budget_mb/threads` ↔ `memory_budget_mb/absorb_threads`.
+A value equal to its default counts as unset; if only one side is set it is
+used; if both are set and differ, `SpecificationError(code="specification.config_conflict")`
+is raised. This applies to OLS/IV (and aliases), linear sessions and the PPML
+family (`vce`). Formerly `tol=1e-10, hdfe_config=HDFEConfig()` used 1e-8 and
+`memory_budget_mb=512, execution_config=ExecutionConfig(profile="summary")`
+used the automatic budget; both now use the scalar value.
+
+### Non-convergence error type
+
+Group/individual and heterogeneous (BlockDesign) FE absorption that fails to
+converge now raises `HDFEConvergenceError` (a `ConvergenceError`, code
+`convergence.hdfe`, `details["iterations"]`) instead of `InternalEstimationError`
+(`estimation.internal`). Messages are unchanged and both remain `RuntimeError`
+subclasses; `allow_nonconverged=True` is unchanged.
+
+### `InferenceConfig.diagnostics`
+
+`"off"` reports estimates and model statistics; `"publication"` adds
+diagnostics to `publication_output()` (previous behaviour); `"full"` also makes
+`include_profile` default to True (a profile exists only when
+`ExecutionConfig.profile != "off"`). `include_profile` now defaults to `None`
+in `publication_output()`; explicit arguments still win.
+
+### Singleton pruning follows each Stata upstream (sample definition change)
+
+- OLS/IV `group()` mode without `individual()`: with fweights, group-level FE
+  singletons are judged by fweight mass, as in reghdfe/ivreghdfe 6.12.5. A
+  level with one row and fw>1 is now kept, so N and standard errors may change.
+- PPML (ppmlhdfe 2.3.0): with `"fe"` separation, FE levels whose outcome sums
+  to zero are pruned jointly with row-count singletons in one fixed point, and
+  counted in `n_singletons` (no longer in `n_separated` / `separation_mask`).
+  Singletons created by simplex, ReLU or mu trimming are pruned again (fweight
+  mass when applicable) and added to `n_singletons`. `separation_by_method["fe"]`
+  is diagnostic only. Separation methods always run in upstream order
+  fe → simplex → relu (mu inside IRLS). `nobs_full = nobs + n_singletons + n_separated`.
+- IV-PPML (ivppmlhdfe 0.9.4): same first stage as PPML, user weights never
+  enter it; singletons created by simplex/ReLU trimming are pruned (fweight
+  mass) and counted in `n_separated`, as upstream.
+
+Coefficients are normally unchanged; N, degrees of freedom, standard errors
+and counters can change. Local Stata 18 comparisons on constructed cases match
+the new counts; IV-PPML was checked against upstream source only.
+
+### Performance
+
+Representative 500k-row fits (4 threads, three alternating runs against
+0.8.5): OLS, IV and four-spec OLS sessions unchanged; PPML about 3% slower
+(0.70s → 0.72s, both array and DataFrame entry points).
+
+## 0.8.4 → 0.8.5 candidate — shared resource scheduling
+
+OLS/IV (including aliases) and `ExecutionConfig` now default to
+`memory_budget_mb="auto"`, using effective available memory with a system reserve.
+Pass `memory_budget_mb=512` explicitly to retain a 512 MiB requested budget;
+the shared budget now covers more allocation paths, so some formerly accepted
+calls may fail early with a structured resource error. This is cooperative
+allocation accounting, not an OS RSS cap or a cross-process coordinator.
+
+`HDFEAbsorber.fused_rhs_memory_mb=None` inherits the parent projection budget;
+pass `128` explicitly when that scratch ceiling is required. Resampling entry
+points add optional `execution_config=None` to carry memory/thread policy.
+`ExecutionContext` dataclass reflection includes three private lifecycle fields
+(`_protected`, `_policy_signature`, `_resource_signature`); its constructor is
+unchanged. Consumers enumerating fields should exclude private names.
+
+Thread auto-selection preserves its automatic origin through nested calls.
+Session and nonlinear caches evict cold entries under budget pressure and may
+recompute them. Explicit resource requests and cache-off policies reach inner
+execution paths. Estimation specifications and result schemas are unchanged.
+
+Existing stress samples/DGPs passed numerical comparisons in 23 isolated
+processes (100k composite OLS, 1m four-FE, 150k sessions, 100k resampling,
+200k PPML). Performance is workload-dependent: composite OLS at four threads
+was flat (8.843s → 8.827s); auto showed a preliminary 9.5% slowdown, and PPML
+four-thread warm medians showed 5.3% slowdown over 15 calls per version.
+The auto comparison needs alternating repeated runs before attributing its
+cause. The 5m sample was not run because safe memory headroom was insufficient.
+See PR #24 for the validation summary; no new external parity is claimed.
+
+The immutable 0.8.4 snapshot is preserved; 0.8.5 has a new contract snapshot.
+This source version bump does not publish packages or certify isolated builds,
+clean installation, support matrices or final artifacts. Their execution status
+remains explicit in `execution.json` under the release acceptance policy.
+
+## 0.8.3 → 0.8.4 candidate — near-collinear OLS and IV
+
+Public calls, result schemas and requested defaults remain compatible. Pure-intercept
+dense NumPy MAP OLS and OLS sessions now protect weak design directions during
+absorption and compute inference in stable coordinates before restoring original
+units. Triggered fits use an effective absorption tolerance at most 1e-11; hidden
+within-design ill-conditioning can require another projection of original columns.
+
+The shared CG kernel checks suspicious curvature/energy updates against a fresh
+operator residual and limits restarts. Numerical cache ABI changes from 2 to 3;
+completed-result ABI changes from 4 to 5, invalidating older persistent values.
+Ordinary session column caches remain reusable; conditioned projections remain
+specification-local. Full-data Gram reuse reduces screening cost without sampling.
+
+No ridge penalty or extra omission is introduced. Statistical uncertainty from
+near-collinearity remains. The OLS conditioning is not applied to IV/PPML, GPU,
+heterogeneous slopes or the dedicated two-way solver. Full external parity and
+release-artifact acceptance remain separate. The 0.8.3 snapshot is preserved.
+
+Ordinary dense 2SLS separately routes ill-conditioned designs through stable block QR/SVD and inference. For supported categorical NumPy MAP absorption, redundant controls are omitted first and retained weak directions are reprojected and certified at the original tolerance. The IV model and omission policy remain unchanged; Block/LIML/GMM retain their existing guards. Profile output separates original absorption and control refinement. See [IV numerical design](../development/iv-conditioned-solve.md) for scope and validation limits.
+
+## 0.8.1 → 0.8.3 candidate — tests and documentation
+
+Estimation calls, results, defaults, numerical tolerances, dependencies and cache
+ABIs are unchanged. The source package now identifies as 0.8.3; it retains the
+0.8.1 FE corrections and earlier IV diagnostic/stage interfaces.
+
+The regular full regression suite is 205 focused cases, with a deliberately
+narrower combination and internal-boundary surface. Retained assertions and
+tolerances are unchanged; see [the testing guide](../development/testing.md)
+for the selected risks and retired areas. Full CI still uses every supported
+OS/Python/dependency environment. Installed-wheel checks follow the surviving
+independent references. Historical benchmark and CI records retain their
+original versions and do not certify this candidate.
+
+The 0.8.1 contract baseline is immutable; 0.8.3 has its own snapshot. Maintenance
+review and execution acceptance are reset for this candidate. Source integration
+does not create a tag, GitHub Release, PyPI upload or external certification.
+
+## 0.8.0 → 0.8.1 candidate — FE absorption
+
+Explicit thread counts now reach the inner grouped-projection kernels and the
+standard two-way OLS absorber. Runtime may change even when the outer metadata
+previously reported the same count.
+
+An explicit `pool_size` that exceeds the estimated solver-workspace budget now
+raises `SpecificationError`. Use `pool_size="auto"` to choose a fitting width;
+if one column cannot fit, increase the budget or free memory. Budgets below
+64 MiB are no longer silently raised to 64 MiB. The budget includes resident
+solver state and pool scratch, but is not a cap on input/design storage or
+total process RSS. Dense standard OLS checks live headroom before its stacked
+design allocation.
+
+`psutil>=5.9` is now a runtime dependency for host-memory availability. These
+changes preserve the requested FE specification and CG recurrence. CG stopping
+now uses per-column relative energy floors instead of absolute epsilon guards;
+auto/plain MAP normalize column units before iterating. Small-unit inputs that
+previously stopped too early may return corrected estimates. The configured
+tolerance is unchanged. The final numerical fix has not been rebenchmarked at
+large sample sizes.
+
+Persistent within and full-result caches use numerical ABI `linear-session-2`.
+Older numerical caches are recomputed so they cannot bypass the stopping-rule
+correction; encoded input columns remain reusable.
+
+## 0.7.0 → 0.8.0 candidate — linear IV
+
+Existing estimation calls remain valid. This MINOR adds optional parameters and
+IV computation reuse; it is not a publication or external-certification claim.
+
+- `InferenceConfig.iv_advanced_statistics=True` is a new trailing field. The
+  default retains full diagnostic computation. Set it to `False` to skip Shea,
+  AP/SW, CD and Stock–Yogo; ordinary first-stage F, partial R², KP, overidentification
+  and necessary rank/identification checks remain. `diagnostics` controls display
+  only. Consumers enforcing an exact config field set must accept the added field.
+- `ivhdfe`, its `ivreghdfe` alias and `IVHDFESession` accept `on_stage=None`.
+  Opt-in callbacks synchronously receive independent estimation / first_stage /
+  diagnostics / complete snapshots, without observation-sized work arrays.
+  Callback exceptions propagate; the final result type is unchanged. Persistent
+  cache hits emit complete only.
+- Full session result caches invalidate under `linear-session-result-4`; the
+  within-transformation cache is unchanged. The diagnostics option is part of
+  result-cache identity. Recompute affected nested-cluster small-sample/RMSE and
+  efficient-GMM overidentification results. The retained numerical regressions cover these corrections.
+- No new execution-budget option is introduced. Binding IV workspaces to
+  `memory_budget_mb` remains TODO PERF-07.
+
+The six recorded public-contract changes are the config field (schema,
+exported dataclass and constructor) and the three callback signatures. The
+0.7.0 snapshot is immutable; 0.8.0 has its own snapshot. Review-gate approval
+does not replace isolated build, clean install, support-matrix or final-artifact
+acceptance under [the release policy](acceptance.md).
+
 ## Published 0.6.3 → 0.7 source and corresponding artifacts
 
 The intervening 0.6.4/0.6.5 entries describe development checkpoints. Check

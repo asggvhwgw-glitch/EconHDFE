@@ -1,4 +1,4 @@
-* pyreghdfe v0.8.0 Stata golden-result generator.
+* econhdfe Stata golden-result generator.
 * Run from the repository root after installing pinned reghdfe/ivreghdfe.
 version 18
 clear all
@@ -8,14 +8,14 @@ local data_path "validation/fixtures/golden_data.csv"
 local out_path  "validation/fixtures/golden_results_stata.csv"
 local env_path  "validation/fixtures/golden_environment_stata.log"
 
-log using "`env_path'", text replace name(pyreghdfe_env)
+log using "`env_path'", text replace name(econhdfe_env)
 about
 which reghdfe
 which ivreghdfe
 which ivreg2
 which ranktest
 capture which ftools
-log close pyreghdfe_env
+log close econhdfe_env
 
 import delimited using "`data_path'", clear varnames(1) numericcols(_all)
 xtset firm year

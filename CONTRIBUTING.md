@@ -2,13 +2,25 @@
 
 Use Python 3.10–3.13, create a virtual environment, and install `.[test]` plus
 `build`. For daily public behavior, run `python scripts/run_tests.py --suite core -- -q`.
-Plain `python -m pytest -q` now selects this core subset, NOT the full release suite.
+Plain `python -m pytest -q` selects this core subset; it does not run numerical
+or release-tooling checks.
 Before submitting a PR run `python scripts/run_tests.py --suite full -- -q`,
 `python scripts/version.py gate`, and `python scripts/generate_architecture_map.py --check`.
-See `docs/development/testing.md` for contracts/behavior/numerics/tooling responsibilities
+See [the testing guide](docs/development/testing.md) for layer responsibilities
 and [the historical test migration](docs/development/history/test-migration-0.6.5.md) for every retired test's replacement.
 For predictable CPU use, set OPENBLAS_NUM_THREADS=1, OMP_NUM_THREADS=1 and
 NUMBA_NUM_THREADS=4 (tests exercise explicit two- and three-thread settings).
+
+The regular full suite is a compact regression set of roughly 200 cases. It
+prioritizes public workflows, independent numerical references and critical
+failures; it does not exhaust every supported combination.
+
+Choose tests by independent failure risk. Reuse existing fixtures and numerical
+references; add a regression to its owning layer rather than another historical
+smoke file. Use explicit representative parameter tuples when combinations share
+the same implementation, and preserve separate cases for distinct estimators,
+weight conventions, solver branches and failures. Do not hide a removed matrix
+inside a loop or replace tests with skips.
 
 Changes to numerical code must include an independent reference calculation,
 unit/column permutation checks, and failure-path tests. Do not weaken a regression

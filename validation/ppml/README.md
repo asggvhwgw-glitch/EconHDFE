@@ -5,7 +5,7 @@ The local Python suite is necessary but not sufficient for release certification
 1. Run `python validation/generate_fixture.py`.
 2. On a licensed Stata installation with current `ppmlhdfe`, `reghdfe`, and `ftools`, run:
    `do validation/stata/generate_golden.do validation`
-3. Run `python validation/compare_golden.py` from an environment containing this source tree and `pyreghdfe>=0.8.0`.
+3. Run `python validation/compare_golden.py` from an environment containing this source tree (installed as `econhdfe`).
 
 The golden matrix covers no-FE, one-FE, two-FE clustered, genuine three-FE two-way-clustered, and exposure specifications. The Stata script also exports the official five-observation ReLU-primer separation mask.
 

@@ -6,6 +6,7 @@ import math
 import pandas as pd
 
 from ..planner import plan_execution
+from ..errors import SpecificationError
 from .source import DataSource, as_data_source
 
 
@@ -66,8 +67,15 @@ def plan_ingestion(
     target = max(int(budget * frac), 1)
     preview = source.preview(cols, nrows=max(int(preview_rows), 1))
     bpr = estimate_frame_bytes_per_row(preview)
+    if bpr > budget:
+        raise SpecificationError(
+            "One estimated input row exceeds the available ingestion budget.",
+            code="resource.memory", stage="data",
+            details={"estimated_bytes_per_row": bpr, "budget_bytes": budget},
+        )
     raw_rows = max(int(math.floor(target / bpr)), 1)
-    batch_rows = max(int(min_batch_rows), min(int(max_batch_rows), raw_rows))
+    # The preferred minimum is soft: it must never override the byte budget.
+    batch_rows = min(max(int(max_batch_rows), 1), raw_rows)
     return DataIngestionPlan(
         required_columns=cols,
         memory_budget_bytes=budget,

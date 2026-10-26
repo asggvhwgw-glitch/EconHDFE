@@ -10,6 +10,72 @@ import numpy as np
 import scipy.linalg as la
 
 
+def _absorption_basis(X, weights=None, *, rank_tolerance=1e-10, gram=None):
+    """Screen for ill-conditioning, then form a reversible symmetric basis.
+
+    Gram eigenvalues only trigger a QR/SVD check; they never determine rank.
+    Symmetric whitening mixes weak and strong directions instead of handing
+    CG an isolated, almost exactly FE-orthogonal difference column. Singular
+    designs remain the responsibility of the ordinary omission policy.
+    """
+    n, k = X.shape
+    if k < 2 or n <= k:
+        return None
+    chunk = max(1, min(32768, 2_000_000 // k))
+    scale = np.zeros(k)
+    for lo in range(0, n, chunk):
+        np.maximum(scale, np.max(np.abs(X[lo:lo+chunk]), axis=0), out=scale)
+    if np.any(scale == 0) or not np.all(np.isfinite(scale)):
+        return None
+    if gram is not None and np.all(np.isfinite(gram)):
+        # Reuse full-data moments needed by omission checks. Scaling is still
+        # by column maxima, so this preserves the original screening criterion.
+        G = (gram / scale[:, None]) / scale[None, :]
+    else:
+        G = np.zeros((k, k))
+        for lo in range(0, n, chunk):
+            b = X[lo:lo+chunk] / scale
+            if weights is not None:
+                b *= np.sqrt(weights[lo:lo+chunk, None])
+            G += b.T @ b
+    values = la.eigvalsh(G, check_finite=False)
+    if values[-1] <= 0 or values[0] > values[-1] / 1e8:
+        return None
+    R = np.empty((0, k))
+    for lo in range(0, n, chunk):
+        b = X[lo:lo+chunk] / scale
+        if weights is not None:
+            b *= np.sqrt(weights[lo:lo+chunk, None])
+        R = la.qr(np.vstack((R, b)), mode="raw", check_finite=False)[1]
+    _, s, vh = la.svd(R, full_matrices=False, check_finite=False)
+    if s[-1] <= max(rank_tolerance, np.finfo(float).eps * max(n, k)) * s[0]:
+        return None
+    condition = float(s[0] / s[-1])
+    if condition < 1e4:
+        return None
+    # Leave well-conditioned directions untouched: full whitening spreads
+    # FE-dominated directions into otherwise accurate columns. Only inflate
+    # the weak subspace, using a symmetric low-rank update in both directions.
+    weak = s < s[0] / 1e4
+    vectors = vh[weak].T
+    gain = s[0] / s[weak]
+    forward = np.eye(k) + (vectors * (gain - 1)) @ vectors.T
+    reverse = np.eye(k) + (vectors * (1 / gain - 1)) @ vectors.T
+    return scale, forward, reverse, condition
+
+
+def _apply_absorption_basis(X, basis, *, restore=False):
+    """Transform an owned array using bounded scratch, preserving its units."""
+    scale, forward, reverse, _ = basis
+    chunk = max(1, min(32768, 2_000_000 // X.shape[1]))
+    for lo in range(0, len(X), chunk):
+        b = X[lo:lo+chunk]
+        if restore:
+            b[...] = (b @ reverse) * scale
+        else:
+            b[...] = (b / scale) @ forward
+
+
 def equilibrated_lstsq(X, y, *, chunk_rows=32768):
     """Return (beta, bread, rank) in original coefficient units.
 

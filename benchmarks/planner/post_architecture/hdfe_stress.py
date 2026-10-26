@@ -6,7 +6,7 @@ ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 import numpy as np
-from pyreghdfe import reghdfe
+from econhdfe import reghdfe
 
 def main():
  ap=argparse.ArgumentParser(); ap.add_argument('--n',type=int,default=200000); ap.add_argument('--controls',type=int,default=8); ap.add_argument('--threads',default='4'); ap.add_argument('--reps',type=int,default=3); ap.add_argument('--out',required=True); a=ap.parse_args()

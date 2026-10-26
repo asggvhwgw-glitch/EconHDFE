@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 from ...config import ExecutionConfig
+from ...planner.scheduler import current_allocation, resolve_allocation
 from ...compute.context import ExecutionContext
 from ...hdfe.plan import FEPlan
 from ...hdfe.weighted_projection import WeightedFEProjector
@@ -14,15 +17,25 @@ def resolve_execution(
     if execution_config is None:
         execution_config = execution_context.config if execution_context is not None else ExecutionConfig()
     execution_config.validate()
+    allocation = current_allocation() or resolve_allocation(execution_config)
+    if execution_config is not allocation.config:
+        execution_config = replace(
+            execution_config, threads=allocation.cpu_threads,
+            memory_budget_mb=allocation.memory_budget_bytes / (1024 ** 2),
+        )
     if execution_context is None:
         execution_context = ExecutionContext(execution_config)
+    else:
+        execution_context.config = execution_config
     return execution_config, execution_context
 
 
 def _projector_key(plan: FEPlan, *, engine: str, method: str, execution: ExecutionConfig) -> str:
+    allocation = current_allocation()
+    automatic = allocation.auto_threads if allocation is not None else execution.threads == "auto"
     return (
         f"ppml.projector:{plan.fingerprint}:{engine}:{method}:"
-        f"threads={execution.threads}:memory={execution.memory_budget_mb}"
+        f"threads={execution.threads}:auto={automatic}:memory={execution.memory_budget_mb}"
     )
 
 

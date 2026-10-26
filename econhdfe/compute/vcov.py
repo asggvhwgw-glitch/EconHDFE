@@ -8,8 +8,52 @@ from .kernels import hac_meat, driscoll_kraay_meat
 from .block_design import BlockDesign
 
 
+IID_VCE_KINDS = ("iid", "unadjusted", "homoskedastic")
+ROBUST_VCE_KINDS = ("robust", "hc1", "heteroskedastic")
+# VCE names served by the block-native linear paths; "" is an unset VCE.
+BLOCK_VCE_KINDS = ("", *IID_VCE_KINDS, *ROBUST_VCE_KINDS, "cluster")
+
+
+def normalize_vce(vce, default=None):
+    """Lower-case VCE name with hyphens as underscores; ``None`` gives ``default``.
+
+    Callers keep their own unset convention ("iid", "model", "robust", "").
+    """
+    if vce is None:
+        return default
+    return str(vce).lower().replace("-", "_")
+
+
+def is_iid_vce(kind) -> bool:
+    """Homoskedastic VCE aliases; an unset kind (``None``) is iid."""
+    return kind is None or kind in IID_VCE_KINDS
+
+
+def cluster_df_resid(df_resid, vce, clusters):
+    """Cap residual DoF at ``min(G) - 1`` under clustered inference."""
+    if normalize_vce(vce) == "cluster" and clusters:
+        return min(df_resid, float(min(len(np.unique(c)) for c in clusters) - 1))
+    return df_resid
+
+
 def _sym_inv(a: np.ndarray) -> np.ndarray:
     return equilibrated_gram_inverse(a)
+
+
+def _singleton_codes(codes):
+    return bool(len(codes) and int(np.max(codes)) + 1 == len(codes)
+                and np.all(np.bincount(codes, minlength=len(codes)) == 1))
+
+
+def _independent_meat_xe(X, e):
+    """Singleton intersections are HC0; bound the temporary score block."""
+    p = X.shape[1]
+    out = np.zeros((p, p))
+    chunk = max(1, min(16384, 524288 // max(p, 1)))
+    for lo in range(0, len(e), chunk):
+        score = X[lo:lo+chunk] * e[lo:lo+chunk, None]
+        out += score.T @ score
+    return out
 
 
 def _cluster_meat(scores: np.ndarray, codes: np.ndarray) -> tuple[np.ndarray, int]:
@@ -17,6 +61,8 @@ def _cluster_meat(scores: np.ndarray, codes: np.ndarray) -> tuple[np.ndarray, in
     scores = np.asarray(scores, dtype=np.float64)
     g = int(codes.max()) + 1 if len(codes) else 0
     p = scores.shape[1]
+    if _singleton_codes(codes):
+        return scores.T @ scores, g
     # Near-observation-level cluster intersections can make G x K larger than
     # the score matrix itself. Use the exact identity
     #   cluster meat = HC0 + corrections for cells with n_g > 1
@@ -107,6 +153,9 @@ def cluster_subset_meats_xe(X: np.ndarray, e: np.ndarray, clusters, score_scale=
             codes = clusters[idx[0]] if r == 1 else _intersection_codes_many([clusters[j] for j in idx])
             codes = np.asarray(codes, dtype=np.int64)
             g = int(codes.max()) + 1 if len(codes) else 0
+            if _singleton_codes(codes):
+                yield sign, _independent_meat_xe(X, base), g, r
+                continue
             if g * max(p, 1) * 8 > 256 * 1024**2 and len(codes):
                 counts = np.bincount(codes, minlength=g)
                 repeated_obs = (counts > 1)[codes]
@@ -153,6 +202,61 @@ def _cluster_meat_xe(X: np.ndarray, e: np.ndarray, clusters, score_scale=None) -
     return (total + total.T) / 2.0, min(g_base)
 
 
+_KRON_GROUP_BYTES = 256 * 1024**2
+
+
+def _cluster_kron_meat(V, Z, clusters):
+    """Raw CGM covariance of Kronecker scores, aggregated without an N x K array."""
+    clusters = tuple(clusters or ())
+    if not clusters:
+        raise ValueError("cluster covariance requires cluster arrays")
+    groups = [int(np.max(c)) + 1 if len(c) else 0 for c in clusters]
+    if min(groups) < 2:
+        raise InferenceError(
+            "cluster inference requires at least two clusters in every dimension",
+            code="inference.insufficient_clusters", details={"cluster_counts": groups},
+        )
+    width = V.shape[1] * Z.shape[1]
+    total = np.zeros((width, width))
+    def scores(left, right):
+        return (left[:, :, None] * right[:, None, :]).reshape(len(left), width)
+    for size in range(1, len(clusters) + 1):
+        for subset in combinations(range(len(clusters)), size):
+            codes = clusters[subset[0]] if size == 1 else _intersection_codes_many([clusters[j] for j in subset])
+            codes = np.asarray(codes, dtype=np.int64)
+            g = int(codes.max()) + 1 if len(codes) else 0
+            if _singleton_codes(codes):
+                meat = np.zeros((width, width))
+                chunk = max(1, min(16384, 524288 // max(width, 1)))
+                for lo in range(0, len(V), chunk):
+                    score = scores(V[lo:lo+chunk], Z[lo:lo+chunk])
+                    meat += score.T @ score
+            else:
+                # Bound group-score storage too. Tile complete groups so the
+                # cross-products sum exactly, without expanding N x width.
+                group_rows = max(1, _KRON_GROUP_BYTES // (8 * max(width, 1)))
+                order = np.argsort(codes, kind="stable") if g > group_rows else None
+                sorted_codes = codes[order] if order is not None else None
+                meat = np.zeros((width, width))
+                for start in range(0, g, group_rows):
+                    stop = min(start + group_rows, g)
+                    if order is None:
+                        rows, local_codes = slice(None), codes
+                    else:
+                        lo, hi = np.searchsorted(sorted_codes, [start, stop])
+                        rows = order[lo:hi]
+                        local_codes = sorted_codes[lo:hi] - start
+                    sums = np.empty((stop - start, width))
+                    for j in range(V.shape[1]):
+                        for k in range(Z.shape[1]):
+                            sums[:, j * Z.shape[1] + k] = np.bincount(
+                                local_codes, weights=V[rows, j] * Z[rows, k],
+                                minlength=stop - start)
+                    meat += sums.T @ sums
+            total += (1. if size % 2 else -1.) * meat
+    return (total + total.T) / 2.
+
+
 def _cluster_scale(n: int, k_total: int, g: int, nested_adj: int = 0) -> float:
     if g <= 1:
         raise InferenceError(
@@ -185,7 +289,7 @@ def _fix_psd(v: np.ndarray, *, tol: float = 0.0) -> np.ndarray:
 
 
 def _is_multiway_cluster(kind, clusters) -> bool:
-    return kind is not None and str(kind).lower().replace("-", "_") == "cluster" and clusters is not None and len(clusters) > 1
+    return normalize_vce(kind) == "cluster" and clusters is not None and len(clusters) > 1
 
 
 def score_covariance(
@@ -221,7 +325,7 @@ def score_covariance(
     if center:
         scores = scores - scores.mean(axis=0, keepdims=True)
     kind = "iid" if kind is None else kind.lower().replace("-", "_")
-    if kind in ("robust", "hc1", "heteroskedastic"):
+    if kind in ROBUST_VCE_KINDS:
         out = scores.T @ scores
         if small_sample:
             out *= n_eff / max(n_eff - k_total, 1)
@@ -252,7 +356,7 @@ def score_covariance(
                 n_eff, k_total, n_periods, nested_adj=nested_adj
             )
         return meat
-    if kind in ("iid", "unadjusted", "homoskedastic"):
+    if is_iid_vce(kind):
         return scores.T @ scores
     raise ValueError(f"unknown covariance kind: {kind}")
 
@@ -273,9 +377,9 @@ def sandwich_vcov_xe(
     n, k = X.shape
     n_eff = float(n if effective_n is None else effective_n)
     k_total = k if k_total is None else int(k_total)
-    kind0 = "iid" if kind is None else str(kind).lower().replace("-", "_")
+    kind0 = normalize_vce(kind, "iid")
     base = e if score_scale is None else e * np.asarray(score_scale, dtype=np.float64)
-    if kind0 in {"robust", "hc1", "heteroskedastic"}:
+    if kind0 in ROBUST_VCE_KINDS:
         meat = np.zeros((k, k), dtype=np.float64)
         chunk = max(1, int(chunk_rows))
         for lo in range(0, n, chunk):
@@ -389,10 +493,10 @@ def sandwich_vcov_block_xe(
         raise ValueError("e must have one value per observation")
     n_eff = float(X.nobs if effective_n is None else effective_n)
     k_total = X.ncols if k_total is None else int(k_total)
-    kind0 = "iid" if kind is None else str(kind).lower().replace("-", "_")
+    kind0 = normalize_vce(kind, "iid")
     base = e if score_scale is None else e * np.asarray(score_scale, dtype=np.float64)
 
-    if kind0 in {"robust", "hc1", "heteroskedastic"}:
+    if kind0 in ROBUST_VCE_KINDS:
         meat = X.gram(weights=base * base)
         meat *= n_eff / max(n_eff - k_total, 1)
     elif kind0 == "cluster":
@@ -414,11 +518,6 @@ def block_cluster_meat_xe(X: BlockDesign, e, clusters, *, score_scale=None):
     return _block_cluster_meat_xe(X, e, clusters, score_scale=score_scale)
 
 
-def cluster_meat_xe(X, e, clusters, *, score_scale=None):
-    """Public streamed cluster meat for scalar-multiplier scores ``X_i e_i``."""
-    return _cluster_meat_xe(X, e, clusters, score_scale=score_scale)
-
-
 def fix_psd(V, *, tol=0.0):
     """Public PSD repair used by multi-way sandwich estimators."""
     return _fix_psd(V, tol=tol)
@@ -430,7 +529,7 @@ def ols_vcov(Xw, ew, bread, *, kind="iid", clusters=None, k_total=None, nested_a
     n, k = Xw.shape
     n_eff = float(n if effective_n is None else effective_n)
     k_total = k if k_total is None else int(k_total)
-    if kind in (None, "iid", "unadjusted", "homoskedastic"):
+    if is_iid_vce(kind):
         df = max(n_eff - k_total, 1)
         return bread * (float(ew @ ew) / df)
     return sandwich_vcov_xe(
@@ -443,7 +542,7 @@ def ols_vcov(Xw, ew, bread, *, kind="iid", clusters=None, k_total=None, nested_a
 def kclass_vcov(
     Xw, Zw, ew, bread, *, kind="iid", clusters=None, k_total=None,
     nested_adj=0, time=None, panel=None, bandwidth=None, kernel="bartlett",
-    effective_n=None, score_scale=None, kappa=1.0,
+    effective_n=None, score_scale=None, kappa=1.0, projected_X=None,
 ):
     """Sandwich using H=(1-kappa)X+kappa Pz X for fixed k-class.
 
@@ -453,31 +552,27 @@ def kclass_vcov(
     n, k = Xw.shape
     n_eff = float(n if effective_n is None else effective_n)
     k_total = k if k_total is None else int(k_total)
-    if kind in (None, "iid", "unadjusted", "homoskedastic") and kappa in (0.0, 1.0):
+    if is_iid_vce(kind) and kappa in (0.0, 1.0):
         df = max(n_eff - k_total, 1)
         return bread * (float(ew @ ew) / df)
     if kappa == 0.0:
         xhat = Xw
     else:
-        gamma = _sym_inv(Zw.T @ Zw) @ (Zw.T @ Xw)
-        xhat = Zw @ gamma
+        if projected_X is None:
+            gamma = _sym_inv(Zw.T @ Zw) @ (Zw.T @ Xw)
+            xhat = Zw @ gamma
+        else:
+            xhat = projected_X
         if kappa != 1.0:
             xhat = (1.0 - kappa) * Xw + kappa * xhat
-    if kind in (None, "iid", "unadjusted", "homoskedastic"):
+    if is_iid_vce(kind):
         sigma2 = float(ew @ ew) / max(n_eff - k_total, 1)
         return sigma2 * (bread @ (xhat.T @ xhat) @ bread.T)
-    scores = xhat * ew[:, None]
-    meat = score_covariance(
-        scores, kind=kind, clusters=clusters, k_total=k_total,
-        nested_adj=nested_adj, small_sample=True, time=time, panel=panel,
-        bandwidth=bandwidth, kernel=kernel, effective_n=n_eff, score_scale=score_scale,
+    return sandwich_vcov_xe(
+        xhat, ew, bread, kind=kind, clusters=clusters, k_total=k_total,
+        nested_adj=nested_adj, time=time, panel=panel, bandwidth=bandwidth,
+        kernel=kernel, effective_n=n_eff, score_scale=score_scale,
     )
-    V = bread @ meat @ bread
-    return _fix_psd(V) if _is_multiway_cluster(kind, clusters) else V
-
-
-def iv_vcov(Xw, Zw, ew, A_inv, **kwargs):
-    return kclass_vcov(Xw, Zw, ew, A_inv, **kwargs)
 
 
 def gmm_vcov(
@@ -491,7 +586,7 @@ def gmm_vcov(
     XZ = Xw.T @ Zw
     D = XZ @ W
     bread = np.linalg.pinv(D @ XZ.T, hermitian=True)
-    if kind in (None, "iid", "unadjusted", "homoskedastic"):
+    if is_iid_vce(kind):
         sigma2 = float(ew @ ew) / max(n_eff - k_total, 1)
         S = sigma2 * (Zw.T @ Zw)
     else:

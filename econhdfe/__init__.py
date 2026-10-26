@@ -1,4 +1,4 @@
-from .compute.runtime import configure_numba_runtime
+from .planner.resources import configure_numba_runtime
 configure_numba_runtime()
 
 from .errors import (
@@ -17,7 +17,8 @@ from .hdfe import (
     CategoricalRankInfo, RankBackend, available_rank_backends, categorical_rank, categorical_prefix_ranks,
 )
 from .results import RegressionResult, EstimationState, FixedEffectEstimates, FixedEffectTermEstimate
-from .bootstrap import wild_bootstrap, wild_cluster_bootstrap_ols, parallel_pairs_bootstrap
+from .models.ols_bootstrap import wild_bootstrap, wild_cluster_bootstrap_ols
+from .resampling import parallel_pairs_bootstrap
 from .inference.cluster import (
     ClusterDiagnostics, ClusterDimensionDiagnostics, WildClusterTestResult,
     cluster_diagnostics, wild_cluster_test_ols,
@@ -45,4 +46,4 @@ __all__ = [
     "OmittedVariableWarning", "FEPlan", "CategoricalRankInfo", "RankBackend", "available_rank_backends",
     "categorical_rank", "categorical_prefix_ranks", "OLSHDFESession", "IVHDFESession", "OLSSpec", "IVSpec", "PPMLHDFE", "PPMLConfig", "PPMLResult", "IVPPMLHDFE", "IVPPMLConfig", "IVPPMLResult", "SPJPanel", "SPJResult", "ivppml_spj", "SPJBootstrapResult", "ivppml_spj_bootstrap", "stock_yogo_critical_values",
 ]
-__version__ = "0.7.0"
+__version__ = "0.9.1"
