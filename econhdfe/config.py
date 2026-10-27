@@ -20,8 +20,10 @@ class HDFEConfig:
     max_iter: int = 16_000
     dof_method: str = "pairwise"
     canonicalize: bool = True
+    singleton_mode: str = "stata_compat"
 
     def validate(self) -> None:
+        validate_singleton_mode(self.singleton_mode)
         if self.solver not in {"auto", "map", "lsmr", "twoway", "within"}:
             raise SpecificationError("HDFE solver must be auto/map/lsmr/twoway/within")
         if not 0 < self.tolerance <= 1:
@@ -110,3 +112,11 @@ def resolve_override(name: str, value, default, config_value, config_default):
             suggestion="Set the option either as a keyword argument or in the config object, not both.",
         )
     return value if value_set or not config_set else config_value
+
+
+def validate_singleton_mode(mode):
+    if not isinstance(mode, str) or mode not in {"stata_compat", "unified"}:
+        raise SpecificationError(
+            "singleton_mode must be 'stata_compat' or 'unified'",
+            code="specification.singleton_mode", stage="specification",
+        )

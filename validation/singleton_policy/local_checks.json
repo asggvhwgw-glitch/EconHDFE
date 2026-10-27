@@ -1,0 +1,30 @@
+{
+  "base_commit": "33e8efe2b4cfe694c496cd2fb8da63260ae41d53",
+  "base_tree": "6abce6d45afb08d75fc6263fb96fe4adffdd7495",
+  "candidate_version": "0.10.0",
+  "date": "2026-10-27",
+  "baseline_full_tests": 468,
+  "candidate_full_tests": 509,
+  "new_targeted_tests": 41,
+  "warnings": 4,
+  "full_suite_seconds": 31.28,
+  "version_gate": "passed",
+  "architecture_map_check": "passed",
+  "wheel_build": "pip wheel --no-build-isolation --no-deps (passed)",
+  "wheel_install_smoke": "passed in isolated --target, outside source working directory; host scientific dependencies reused",
+  "python": "3.13.5",
+  "wheel_sha256": "ee1c9ac516d760c920c2303f9e7fec06dbd8916985b1e6d2cf6f3d1731318275",
+  "log_sha256": {
+    "baseline-tests.log": "25ca0f38e5d4a7ddc55c670ce764fe60ccc4b189b26c0eaac3778624d44056e3",
+    "singleton-full-tests.log": "be9260b94398e7b86eec63b450193025b8233c2a725c0d1b70f5e9c35dc6c975",
+    "singleton-build.log": "6e5235a51298c6a00555e643c4d3ab83134dad6f95fef6d13894eb8e82adc4ee",
+    "singleton-wheel-smoke.log": "298cd41621c24fd4272925cadabc5a690d255066c9684b8ef69b9ae310509e46"
+  },
+  "limitations": [
+    "No licensed Stata run or external certification",
+    "Million tests cover sample peeling only, not end-to-end solver speed",
+    "No extra computational rank/bridge elimination",
+    "Remote CI must be checked on actual final PR head",
+    "No published release or tag; release-execution acceptance remains pending"
+  ]
+}

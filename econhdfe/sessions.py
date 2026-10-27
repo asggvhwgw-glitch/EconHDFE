@@ -599,7 +599,7 @@ class _LinearHDFESessionBase:
         return require_numeric(self.weights_spec, name="weights", role=VariableRole.WEIGHT, ndim=1)
 
     def _entry_key(self, absorb: tuple) -> tuple:
-        return absorb
+        return absorb if self.hdfe.singleton_mode == "stata_compat" else (absorb, self.hdfe.singleton_mode)
 
     def _entry_source_columns(self, absorb: tuple) -> tuple[str, ...]:
         cols = list(absorb_columns(absorb))
@@ -656,6 +656,9 @@ class _LinearHDFESessionBase:
         w0 = self._weights_full()
         wkind = normalize_weight_type(self.weight_type, has_weights=w0 is not None)
         _ = prepare_weights(w0, len(self.data), wkind)
+        if self.hdfe.singleton_mode == "unified" and w0 is not None and np.any(w0 <= 0):
+            from .errors import InvalidWeightError
+            raise InvalidWeightError("unified mode requires strictly positive user weights; filter zero-weight rows explicitly", code="input.invalid_weight.range")
         if absorb:
             fe = prepare_standard_fe_structure(
                 self.data, absorb,
@@ -663,7 +666,7 @@ class _LinearHDFESessionBase:
                 drop_singletons=self.drop_singletons,
                 weights=w0,
                 weight_kind=wkind,
-                component_cache=self._component_cache,
+                component_cache=self._component_cache, singleton_mode=self.hdfe.singleton_mode,
             )
             method, solver_selection = resolve_method(
                 self.hdfe.solver, fe.groups, fe.slopes, fe.intercepts, backend="numpy"
@@ -833,6 +836,8 @@ class _LinearHDFESessionBase:
         )
 
     def _finish(self, result, entry, started, result_key):
+        result.estimator_info = dict(result.estimator_info or {})
+        result.estimator_info["singleton_mode"] = self.hdfe.singleton_mode
         if self.execution.profile != "off":
             result.profile = {
                 "total_seconds": perf_counter() - started,

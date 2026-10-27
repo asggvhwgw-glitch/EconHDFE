@@ -1,5 +1,18 @@
 # econhdfe
 
+## Weighted sample policies (0.10.0 candidate)
+
+`singleton_mode="stata_compat"` remains the default; use
+`HDFEConfig(singleton_mode="unified")` for linear models/sessions or
+`PPMLConfig` / `IVPPMLConfig` for Poisson models. Plain PPML now accepts explicit
+`weight_type="fw"` / `"pw"`. Unified mode preserves frequency expansion semantics
+and reports all-zero FE deletion separately. Unified IV-PPML defaults to FE-zero
+checks, not ordinary PPML regressor separation. See the
+[sample-policy contract](docs/technical/hdfe/singleton-policies.md) and
+[validation scope](validation/singleton_policy/README.md). No computational
+rank-pruning or new licensed Stata certification is claimed.
+
+
 [English](README.md) | [简体中文](README.zh-CN.md)
 
 **High-performance high-dimensional fixed-effect econometrics for modern empirical research.**

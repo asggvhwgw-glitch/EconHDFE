@@ -219,6 +219,7 @@ def ivhdfe(
     y0, w0, wkind, fe, sample_state = prepare_standard_sample(
         data, y, weights, weight_type, absorb,
         canonicalize_fe=canonicalize_fe, drop_singletons=drop_singletons,
+        singleton_mode="stata_compat" if hdfe_config is None else hdfe_config.singleton_mode,
     )
     groups, slopes, intercepts, mask = fe.groups, fe.slopes, fe.intercepts, fe.mask
     method_resolved, solver_selection = resolve_method(

@@ -1315,43 +1315,18 @@ def singleton_rows(groups, levels, idx, frequency_weights=None, positive=None) -
 
 def iterative_singleton_mask(
     groups: list[np.ndarray], weights=None, *, frequency_weights: bool = False, positive=None,
+    singleton_eligible=None,
 ) -> tuple[np.ndarray, int]:
-    """Iteratively remove observations singleton in any absorbed FE group.
+    """Recursive row/frequency peeling on a fixed positive-weight support.
 
-    With Stata frequency weights, group degree is the sum of frequency mass,
-    matching the dataset that would be obtained by physically expanding the
-    rows. Analytic/probability/generic weights must leave ``frequency_weights``
-    false because a weighted row still counts as one sampled observation.
-    ``positive`` (boolean outcome mask) additionally removes levels with no
-    positive outcome inside the same fixed point, as ppmlhdfe's first stage
-    does with ``separation(fe)``.
+    The frequency rule is exactly equivalent to expanding positive integer
+    multiplicities. User analytic/probability and IRLS weights are not counts.
     """
-    if not groups:
-        return np.ones(0, dtype=bool), 0
-    n = len(groups[0])
-    keep = np.ones(n, dtype=bool)
-    fw = None
-    if frequency_weights:
-        if weights is None:
-            raise ValueError("frequency_weights=True requires weights")
-        fw = np.asarray(weights, dtype=np.float64)
-        if len(fw) != n:
-            raise ValueError("frequency weights length mismatch")
-    pos = None
-    if positive is not None:
-        pos = np.asarray(positive, dtype=bool)
-        if len(pos) != n:
-            raise ValueError("positive outcome mask length mismatch")
-    levels = [int(g.max()) + 1 if len(g) else 0 for g in groups]
-    dropped_total = 0
-    while True:
-        drop = np.zeros(n, dtype=bool)
-        idx = np.flatnonzero(keep)
-        drop[idx] = singleton_rows(groups, levels, idx, fw, pos)
-        new = drop & keep
-        c = int(new.sum())
-        if c == 0:
-            break
-        keep[new] = False
-        dropped_total += c
-    return keep, dropped_total
+    from .sample import peel_sample
+    if frequency_weights and weights is None:
+        raise ValueError("frequency_weights=True requires weights")
+    selected = peel_sample(
+        groups, frequency_weights=weights if frequency_weights else None,
+        positive=positive, singleton_eligible=singleton_eligible,
+    )
+    return selected.keep, int(np.sum(~selected.keep))
