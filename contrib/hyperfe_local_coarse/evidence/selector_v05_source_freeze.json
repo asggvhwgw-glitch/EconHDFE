@@ -1,0 +1,17 @@
+{
+  "src/budget_preconditioner.py": "2b030ff141ed5d198aeb6607f0c7e39316652e9fce4f95dbe721284f258f815d",
+  "src/cases.py": "3b79002dd4414aff2824bb4bf1cbd838b8c1f3d68e1f7fa0745f6eb77eb501ee",
+  "src/feselection/__init__.py": "58a7dd8632883c9861d0836890f26e3737d7d29b9ec907f31dcd68295d690264",
+  "src/feselection/allocation.py": "c03e7a7832f4c1596347377582975d010668bde4e1856b9fc576fa81d390d1c6",
+  "src/feselection/auditing.py": "0cda3665325737fe4e86feca3a27f92cd3546b3bbc51ea9ed4df49a7d69433e7",
+  "src/feselection/coarse.py": "59b8be8223b89d63e60c5e3c989723629ebacf9c39d18771fb6cf8d0b01a6a50",
+  "src/feselection/cost_policy.py": "2bfdaad1b06f0c04bcc696d27bdbe22aae3fcf944875da2cfeb8b721ea3b5a30",
+  "src/feselection/early_screen.py": "dde29c924c1dcd96eb16d75cabf2be42a952573a47cfec6cd9c24d8fe50be970",
+  "src/feselection/monitored_lsmr.py": "01cd5a6b0188e3103123aac612f11b372ee2bd26af62ba64baf8c52ad9a83c7b",
+  "src/feselection/numerical_screen.py": "57973f4cc8e057ec368d2ac2ac0998f4daf37edf86fac5597c401f9f4a856751",
+  "src/feselection/partitioning.py": "86e41d7382ea3347b2aa93c6971bce6815e345afbd61ef9dc923c716e7c02e3a",
+  "src/feselection/pilot_policy.py": "d41eb5a8174530b4a5692c47a1baca81bbba5bc7fe74cff10ffda37e73800b40",
+  "src/feselection/selector.py": "ad4bc3c92817e4c4c3a576f03136cb25e456b00b161feacf76e4d97a3a113cc6",
+  "src/scalable_hyperfe.py": "c9ef8be7fcebdec8456da87393d07d29e5a4e9823b62ab1f8ff186aa79ede571",
+  "src/validation.py": "37051f75f2d5610f44b1ace15bae694d2c868cc63c73edb8473a030f51e13e0f"
+}

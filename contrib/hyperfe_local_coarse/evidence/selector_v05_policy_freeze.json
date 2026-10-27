@@ -1,0 +1,28 @@
+{
+  "freeze_stage": "after known-counterexample development, before new-seed runs",
+  "main_seed": 93517,
+  "second_seed": 93518,
+  "known_development_seeds": [
+    83131,
+    83132,
+    73021
+  ],
+  "policy_version": "fe-selector-0.5",
+  "scout": "raw reject downgraded to unknown; full data gates unchanged",
+  "pilot": {
+    "checkpoint_steps": 8,
+    "initial_steps": 24,
+    "forecast_safety": 1.5,
+    "maximum_native_fraction": 0.9,
+    "seconds_cap": 5.0,
+    "exploratory_time_fraction": 0.35,
+    "minimum_contraction": 1.02,
+    "history_windows": 3
+  },
+  "precision": {
+    "tol": 1e-13,
+    "reference_tol": 1e-14,
+    "forward_gate": 1e-08
+  },
+  "no_new_family_generalization": true
+}
