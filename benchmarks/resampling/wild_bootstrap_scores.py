@@ -117,7 +117,8 @@ def run_case(n, weighted, reps, rounds):
                 timings_seconds=times, median_seconds=medians,
                 speedup=medians["legacy"]/medians["scores"],
                 differences=differences, absorption=diagnostics,
-                cumulative_process_peak_rss_mib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024)
+                cumulative_process_peak_rss_mib=(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss /
+                                                 (1024**2 if sys.platform == "darwin" else 1024)))
 
 
 def main():
