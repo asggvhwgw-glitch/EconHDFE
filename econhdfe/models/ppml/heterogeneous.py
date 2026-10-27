@@ -117,7 +117,7 @@ def detect_separation_block(
 
 
 def filter_columns_block(
-    X: BlockDesign, names, plan: FEPlan, weights, tol, *, engine="replica", projector=None,
+    X: BlockDesign, names, plan: FEPlan, weights, tol, *, engine="replica", absorb_method="map", projector=None,
 ):
     """Block-native counterpart of the PPML raw/post-FE rank filter.
 
@@ -133,7 +133,7 @@ def filter_columns_block(
     original = np.asarray(keep, dtype=np.int64)
     if plan.groups and out.ncols:
         if projector is None:
-            projector = BlockWeightedFEProjector.from_design(out, plan, engine=engine, method="map")
+            projector = BlockWeightedFEProjector.from_design(out, plan, engine=engine, method=absorb_method)
         residual = projector.residualize_design(out, weights, tol=tol)
         keep2, _ = independent_columns(residual, tol=max(tol, 1e-12))
         out = out.select_columns(keep2)
@@ -229,7 +229,7 @@ def fit_irls_block(
 
     if projector is None:
         projector = BlockWeightedFEProjector.from_design(
-            X, plan, engine=config.engine, method="map"
+            X, plan, engine=config.engine, method=config.absorb_method
         )
 
     mu = np.empty(n, dtype=np.float64)
@@ -351,7 +351,7 @@ def final_wls_block(
     off = np.asarray(offset, dtype=np.float64)
     if projector is None:
         projector = BlockWeightedFEProjector.from_design(
-            X, plan, engine=config.engine, method="map"
+            X, plan, engine=config.engine, method=config.absorb_method
         )
     wfinal = tw * state.mu
     z = state.eta - off - 1.0
@@ -392,7 +392,7 @@ def _resource_block_projector(X: BlockDesign, plan: FEPlan, config: PPMLConfig, 
     if not plan.groups:
         return None
     return BlockWeightedFEProjector.from_design(
-        X, plan, engine=config.engine, method="map",
+        X, plan, engine=config.engine, method=config.absorb_method,
         absorb_threads=execution.threads,
         projection_memory_budget_mb=execution.memory_budget_mb,
     )
@@ -493,7 +493,7 @@ def fit_block_arrays(
         ys_orig, ws, offs = y0[survivor0], w0[survivor0], off0[survivor0]
         ps_requested = p0.subset(survivor0)
         Bstd, names, keep = filter_columns_block(
-            Bstd, names, ps_requested, ws, config.target_inner_tol, engine=config.engine
+            Bstd, names, ps_requested, ws, config.target_inner_tol, engine=config.engine, absorb_method=config.absorb_method
         )
         standardizer = standardizer.select_columns(keep)
 
@@ -535,7 +535,7 @@ def fit_block_arrays(
         ys_orig, ws, offs = ys_orig[keep_mu], ws[keep_mu], offs[keep_mu]
         ps_requested = ps_requested.subset(keep_mu)
         Bstd, names, keep = filter_columns_block(
-            Bstd, names, ps_requested, ws, config.target_inner_tol, engine=config.engine
+            Bstd, names, ps_requested, ws, config.target_inner_tol, engine=config.engine, absorb_method=config.absorb_method
         )
         standardizer = standardizer.select_columns(keep)
         ps_solver, canonicalization = ps_requested.for_engine(config.engine)

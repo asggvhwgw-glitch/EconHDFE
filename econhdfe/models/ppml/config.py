@@ -24,6 +24,7 @@ class PPMLConfig:
     relu_zero_tol: float = 1e-8
     relu_max_iter: int = 100
     engine: str = "replica"
+    absorb_method: str = "map"  # map, lsmr, or optional native within
     dof_method: str = "pairwise"
 
     def validate(self) -> None:
@@ -37,6 +38,8 @@ class PPMLConfig:
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, Integral) or value < 1:
                 raise SpecificationError(f"{name} must be a positive integer", code="specification.iteration_count")
+        if self.absorb_method not in {"map", "lsmr", "within"}:
+            raise SpecificationError("absorb_method must be map/lsmr/within", code="specification.absorb_method")
         if self.engine not in {"replica", "optimized"}:
             raise SpecificationError("engine must be 'replica' or 'optimized'")
         if self.dof_method not in {"exact", "pairwise", "firstpair", "none"}:
