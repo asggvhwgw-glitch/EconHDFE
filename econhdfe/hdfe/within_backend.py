@@ -90,8 +90,31 @@ class WithinFEAbsorber:
         # Upstream Schwarz factorization has no hard memory-budget API. This is
         # explicitly not a bound on native peak RSS or upstream factor fill-in.
         levels = sum(self.levels)
-        resident = 8*self.nobs*len(self.groups) + 24*self.nobs + 32*levels
-        per_column = 64*self.nobs + 96*levels
+        base_resident = 8*self.nobs*len(self.groups) + 24*self.nobs + 32*levels
+        primary_column = 64*self.nobs + 96*levels
+        extra = getattr(self._native, "extra_resident_bytes", None)
+        guarded = extra is not None
+        legacy_schur = not guarded and self._native.route == "schur"
+        if extra is None:
+            extra = 0
+            if legacy_schur:
+                big = max(self.levels)
+                q = levels - big - len(self.levels) + 1
+                # Older ABI-1 wheels lack an exact retained-state getter; their
+                # Schur build estimate conservatively covers its live storage.
+                extra = 8*(big*q + 6*q*q + 4*big + 8*q) + 16*len(self.levels) + 256
+        resident = base_resident + int(extra)
+        # Certification can keep the primary engine/result alive while a fresh
+        # original-row diagonal solver runs. Reserve its state before pooling
+        # when the budget can admit it; otherwise retain primary-only operation.
+        # Native admission independently declines fallback below this total.
+        fallback_fits = 2*(base_resident + primary_column) + int(extra) <= int(
+            self.projection_memory_budget_mb * 1024**2
+        )
+        # A legacy Schur wheel cannot disable its fallback, so reserve it even
+        # if that means rejecting an insufficient budget before native entry.
+        reserve_fallback = (guarded and fallback_fits) or legacy_schur
+        per_column = base_resident + 2*primary_column if reserve_fallback else primary_column
         return int(resident), max(1, int(per_column))
 
     @property
@@ -101,7 +124,10 @@ class WithinFEAbsorber:
             "nobs": self.nobs, "n_cells": self._native.n_cells,
             "threads": self.absorb_threads,
             "weight_generation": self._native.weight_generation,
-            "schur_fallbacks": self._native.fallback_count,
+            "schur_fallbacks": getattr(
+                self._native, "schur_fallback_count", self._native.fallback_count,
+            ),
+            "certification_fallbacks": self._native.fallback_count,
             "schur_condition": self._native.schur_condition,
             "budget_scope": "reduction_workspace_and_rhs_pool_not_total_native_rss",
         }
@@ -118,8 +144,8 @@ class WithinFEAbsorber:
         out = a.copy() if copy else a
         nthreads = self.absorb_threads if absorb_threads is None else resolve_threads(absorb_threads)
         # Only one Krylov solve is live; pool width also bounds the bridge buffer.
-        _, per = self.workspace_cost()
-        cap = int(self.projection_memory_budget_mb*1024**2)//per
+        resident, per = self.workspace_cost()
+        cap = (int(self.projection_memory_budget_mb*1024**2) - resident)//per
         if cap < 1 and a.shape[1]:
             raise SpecificationError("within budget cannot fit one RHS; increase memory_budget_mb")
         width = max(1, min(a.shape[1] or 1, cap))

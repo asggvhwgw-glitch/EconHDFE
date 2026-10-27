@@ -471,7 +471,7 @@ flowchart LR
 | `econhdfe/` | 132 | 130 | 2 |
 | `tests/` | 84 | 84 | 0 |
 | `validation/` | 25 | 8 | 3 |
-| `benchmarks/` | 122 | 30 | 9 |
+| `benchmarks/` | 124 | 30 | 9 |
 | `docs/` | 112 | 1 | 78 |
 | `scripts/` | 22 | 19 | 0 |
 | `skills/` | 17 | 4 | 12 |

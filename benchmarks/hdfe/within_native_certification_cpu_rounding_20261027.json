@@ -1,0 +1,1362 @@
+{
+  "schema_version": 1,
+  "recorded_date": "2026-10-27",
+  "scope": "PR29 CPU-rounding certification follow-up. Accuracy and resource-admission evidence; no performance claim.",
+  "initial_candidate": {
+    "commit": "999900dbe8f7d8f5c2625a5155ec39177d1bd65f",
+    "evidence_path": "benchmarks/hdfe/within_native_certification_20261027.json",
+    "evidence_sha256": "a8dc62eae204068506e5682bc45fffa0adfa4b5740690748fcf10083ade73e54",
+    "evidence_preserved_unchanged": true
+  },
+  "historical_5m_reproduction": false,
+  "historical_5m_note": "The original historical 21-parameter, singleton-pruned composite-IV generator/input was unavailable. The dyadic paired corpus below is independently specified and does not replay that case.",
+  "frozen_pre_fix_diagnosis": {
+    "schema_version": 1,
+    "recorded_date": "2026-10-27",
+    "scope": "Frozen pre-fix diagnosis of PR29 Linux native CI failure; no performance claim, no tolerance/assertion/seed changes, no raw observations in this record.",
+    "ci": {
+      "pr": 29,
+      "head_commit": "999900dbe8f7d8f5c2625a5155ec39177d1bd65f",
+      "run_id": 40434557938,
+      "job_id": 121960006225,
+      "artifact_id": 12703367940,
+      "job_url": "https://github.com/asggvhwgw-glitch/EconHDFE/actions/runs/40434557938/job/121960006225",
+      "failed_test": "native/within-accel/tests/test_boundaries.py::test_progressing_continuation_uses_remaining_budget_before_fallback",
+      "native_test_result": {
+        "failed": 1,
+        "passed": 50
+      },
+      "python": "3.12.15",
+      "numpy": "2.5.4",
+      "actual_ci_input_hashes_recorded": false
+    },
+    "fixture": {
+      "rows": 4000,
+      "levels": [
+        400,
+        150,
+        35
+      ],
+      "rhs": 1,
+      "geometry_and_outcome_seed": 0,
+      "weight_seed": 26,
+      "weights": "exp(clip(10 * default_rng(26).normal(size=4000), -50, 50))",
+      "strategy": "plain",
+      "tolerance": 1e-12,
+      "max_iter": 16000,
+      "native_threads": 1,
+      "blas_threads": 1
+    },
+    "input_sha256": {
+      "encoding": "SHA256 of C-contiguous array bytes, not .npz container bytes",
+      "codes": "d20aede64554fd3bc70aebb1582153d67d8db4a4ad0269c4d0ed96a2c1f26bb6",
+      "outcome": "9cdcd2291e5cd03f9313aa901ce3859bff279af2a841c98b5513a3c0b4bde022",
+      "weights_native_avx512": "ea5129f3fe1479a4c6b1c9dae8c9c312d401305448ccf3c71fd70915d68be21b",
+      "weights_avx512_disabled": "52441c31f32abce34a4d9243df95eab091a65c841cfe912f0e499f83ab331ec6",
+      "codes_and_outcome_unchanged": true
+    },
+    "rounding_difference": {
+      "weights_changed": 188,
+      "weights_total": 4000,
+      "maximum_ulp_distance": 1,
+      "maximum_relative_difference": 2.1886928219109632e-16,
+      "numpy_version_alone_changed_input_bytes_on_this_host": false
+    },
+    "dispatch_settings": {
+      "native": {
+        "NPY_DISABLE_CPU_FEATURES": null,
+        "host_supports_avx512": true
+      },
+      "avx512_disabled": {
+        "NPY_DISABLE_CPU_FEATURES": "AVX512F,AVX512_SKX,AVX512_CLX,AVX512_CNL,AVX512_ICL,AVX512_SPR,X86_V4"
+      },
+      "avx512_avx2_fma3_disabled": {
+        "NPY_DISABLE_CPU_FEATURES": "AVX512F,AVX512_SKX,AVX512_CLX,AVX512_CNL,AVX512_ICL,AVX512_SPR,X86_V4,AVX2,FMA3"
+      }
+    },
+    "artifacts": {
+      "local_candidate": {
+        "extension_path": "/tmp/econhdfe-native-candidate/_econhdfe_within/_econhdfe_within.abi3.so",
+        "wheel_path": "/tmp/econhdfe-native-candidate-wheel/econhdfe_within-0.1.0a2-cp310-abi3-manylinux_2_35_x86_64.whl",
+        "extension_sha256": "81eacc7f8966886e21b7bc0d74554325458b2a6cf48daa3163f27e687d54e1cb",
+        "wheel_sha256": "bbec1ebac4f0cfe5c6c10cf099bbea53e7f111644bb21aaa9bbe43d24d8e186d"
+      },
+      "ci_original": {
+        "extension_path": "/tmp/econhdfe-native-ci-original/_econhdfe_within/_econhdfe_within.abi3.so",
+        "wheel_path": "/tmp/econhdfe-ci-failure/native-wheels/econhdfe_within-0.1.0a2-cp310-abi3-linux_x86_64.whl",
+        "extension_sha256": "92839f88916629129a2d557ec21e16ea54706a7fcbedbfa7fe3dae7d7d67dccb",
+        "wheel_sha256": "3061f40e817f5eafa832ea168c803e55bbc552806e94bdfdcd15f7e875842da8"
+      }
+    },
+    "results": [
+      {
+        "binary": "local_candidate",
+        "numpy": "2.3.5",
+        "dispatch": "native",
+        "converged": [
+          true
+        ],
+        "iterations": [
+          240
+        ],
+        "metrics": [
+          3.7694323022543933e-13
+        ],
+        "fallback_count": 0,
+        "weight_sha256": "ea5129f3fe1479a4c6b1c9dae8c9c312d401305448ccf3c71fd70915d68be21b"
+      },
+      {
+        "binary": "local_candidate",
+        "numpy": "2.5.4",
+        "dispatch": "native",
+        "converged": [
+          true
+        ],
+        "iterations": [
+          240
+        ],
+        "metrics": [
+          3.7694323022543933e-13
+        ],
+        "fallback_count": 0,
+        "weight_sha256": "ea5129f3fe1479a4c6b1c9dae8c9c312d401305448ccf3c71fd70915d68be21b"
+      },
+      {
+        "binary": "local_candidate",
+        "numpy": "2.5.4",
+        "dispatch": "avx512_disabled",
+        "converged": [
+          false
+        ],
+        "iterations": [
+          16000
+        ],
+        "metrics": [
+          1.7219567015848397e-12
+        ],
+        "fallback_count": 1,
+        "weight_sha256": "52441c31f32abce34a4d9243df95eab091a65c841cfe912f0e499f83ab331ec6"
+      },
+      {
+        "binary": "local_candidate",
+        "numpy": "2.5.4",
+        "dispatch": "avx512_avx2_fma3_disabled",
+        "converged": [
+          false
+        ],
+        "iterations": [
+          16000
+        ],
+        "metrics": [
+          1.7219567015848397e-12
+        ],
+        "fallback_count": 1,
+        "weight_sha256": "52441c31f32abce34a4d9243df95eab091a65c841cfe912f0e499f83ab331ec6"
+      },
+      {
+        "binary": "ci_original",
+        "numpy": "2.5.4",
+        "dispatch": "native",
+        "converged": [
+          true
+        ],
+        "iterations": [
+          240
+        ],
+        "metrics": [
+          3.7694323022543933e-13
+        ],
+        "fallback_count": 0,
+        "weight_sha256": "ea5129f3fe1479a4c6b1c9dae8c9c312d401305448ccf3c71fd70915d68be21b"
+      },
+      {
+        "binary": "ci_original",
+        "numpy": "2.5.4",
+        "dispatch": "avx512_disabled",
+        "converged": [
+          false
+        ],
+        "iterations": [
+          16000
+        ],
+        "metrics": [
+          1.7219567015848397e-12
+        ],
+        "fallback_count": 1,
+        "weight_sha256": "52441c31f32abce34a4d9243df95eab091a65c841cfe912f0e499f83ab331ec6"
+      }
+    ],
+    "compiler_and_dependencies": {
+      "local_python": "3.12.14",
+      "local_and_ci_rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+      "local_and_ci_llvm": "23.1.1",
+      "cargo_lock_tracked": true,
+      "local_and_ci_cargo_lock_sha256": "47d6a5eceaf7eb6a932e2fdafaccf44b9b96f716cbad6dd4b8b3c5292e959dbe",
+      "locked_versions": {
+        "pyo3": "0.29.3",
+        "rust_numpy": "0.29.0",
+        "ndarray": "0.17.2",
+        "rand": "0.10.3",
+        "approx-chol": "0.6.0"
+      },
+      "within_and_schwarz_revision": "fc44282cea6124f5f18bb142908605a656d35a7c",
+      "ci_maturin": "1.15.0",
+      "ci_integration_diff_empty": true
+    },
+    "reproduction": {
+      "probe_path": "/tmp/econhdfe_ci_fixture_probe.py",
+      "probe_sha256": "8b640e3e69a2beb61a64f5e4fc5a9d2ce97ad392a0593c917248ac283ac70b56",
+      "isolated_numpy_254_path": "/tmp/econhdfe-ci-numpy",
+      "normal_command": "PYTHONPATH=/tmp/econhdfe-ci-numpy:/tmp/econhdfe-native-ci-original ECON_TEST_TAG=avx512-ci OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python /tmp/econhdfe_ci_fixture_probe.py",
+      "disabled_command": "PYTHONPATH=/tmp/econhdfe-ci-numpy:/tmp/econhdfe-native-ci-original ECON_TEST_TAG=avx2-ci NPY_DISABLE_CPU_FEATURES=AVX512F,AVX512_SKX,AVX512_CLX,AVX512_CNL,AVX512_ICL,AVX512_SPR,X86_V4 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python /tmp/econhdfe_ci_fixture_probe.py",
+      "frozen_passing_input": "/tmp/econhdfe-input-avx512-ci.npz",
+      "frozen_failing_input": "/tmp/econhdfe-input-avx2-ci.npz",
+      "raw_input_policy": "Temporary local diagnostic inputs only; no raw observations committed."
+    },
+    "conclusion": "Changing only NumPy CPU dispatch for exp is sufficient to reproduce the failure with both binaries. Identical arrays give identical solver outcomes across the local and exact CI wheels. NumPy version alone, observed Cargo versions and compiler versions do not explain the difference. Actual CI input bytes were not logged; the dispatch mechanism is demonstrated by the controlled local reproduction, not by a claimed hash of the CI-generated arrays.",
+    "historical_large_sample_evidence_modified": false
+  },
+  "final_candidate": {
+    "base_commit": "999900dbe8f7d8f5c2625a5155ec39177d1bd65f",
+    "identity_note": "Collected from the working tree on this base; exact runtime/test/harness source and extension hashes identify the tested revision. Run-local package_diff_sha256 also includes contemporaneous documentation edits.",
+    "source_sha256": {
+      "native/within-accel/src/lib.rs": "27306acc295173820f3aa85f92dcbe5e9fd13e4e9d21d209b4358ac785b30830",
+      "native/within-accel/src/python.rs": "1a24e9b99f26ea99847b0d0ffb6565b9d072e3dc6cf9fbea5ba07549b12ee886",
+      "native/within-accel/src/reductions.rs": "028f3c808ff78c1168f042a111f37b758d3ac25771946365ab0aa9b89f5b82d8",
+      "native/within-accel/Cargo.lock": "47d6a5eceaf7eb6a932e2fdafaccf44b9b96f716cbad6dd4b8b3c5292e959dbe",
+      "native/within-accel/tests/test_boundaries.py": "0b333af23fd78823cf0b90b413ee92522989eb8415bcfa3073a9a95e515215e3",
+      "native/within-accel/validate_native_dyadic_iv.py": "4ee530ab3c6fc92e6bc7c8c7716bad2b9381d04568a4138cd6d70604af1aa0f1",
+      "econhdfe/hdfe/within_backend.py": "a24f31b4e215c27529cf7a804b728d55a2d030d87817ab85f7e7a6f3b2e5f4e2"
+    },
+    "extension_sha256": "073559d7901a7f30519bc7b87ac6d03c5ba3cf777b0e7d595638a755aef46135",
+    "extension_path_at_collection": "/tmp/econhdfe-native-ci-candidate/_econhdfe_within/_econhdfe_within.abi3.so",
+    "wheel_sha256": "7476784616e7dcc41cbb463ca150024a3d598550d5c8286a2ca85393744136b3",
+    "build_command": "maturin build --manifest-path native/within-accel/Cargo.toml --release --locked --offline --out <wheel_dir>"
+  },
+  "correction": {
+    "operation": "One original-row weighted cyclic projection with compensated numerator and mass sums, after successful upstream continuation stops above the finite certificate.",
+    "gate": "max(tol, 64 * float64_epsilon), unchanged",
+    "iteration_accounting": "A complete sweep counts as one iteration and is allowed only if iterations < max_iter. No iteration is reserved from the initial solve. All routes share max_iter.",
+    "candidate_selection": "Retain the best original-row stationarity metric and accept only the unchanged gate.",
+    "primary_scratch_bytes": "8*N + 32*max(levels), inside the existing P = 64*N + 96*sum(levels) reservation after upstream temporary vectors are released.",
+    "fallback": "If still uncertified, the actual original-row Diagonal constructor is guarded by checked 2*(R+P) + S + 8*N*(other buffered RHS) admission and a nonzero remaining iteration allowance.",
+    "unchanged": [
+      "original FE span",
+      "weights",
+      "sample",
+      "tolerance",
+      "rank policy",
+      "estimator definitions",
+      "upstream revision",
+      "default backend"
+    ]
+  },
+  "cpu_dispatch_post_fix": [
+    {
+      "tag": "ci-polished-avx512",
+      "numpy": "2.5.4",
+      "native": "/tmp/econhdfe-native-ci-candidate/_econhdfe_within/__init__.py",
+      "disabled": null,
+      "ok": [
+        true
+      ],
+      "iterations": [
+        240
+      ],
+      "metrics": [
+        3.7694323022543933e-13
+      ],
+      "fallback": 0,
+      "saved": "/tmp/econhdfe-input-ci-polished-avx512.npz",
+      "hashes": {
+        "codes": "d20aede64554fd3bc70aebb1582153d67d8db4a4ad0269c4d0ed96a2c1f26bb6",
+        "y": "9cdcd2291e5cd03f9313aa901ce3859bff279af2a841c98b5513a3c0b4bde022",
+        "weights": "ea5129f3fe1479a4c6b1c9dae8c9c312d401305448ccf3c71fd70915d68be21b"
+      }
+    },
+    {
+      "tag": "ci-polished-avx2",
+      "numpy": "2.5.4",
+      "native": "/tmp/econhdfe-native-ci-candidate/_econhdfe_within/__init__.py",
+      "disabled": "AVX512F,AVX512_SKX,AVX512_CLX,AVX512_CNL,AVX512_ICL,AVX512_SPR,X86_V4",
+      "ok": [
+        true
+      ],
+      "iterations": [
+        245
+      ],
+      "metrics": [
+        1.0934388435272532e-15
+      ],
+      "fallback": 0,
+      "saved": "/tmp/econhdfe-input-ci-polished-avx2.npz",
+      "hashes": {
+        "codes": "d20aede64554fd3bc70aebb1582153d67d8db4a4ad0269c4d0ed96a2c1f26bb6",
+        "y": "9cdcd2291e5cd03f9313aa901ce3859bff279af2a841c98b5513a3c0b4bde022",
+        "weights": "52441c31f32abce34a4d9243df95eab091a65c841cfe912f0e499f83ab331ec6"
+      }
+    }
+  ],
+  "boundary_measurements": {
+    "numpy": "2.5.4",
+    "native_path": "/tmp/econhdfe-native-ci-candidate/_econhdfe_within/_econhdfe_within.abi3.so",
+    "native_sha256": "073559d7901a7f30519bc7b87ac6d03c5ba3cf777b0e7d595638a755aef46135",
+    "script_sha256": "b7e3482f8e6fbe719249bc6f73028c39504bb255d2f3bebc8e62dc631283e877",
+    "cases": [
+      {
+        "name": "numpy_exp",
+        "rows": 4000,
+        "rhs": 1,
+        "workspace_bytes": 536870912,
+        "max_iter": 16000,
+        "tolerance": 1e-12,
+        "converged": [
+          true
+        ],
+        "iterations": [
+          240
+        ],
+        "native_stationarity": [
+          3.7694323022543933e-13
+        ],
+        "independent_original_row_stationarity": [
+          3.769425510613393e-13
+        ],
+        "max_absolute_forward_error": 1.5019256949244664e-09,
+        "max_assert_allclose_ratio": 0.27688562437403874,
+        "weighted_relative_forward_error": [
+          2.1387648579718813e-10
+        ],
+        "fallback_count": 0,
+        "reference_rank": 583,
+        "expected_converged": true,
+        "weight_sha256": "ea5129f3fe1479a4c6b1c9dae8c9c312d401305448ccf3c71fd70915d68be21b",
+        "passed": true
+      },
+      {
+        "name": "scalar_exp",
+        "rows": 4000,
+        "rhs": 1,
+        "workspace_bytes": 536870912,
+        "max_iter": 16000,
+        "tolerance": 1e-12,
+        "converged": [
+          true
+        ],
+        "iterations": [
+          245
+        ],
+        "native_stationarity": [
+          1.0934388435272532e-15
+        ],
+        "independent_original_row_stationarity": [
+          1.0934392566927101e-15
+        ],
+        "max_absolute_forward_error": 6.511430283850927e-10,
+        "max_assert_allclose_ratio": 0.22422870970749523,
+        "weighted_relative_forward_error": [
+          2.4822430931427654e-10
+        ],
+        "fallback_count": 0,
+        "reference_rank": 583,
+        "expected_converged": true,
+        "weight_sha256": "52441c31f32abce34a4d9243df95eab091a65c841cfe912f0e499f83ab331ec6",
+        "passed": true
+      },
+      {
+        "name": "dyadic_1mib",
+        "rows": 4000,
+        "rhs": 1,
+        "workspace_bytes": 1048576,
+        "max_iter": 16000,
+        "tolerance": 1e-12,
+        "converged": [
+          true
+        ],
+        "iterations": [
+          90
+        ],
+        "native_stationarity": [
+          5.932859482113466e-15
+        ],
+        "independent_original_row_stationarity": [
+          5.929670219872741e-15
+        ],
+        "max_absolute_forward_error": 9.197087535994797e-13,
+        "max_assert_allclose_ratio": 0.00019561388611835737,
+        "weighted_relative_forward_error": [
+          2.5093040732446933e-14
+        ],
+        "fallback_count": 0,
+        "reference_rank": null,
+        "expected_converged": true,
+        "weight_sha256": "e7f4ca3323eb1564bdae317aed9cf48fcb4ff35826bc13656a5b8fc2a564c6f6",
+        "passed": true
+      },
+      {
+        "name": "dyadic_primary_only_600k",
+        "rows": 4000,
+        "rhs": 1,
+        "workspace_bytes": 600000,
+        "max_iter": 16000,
+        "tolerance": 1e-12,
+        "converged": [
+          true
+        ],
+        "iterations": [
+          90
+        ],
+        "native_stationarity": [
+          5.932859482113466e-15
+        ],
+        "independent_original_row_stationarity": [
+          5.929670219872741e-15
+        ],
+        "max_absolute_forward_error": 9.197087535994797e-13,
+        "max_assert_allclose_ratio": 0.00019561388611835737,
+        "weighted_relative_forward_error": [
+          2.5093040732446933e-14
+        ],
+        "fallback_count": 0,
+        "reference_rank": null,
+        "expected_converged": true,
+        "weight_sha256": "e7f4ca3323eb1564bdae317aed9cf48fcb4ff35826bc13656a5b8fc2a564c6f6",
+        "passed": true
+      },
+      {
+        "name": "dyadic_max100",
+        "rows": 4000,
+        "rhs": 1,
+        "workspace_bytes": 536870912,
+        "max_iter": 100,
+        "tolerance": 1e-12,
+        "converged": [
+          true
+        ],
+        "iterations": [
+          90
+        ],
+        "native_stationarity": [
+          5.932859482113466e-15
+        ],
+        "independent_original_row_stationarity": [
+          5.929670219872741e-15
+        ],
+        "max_absolute_forward_error": 9.197087535994797e-13,
+        "max_assert_allclose_ratio": 0.00019561388611835737,
+        "weighted_relative_forward_error": [
+          2.5093040732446933e-14
+        ],
+        "fallback_count": 0,
+        "reference_rank": null,
+        "expected_converged": true,
+        "weight_sha256": "e7f4ca3323eb1564bdae317aed9cf48fcb4ff35826bc13656a5b8fc2a564c6f6",
+        "passed": true
+      },
+      {
+        "name": "dyadic_one_rhs_980k",
+        "rows": 4000,
+        "rhs": 1,
+        "workspace_bytes": 980000,
+        "max_iter": 16000,
+        "tolerance": 1e-12,
+        "converged": [
+          true
+        ],
+        "iterations": [
+          90
+        ],
+        "native_stationarity": [
+          5.932859482113466e-15
+        ],
+        "independent_original_row_stationarity": [
+          5.929670219872741e-15
+        ],
+        "max_absolute_forward_error": 9.197087535994797e-13,
+        "max_assert_allclose_ratio": 0.00019561388611835737,
+        "weighted_relative_forward_error": [
+          2.5093040732446933e-14
+        ],
+        "fallback_count": 0,
+        "reference_rank": null,
+        "expected_converged": true,
+        "weight_sha256": "e7f4ca3323eb1564bdae317aed9cf48fcb4ff35826bc13656a5b8fc2a564c6f6",
+        "passed": true
+      },
+      {
+        "name": "dyadic_two_rhs_980k",
+        "rows": 4000,
+        "rhs": 2,
+        "workspace_bytes": 980000,
+        "max_iter": 16000,
+        "tolerance": 1e-12,
+        "converged": [
+          true,
+          true
+        ],
+        "iterations": [
+          90,
+          83
+        ],
+        "native_stationarity": [
+          5.932859482113466e-15,
+          7.166792134959625e-15
+        ],
+        "independent_original_row_stationarity": [
+          5.929670219872741e-15,
+          7.16446310950415e-15
+        ],
+        "max_absolute_forward_error": 2.709832358505082e-12,
+        "max_assert_allclose_ratio": 0.0008101256751304401,
+        "weighted_relative_forward_error": [
+          2.5093040732446968e-14,
+          3.4774984950236696e-14
+        ],
+        "fallback_count": 0,
+        "reference_rank": null,
+        "expected_converged": true,
+        "weight_sha256": "e7f4ca3323eb1564bdae317aed9cf48fcb4ff35826bc13656a5b8fc2a564c6f6",
+        "passed": true
+      },
+      {
+        "name": "dyadic_max1",
+        "rows": 4000,
+        "rhs": 1,
+        "workspace_bytes": 536870912,
+        "max_iter": 1,
+        "tolerance": 1e-12,
+        "converged": [
+          false
+        ],
+        "iterations": [
+          1
+        ],
+        "native_stationarity": [
+          0.2618178413514678
+        ],
+        "independent_original_row_stationarity": [
+          0.2618178413514679
+        ],
+        "max_absolute_forward_error": 2.804167078157219,
+        "max_assert_allclose_ratio": 1402083539.0786095,
+        "weighted_relative_forward_error": [
+          0.5443932428269123
+        ],
+        "fallback_count": 0,
+        "reference_rank": null,
+        "expected_converged": false,
+        "weight_sha256": "e7f4ca3323eb1564bdae317aed9cf48fcb4ff35826bc13656a5b8fc2a564c6f6",
+        "passed": true
+      }
+    ],
+    "all_passed": true
+  },
+  "regression_policy": {
+    "permanent_fixture": "native/within-accel/tests/test_boundaries.py::test_progressing_continuation_uses_remaining_budget_before_fallback",
+    "exp_variants": [
+      "numpy.exp",
+      "scalar math.exp"
+    ],
+    "seeds_sample_and_weight_formula_preserved": true,
+    "original_main_assertions_preserved": true,
+    "reference_coded_dummy_rank": 583,
+    "dense_reference_atol": 2e-09,
+    "dense_reference_rtol": 2e-08,
+    "independent_original_row_stationarity_gate": 1e-12,
+    "new_route_assertions_updated": "Previously added 600000-byte, max_iter=100 and two-RHS 980000-byte cases now certify with primary-only polish. Their budgets and accuracy oracles are unchanged. max_iter=1 continues to fail honestly.",
+    "fallback_allocation_tests": "Two Rust tests exercise the actual constructor guard at the exact byte boundary, below it, with retained Schur/other-RHS bytes, arithmetic overflow and exhausted iterations; they verify the passed remaining iteration allowance and constructor errors."
+  },
+  "large_corpus_reproduction": {
+    "harness": "native/within-accel/validate_native_dyadic_iv.py",
+    "arguments": "--rows <8192|1000000|5000000> --mode both --threads 2 --output <result.json>",
+    "initial_environment": {
+      "OPENBLAS_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "NUMBA_NUM_THREADS": "4"
+    },
+    "process_accounting": "Unmodified psutil in a matching process/proc namespace.",
+    "interpretation": "Single validation runs, not paired timing experiments. Full IV execution raises its BLAS thread limit to 2 as recorded per run. Known-buffer workspace is not an RSS bound."
+  },
+  "large_corpus_final_runs": [
+    {
+      "provenance": {
+        "script_sha256": "4ee530ab3c6fc92e6bc7c8c7716bad2b9381d04568a4138cd6d70604af1aa0f1",
+        "native_sha256": "073559d7901a7f30519bc7b87ac6d03c5ba3cf777b0e7d595638a755aef46135",
+        "native_path": "/tmp/econhdfe-native-ci-candidate/_econhdfe_within/_econhdfe_within.abi3.so",
+        "package_path": "/workspace/scratch/e4078d4b08ca/econhdfe-native-work/econhdfe/__init__.py",
+        "package_commit": "999900dbe8f7d8f5c2625a5155ec39177d1bd65f",
+        "package_diff_sha256": "ed36cb35afe0cf0b11345bab1d3b95be20194665511369a5d999ab945fbeb174",
+        "upstream": "fc44282cea6124f5f18bb142908605a656d35a7c",
+        "python": "3.12.14",
+        "numpy": "2.3.5",
+        "scipy": "1.17.0",
+        "pandas": "2.2.3",
+        "numba": "0.68.0",
+        "psutil": "7.2.2",
+        "platform": "Linux-6.18.55-x86_64-with-glibc2.39"
+      },
+      "environment": {
+        "rss_measurement": "unmodified psutil.Process",
+        "harness_rss_override": false,
+        "pid_namespace_mismatch": false,
+        "effective_cpu_count": 8,
+        "blas_threads": {
+          "OPENBLAS_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "NUMBA_NUM_THREADS": "4"
+        }
+      },
+      "limits": {
+        "projection_weighted_relative": 1e-08,
+        "coefficient_scaled": 1e-05,
+        "covariance_correlation_scaled": 0.0005,
+        "stderr_relative": 0.0001,
+        "residual_weighted_relative": 1e-06,
+        "rss_relative": 1e-06
+      },
+      "tolerance": 1e-12,
+      "max_iter": 16000,
+      "threads": 2,
+      "memory_mb": 2048,
+      "fixture": {
+        "corpus": "dyadic_paired_weak_community_iv_v1",
+        "seed": 20261027,
+        "rows": 8192,
+        "rhs": 6,
+        "communities": 32,
+        "levels": [
+          1024,
+          1004,
+          256
+        ],
+        "bridge_pairs": 159,
+        "weight_min": 0.0009765625,
+        "weight_max": 16.0,
+        "weak_control_delta": 0.000244140625,
+        "instrument_within_scale": 0.00390625,
+        "stored_float_projection_exact": true,
+        "historical_5m_reproduction": false
+      },
+      "generation_seconds": 0.003420201999688288,
+      "projection": {
+        "passed": true,
+        "setup_seconds": 0.0007680570015509147,
+        "solve_seconds": 0.0826489830033097,
+        "total_seconds": 0.08341704000486061,
+        "converged": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "iterations": [
+          104,
+          99,
+          99,
+          99,
+          99,
+          100
+        ],
+        "stationarity": [
+          7.204554413371105e-15,
+          7.587680483922554e-15,
+          7.077671781985373e-15,
+          9.584000260076664e-15,
+          6.696032617270475e-15,
+          4.8072656966269275e-15
+        ],
+        "independent_original_row_stationarity": [
+          7.204539892806295e-15,
+          7.58762627381393e-15,
+          7.077671781985373e-15,
+          9.583956891989764e-15,
+          6.696025841006897e-15,
+          4.8072656966269275e-15
+        ],
+        "relative_errors": [
+          2.588098431350608e-12,
+          3.246374683831923e-12,
+          3.5333354822409983e-12,
+          4.340991983468779e-12,
+          3.154626197583987e-12,
+          5.855578060963588e-11
+        ],
+        "route": "compressed_within",
+        "cells": 4080,
+        "fallback_count": 0,
+        "schur_fallback_count": 0
+      },
+      "iv": {
+        "passed": true,
+        "method": "within",
+        "fit_seconds": 0.32937377199777984,
+        "active_fit_threadpools": [
+          {
+            "internal_api": "openblas",
+            "num_threads": 2,
+            "version": "0.3.30",
+            "architecture": "SkylakeX"
+          },
+          {
+            "internal_api": "openblas",
+            "num_threads": 2,
+            "version": "0.3.30",
+            "architecture": "SkylakeX"
+          }
+        ],
+        "reference_seconds": 0.002971416997752385,
+        "sample_rank_dof_passed": true,
+        "coefficient_scaled_error": 1.2211130128974157e-10,
+        "covariance_correlation_scaled_error": 7.58538509457556e-12,
+        "stderr_relative_error": 4.585221091701897e-13,
+        "residual_weighted_relative_error": 3.186337462489017e-11,
+        "rss_relative_error": 7.838174553853605e-14,
+        "beta": [
+          24.610140398441654,
+          -24.114816326803872,
+          1.4742628984425754
+        ],
+        "beta_reference": [
+          24.610140395497016,
+          -24.11481632385918,
+          1.4742628984425141
+        ],
+        "nobs": 8192,
+        "rank": 3,
+        "df_absorbed": 1258,
+        "df_resid_fit": 6931.0,
+        "df_resid": 1023.0,
+        "iterations": 104,
+        "absorb_info": {
+          "canonicalization": {
+            "requested": [
+              "fe1",
+              "fe2",
+              "fe3"
+            ],
+            "effective": [
+              "fe1",
+              "fe2",
+              "fe3"
+            ],
+            "requested_levels": [
+              1024,
+              1004,
+              256
+            ],
+            "effective_levels": [
+              1024,
+              1004,
+              256
+            ],
+            "dropped": [],
+            "refinement_edges": [],
+            "equivalences": [],
+            "passes": 1,
+            "diagnostics": {
+              "sample_size": 8192,
+              "candidate_pairs": 3,
+              "specification_proofs": 0,
+              "sample_rejections": 0,
+              "full_data_checks": 3
+            }
+          },
+          "method": "within",
+          "transform": "structured_native",
+          "acceleration": "none",
+          "projection_backend": "within_structured",
+          "absorb_threads": 2,
+          "iterations": 104,
+          "converged": true,
+          "convergence_metric": 9.584000260076664e-15,
+          "convergence_criterion": "within_compressed_within_stationarity",
+          "pool_size": 4,
+          "within": {
+            "backend": "within",
+            "route": "compressed_within",
+            "nobs": 8192,
+            "n_cells": 4080,
+            "threads": 2,
+            "weight_generation": 0,
+            "schur_fallbacks": 0,
+            "certification_fallbacks": 0,
+            "schur_condition": null,
+            "budget_scope": "reduction_workspace_and_rhs_pool_not_total_native_rss"
+          },
+          "solver_selection": {
+            "requested": "within",
+            "resolved": "within",
+            "reason": "explicit"
+          },
+          "execution_plan": {
+            "mode": "pooled_memory",
+            "pool_size": 4,
+            "threads": 2,
+            "memory_limit_bytes": 8589934592,
+            "memory_current_bytes": 3839963136,
+            "headroom_bytes": 2109120512,
+            "reason": "bounded_by_memory_headroom"
+          },
+          "execution_memory": {
+            "scope": "resident_solver_state_and_pooled_workspace",
+            "input_matrix_bytes": 393216,
+            "resident_solver_bytes": 466304,
+            "workspace_bytes_per_column": 1953408,
+            "estimated_solver_bytes": 8279936,
+            "budget_bytes": 2147483648
+          },
+          "resource_schedule": {
+            "scope": "whole_call_incremental_workspace",
+            "cpu_threads": 2,
+            "memory_policy": "relaxed",
+            "thread_policy": "explicit",
+            "memory_budget_bytes": 2147483648,
+            "reserve_bytes": 257698037,
+            "remaining_memory_bytes": 2099388416,
+            "worker_divisor": 1,
+            "memory_enforcement": "cooperative_planning_not_rss_limit"
+          }
+        },
+        "reference_projected_condition": 1.2113128160403452
+      },
+      "peak_rss_mib": 252.7421875,
+      "passed": true
+    },
+    {
+      "provenance": {
+        "script_sha256": "4ee530ab3c6fc92e6bc7c8c7716bad2b9381d04568a4138cd6d70604af1aa0f1",
+        "native_sha256": "073559d7901a7f30519bc7b87ac6d03c5ba3cf777b0e7d595638a755aef46135",
+        "native_path": "/tmp/econhdfe-native-ci-candidate/_econhdfe_within/_econhdfe_within.abi3.so",
+        "package_path": "/workspace/scratch/e4078d4b08ca/econhdfe-native-work/econhdfe/__init__.py",
+        "package_commit": "999900dbe8f7d8f5c2625a5155ec39177d1bd65f",
+        "package_diff_sha256": "23c1ef572dc0d7a261071f48331f7e4e02d33b96867a8acde1beccbb616e1aaf",
+        "upstream": "fc44282cea6124f5f18bb142908605a656d35a7c",
+        "python": "3.12.14",
+        "numpy": "2.3.5",
+        "scipy": "1.17.0",
+        "pandas": "2.2.3",
+        "numba": "0.68.0",
+        "psutil": "7.2.2",
+        "platform": "Linux-6.18.55-x86_64-with-glibc2.39"
+      },
+      "environment": {
+        "rss_measurement": "unmodified psutil.Process",
+        "harness_rss_override": false,
+        "pid_namespace_mismatch": false,
+        "effective_cpu_count": 8,
+        "blas_threads": {
+          "OPENBLAS_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "NUMBA_NUM_THREADS": "4"
+        }
+      },
+      "limits": {
+        "projection_weighted_relative": 1e-08,
+        "coefficient_scaled": 1e-05,
+        "covariance_correlation_scaled": 0.0005,
+        "stderr_relative": 0.0001,
+        "residual_weighted_relative": 1e-06,
+        "rss_relative": 1e-06
+      },
+      "tolerance": 1e-12,
+      "max_iter": 16000,
+      "threads": 2,
+      "memory_mb": 2048,
+      "fixture": {
+        "corpus": "dyadic_paired_weak_community_iv_v1",
+        "seed": 20261027,
+        "rows": 1000000,
+        "rhs": 6,
+        "communities": 32,
+        "levels": [
+          125000,
+          1024,
+          256
+        ],
+        "bridge_pairs": 13160,
+        "weight_min": 0.0009765625,
+        "weight_max": 16.0,
+        "weak_control_delta": 0.000244140625,
+        "instrument_within_scale": 0.00390625,
+        "stored_float_projection_exact": true,
+        "historical_5m_reproduction": false
+      },
+      "generation_seconds": 0.5212398469993786,
+      "projection": {
+        "passed": true,
+        "setup_seconds": 0.0802957369996875,
+        "solve_seconds": 1.3352811699987797,
+        "total_seconds": 1.4155769069984672,
+        "converged": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "iterations": [
+          36,
+          27,
+          27,
+          27,
+          27,
+          27
+        ],
+        "stationarity": [
+          2.172548921045606e-13,
+          2.0588590356394677e-13,
+          2.0594637106796654e-13,
+          1.1946971190113232e-13,
+          2.620631489591574e-13,
+          1.1183692860683436e-13
+        ],
+        "independent_original_row_stationarity": [
+          2.1725488007874795e-13,
+          2.0588590356394677e-13,
+          2.0594637106796654e-13,
+          1.1946971190113232e-13,
+          2.620631446223487e-13,
+          1.1183692860683436e-13
+        ],
+        "relative_errors": [
+          2.163712955959398e-12,
+          4.2707136288141695e-12,
+          4.271352914441206e-12,
+          3.67834619615848e-12,
+          3.005585306202146e-12,
+          5.7378232699827757e-11
+        ],
+        "route": "compressed_within",
+        "cells": 497301,
+        "fallback_count": 0,
+        "schur_fallback_count": 0
+      },
+      "iv": {
+        "passed": true,
+        "method": "within",
+        "fit_seconds": 2.784931454996695,
+        "active_fit_threadpools": [
+          {
+            "internal_api": "openblas",
+            "num_threads": 2,
+            "version": "0.3.30",
+            "architecture": "SkylakeX"
+          },
+          {
+            "internal_api": "openblas",
+            "num_threads": 2,
+            "version": "0.3.30",
+            "architecture": "SkylakeX"
+          }
+        ],
+        "reference_seconds": 0.2259156640029687,
+        "sample_rank_dof_passed": true,
+        "coefficient_scaled_error": 5.80543215578985e-11,
+        "covariance_correlation_scaled_error": 1.0814678526863636e-12,
+        "stderr_relative_error": 4.662936703425657e-13,
+        "residual_weighted_relative_error": 1.3021988221431068e-11,
+        "rss_relative_error": 0.0,
+        "beta": [
+          9.875057000343116,
+          -9.377211402975343,
+          1.5000501452153365
+        ],
+        "beta_reference": [
+          9.875056999798728,
+          -9.377211402430955,
+          1.5000501452153383
+        ],
+        "nobs": 1000000,
+        "rank": 3,
+        "df_absorbed": 1278,
+        "df_resid_fit": 998719.0,
+        "df_resid": 124999.0,
+        "iterations": 36,
+        "absorb_info": {
+          "canonicalization": {
+            "requested": [
+              "fe1",
+              "fe2",
+              "fe3"
+            ],
+            "effective": [
+              "fe1",
+              "fe2",
+              "fe3"
+            ],
+            "requested_levels": [
+              125000,
+              1024,
+              256
+            ],
+            "effective_levels": [
+              125000,
+              1024,
+              256
+            ],
+            "dropped": [],
+            "refinement_edges": [],
+            "equivalences": [],
+            "passes": 1,
+            "diagnostics": {
+              "sample_size": 32768,
+              "candidate_pairs": 3,
+              "specification_proofs": 0,
+              "sample_rejections": 3,
+              "full_data_checks": 0
+            }
+          },
+          "method": "within",
+          "transform": "structured_native",
+          "acceleration": "none",
+          "projection_backend": "within_structured",
+          "absorb_threads": 2,
+          "iterations": 36,
+          "converged": true,
+          "convergence_metric": 2.172548921045606e-13,
+          "convergence_criterion": "within_compressed_within_stationarity",
+          "pool_size": 4,
+          "within": {
+            "backend": "within",
+            "route": "compressed_within",
+            "nobs": 1000000,
+            "n_cells": 497301,
+            "threads": 2,
+            "weight_generation": 0,
+            "schur_fallbacks": 0,
+            "certification_fallbacks": 0,
+            "schur_condition": null,
+            "budget_scope": "reduction_workspace_and_rhs_pool_not_total_native_rss"
+          },
+          "solver_selection": {
+            "requested": "within",
+            "resolved": "within",
+            "reason": "explicit"
+          },
+          "execution_plan": {
+            "mode": "pooled_memory",
+            "pool_size": 4,
+            "threads": 2,
+            "memory_limit_bytes": 8589934592,
+            "memory_current_bytes": 4250759168,
+            "headroom_bytes": 1950318592,
+            "reason": "bounded_by_memory_headroom"
+          },
+          "execution_memory": {
+            "scope": "resident_solver_state_and_pooled_workspace",
+            "input_matrix_bytes": 48000000,
+            "resident_solver_bytes": 52040960,
+            "workspace_bytes_per_column": 204286720,
+            "estimated_solver_bytes": 869187840,
+            "budget_bytes": 2147483648
+          },
+          "resource_schedule": {
+            "scope": "whole_call_incremental_workspace",
+            "cpu_threads": 2,
+            "memory_policy": "relaxed",
+            "thread_policy": "explicit",
+            "memory_budget_bytes": 2147483648,
+            "reserve_bytes": 257698037,
+            "remaining_memory_bytes": 1651068928,
+            "worker_divisor": 1,
+            "memory_enforcement": "cooperative_planning_not_rss_limit"
+          }
+        },
+        "reference_projected_condition": 1.1851961447100237
+      },
+      "peak_rss_mib": 960.4296875,
+      "passed": true
+    },
+    {
+      "provenance": {
+        "script_sha256": "4ee530ab3c6fc92e6bc7c8c7716bad2b9381d04568a4138cd6d70604af1aa0f1",
+        "native_sha256": "073559d7901a7f30519bc7b87ac6d03c5ba3cf777b0e7d595638a755aef46135",
+        "native_path": "/tmp/econhdfe-native-ci-candidate/_econhdfe_within/_econhdfe_within.abi3.so",
+        "package_path": "/workspace/scratch/e4078d4b08ca/econhdfe-native-work/econhdfe/__init__.py",
+        "package_commit": "999900dbe8f7d8f5c2625a5155ec39177d1bd65f",
+        "package_diff_sha256": "9c1bb41e700e42767db83dec3d01ab91eeef6ef1b01c51769f5689c96bacacce",
+        "upstream": "fc44282cea6124f5f18bb142908605a656d35a7c",
+        "python": "3.12.14",
+        "numpy": "2.3.5",
+        "scipy": "1.17.0",
+        "pandas": "2.2.3",
+        "numba": "0.68.0",
+        "psutil": "7.2.2",
+        "platform": "Linux-6.18.55-x86_64-with-glibc2.39"
+      },
+      "environment": {
+        "rss_measurement": "unmodified psutil.Process",
+        "harness_rss_override": false,
+        "pid_namespace_mismatch": false,
+        "effective_cpu_count": 8,
+        "blas_threads": {
+          "OPENBLAS_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "NUMBA_NUM_THREADS": "4"
+        }
+      },
+      "limits": {
+        "projection_weighted_relative": 1e-08,
+        "coefficient_scaled": 1e-05,
+        "covariance_correlation_scaled": 0.0005,
+        "stderr_relative": 0.0001,
+        "residual_weighted_relative": 1e-06,
+        "rss_relative": 1e-06
+      },
+      "tolerance": 1e-12,
+      "max_iter": 16000,
+      "threads": 2,
+      "memory_mb": 2048,
+      "fixture": {
+        "corpus": "dyadic_paired_weak_community_iv_v1",
+        "seed": 20261027,
+        "rows": 5000000,
+        "rhs": 6,
+        "communities": 32,
+        "levels": [
+          625000,
+          1024,
+          256
+        ],
+        "bridge_pairs": 64750,
+        "weight_min": 0.0009765625,
+        "weight_max": 16.0,
+        "weak_control_delta": 0.000244140625,
+        "instrument_within_scale": 0.00390625,
+        "stored_float_projection_exact": true,
+        "historical_5m_reproduction": false
+      },
+      "generation_seconds": 3.25060807599948,
+      "projection": {
+        "passed": true,
+        "setup_seconds": 0.9739965260014287,
+        "solve_seconds": 8.423947632996715,
+        "total_seconds": 9.397944158998143,
+        "converged": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "iterations": [
+          34,
+          27,
+          27,
+          27,
+          27,
+          27
+        ],
+        "stationarity": [
+          1.3022916078853086e-13,
+          6.039315872793542e-14,
+          6.010469899564441e-14,
+          1.139564633133107e-13,
+          5.4137250238284196e-14,
+          8.114636099817355e-14
+        ],
+        "independent_original_row_stationarity": [
+          1.3022916078853086e-13,
+          6.039315872793542e-14,
+          6.010472997284934e-14,
+          1.139564633133107e-13,
+          5.4137250238284196e-14,
+          8.114636099817355e-14
+        ],
+        "relative_errors": [
+          1.1471961855917689e-12,
+          2.3774534121156963e-12,
+          2.380289383782274e-12,
+          2.1421860657572877e-12,
+          2.3570491948218634e-12,
+          3.6254494413767117e-11
+        ],
+        "route": "compressed_within",
+        "cells": 2486057,
+        "fallback_count": 0,
+        "schur_fallback_count": 0
+      },
+      "iv": {
+        "passed": true,
+        "method": "within",
+        "fit_seconds": 14.877163500997995,
+        "active_fit_threadpools": [
+          {
+            "internal_api": "openblas",
+            "num_threads": 2,
+            "version": "0.3.30",
+            "architecture": "SkylakeX"
+          },
+          {
+            "internal_api": "openblas",
+            "num_threads": 2,
+            "version": "0.3.30",
+            "architecture": "SkylakeX"
+          }
+        ],
+        "reference_seconds": 1.2927494549985568,
+        "sample_rank_dof_passed": true,
+        "coefficient_scaled_error": 1.0091166598258286e-11,
+        "covariance_correlation_scaled_error": 1.565018104863653e-13,
+        "stderr_relative_error": 4.884981308350689e-15,
+        "residual_weighted_relative_error": 6.654242881322759e-12,
+        "rss_relative_error": 4.440892098500626e-16,
+        "beta": [
+          -3.547726161592956,
+          4.048408136577363,
+          1.5008909610980798
+        ],
+        "beta_reference": [
+          -3.547726161557155,
+          4.048408136541566,
+          1.5008909610980792
+        ],
+        "nobs": 5000000,
+        "rank": 3,
+        "df_absorbed": 1278,
+        "df_resid_fit": 4998719.0,
+        "df_resid": 624999.0,
+        "iterations": 34,
+        "absorb_info": {
+          "canonicalization": {
+            "requested": [
+              "fe1",
+              "fe2",
+              "fe3"
+            ],
+            "effective": [
+              "fe1",
+              "fe2",
+              "fe3"
+            ],
+            "requested_levels": [
+              625000,
+              1024,
+              256
+            ],
+            "effective_levels": [
+              625000,
+              1024,
+              256
+            ],
+            "dropped": [],
+            "refinement_edges": [],
+            "equivalences": [],
+            "passes": 1,
+            "diagnostics": {
+              "sample_size": 32768,
+              "candidate_pairs": 3,
+              "specification_proofs": 0,
+              "sample_rejections": 3,
+              "full_data_checks": 0
+            }
+          },
+          "method": "within",
+          "transform": "structured_native",
+          "acceleration": "none",
+          "projection_backend": "within_structured",
+          "absorb_threads": 2,
+          "iterations": 34,
+          "converged": true,
+          "convergence_metric": 1.302608814463773e-13,
+          "convergence_criterion": "within_compressed_within_stationarity",
+          "pool_size": 1,
+          "within": {
+            "backend": "within",
+            "route": "compressed_within",
+            "nobs": 5000000,
+            "n_cells": 2486057,
+            "threads": 2,
+            "weight_generation": 0,
+            "schur_fallbacks": 0,
+            "certification_fallbacks": 0,
+            "schur_condition": null,
+            "budget_scope": "reduction_workspace_and_rhs_pool_not_total_native_rss"
+          },
+          "solver_selection": {
+            "requested": "within",
+            "resolved": "within",
+            "reason": "explicit"
+          },
+          "execution_plan": {
+            "mode": "pooled_memory",
+            "pool_size": 1,
+            "threads": 2,
+            "memory_limit_bytes": 8589934592,
+            "memory_current_bytes": 5640544256,
+            "headroom_bytes": 1385230336,
+            "reason": "bounded_by_memory_headroom"
+          },
+          "execution_memory": {
+            "scope": "resident_solver_state_and_pooled_workspace",
+            "input_matrix_bytes": 240000000,
+            "resident_solver_bytes": 260040960,
+            "workspace_bytes_per_column": 1020286720,
+            "estimated_solver_bytes": 1280327680,
+            "budget_bytes": 2147483648
+          },
+          "resource_schedule": {
+            "scope": "whole_call_incremental_workspace",
+            "cpu_threads": 2,
+            "memory_policy": "relaxed",
+            "thread_policy": "explicit",
+            "memory_budget_bytes": 2147483648,
+            "reserve_bytes": 257698037,
+            "remaining_memory_bytes": 1526779904,
+            "worker_divisor": 1,
+            "memory_enforcement": "cooperative_planning_not_rss_limit"
+          }
+        },
+        "reference_projected_condition": 1.1831515672064177
+      },
+      "peak_rss_mib": 3668.5546875,
+      "passed": true
+    }
+  ],
+  "local_validation": {
+    "rust": {
+      "passed": 8,
+      "command": "cargo test --manifest-path native/within-accel/Cargo.toml --locked --offline"
+    },
+    "native": {
+      "passed": 53,
+      "seconds": 2.39,
+      "command": "REQUIRE_WITHIN_NATIVE=1 python -m pytest native/within-accel/tests -q"
+    },
+    "full_base_suite": {
+      "passed": 468,
+      "seconds": 18.12,
+      "command": "python -m pytest tests -q"
+    },
+    "required_full_suite_gate": {
+      "passed": 468,
+      "seconds": 19.2,
+      "command": "python scripts/run_tests.py --suite full -- -q"
+    },
+    "version_compatibility_gate": {
+      "version": "0.9.1",
+      "passed": true,
+      "command": "python scripts/version.py gate"
+    },
+    "architecture_map": {
+      "passed": true,
+      "command": "python scripts/generate_architecture_map.py --check"
+    },
+    "diff_whitespace": {
+      "passed": true,
+      "command": "git diff --check"
+    },
+    "combined_branches": {
+      "bootstrap_commit": "7227b6ad1641c3c999eca1ee7dd7d94e0cf8d8a2",
+      "native_source": "Exact final_candidate.source_sha256 runtime/test files above",
+      "passed": 35,
+      "seconds": 2.76,
+      "command": "REQUIRE_WITHIN_NATIVE=1 python -m pytest tests/numerics/test_wild_score_bootstrap.py tests/behavior/test_resampling_memory_plan.py native/within-accel/tests/test_boundaries.py -q"
+    },
+    "scope": "Local Linux x86_64 validation, not a claim that remote CI passed."
+  }
+}
