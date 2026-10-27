@@ -45,7 +45,7 @@ jobs:
         run: |
           for case in repeated crossed weak schur; do
             for model in ppml ivppml; do
-              python benchmarks/hdfe/ppml_end_to_end_profile.py --rows 1000000 --budget-mb 2048 --case "$case" --model "$model" --repeat 1 --output "benchmark-results/${case}-${model}.json" > "benchmark-results/${case}-${model}.log" 2>&1 || { cat "benchmark-results/${case}-${model}.log"; exit 1; }
+              python benchmarks/hdfe/ppml_end_to_end_profile.py --rows 1000000 --budget-mb 2048 --case "$case" --model "$model" --repeat 1 --seed 20261028 --output "benchmark-results/${case}-${model}.json" > "benchmark-results/${case}-${model}.log" 2>&1 || { cat "benchmark-results/${case}-${model}.log"; exit 1; }
             done
           done
       - uses: actions/upload-artifact@v4

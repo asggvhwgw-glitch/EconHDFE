@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 from contextlib import contextmanager
 import hashlib
+from importlib.machinery import EXTENSION_SUFFIXES
 import json
 import os
 from pathlib import Path
@@ -31,6 +32,27 @@ from econhdfe.hdfe.within_backend import WithinFEAbsorber
 
 def digest(a):
     return hashlib.sha256(np.ascontiguousarray(a).view(np.uint8)).hexdigest()
+
+
+
+def native_identity(native):
+    """Hash the loaded extension, not a maturin package's Python __init__.py.
+
+    Both a directly imported extension and maturin's package/submodule layout
+    are supported. Fail rather than label an unverified Python file as a binary.
+    """
+    entrypoint = Path(native.__file__).resolve()
+    binary_module = getattr(native, "_econhdfe_within", native)
+    binary = Path(binary_module.__file__).resolve()
+    if not any(binary.name.endswith(suffix) for suffix in EXTENSION_SUFFIXES):
+        raise RuntimeError("Cannot identify the loaded native within extension binary")
+    return dict(
+        native_identity_schema=2,
+        native_module_file=str(binary),
+        native_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+        native_import_entrypoint_file=str(entrypoint),
+        native_import_entrypoint_sha256=hashlib.sha256(entrypoint.read_bytes()).hexdigest(),
+    )
 
 
 def fixture(n, case, seed):
@@ -164,7 +186,7 @@ def main():
                   platform=platform.platform(), python=platform.python_version(),
                   numpy=np.__version__, scipy=scipy.__version__, numba=numba.__version__,
                   upstream_rev=native.UPSTREAM_REV,
-                  native_sha256=hashlib.sha256(Path(native.__file__).read_bytes()).hexdigest(),
+                  **native_identity(native),
                   outer_tolerance=1e-9, target_inner_tolerance=1e-10,
                   separation=['fe'], vce='robust',
                   source_ref=os.environ.get('ECONHDFE_SOURCE_REF', os.environ.get('GITHUB_SHA')),

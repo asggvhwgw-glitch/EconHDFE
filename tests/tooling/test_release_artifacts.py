@@ -38,3 +38,41 @@ def test_publication_workflow_uses_trusted_publishing_without_token_fallback():
     assert "password:" not in text
     assert "needs.github-release.outputs.wheel_sha256" in text
     assert "needs.github-release.outputs.sdist_sha256" in text
+
+
+@pytest.mark.parametrize("packaged", [False, True])
+def test_profile_hashes_extension_binary_not_python_wrapper(tmp_path, packaged):
+    import hashlib
+    from importlib.machinery import EXTENSION_SUFFIXES
+    from pathlib import Path
+    import runpy
+    from types import SimpleNamespace
+    harness = runpy.run_path(str(Path(__file__).resolve().parents[2] /
+                                "benchmarks/hdfe/ppml_end_to_end_profile.py"))
+    binary = tmp_path / ("_econhdfe_within" + EXTENSION_SUFFIXES[0])
+    binary.write_bytes(b"first native binary")
+    module = SimpleNamespace(__file__=str(binary))
+    if packaged:
+        wrapper = tmp_path / "__init__.py"
+        wrapper.write_text("from ._econhdfe_within import *\n")
+        module = SimpleNamespace(__file__=str(wrapper), _econhdfe_within=module)
+    identity = harness["native_identity"](module)
+    assert identity["native_module_file"] == str(binary.resolve())
+    assert identity["native_sha256"] == hashlib.sha256(binary.read_bytes()).hexdigest()
+    first_hash = identity["native_sha256"]
+    binary.write_bytes(b"different native binary, same Python wrapper")
+    assert harness["native_identity"](module)["native_sha256"] != first_hash
+    if packaged:
+        assert identity["native_sha256"] != identity["native_import_entrypoint_sha256"]
+
+
+def test_profile_rejects_unresolved_native_binary_identity(tmp_path):
+    from pathlib import Path
+    import runpy
+    from types import SimpleNamespace
+    harness = runpy.run_path(str(Path(__file__).resolve().parents[2] /
+                                "benchmarks/hdfe/ppml_end_to_end_profile.py"))
+    wrapper = tmp_path / "__init__.py"
+    wrapper.write_text("# No verified extension module\n")
+    with pytest.raises(RuntimeError, match="extension binary"):
+        harness["native_identity"](SimpleNamespace(__file__=str(wrapper)))
