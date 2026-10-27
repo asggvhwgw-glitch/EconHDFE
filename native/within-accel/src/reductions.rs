@@ -77,6 +77,26 @@ pub fn fallback_workspace(g: &Geometry) -> Option<usize> {
         .checked_mul(2)
 }
 
+/// Guard the actual fallback allocation, including buffers retained by the
+/// primary solver and the bridge. Overflow and an exhausted budget fail closed.
+pub fn admitted_fallback<T>(
+    g: &Geometry,
+    retained_bytes: usize,
+    other_rhs_bytes: usize,
+    budget: usize,
+    remaining_iter: usize,
+    fallback: impl FnOnce(usize) -> Result<T>,
+) -> Result<Option<T>> {
+    let required = fallback_workspace(g)
+        .and_then(|n| n.checked_add(retained_bytes))
+        .and_then(|n| n.checked_add(other_rhs_bytes));
+    if remaining_iter == 0 || required.is_none_or(|n| n > budget) {
+        Ok(None)
+    } else {
+        fallback(remaining_iter).map(Some)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct TupleIndex {
     pub map: Vec<u32>,
@@ -432,6 +452,37 @@ fn cholesky_solve(chol: &[f64], x: &mut [f64]) {
     }
 }
 
+/// One original-row weighted cyclic projection, with compensated group sums.
+/// Each subtraction lies in the original FE span. This is a bounded polishing
+/// step, not a convergence claim; the caller must recertify the result.
+/// Scratch is 8*N + 32*max(levels), within the existing one-RHS P estimate.
+pub fn cyclic_polish(g: &Geometry, w: &[f64], r: &[f64]) -> Result<Vec<f64>> {
+    if w.len() != g.n || r.len() != g.n {
+        return Err("polishing shape mismatch".into());
+    }
+    let mut out = r.to_vec();
+    for (col, &l) in g.groups.iter().zip(&g.levels) {
+        let mut sum = vec![0.0; l];
+        let mut sc = vec![0.0; l];
+        let mut mass = vec![0.0; l];
+        let mut mc = vec![0.0; l];
+        for i in 0..g.n {
+            let a = col[i] as usize;
+            add(&mut sum[a], &mut sc[a], w[i] * out[i]);
+            add(&mut mass[a], &mut mc[a], w[i]);
+        }
+        for a in 0..l {
+            sum[a] /= mass[a];
+        }
+        finite(&sum)?;
+        for i in 0..g.n {
+            out[i] -= sum[col[i] as usize];
+        }
+    }
+    finite(&out)?;
+    Ok(out)
+}
+
 /// Dimensionless group-mean stationarity check on already scaled RHS.
 /// This is not a condition-independent forward-error certificate.
 pub fn stationarity(g: &Geometry, w: &[f64], r: &[f64]) -> f64 {
@@ -501,6 +552,53 @@ mod tests {
         for bad in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
             assert!(!stationarity(&g, &w, &[bad, 1., -1., 0.]).is_finite());
         }
+    }
+    #[test]
+    fn fallback_admission_enforces_retained_and_bridge_buffers() {
+        let g = Geometry::new(
+            [200, 70, 25]
+                .into_iter()
+                .map(|l| (0..4000).map(|i| (i % l) as u32).collect())
+                .collect(),
+        )
+        .unwrap();
+        assert_eq!(fallback_workspace(&g), Some(971_520));
+        // Exact known-buffer boundary admits one construction and carries the
+        // remaining iteration allowance to that construction/solve pair.
+        let mut calls = 0;
+        let result = admitted_fallback(&g, 0, 0, 971_520, 17, |remaining| {
+            calls += 1;
+            Ok(remaining)
+        })
+        .unwrap();
+        assert_eq!(result, Some(17));
+        assert_eq!(calls, 1);
+        for (retained, other, budget) in [
+            (0, 0, 971_519),
+            (0, 32_000, 980_000),
+            (32_000, 0, 980_000),
+            (usize::MAX, 0, usize::MAX),
+            (0, usize::MAX, usize::MAX),
+        ] {
+            let refused: Option<()> = admitted_fallback(&g, retained, other, budget, 17, |_| {
+                panic!("fallback allocated beyond admitted known buffers")
+            })
+            .unwrap();
+            assert!(refused.is_none());
+        }
+    }
+    #[test]
+    fn fallback_admission_respects_iterations_and_propagates_errors() {
+        let g = Geometry::new(vec![vec![0, 1]]).unwrap();
+        let refused: Option<()> = admitted_fallback(&g, 0, 0, usize::MAX, 0, |_| {
+            panic!("fallback allocated with no remaining iterations")
+        })
+        .unwrap();
+        assert!(refused.is_none());
+        let failed: Result<Option<()>> = admitted_fallback(&g, 0, 0, usize::MAX, 1, |_| {
+            Err("construction failed".into())
+        });
+        assert_eq!(failed, Err("construction failed".into()));
     }
     #[test]
     fn schur_known_residual_weighted() {

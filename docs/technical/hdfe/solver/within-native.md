@@ -57,15 +57,26 @@ iteration budget, rather than a fixed two-replacement limit:
   exhausted total iteration budget stops continuation. A regressing replacement
   does not overwrite the best residual. None of these stops implies acceptance.
 
+If the upstream solve succeeded but continuation stops above the finite gate,
+one weighted cyclic projection on the original rows is allowed when at least
+one iteration remains. It subtracts each term's weighted group means in turn,
+using compensated sums for both numerators and group masses. Each subtraction
+belongs to the original FE span. This can clear a Krylov/preconditioner roundoff
+floor without constructing another solver. The full sweep counts as one
+iteration; it does not reserve or remove any iteration from the initial solve.
+The wrapper retains the better residual and recomputes the same acceptance
+metric. A sweep that fails that gate does not certify the result.
+
 When an uncertified route has remaining iteration and admitted workspace, one
 fresh original-row within solver is tried with a static **diagonal**
 preconditioner. It starts from the original normalized RHS and uses the same
-continuation and acceptance rules. This avoids repeatedly reusing a stalled
-adaptive preconditioner. The fallback changes neither the FE operator nor
-weights, sample, rank policy or tolerance; it introduces no ridge or truncation.
-All initial, continuation and fallback iterations share `max_iter`. If no route
-passes, the bridge reports nonconvergence and the estimator's existing failure
-handling remains in force.
+continuation, bounded cyclic projection and acceptance rules. This avoids
+repeatedly reusing a stalled adaptive preconditioner. The fallback changes
+neither the FE operator nor weights, sample, rank policy or tolerance; it
+introduces no ridge or truncation.
+All initial, continuation, cyclic and fallback iterations share `max_iter`.
+If no route passes, the bridge reports nonconvergence and the estimator's
+existing failure handling remains in force.
 
 `resource_info["certification_fallbacks"]` counts these attempts over the
 absorber's lifetime. The existing `schur_fallbacks` retains its narrower meaning:
@@ -94,6 +105,12 @@ an iterative primary route. A native call buffering `b` RHS columns admits a
 fallback only when `2*(R+P) + S + 8*N*(b-1)` fits `workspace_bytes`. This
 conservatively charges primary scratch as well as the fresh diagonal solver;
 the large retained Schur cross matrix is not omitted.
+
+The cyclic projection needs `8*N + 32*max(levels)` scratch bytes after the
+upstream solve's temporary vectors have been released. This fits within the
+existing `P` reservation, including when a second solver is not admitted. The
+actual fallback constructor is guarded by checked arithmetic for all known
+buffers and receives only the remaining iteration allowance.
 
 Python charges `R+S` resident bytes. If a one-column fallback fits, each pooled
 column reserves `R+2*P`; otherwise it reserves `P` and the native guard disables

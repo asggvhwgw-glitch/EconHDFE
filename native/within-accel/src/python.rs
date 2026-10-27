@@ -170,6 +170,20 @@ impl NativeSolver {
                 tightened = true;
             }
         }
+        if ok && error.is_finite() && error > gate && iterations < max_iter {
+            // A Krylov/preconditioner roundoff floor can survive residual
+            // replacement. One original-row cyclic sweep can reduce remaining
+            // group means without rebuilding an engine or changing the FE span.
+            // Count the full sweep against the same total iteration allowance;
+            // retain the best candidate and accept only the unchanged gate.
+            let polished = reductions::cyclic_polish(&self.geometry, &self.weights, &result)?;
+            iterations += 1;
+            let metric = reductions::stationarity(&self.geometry, &self.weights, &polished);
+            if metric < error {
+                result = polished;
+                error = metric;
+            }
+        }
         Ok((
             result,
             ok && error.is_finite() && error <= gate,
@@ -198,28 +212,35 @@ impl NativeSolver {
         // y-r in col(D); all passes share the caller's total iteration budget.
         let (mut result, mut ok, mut iterations, mut error) =
             self.certify(y, tol, max_iter, |rhs, options| self.project(rhs, options))?;
-        if !ok
-            && iterations < max_iter
-            && reductions::fallback_workspace(&self.geometry)
-                .and_then(|n| n.checked_add(self.extra_resident_bytes()))
-                .and_then(|n| n.checked_add(other_rhs_bytes))
-                .is_some_and(|n| n <= self.budget)
-        {
+        let fallback = if ok {
+            None
+        } else {
+            reductions::admitted_fallback(
+                &self.geometry,
+                self.extra_resident_bytes(),
+                other_rhs_bytes,
+                self.budget,
+                max_iter.saturating_sub(iterations),
+                |remaining| {
+                    let solver = upstream(
+                        &self.geometry.groups,
+                        &self.weights,
+                        Some(&PreconditionerConfig::Diagonal),
+                    )?;
+                    Ok((solver, remaining))
+                },
+            )?
+        };
+        if let Some((solver, remaining)) = fallback {
             // Use original rows and a fresh diagonal map: a stalled adaptive
             // preconditioner can keep reproducing its own roundoff error.
             // This changes neither the FE operator nor its numerical rank.
-            let solver = upstream(
-                &self.geometry.groups,
-                &self.weights,
-                Some(&PreconditionerConfig::Diagonal),
-            )?;
             self.fallbacks += 1;
             self.schur_fallbacks += usize::from(matches!(&self.engine, Engine::Schur(_)));
-            let (r, success, spent, metric) =
-                self.certify(y, tol, max_iter - iterations, |rhs, options| {
-                    let r = solver.solve(rhs, options).map_err(|e| e.to_string())?;
-                    Ok((r.demeaned, r.converged, r.iterations))
-                })?;
+            let (r, success, spent, metric) = self.certify(y, tol, remaining, |rhs, options| {
+                let r = solver.solve(rhs, options).map_err(|e| e.to_string())?;
+                Ok((r.demeaned, r.converged, r.iterations))
+            })?;
             if success || metric < error {
                 result = r;
                 error = metric;

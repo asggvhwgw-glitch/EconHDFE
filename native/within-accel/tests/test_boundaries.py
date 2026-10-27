@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 import pytest
 from test_native import native, fixture, oracle
@@ -44,14 +46,20 @@ def original_row_metric(codes, weights, residual, y):
     return worst
 
 
-def test_progressing_continuation_uses_remaining_budget_before_fallback():
+@pytest.mark.parametrize("weight_exp", ["numpy", "scalar"])
+def test_progressing_continuation_uses_remaining_budget_before_fallback(weight_exp):
     rng = np.random.default_rng(0)
     n = 4000
     codes = np.column_stack([
         rng.integers(l, size=n, dtype=np.uint32) for l in (400, 150, 35)
     ])
     y = rng.normal(size=(n, 1))
-    w = np.exp(np.clip(10 * np.random.default_rng(26).normal(size=n), -50, 50))
+    logw = np.clip(10 * np.random.default_rng(26).normal(size=n), -50, 50)
+    # NumPy's vectorized exp differs from scalar libm by 1 ULP on some CPUs.
+    # Both are legitimate inputs: retain the seed, target and accuracy gates.
+    w = np.exp(logw) if weight_exp == "numpy" else np.fromiter(
+        (math.exp(float(v)) for v in logw), dtype=float, count=n,
+    )
     solver = native.NativeSolver(codes, weights=w, strategy="plain")
     out, ok, iterations, metrics = solver.solve(y, tol=1e-12)
     assert all(ok) and max(metrics) <= 1e-12
@@ -71,7 +79,7 @@ def test_progressing_continuation_uses_remaining_budget_before_fallback():
 
 
 @pytest.mark.parametrize("unit,permuted", [(1.0, False), (1e14, True)])
-def test_certification_fallback_preserves_projection_and_units(unit, permuted):
+def test_certification_polish_preserves_projection_and_units(unit, permuted):
     from econhdfe.hdfe.within_backend import WithinFEAbsorber
     codes, y, w, truth = certification_case()
     if permuted:
@@ -88,27 +96,32 @@ def test_certification_fallback_preserves_projection_and_units(unit, permuted):
     assert info.iterations <= 16_000
     np.testing.assert_allclose(out / unit, truth, atol=2e-9, rtol=2e-8)
     assert np.max(original_row_metric(codes, w, out / unit, y)) <= 1e-12
-    assert solver.resource_info["certification_fallbacks"] >= 1
+    assert solver.resource_info["certification_fallbacks"] == 0
     assert solver.resource_info["schur_fallbacks"] == 0
 
 
-@pytest.mark.parametrize("max_iter,workspace", [(100, 512 * 1024**2), (16_000, 600_000)])
-def test_certification_fallback_respects_iteration_and_workspace_limits(max_iter, workspace):
-    codes, y, w, _ = certification_case()
+@pytest.mark.parametrize("max_iter,workspace", [
+    (1, 512 * 1024**2), (100, 512 * 1024**2), (16_000, 600_000),
+])
+def test_certification_polish_respects_iteration_and_workspace_limits(max_iter, workspace):
+    codes, y, w, truth = certification_case()
     solver = native.NativeSolver(codes, weights=w, strategy="plain", workspace_bytes=workspace)
     out, ok, iterations, errors = solver.solve(y[:, :1], tol=1e-12, max_iter=max_iter)
-    assert not all(ok)
     assert all(i <= max_iter for i in iterations)
     assert np.isfinite(out).all()
-    if workspace == 600_000:
-        # The primary fits; concurrent primary+fallback known buffers do not.
-        assert solver.fallback_count == 0
+    assert solver.fallback_count == 0
+    if max_iter == 1:
+        assert not all(ok)
         assert errors[0] > 1e-12
     else:
-        assert solver.fallback_count == 1
+        # One bounded original-row sweep now certifies this case within the
+        # primary scratch, including when a second solver would not fit.
+        assert all(ok) and max(errors) <= 1e-12
+        np.testing.assert_allclose(out, truth[:, :1], atol=2e-9, rtol=2e-8)
+        assert np.max(original_row_metric(codes, w, out, y[:, :1])) <= 1e-12
 
 
-def test_primary_only_budget_still_runs_and_reports_failed_certification():
+def test_primary_only_budget_allows_certified_polish():
     from econhdfe.hdfe.within_backend import WithinFEAbsorber
     codes, y, w = fixture(k=1)
     solver = WithinFEAbsorber(
@@ -120,26 +133,35 @@ def test_primary_only_budget_still_runs_and_reports_failed_certification():
     np.testing.assert_allclose(out, oracle(codes, y, w), atol=2e-9, rtol=2e-8)
     assert solver.resource_info["certification_fallbacks"] == 0
 
-    codes, y, w, _ = certification_case()
+    codes, y, w, truth = certification_case()
     solver = WithinFEAbsorber(
         list(codes.T), weights=w, tol=1e-12, strategy="plain",
         absorb_threads=1, projection_memory_budget_mb=600_000 / 1024**2,
     )
-    _, info = solver.residualize(y[:, :1], return_info=True)
-    assert not info.converged and info.max_update > 1e-12
+    out, info = solver.residualize(y[:, :1], return_info=True)
+    assert info.converged and info.max_update <= 1e-12
+    np.testing.assert_allclose(out, truth[:, :1], atol=2e-9, rtol=2e-8)
+    assert np.max(original_row_metric(codes, w, out, y[:, :1])) <= 1e-12
     assert solver.resource_info["certification_fallbacks"] == 0
 
 
-def test_native_fallback_admission_includes_other_buffered_rhs():
+def test_native_polish_fits_budget_with_other_buffered_rhs():
     codes, y, w, truth = certification_case()
     solver = native.NativeSolver(codes, weights=w, strategy="plain", workspace_bytes=980_000)
-    _, ok, _, _ = solver.solve(y, tol=1e-12)
-    assert not all(ok) and solver.fallback_count == 0
-    # The same budget admits the fallback when only one bridge column is live.
+    out, ok, iterations, metrics = solver.solve(y, tol=1e-12)
+    assert all(ok) and solver.fallback_count == 0
+    assert max(iterations) <= 16_000 and max(metrics) <= 1e-12
+    np.testing.assert_allclose(out, truth, atol=2e-9, rtol=2e-8)
+    assert np.max(original_row_metric(codes, w, out, y)) <= 1e-12
+    # This budget admits a second engine for only one bridge column, but the
+    # bounded polish now needs neither. Rust admission tests check allocation
+    # refusal directly, independently of the route taken by this response.
     solver = native.NativeSolver(codes, weights=w, strategy="plain", workspace_bytes=980_000)
-    out, ok, _, _ = solver.solve(y[:, :1], tol=1e-12)
-    assert all(ok) and solver.fallback_count == 1
+    out, ok, iterations, metrics = solver.solve(y[:, :1], tol=1e-12)
+    assert all(ok) and solver.fallback_count == 0
+    assert max(iterations) <= 16_000 and max(metrics) <= 1e-12
     np.testing.assert_allclose(out, truth[:, :1], atol=2e-9, rtol=2e-8)
+    assert np.max(original_row_metric(codes, w, out, y[:, :1])) <= 1e-12
 
 
 def test_schur_retained_cross_is_charged_to_workspace():
