@@ -6,7 +6,7 @@ import numpy as np
 from ..compute.block_design import BlockDesign, DenseDesignBlock
 from ..compute.design_plan import StructuralDesignPlan
 from .plan import FEPlan
-from .weighted_projection import WeightedFEProjector
+from .weighted_projection import make_weighted_projector
 from .projection import resolve_threads
 from ..planner import scheduler
 
@@ -110,7 +110,7 @@ class BlockWeightedFEProjector:
             local_plan = plan.take(rows) if plan.groups else plan
             projector = None
             if local_plan.groups:
-                projector = WeightedFEProjector(
+                projector = make_weighted_projector(
                     local_plan.groups, engine=engine, method=method, max_iter=max_iter,
                     require_convergence=require_convergence,
                     absorb_threads=absorb_threads,

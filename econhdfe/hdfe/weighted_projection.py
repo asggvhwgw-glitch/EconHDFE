@@ -191,3 +191,11 @@ class WeightedFEProjector:
             "projection_backend": None if absorber is None else str(getattr(absorber, "projection_backend", getattr(absorber, "method", "unknown"))),
             "index_bytes": None if absorber is None else int(getattr(absorber, "index_bytes", 0)),
         }
+
+
+def make_weighted_projector(groups, *, engine, **kwargs):
+    """Internal factory; adaptive routing is never enabled by legacy engines."""
+    if engine == "adaptive":
+        from .adaptive_weighted import AdaptiveWeightedFEProjector
+        return AdaptiveWeightedFEProjector(groups, engine=engine, **kwargs)
+    return WeightedFEProjector(groups, engine=engine, **kwargs)

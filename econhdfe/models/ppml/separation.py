@@ -111,6 +111,7 @@ def detect_separation(
     with the positive-weight IRLS projector can disable topology-dependent
     optimized paths and increase retained memory.
     """
+    separation_engine = "optimized" if config.engine == "adaptive" else config.engine
     execution = ExecutionConfig() if execution_config is None else execution_config
     execution.validate()
     y0 = np.asarray(y, dtype=np.float64)
@@ -160,34 +161,34 @@ def detect_separation(
             nit = 0
             solver = "structural"
         elif method == "simplex":
-            solver_plan, _ = pa.for_engine(config.engine)
+            solver_plan, _ = pa.for_engine(separation_engine)
             projector = get_projector(
-                solver_plan, engine=config.engine, method="map",
+                solver_plan, engine=separation_engine, method="map",
                 execution=execution, context=None, cache=False,
             )
             info = mixed_simplex_separation(
                 ya, Xa, solver_plan, wa, tol=config.simplex_tol,
                 hdfe_tol=config.target_inner_tol, max_iter=config.simplex_max_iter,
-                engine=config.engine, projector=projector,
+                engine=separation_engine, projector=projector,
             )
             local = info.separated
             nit = int(info.iterations)
-            solver = f"{config.engine}:map"
+            solver = f"{separation_engine}:map"
         elif method == "relu":
-            solver_plan, _ = pa.for_engine(config.engine)
-            relu_method = "map" if config.engine == "optimized" else "lsmr"
+            solver_plan, _ = pa.for_engine(separation_engine)
+            relu_method = "map" if separation_engine == "optimized" else "lsmr"
             projector = get_projector(
-                solver_plan, engine=config.engine, method=relu_method,
+                solver_plan, engine=separation_engine, method=relu_method,
                 execution=execution, context=None, cache=False,
             )
             info = relu_separation(
                 ya, Xa, solver_plan, tol=config.relu_tol, zero_tol=config.relu_zero_tol,
                 hdfe_tol=config.target_inner_tol, max_iter=config.relu_max_iter,
-                engine=config.engine, projector=projector,
+                engine=separation_engine, projector=projector,
             )
             local = info.separated
             nit = int(info.iterations)
-            solver = f"{config.engine}:{relu_method}"
+            solver = f"{separation_engine}:{relu_method}"
         else:
             raise SpecificationError(f"unknown separation method: {method}", code="specification.separation")
 

@@ -126,13 +126,13 @@ class FEPlan:
 
     def for_engine(self, engine="replica"):
         """Return the numerical FE plan and structural metadata for an engine."""
-        if engine == "optimized" and self.groups:
+        if engine in {"optimized", "adaptive"} and self.groups:
             return self.canonicalized()
         return self, {"requested": len(self.groups), "effective": len(self.groups), "changed": False}
 
     def projector(self, *, engine="replica", method="map", require_convergence=False):
-        from .weighted_projection import WeightedFEProjector
-        return WeightedFEProjector(self.groups, engine=engine, method=method,
+        from .weighted_projection import make_weighted_projector
+        return make_weighted_projector(self.groups, engine=engine, method=method,
                                    require_convergence=require_convergence)
 
     def absorber(self, weights, *, tol, engine="replica", method="map"):
@@ -155,6 +155,8 @@ class FEPlan:
         )
 
     def residualize(self, A, weights, *, tol, engine="replica"):
+        if engine == "adaptive" and self.groups:
+            return self.projector(engine=engine).residualize(A, weights, tol=tol, return_info=True)
         absorber = self.absorber(weights, tol=tol, engine=engine)
         if absorber is None:
             return np.asarray(A, dtype=np.float64).copy(), None
