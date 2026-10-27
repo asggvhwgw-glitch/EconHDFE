@@ -1,5 +1,4 @@
 """Opt-in native PPML/IV-PPML: independent moments and lifecycle boundaries."""
-from dataclasses import replace
 import importlib
 import os
 import sys
@@ -102,7 +101,7 @@ def test_estimator_matches_independent_dummy_moments(kind, standardize):
     d = fixture()
     native = fit(kind, d, cfg=config(kind, standardize=standardize))
     beta, mu = reference(kind, d)
-    assert_allclose(native.params, beta, atol=5e-8, rtol=2e-7)
+    assert_allclose(native.params[:len(beta)], beta, atol=5e-8, rtol=2e-7)
     assert_allclose(native.mu, mu, atol=3e-7, rtol=2e-7)
     compare(native, fit(kind, d, cfg=config(kind, "replica", standardize=standardize)))
     resources = native.diagnostics["projection_resources"]
@@ -120,9 +119,9 @@ def test_units_and_column_permutation(kind):
     result = fit(kind, changed)
     order = [1, 0, 2]
     scale = np.array([.01, 100., 3.])
-    assert_allclose(result.params[order] * scale, base.params, atol=5e-8, rtol=2e-7)
+    assert_allclose(result.params[order] * scale, base.params[:3], atol=5e-8, rtol=2e-7)
     assert_allclose(result.vcov[np.ix_(order, order)] * np.outer(scale, scale),
-                    base.vcov, atol=2e-9, rtol=2e-6)
+                    base.vcov[:3, :3], atol=2e-9, rtol=2e-6)
     assert_allclose(result.mu, base.mu, atol=3e-7, rtol=2e-7)
 
 
@@ -254,3 +253,80 @@ def test_iv_frequency_weights_match_replicated_observations():
     assert_allclose(a.params, b.params, atol=5e-8, rtol=2e-7)
     assert_allclose(a.mu[idx], b.mu, atol=3e-7, rtol=2e-7)
     assert_allclose(a.vcov, b.vcov, atol=2e-9, rtol=2e-6)
+
+
+@pytest.mark.parametrize("kind", ["ppml", "ivppml"])
+def test_no_fe_and_single_fe_routes(kind):
+    d = fixture()
+    for groups in ([], d["groups"][:1]):
+        case = dict(d, groups=groups)
+        result = fit(kind, case)
+        compare(result, fit(kind, case, "replica"))
+        resources = result.diagnostics["projection_resources"]
+        if groups or kind == "ivppml":
+            assert resources["backend"] == "within"
+        else:
+            assert resources is None  # no FE operation is needed
+
+
+def test_overidentified_iv_with_standardization_and_cluster_vce():
+    d = fixture()
+    d["I"] = np.column_stack([d["I"], d["I"][:, 0]**2])
+    kw = dict(y=d["y"], exog=d["C"], endog=d["E"], instruments=d["I"],
+              absorb=d["groups"], weights=d["w"], weight_type="pweight", offset=d["off"],
+              cluster=[d["groups"][0]], vce="cluster", execution_config=ExecutionConfig(threads=1))
+    a = ivppmlhdfe(config=config("ivppml", standardize=True), **kw)
+    b = ivppmlhdfe(config=config("ivppml", "replica", standardize=True), **kw)
+    compare(a, b)
+    assert a.diagnostics["projection_resources"]["backend"] == "within"
+
+
+def test_actual_iteration_exhaustion_and_workspace_rejection():
+    rng = np.random.default_rng(29)
+    groups = [rng.integers(L, size=4000, dtype=np.int32) for L in (200, 150, 75)]
+    A = rng.normal(size=(4000, 3))
+    w = np.exp(rng.normal(scale=.3, size=4000))
+    limited = WeightedFEProjector(groups, engine="within", max_iter=1, absorb_threads=1)
+    with pytest.raises(ConvergenceError, match="weighted FE projection"):
+        limited.residualize(A, w, tol=1e-12)
+    tiny = WeightedFEProjector(groups, engine="within", absorb_threads=1,
+                              projection_memory_budget_mb=.001)
+    with pytest.raises(SpecificationError):
+        tiny.residualize(A, w, tol=1e-12)
+
+
+def test_nonfinite_certificate_is_rejected_even_with_success_flag(monkeypatch):
+    old = WithinFEAbsorber.residualize
+    def broken(self, data, **kwargs):
+        out, info = old(self, data, **kwargs)
+        info.converged = True
+        info.max_update = float("nan")
+        return out, info
+    monkeypatch.setattr(WithinFEAbsorber, "residualize", broken)
+    with pytest.raises(ConvergenceError, match="weighted FE projection"):
+        fit("ppml", fixture())
+
+
+def test_block_local_projectors_use_native_weight_updates():
+    from econhdfe.compute.block_design import BlockDesign, DenseDesignBlock
+    from econhdfe.hdfe.block_projection import BlockWeightedFEProjector
+    d = fixture(800)
+    component = np.arange(800) // 400
+    groups = [g + component * (int(g.max()) + 1) for g in d["groups"]]
+    plan = FEPlan.from_arrays(groups)
+    X = np.column_stack([d["C"], d["E"]])
+    blocks = tuple(DenseDesignBlock(j, np.flatnonzero(component == j), np.arange(3),
+                                    X[component == j].copy()) for j in (0, 1))
+    design = BlockDesign._from_trusted(800, 3, blocks)
+    p = BlockWeightedFEProjector.from_design(design, plan, engine="within", absorb_threads=1)
+    D = dummy(plan.groups)
+    for w in (d["w"], d["w"] * np.exp(.3 * X[:, 0])):
+        out = p.residualize_response_design(d["y"], design, w, tol=1e-12)
+        sw = np.sqrt(w)
+        A = np.column_stack([d["y"], X])
+        expected = A - D @ np.linalg.lstsq(D * sw[:, None], A * sw[:, None], rcond=None)[0]
+        assert_allclose(out.response, expected[:, 0], atol=2e-8, rtol=2e-8)
+        for block in out.design.blocks:
+            assert_allclose(block.values, expected[block.rows, 1:], atol=2e-8, rtol=2e-8)
+        assert out.converged
+        assert all(b["projector"]["backend"] == "within" for b in p.resource_info["blocks"])

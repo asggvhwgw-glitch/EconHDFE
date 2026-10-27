@@ -1,7 +1,8 @@
 # Optional structured within backend (experimental)
 
 `method="within"` / `HDFEConfig(solver="within")` selects the optional Rust backend
-for CPU pure-intercept standard OLS and linear IV. Defaults are unchanged.
+for CPU pure-intercept standard OLS and linear IV. PPML and IV-PPML select it
+with their family config `engine="within"` (see below). Defaults are unchanged.
 Install the base package, then `python -m pip install ./native/within-accel`.
 This source install requires Rust and network access; no published wheel is implied.
 
@@ -125,9 +126,98 @@ optional extension to obtain the new conditional admission and continuation.
 ## Scope exclusions
 
 No default switch, GPU, slopes, group+individual or zero-weight native route.
-WeightedFEProjector uses existing LSMR for zero weights. High-level PPML/IV-PPML
-routing is not switched: the reusable weighted primitive is only infrastructure.
+WeightedFEProjector uses existing LSMR for zero weights. PPML/IV-PPML estimation
+can opt into native absorption; separation stays on the replica solvers.
 Reported FE normalizations stay on econhdfe's established recovery path.
+
+## PPML and IV-PPML integration
+
+After installing the optional extension from this checkout, select it explicitly:
+
+```python
+from econhdfe.models.ppml import PPMLConfig, ppmlhdfe
+from econhdfe.models.ppml_iv import IVPPMLConfig, ivppmlhdfe
+
+ppml_result = ppmlhdfe(
+    y=y, x=X, absorb=[firm_id, year_id],
+    config=PPMLConfig(engine="within"),
+)
+ivppml_result = ivppmlhdfe(
+    y=y, exog=C, endog=E, instruments=Z, absorb=[firm_id, year_id],
+    config=IVPPMLConfig(engine="within"),
+)
+```
+
+The same configs apply to DataFrame calls and reusable `PPMLHDFE` /
+`IVPPMLHDFE` models. `ExecutionConfig` continues to set threads and projection
+workspace budgets. Neither default `engine="replica"` nor `engine="optimized"`
+is changed, and no automatic native selection or speed guarantee is implied.
+PPML with no FEs has nothing to absorb; IV-PPML's existing noabsorb convention
+uses one constant FE and therefore invokes the requested absorber.
+
+The shared `WeightedFEProjector` resolves this engine to `method="within"`.
+It covers rank checks, every IRLS weighted projection, post-separation sample
+rebuilds and final high-accuracy inference projection. Block-local projectors
+and the one-shot `FEPlan.residualize` entry honor the same selection. Original
+FE plans and reported DoF remain unchanged; this mode does not implicitly
+request the separate optimized canonicalization policy.
+
+At iteration t the numerical weight is the estimator's existing working weight
+based on `true_w * mu_t`; IV-PPML retains its pre-existing lower bound. The
+adapter copies the weight state, so in-place reuse of the outer IRLS buffer
+cannot silently leave stale weights in the native engine. The topology and
+exact-tuple map are reusable, but numerical preconditioners are rebuilt on each
+weight update. Cross-IRLS factorization/Krylov recycling is not implemented.
+Existing fast-partial, inner tolerance scheduling, standardization, step control
+and warm-start semantics remain at the estimator layer.
+
+Separation is deliberately separate: `detect_separation` locally copies the
+config with `engine="replica"`; it never changes the caller's config. Simplex
+and ReLU therefore keep the established auxiliary solvers, including exact
+zero weights. A shared projector directly given zero weights uses its separate
+LSMR cache; it can return to its native cache after strictly positive weights
+resume. This is not a zero-weight native implementation or a changed sample rule.
+
+Selected native weighted projections (and their zero-support LSMR path) raise
+`ConvergenceError(code="convergence.hdfe")` for unsuccessful/nonfinite inner
+certificates. This check occurs before rank filtering, an IRLS update or final
+covariance construction can consume a failed result, even when the caller
+would discard `AbsorbInfo`. The raw `WithinFEAbsorber` information-returning
+contract is unchanged. Missing native extensions fail explicitly instead of
+silently changing the requested estimation backend.
+
+For dense fits, inspect `result.diagnostics["projection_resources"]`: `backend`
+and `method` identify selection, and `native` contains route, original-row and
+cell counts, `weight_generation` and certification-fallback counts. Block fits
+report the corresponding entries per component. Counters on a reused model
+are lifetime counters, not timings or a per-fit iteration count. Inner backward
+stationarity and outer deviance convergence are different tests; neither alone
+is a condition-independent forward-error guarantee.
+
+The native test module `native/within-accel/tests/test_poisson.py` includes
+independent full-dummy nonlinear roots for PPML and exactly identified additive
+IV moments, replica parity for coefficients/means/covariances/sample/DoF, units
+and permutations, frequency-weight expansion, separation, cached warm starts,
+weight-support changes, and failure propagation. Overidentified IV is tested
+against the established estimator, not an inappropriate just-identified root.
+
+A reproducible end-to-end large-sample audit is available with:
+
+```bash
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 NUMBA_NUM_THREADS=2 \
+python native/within-accel/validate_poisson.py --rows 1000000 --threads 2 --repeat 1
+```
+
+At one million rows it uses three FE partitions (20,000 / 4,000 / 50 levels),
+90% partial nesting between the first two partitions, unequal positive weights
+and an offset. It checks both estimators against replica, plus independently
+computed raw FE and regressor/instrument scores. The IV corpus is exactly
+identified; its raw instrument-score gate is not asserted for general
+weighted overidentification. Positive continuous outcomes avoid separation in
+this corpus; zero outcomes and separation are covered by the smaller tests.
+The JSON includes inputs/source/binary hashes and all timings. One repetition
+establishes accuracy for this corpus, not a stable acceleration factor; request
+at least three alternating repetitions for same-machine performance study.
 
 ## Validation
 
