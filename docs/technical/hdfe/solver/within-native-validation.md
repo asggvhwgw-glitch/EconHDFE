@@ -120,6 +120,71 @@ immutable 0.9.0 public-contract snapshot; no solver code changed after timing.
 Machine-readable results and resource counters are in
 `benchmarks/hdfe/within_native_macos_091_5m_20261026.json`.
 
+## Budgeted certification regressions and a new large-sample corpus
+
+The follow-up keeps `tol=1e-12`, the original-row certificate and the shared
+`max_iter=16000` limit. It replaces the fixed two-replacement stop with measured
+continuation, then permits an admitted original-row diagonal-preconditioned
+fallback. The pinned upstream revision and estimator defaults are unchanged.
+The detailed rules and known-buffer accounting are in `within-native.md`.
+
+Two reproducible 4,000-row adversarial cases exercise distinct recovery paths.
+Both use strongly unequal positive weights; they are accuracy regressions,
+not representative workload timings.
+
+| Case | Baseline | Updated native | Independent reference |
+|---|---|---|---|
+| Progressing residual replacement | Rejected at metric 3.16e-12 after 236 iterations | Accepted at 3.77e-13 after 240 iterations; no fallback | Reference-coded dense weighted least squares retains all 583 columns; maximum residual difference 1.19e-9 |
+| Stalled adaptive preconditioner | Rejected at metric 2.40e-11 after 85 iterations | Accepted at 3.82e-13 after 302 total iterations; one diagonal fallback | Exactly representable paired residuals; maximum forward error 5.06e-11 |
+
+The baseline wheel is built from unchanged native code at main `15eda97`.
+The independent original-row mean recomputations also pass for the updated
+outputs. Every reported norm is retained in the evidence: passing the required
+maximum-group-mean gate does not imply that every other error norm improves.
+Regression tests also cover RHS/weight units, row/FE/column permutations,
+iteration exhaustion, declined fallback under tight workspace, successful
+primary-only operation, other buffered RHS columns, and retained Schur storage.
+
+The new large corpus has one million and five million rows, six RHS columns,
+three categorical terms with weakly linked communities, unequal dyadic weights,
+nearly collinear controls and a nearly absorbed excluded instrument. Equal-weight
+observation pairs give an exact projection of the stored float inputs. The full-IV
+reference independently uses QR/SVD on the known within data, cluster-score
+aggregation and an active-graph DoF calculation. Sample/rank, coefficients,
+covariance, standard errors, residuals, RSS and original-row stationarity pass
+their fixed gates for both baseline and updated native code.
+
+| Updated native sample | Maximum projection relative error | Scaled coefficient error | Scaled covariance error | Relative residual error |
+|---|---:|---:|---:|---:|
+| 1,000,000 rows | 5.74e-11 | 5.81e-11 | 1.08e-12 | 1.30e-11 |
+| 5,000,000 rows | 3.63e-11 | 1.02e-11 | 1.55e-13 | 6.65e-12 |
+
+Maximum independently recomputed projection stationarity is 2.62e-13 and
+1.30e-13 respectively. None of the large runs needs a certification fallback.
+Single-run full-IV fit times are 2.705 / 3.780 seconds for baseline / updated
+native at 1M, and 15.597 / 16.275 seconds at 5M. They are validation timings,
+with separate checkout/JIT caches, not a performance or timing-regression
+certificate. Updated whole-process peak RSS is 994 MiB and 3549 MiB, including
+inputs, generation, projection, independent references and full IV; requested
+workspace is 2048 MiB with relaxed memory policy and is not an RSS limit.
+
+**This is not a replay of the historical 5M composite IV failure above.** Its
+original generator/input was unavailable; the historical 21-parameter,
+singleton-pruned case remains unvalidated by this follow-up. The new corpus
+provides large-scale independent accuracy coverage without replacing that
+historical evidence or establishing a native 5M speedup for that specification.
+
+Reproduce the new corpus with `native/within-accel/validate_native_dyadic_iv.py`
+using `--rows 1000000` or `--rows 5000000`, `--mode both --threads 2`, initial
+single-thread BLAS and a matching process/proc namespace. Its exact executed
+source, runtime hashes, environment, acceptance limits and measurements are
+recorded in `benchmarks/hdfe/within_native_certification_20261027.json`.
+Local Linux x86_64 / Python 3.12 validation passed **6 Rust tests, 51 native and
+public-integration tests, and all 468 tests in the full base suite**. The
+version/compatibility gate remains 0.9.1 and the regenerated architecture map
+passes its check. These are local checks, not a package publication or a claim
+of validation on other operating systems.
+
 ## Opt-in usage from this PR checkout
 
 ```bash

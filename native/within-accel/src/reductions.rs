@@ -66,6 +66,17 @@ fn finite(x: &[f64]) -> Result<()> {
     }
 }
 
+/// Conservative primary + fallback buffers for one RHS. Keep both copies of
+/// the adapter's resident + one-RHS estimate: the primary engine stays live.
+/// Admission is not a peak-RSS bound; upstream allocations remain opaque.
+pub fn fallback_workspace(g: &Geometry) -> Option<usize> {
+    let levels = g.levels.iter().try_fold(0usize, |n, &l| n.checked_add(l))?;
+    let per_row = g.groups.len().checked_mul(8)?.checked_add(88)?;
+    g.n.checked_mul(per_row)?
+        .checked_add(levels.checked_mul(128)?)?
+        .checked_mul(2)
+}
+
 #[derive(Debug, Clone)]
 pub struct TupleIndex {
     pub map: Vec<u32>,
@@ -194,6 +205,23 @@ pub struct SmallSchur {
     chol: Vec<f64>,
 }
 impl SmallSchur {
+    pub fn resident_bytes(&self) -> usize {
+        let entries = [
+            self.mass.capacity(),
+            self.cross.capacity(),
+            self.scale.capacity(),
+            self.chol.capacity(),
+        ]
+        .into_iter()
+        .fold(0usize, usize::saturating_add);
+        std::mem::size_of::<Self>()
+            .saturating_add(
+                self.offsets
+                    .capacity()
+                    .saturating_mul(std::mem::size_of::<Option<usize>>()),
+            )
+            .saturating_add(entries.saturating_mul(std::mem::size_of::<f64>()))
+    }
     pub fn build(g: &Geometry, w: &[f64], budget: usize) -> Result<Option<Self>> {
         let big = g
             .levels
@@ -417,7 +445,12 @@ pub fn stationarity(g: &Geometry, w: &[f64], r: &[f64]) -> f64 {
             mass[a] += w[i];
         }
         for a in 0..l {
-            worst = worst.max((sum[a] / mass[a]).abs());
+            let mean = (sum[a] / mass[a]).abs();
+            // f64::max ignores NaN; an invalid certificate must fail closed.
+            if !mean.is_finite() {
+                return f64::INFINITY;
+            }
+            worst = worst.max(mean);
         }
     }
     worst
@@ -460,6 +493,14 @@ mod tests {
         assert!(weights(Some(&[1., 0.]), 2).is_err());
         let g = Geometry::new(vec![vec![0, 1]]).unwrap();
         assert!(TupleIndex::build(&g, 1).is_err());
+    }
+    #[test]
+    fn nonfinite_certificate_is_rejected() {
+        let g = Geometry::new(vec![vec![0, 0, 1, 1], vec![0, 1, 0, 1]]).unwrap();
+        let w = [1.; 4];
+        for bad in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            assert!(!stationarity(&g, &w, &[bad, 1., -1., 0.]).is_finite());
+        }
     }
     #[test]
     fn schur_known_residual_weighted() {

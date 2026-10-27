@@ -16,14 +16,18 @@ fn runtime(e: impl ToString) -> PyErr {
     PyRuntimeError::new_err(e.to_string())
 }
 
-fn upstream(groups: &[Vec<u32>], weights: &[f64]) -> reductions::Result<Solver<'static>> {
+fn upstream(
+    groups: &[Vec<u32>],
+    weights: &[f64],
+    preconditioner: Option<&PreconditionerConfig>,
+) -> reductions::Result<Solver<'static>> {
     let n = weights.len();
     let flat = groups.iter().flat_map(|g| g.iter().copied()).collect();
     let a = Array2::from_shape_vec((n, groups.len()).f(), flat).map_err(|e| e.to_string())?;
     let design = Design::from_categories(a.view())
         .map_err(|e| e.to_string())?
         .into_owned();
-    Solver::new(design, Some(weights), None::<&PreconditionerConfig>).map_err(|e| e.to_string())
+    Solver::new(design, Some(weights), preconditioner).map_err(|e| e.to_string())
 }
 enum Engine {
     Schur(SmallSchur),
@@ -44,6 +48,7 @@ pub struct NativeSolver {
     pool: Arc<rayon::ThreadPool>,
     generation: usize,
     fallbacks: usize,
+    schur_fallbacks: usize,
 }
 impl NativeSolver {
     fn build_engine(
@@ -69,7 +74,7 @@ impl NativeSolver {
             let ix = ix.unwrap();
             let mass = ix.masses(w)?;
             let groups = ix.groups(g);
-            let solver = upstream(&groups, &mass)?;
+            let solver = upstream(&groups, &mass, None)?;
             Ok(Engine::Iterative {
                 solver,
                 mass,
@@ -77,7 +82,7 @@ impl NativeSolver {
             })
         } else {
             Ok(Engine::Iterative {
-                solver: upstream(&g.groups, w)?,
+                solver: upstream(&g.groups, w, None)?,
                 mass: vec![],
                 compressed: false,
             })
@@ -118,11 +123,66 @@ impl NativeSolver {
             }
         }
     }
+    fn certify(
+        &self,
+        y: &[f64],
+        tol: f64,
+        max_iter: usize,
+        mut project: impl FnMut(&[f64], &LsmrOptions) -> reductions::Result<(Vec<f64>, bool, usize)>,
+    ) -> reductions::Result<(Vec<f64>, bool, usize, f64)> {
+        // The inner global backward error and the original-row maximum mean
+        // are different metrics. Only the latter decides our acceptance gate.
+        let mut options = LsmrOptions {
+            tol: (tol * 0.01).max(f64::MIN_POSITIVE),
+            maxiter: max_iter,
+            local_size: None,
+        };
+        let gate = tol.max(64.0 * f64::EPSILON);
+        let (mut result, mut ok, mut iterations) = project(y, &options)?;
+        let mut error = reductions::stationarity(&self.geometry, &self.weights, &result);
+        let mut tightened = false;
+        while ok && error.is_finite() && error > gate && iterations < max_iter {
+            options.maxiter = max_iter - iterations;
+            let (corrected, success, spent) = project(&result, &options)?;
+            iterations += spent;
+            let next_error = reductions::stationarity(&self.geometry, &self.weights, &corrected);
+            let contracted = next_error <= 0.5 * error;
+            // Keep the best certified metric if a roundoff-limited replacement
+            // regresses. Both candidates still have y-r in the original FE span.
+            if next_error < error {
+                result = corrected;
+                error = next_error;
+            }
+            ok = success;
+            if !ok || !next_error.is_finite() || error <= gate || spent == 0 {
+                break;
+            }
+            if contracted {
+                tightened = false;
+            } else if tightened {
+                // A stricter inner solve also failed to halve the certificate:
+                // do not spend the entire iteration budget on a roundoff floor.
+                break;
+            } else {
+                // Retry the stalled residual with a measured, stricter target.
+                // Limit the change to one decade to avoid a huge overcorrection.
+                options.tol = (options.tol * (gate / error).clamp(0.1, 0.5)).max(f64::MIN_POSITIVE);
+                tightened = true;
+            }
+        }
+        Ok((
+            result,
+            ok && error.is_finite() && error <= gate,
+            iterations,
+            error,
+        ))
+    }
     fn one(
         &mut self,
         y: &mut [f64],
         tol: f64,
         max_iter: usize,
+        other_rhs_bytes: usize,
     ) -> reductions::Result<(bool, usize, f64)> {
         if y.iter().any(|v| !v.is_finite()) {
             return Err("RHS must be finite".into());
@@ -134,43 +194,38 @@ impl NativeSolver {
         for v in y.iter_mut() {
             *v /= scale;
         }
-        // Upstream's global backward error and our maximum group-mean metric
-        // are not identical. Ask for a stricter inner solve; never loosen the
-        // independent original-row acceptance gate to match its stopping rule.
-        let inner_tol = (tol * 0.01).max(f64::MIN_POSITIVE);
-        let mut options = LsmrOptions {
-            tol: inner_tol,
-            maxiter: max_iter,
-            local_size: None,
-        };
-        let (mut result, mut ok, mut iterations) = self.project(y, &options)?;
-        let gate = tol.max(64.0 * f64::EPSILON);
-        let mut error = reductions::stationarity(&self.geometry, &self.weights, &result);
         // Residual replacement is another projection of r, so it preserves
         // y-r in col(D); all passes share the caller's total iteration budget.
-        for _ in 0..2 {
-            if !ok || error <= gate || iterations >= max_iter {
-                break;
+        let (mut result, mut ok, mut iterations, mut error) =
+            self.certify(y, tol, max_iter, |rhs, options| self.project(rhs, options))?;
+        if !ok
+            && iterations < max_iter
+            && reductions::fallback_workspace(&self.geometry)
+                .and_then(|n| n.checked_add(self.extra_resident_bytes()))
+                .and_then(|n| n.checked_add(other_rhs_bytes))
+                .is_some_and(|n| n <= self.budget)
+        {
+            // Use original rows and a fresh diagonal map: a stalled adaptive
+            // preconditioner can keep reproducing its own roundoff error.
+            // This changes neither the FE operator nor its numerical rank.
+            let solver = upstream(
+                &self.geometry.groups,
+                &self.weights,
+                Some(&PreconditionerConfig::Diagonal),
+            )?;
+            self.fallbacks += 1;
+            self.schur_fallbacks += usize::from(matches!(&self.engine, Engine::Schur(_)));
+            let (r, success, spent, metric) =
+                self.certify(y, tol, max_iter - iterations, |rhs, options| {
+                    let r = solver.solve(rhs, options).map_err(|e| e.to_string())?;
+                    Ok((r.demeaned, r.converged, r.iterations))
+                })?;
+            if success || metric < error {
+                result = r;
+                error = metric;
             }
-            options.maxiter = max_iter - iterations;
-            let (corrected, success, spent) = self.project(&result, &options)?;
-            result = corrected;
             ok = success;
             iterations += spent;
-            error = reductions::stationarity(&self.geometry, &self.weights, &result);
-        }
-        if matches!(&self.engine, Engine::Schur(_))
-            && (!error.is_finite() || error > gate)
-            && iterations < max_iter
-        {
-            let solver = upstream(&self.geometry.groups, &self.weights)?;
-            options.maxiter = max_iter - iterations;
-            let r = solver.solve(y, &options).map_err(|e| e.to_string())?;
-            result = r.demeaned;
-            ok = r.converged;
-            iterations += r.iterations;
-            self.fallbacks += 1;
-            error = reductions::stationarity(&self.geometry, &self.weights, &result);
         }
         for (dst, r) in y.iter_mut().zip(result) {
             *dst = r * scale;
@@ -179,7 +234,7 @@ impl NativeSolver {
             return Err("residual overflow while restoring original units".into());
         }
         // Additional backward check, NOT a condition-independent forward bound.
-        Ok((ok && error.is_finite() && error <= gate, iterations, error))
+        Ok((ok, iterations, error))
     }
 }
 #[pymethods]
@@ -247,6 +302,7 @@ impl NativeSolver {
                 pool,
                 generation: 0,
                 fallbacks: 0,
+                schur_fallbacks: 0,
             })
         })
         .map_err(value)
@@ -267,6 +323,7 @@ impl NativeSolver {
         if n != self.geometry.n {
             return Err(value("RHS row count mismatch"));
         }
+        let other_rhs_bytes = n.saturating_mul(k.saturating_sub(1)).saturating_mul(8);
         let mut out: Vec<f64> = a.columns().into_iter().flat_map(|c| c.to_vec()).collect();
         let pool = Arc::clone(&self.pool);
         let (out, ok, iterations, errors) = py
@@ -276,7 +333,7 @@ impl NativeSolver {
                     let mut iterations = Vec::with_capacity(k);
                     let mut errors = Vec::with_capacity(k);
                     for col in out.chunks_mut(n) {
-                        let (o, i, e) = self.one(col, tol, max_iter)?;
+                        let (o, i, e) = self.one(col, tol, max_iter, other_rhs_bytes)?;
                         ok.push(o);
                         iterations.push(i);
                         errors.push(e);
@@ -348,6 +405,17 @@ impl NativeSolver {
     #[getter]
     fn fallback_count(&self) -> usize {
         self.fallbacks
+    }
+    #[getter]
+    fn schur_fallback_count(&self) -> usize {
+        self.schur_fallbacks
+    }
+    #[getter]
+    fn extra_resident_bytes(&self) -> usize {
+        match &self.engine {
+            Engine::Schur(s) => s.resident_bytes(),
+            _ => 0,
+        }
     }
     #[getter]
     fn schur_condition(&self) -> Option<f64> {
