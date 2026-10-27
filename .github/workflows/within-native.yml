@@ -55,6 +55,8 @@ jobs:
           python -c 'import _econhdfe_within as n; print(n.UPSTREAM_REV)'
       - name: Independent numerical and estimator parity
         run: python -m pytest native/within-accel/tests -q --junitxml=native-results/native-tests.xml 2>&1 | tee native-results/native-tests.log
+      - name: Native PPML and IV-PPML weighted projection parity
+        run: python -m pytest tests/numerics/test_ppml_within_integration.py -q --junitxml=native-results/poisson-native-tests.xml 2>&1 | tee native-results/poisson-native-tests.log
       - name: Full existing regression suite
         env:
           NUMBA_NUM_THREADS: "4"
