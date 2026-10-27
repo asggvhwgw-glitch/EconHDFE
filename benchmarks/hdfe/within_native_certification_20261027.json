@@ -1,0 +1,919 @@
+{
+  "schema_version": 1,
+  "scope": "Native certification correctness: reproducible continuation and fallback regressions, plus new 1M/5M independent projection/full-IV validation.",
+  "historical_5m": {
+    "replayed": false,
+    "evidence": "benchmarks/hdfe/within_native_macos_091_5m_20261026.json",
+    "reason": "Original composite-IV generator/input is not available in the tracked repository or validation inputs. The new corpus is not the old 21-parameter, singleton-pruned case.",
+    "previous_native_metric": 1.0456878418718674e-12,
+    "previous_tolerance": 1e-12
+  },
+  "harness": {
+    "path": "native/within-accel/validate_native_dyadic_iv.py",
+    "sha256": "4ee530ab3c6fc92e6bc7c8c7716bad2b9381d04568a4138cd6d70604af1aa0f1",
+    "corpus": "dyadic_paired_weak_community_iv_v1",
+    "seed": 20261027,
+    "independent_reference": "Exact stored-float paired within truth; separately recomputed original-row weighted FE means; QR/SVD full-IV and cluster scores; independent active two-FE graph rank and nested-FE normalization."
+  },
+  "settings": {
+    "tolerance": 1e-12,
+    "max_iter": 16000,
+    "large_native_threads": 2,
+    "large_workspace_mib": 2048,
+    "memory_policy": "relaxed",
+    "initial_blas_threads": 1,
+    "actual_full_iv_blas_threads": 2,
+    "limits": {
+      "projection_weighted_relative": 1e-08,
+      "coefficient_scaled": 1e-05,
+      "covariance_correlation_scaled": 0.0005,
+      "stderr_relative": 0.0001,
+      "residual_weighted_relative": 1e-06,
+      "rss_relative": 1e-06
+    }
+  },
+  "timing_scope": "One validation run per binary and size, not a performance or no-regression timing certificate. Both mode runs generation, direct projection, independent reference, then full IV; fit timing excludes generation/reference. Separate checkout/JIT caches can differ.",
+  "memory_scope": "Whole-process getrusage peak RSS includes inputs, generation, reference, direct projection and full IV. Requested workspace is not a hard native/process RSS bound. Final runs use unmodified psutil and scheduler in a matching process/proc namespace.",
+  "boundary_regression": {
+    "fixture": "native/within-accel/tests/test_boundaries.py::certification_case",
+    "fixture_source_sha256": "6f76603aa69c07086a84195bf82457f90f7c8fce1467f7cf6073831691495cc7",
+    "interpretation": "Baseline fails the unchanged original-row maximum-group-mean certificate despite available iteration budget; candidate passes using one admitted original-row diagonal fallback. Both weighted forward errors are small; not every error norm improves.",
+    "results": {
+      "baseline": {
+        "label": "baseline",
+        "fixture": "test_boundaries.certification_case",
+        "seed": 1,
+        "rows": 4000,
+        "levels": [
+          200,
+          70,
+          25
+        ],
+        "rhs": 1,
+        "strategy": "plain",
+        "threads": 1,
+        "tol": 1e-12,
+        "max_iter": 16000,
+        "workspace_bytes": 1048576,
+        "weight_min": 3.552713678800501e-15,
+        "weight_max": 1.0,
+        "converged": [
+          false
+        ],
+        "iterations": [
+          85
+        ],
+        "metrics": [
+          2.4040584321318438e-11
+        ],
+        "independent_original_row_metric": [
+          2.4040572956443813e-11
+        ],
+        "forward_max_absolute": 1.1131107147122066e-10,
+        "forward_weighted_relative": 2.599690556558821e-14,
+        "fallback_count": 0,
+        "schur_fallback_count": 0,
+        "finite": true,
+        "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+        "extension_sha256": "a6c8cfb98ce3705c8bff3c6e96ec03376b4dd8f4f4a13eeda16707583d6253ef"
+      },
+      "candidate": {
+        "label": "candidate",
+        "fixture": "test_boundaries.certification_case",
+        "seed": 1,
+        "rows": 4000,
+        "levels": [
+          200,
+          70,
+          25
+        ],
+        "rhs": 1,
+        "strategy": "plain",
+        "threads": 1,
+        "tol": 1e-12,
+        "max_iter": 16000,
+        "workspace_bytes": 1048576,
+        "weight_min": 3.552713678800501e-15,
+        "weight_max": 1.0,
+        "converged": [
+          true
+        ],
+        "iterations": [
+          302
+        ],
+        "metrics": [
+          3.8182081478909335e-13
+        ],
+        "independent_original_row_metric": [
+          3.8181417688700184e-13
+        ],
+        "forward_max_absolute": 5.057332330693498e-11,
+        "forward_weighted_relative": 1.0003389506181167e-12,
+        "fallback_count": 1,
+        "schur_fallback_count": 0,
+        "finite": true,
+        "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+        "extension_sha256": "81eacc7f8966886e21b7bc0d74554325458b2a6cf48daa3163f27e687d54e1cb"
+      }
+    }
+  },
+  "large_sample_interpretation": "All four large runs pass every fixed independent gate; both baseline and candidate need zero certification fallbacks. This is newly defined accuracy/nonregression coverage, not proof of replaying the historical 5M failure.",
+  "runs": [
+    {
+      "backend": "baseline",
+      "fixture": {
+        "corpus": "dyadic_paired_weak_community_iv_v1",
+        "seed": 20261027,
+        "rows": 1000000,
+        "rhs": 6,
+        "communities": 32,
+        "levels": [
+          125000,
+          1024,
+          256
+        ],
+        "bridge_pairs": 13160,
+        "weight_min": 0.0009765625,
+        "weight_max": 16.0,
+        "weak_control_delta": 0.000244140625,
+        "instrument_within_scale": 0.00390625,
+        "stored_float_projection_exact": true,
+        "historical_5m_reproduction": false
+      },
+      "provenance": {
+        "script_sha256": "4ee530ab3c6fc92e6bc7c8c7716bad2b9381d04568a4138cd6d70604af1aa0f1",
+        "native_sha256": "a6c8cfb98ce3705c8bff3c6e96ec03376b4dd8f4f4a13eeda16707583d6253ef",
+        "native_path": "/tmp/econhdfe-native-baseline/_econhdfe_within/_econhdfe_within.abi3.so",
+        "package_path": "/workspace/scratch/e4078d4b08ca/econhdfe-audit/econhdfe/__init__.py",
+        "package_commit": "15eda97b75532937c682c1b52482baa00e85d46e",
+        "package_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "upstream": "fc44282cea6124f5f18bb142908605a656d35a7c",
+        "python": "3.12.14",
+        "numpy": "2.3.5",
+        "scipy": "1.17.0",
+        "pandas": "2.2.3",
+        "numba": "0.68.0",
+        "psutil": "7.2.2",
+        "platform": "Linux-6.18.55-x86_64-with-glibc2.39"
+      },
+      "environment": {
+        "rss_measurement": "unmodified psutil.Process",
+        "harness_rss_override": false,
+        "pid_namespace_mismatch": false,
+        "effective_cpu_count": 8,
+        "blas_threads": {
+          "OPENBLAS_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "NUMBA_NUM_THREADS": "3"
+        }
+      },
+      "generation_seconds": 0.5194232799999554,
+      "projection": {
+        "passed": true,
+        "setup_seconds": 0.09189203100004306,
+        "solve_seconds": 1.4299379579997549,
+        "total_seconds": 1.521829988999798,
+        "converged": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "iterations": [
+          36,
+          27,
+          27,
+          27,
+          27,
+          27
+        ],
+        "stationarity": [
+          2.172548921045606e-13,
+          2.0588590356394677e-13,
+          2.0594637106796654e-13,
+          1.1946971190113232e-13,
+          2.620631489591574e-13,
+          1.1183692860683436e-13
+        ],
+        "independent_original_row_stationarity": [
+          2.1725488007874795e-13,
+          2.0588590356394677e-13,
+          2.0594637106796654e-13,
+          1.1946971190113232e-13,
+          2.620631446223487e-13,
+          1.1183692860683436e-13
+        ],
+        "relative_errors": [
+          2.163712955959398e-12,
+          4.2707136288141695e-12,
+          4.271352914441206e-12,
+          3.67834619615848e-12,
+          3.005585306202146e-12,
+          5.7378232699827757e-11
+        ],
+        "route": "compressed_within",
+        "cells": 497301,
+        "fallback_count": 0,
+        "schur_fallback_count": 0
+      },
+      "iv": {
+        "passed": true,
+        "method": "within",
+        "fit_seconds": 2.705273376999685,
+        "active_fit_threadpools": [
+          {
+            "internal_api": "openblas",
+            "num_threads": 2,
+            "version": "0.3.30",
+            "architecture": "SkylakeX"
+          },
+          {
+            "internal_api": "openblas",
+            "num_threads": 2,
+            "version": "0.3.30",
+            "architecture": "SkylakeX"
+          }
+        ],
+        "reference_seconds": 0.28593979099969147,
+        "sample_rank_dof_passed": true,
+        "coefficient_scaled_error": 6.067096481884436e-11,
+        "covariance_correlation_scaled_error": 1.0630548509686533e-12,
+        "stderr_relative_error": 4.629630012686903e-13,
+        "residual_weighted_relative_error": 1.3042418961114827e-11,
+        "rss_relative_error": 1.6653345369377348e-15,
+        "beta": [
+          9.875057000367645,
+          -9.37721140299988,
+          1.500050145215337
+        ],
+        "beta_reference": [
+          9.875056999798728,
+          -9.377211402430955,
+          1.5000501452153383
+        ],
+        "nobs": 1000000,
+        "rank": 3,
+        "df_absorbed": 1278,
+        "df_resid_fit": 998719.0,
+        "df_resid": 124999.0,
+        "iterations": 36,
+        "reference_projected_condition": 1.1851961447100237,
+        "within": {
+          "backend": "within",
+          "route": "compressed_within",
+          "nobs": 1000000,
+          "n_cells": 497301,
+          "threads": 2,
+          "weight_generation": 0,
+          "schur_fallbacks": 0,
+          "schur_condition": null,
+          "budget_scope": "reduction_workspace_and_rhs_pool_not_total_native_rss"
+        },
+        "convergence_metric": 2.172548921045606e-13,
+        "resource_policy": {
+          "scope": "whole_call_incremental_workspace",
+          "cpu_threads": 2,
+          "memory_policy": "relaxed",
+          "thread_policy": "explicit",
+          "memory_budget_bytes": 2147483648,
+          "reserve_bytes": 257698037,
+          "remaining_memory_bytes": 1637007360,
+          "worker_divisor": 1,
+          "memory_enforcement": "cooperative_planning_not_rss_limit"
+        }
+      },
+      "peak_rss_mib": 974.80078125,
+      "passed": true
+    },
+    {
+      "backend": "baseline",
+      "fixture": {
+        "corpus": "dyadic_paired_weak_community_iv_v1",
+        "seed": 20261027,
+        "rows": 5000000,
+        "rhs": 6,
+        "communities": 32,
+        "levels": [
+          625000,
+          1024,
+          256
+        ],
+        "bridge_pairs": 64750,
+        "weight_min": 0.0009765625,
+        "weight_max": 16.0,
+        "weak_control_delta": 0.000244140625,
+        "instrument_within_scale": 0.00390625,
+        "stored_float_projection_exact": true,
+        "historical_5m_reproduction": false
+      },
+      "provenance": {
+        "script_sha256": "4ee530ab3c6fc92e6bc7c8c7716bad2b9381d04568a4138cd6d70604af1aa0f1",
+        "native_sha256": "a6c8cfb98ce3705c8bff3c6e96ec03376b4dd8f4f4a13eeda16707583d6253ef",
+        "native_path": "/tmp/econhdfe-native-baseline/_econhdfe_within/_econhdfe_within.abi3.so",
+        "package_path": "/workspace/scratch/e4078d4b08ca/econhdfe-audit/econhdfe/__init__.py",
+        "package_commit": "15eda97b75532937c682c1b52482baa00e85d46e",
+        "package_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "upstream": "fc44282cea6124f5f18bb142908605a656d35a7c",
+        "python": "3.12.14",
+        "numpy": "2.3.5",
+        "scipy": "1.17.0",
+        "pandas": "2.2.3",
+        "numba": "0.68.0",
+        "psutil": "7.2.2",
+        "platform": "Linux-6.18.55-x86_64-with-glibc2.39"
+      },
+      "environment": {
+        "rss_measurement": "unmodified psutil.Process",
+        "harness_rss_override": false,
+        "pid_namespace_mismatch": false,
+        "effective_cpu_count": 8,
+        "blas_threads": {
+          "OPENBLAS_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "NUMBA_NUM_THREADS": "3"
+        }
+      },
+      "generation_seconds": 3.26504093199992,
+      "projection": {
+        "passed": true,
+        "setup_seconds": 0.9659054870003274,
+        "solve_seconds": 8.298596514999645,
+        "total_seconds": 9.264502001999972,
+        "converged": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "iterations": [
+          34,
+          27,
+          27,
+          27,
+          27,
+          27
+        ],
+        "stationarity": [
+          1.3022916078853086e-13,
+          6.039315872793542e-14,
+          6.030295310718462e-14,
+          1.139564633133107e-13,
+          5.4137250238284196e-14,
+          8.114636099817355e-14
+        ],
+        "independent_original_row_stationarity": [
+          1.3022916078853086e-13,
+          6.039315872793542e-14,
+          6.030292212997969e-14,
+          1.139564633133107e-13,
+          5.4137250238284196e-14,
+          8.114636099817355e-14
+        ],
+        "relative_errors": [
+          1.147532079963579e-12,
+          2.3771608714422583e-12,
+          2.380815795134474e-12,
+          2.1421860657572877e-12,
+          2.3570491948218634e-12,
+          3.6254494413767117e-11
+        ],
+        "route": "compressed_within",
+        "cells": 2486057,
+        "fallback_count": 0,
+        "schur_fallback_count": 0
+      },
+      "iv": {
+        "passed": true,
+        "method": "within",
+        "fit_seconds": 15.597131083000022,
+        "active_fit_threadpools": [
+          {
+            "internal_api": "openblas",
+            "num_threads": 2,
+            "version": "0.3.30",
+            "architecture": "SkylakeX"
+          },
+          {
+            "internal_api": "openblas",
+            "num_threads": 2,
+            "version": "0.3.30",
+            "architecture": "SkylakeX"
+          }
+        ],
+        "reference_seconds": 1.4138764259996606,
+        "sample_rank_dof_passed": true,
+        "coefficient_scaled_error": 9.981011956419603e-12,
+        "covariance_correlation_scaled_error": 1.5679743327635807e-13,
+        "stderr_relative_error": 5.995204332975845e-15,
+        "residual_weighted_relative_error": 6.654431608820959e-12,
+        "rss_relative_error": 1.1102230246251565e-15,
+        "beta": [
+          -3.547726161592565,
+          4.048408136576977,
+          1.50089096109808
+        ],
+        "beta_reference": [
+          -3.547726161557155,
+          4.048408136541566,
+          1.5008909610980792
+        ],
+        "nobs": 5000000,
+        "rank": 3,
+        "df_absorbed": 1278,
+        "df_resid_fit": 4998719.0,
+        "df_resid": 624999.0,
+        "iterations": 34,
+        "reference_projected_condition": 1.1831515672064177,
+        "within": {
+          "backend": "within",
+          "route": "compressed_within",
+          "nobs": 5000000,
+          "n_cells": 2486057,
+          "threads": 2,
+          "weight_generation": 0,
+          "schur_fallbacks": 0,
+          "schur_condition": null,
+          "budget_scope": "reduction_workspace_and_rhs_pool_not_total_native_rss"
+        },
+        "convergence_metric": 1.3022916078853086e-13,
+        "resource_policy": {
+          "scope": "whole_call_incremental_workspace",
+          "cpu_threads": 2,
+          "memory_policy": "relaxed",
+          "thread_policy": "explicit",
+          "memory_budget_bytes": 2147483648,
+          "reserve_bytes": 257698037,
+          "remaining_memory_bytes": 1719656448,
+          "worker_divisor": 1,
+          "memory_enforcement": "cooperative_planning_not_rss_limit"
+        }
+      },
+      "peak_rss_mib": 3492.71875,
+      "passed": true
+    },
+    {
+      "backend": "candidate",
+      "fixture": {
+        "corpus": "dyadic_paired_weak_community_iv_v1",
+        "seed": 20261027,
+        "rows": 1000000,
+        "rhs": 6,
+        "communities": 32,
+        "levels": [
+          125000,
+          1024,
+          256
+        ],
+        "bridge_pairs": 13160,
+        "weight_min": 0.0009765625,
+        "weight_max": 16.0,
+        "weak_control_delta": 0.000244140625,
+        "instrument_within_scale": 0.00390625,
+        "stored_float_projection_exact": true,
+        "historical_5m_reproduction": false
+      },
+      "provenance": {
+        "script_sha256": "4ee530ab3c6fc92e6bc7c8c7716bad2b9381d04568a4138cd6d70604af1aa0f1",
+        "native_sha256": "81eacc7f8966886e21b7bc0d74554325458b2a6cf48daa3163f27e687d54e1cb",
+        "native_path": "/tmp/econhdfe-native-candidate/_econhdfe_within/_econhdfe_within.abi3.so",
+        "package_path": "/workspace/scratch/e4078d4b08ca/econhdfe-native-work/econhdfe/__init__.py",
+        "package_commit": "33e8efe2b4cfe694c496cd2fb8da63260ae41d53",
+        "package_diff_sha256": "9f68dbbdd7358d9a0f0b8232fa9a7fb143d248a97f03e28628efe64eb9186a4d",
+        "upstream": "fc44282cea6124f5f18bb142908605a656d35a7c",
+        "python": "3.12.14",
+        "numpy": "2.3.5",
+        "scipy": "1.17.0",
+        "pandas": "2.2.3",
+        "numba": "0.68.0",
+        "psutil": "7.2.2",
+        "platform": "Linux-6.18.55-x86_64-with-glibc2.39"
+      },
+      "environment": {
+        "rss_measurement": "unmodified psutil.Process",
+        "harness_rss_override": false,
+        "pid_namespace_mismatch": false,
+        "effective_cpu_count": 8,
+        "blas_threads": {
+          "OPENBLAS_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "NUMBA_NUM_THREADS": "3"
+        }
+      },
+      "generation_seconds": 0.5330421880003087,
+      "projection": {
+        "passed": true,
+        "setup_seconds": 0.0938848330001747,
+        "solve_seconds": 1.4668572330001552,
+        "total_seconds": 1.56074206600033,
+        "converged": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "iterations": [
+          36,
+          27,
+          27,
+          27,
+          27,
+          27
+        ],
+        "stationarity": [
+          2.172548921045606e-13,
+          2.0588590356394677e-13,
+          2.0594637106796654e-13,
+          1.1946971190113232e-13,
+          2.620631489591574e-13,
+          1.1183748371834667e-13
+        ],
+        "independent_original_row_stationarity": [
+          2.1725488007874795e-13,
+          2.0588590356394677e-13,
+          2.0594637106796654e-13,
+          1.1946971190113232e-13,
+          2.620631446223487e-13,
+          1.1183748371834667e-13
+        ],
+        "relative_errors": [
+          2.163712955959398e-12,
+          4.2707136288141695e-12,
+          4.271352914441206e-12,
+          3.6783645178390626e-12,
+          3.005585306202146e-12,
+          5.73878129733452e-11
+        ],
+        "route": "compressed_within",
+        "cells": 497301,
+        "fallback_count": 0,
+        "schur_fallback_count": 0
+      },
+      "iv": {
+        "passed": true,
+        "method": "within",
+        "fit_seconds": 3.779928744999779,
+        "active_fit_threadpools": [
+          {
+            "internal_api": "openblas",
+            "num_threads": 2,
+            "version": "0.3.30",
+            "architecture": "SkylakeX"
+          },
+          {
+            "internal_api": "openblas",
+            "num_threads": 2,
+            "version": "0.3.30",
+            "architecture": "SkylakeX"
+          }
+        ],
+        "reference_seconds": 0.2572230490000038,
+        "sample_rank_dof_passed": true,
+        "coefficient_scaled_error": 5.80543215578985e-11,
+        "covariance_correlation_scaled_error": 1.0814678526863636e-12,
+        "stderr_relative_error": 4.662936703425657e-13,
+        "residual_weighted_relative_error": 1.3021988221431068e-11,
+        "rss_relative_error": 0.0,
+        "beta": [
+          9.875057000343116,
+          -9.377211402975343,
+          1.5000501452153365
+        ],
+        "beta_reference": [
+          9.875056999798728,
+          -9.377211402430955,
+          1.5000501452153383
+        ],
+        "nobs": 1000000,
+        "rank": 3,
+        "df_absorbed": 1278,
+        "df_resid_fit": 998719.0,
+        "df_resid": 124999.0,
+        "iterations": 36,
+        "reference_projected_condition": 1.1851961447100237,
+        "within": {
+          "backend": "within",
+          "route": "compressed_within",
+          "nobs": 1000000,
+          "n_cells": 497301,
+          "threads": 2,
+          "weight_generation": 0,
+          "schur_fallbacks": 0,
+          "certification_fallbacks": 0,
+          "schur_condition": null,
+          "budget_scope": "reduction_workspace_and_rhs_pool_not_total_native_rss"
+        },
+        "convergence_metric": 2.172548921045606e-13,
+        "resource_policy": {
+          "scope": "whole_call_incremental_workspace",
+          "cpu_threads": 2,
+          "memory_policy": "relaxed",
+          "thread_policy": "explicit",
+          "memory_budget_bytes": 2147483648,
+          "reserve_bytes": 257698037,
+          "remaining_memory_bytes": 1676439552,
+          "worker_divisor": 1,
+          "memory_enforcement": "cooperative_planning_not_rss_limit"
+        }
+      },
+      "peak_rss_mib": 994.1875,
+      "passed": true
+    },
+    {
+      "backend": "candidate",
+      "fixture": {
+        "corpus": "dyadic_paired_weak_community_iv_v1",
+        "seed": 20261027,
+        "rows": 5000000,
+        "rhs": 6,
+        "communities": 32,
+        "levels": [
+          625000,
+          1024,
+          256
+        ],
+        "bridge_pairs": 64750,
+        "weight_min": 0.0009765625,
+        "weight_max": 16.0,
+        "weak_control_delta": 0.000244140625,
+        "instrument_within_scale": 0.00390625,
+        "stored_float_projection_exact": true,
+        "historical_5m_reproduction": false
+      },
+      "provenance": {
+        "script_sha256": "4ee530ab3c6fc92e6bc7c8c7716bad2b9381d04568a4138cd6d70604af1aa0f1",
+        "native_sha256": "81eacc7f8966886e21b7bc0d74554325458b2a6cf48daa3163f27e687d54e1cb",
+        "native_path": "/tmp/econhdfe-native-candidate/_econhdfe_within/_econhdfe_within.abi3.so",
+        "package_path": "/workspace/scratch/e4078d4b08ca/econhdfe-native-work/econhdfe/__init__.py",
+        "package_commit": "33e8efe2b4cfe694c496cd2fb8da63260ae41d53",
+        "package_diff_sha256": "38018738fa55f36d2022ae0790393878f875c9a7b5850fe4d9a5740120f05f29",
+        "upstream": "fc44282cea6124f5f18bb142908605a656d35a7c",
+        "python": "3.12.14",
+        "numpy": "2.3.5",
+        "scipy": "1.17.0",
+        "pandas": "2.2.3",
+        "numba": "0.68.0",
+        "psutil": "7.2.2",
+        "platform": "Linux-6.18.55-x86_64-with-glibc2.39"
+      },
+      "environment": {
+        "rss_measurement": "unmodified psutil.Process",
+        "harness_rss_override": false,
+        "pid_namespace_mismatch": false,
+        "effective_cpu_count": 8,
+        "blas_threads": {
+          "OPENBLAS_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "NUMBA_NUM_THREADS": "3"
+        }
+      },
+      "generation_seconds": 3.025241871000617,
+      "projection": {
+        "passed": true,
+        "setup_seconds": 0.9125538900007086,
+        "solve_seconds": 7.581351304000236,
+        "total_seconds": 8.493905194000945,
+        "converged": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "iterations": [
+          34,
+          27,
+          27,
+          27,
+          27,
+          27
+        ],
+        "stationarity": [
+          1.3022916078853086e-13,
+          6.039315872793542e-14,
+          6.030295310718462e-14,
+          1.139564633133107e-13,
+          5.4137250238284196e-14,
+          8.114636099817355e-14
+        ],
+        "independent_original_row_stationarity": [
+          1.3022916078853086e-13,
+          6.039315872793542e-14,
+          6.030292212997969e-14,
+          1.139564633133107e-13,
+          5.4137250238284196e-14,
+          8.114636099817355e-14
+        ],
+        "relative_errors": [
+          1.147532079963579e-12,
+          2.3771608714422583e-12,
+          2.380815795134474e-12,
+          2.1421860657572877e-12,
+          2.357062731452085e-12,
+          3.6254494413767117e-11
+        ],
+        "route": "compressed_within",
+        "cells": 2486057,
+        "fallback_count": 0,
+        "schur_fallback_count": 0
+      },
+      "iv": {
+        "passed": true,
+        "method": "within",
+        "fit_seconds": 16.27509676599948,
+        "active_fit_threadpools": [
+          {
+            "internal_api": "openblas",
+            "num_threads": 2,
+            "version": "0.3.30",
+            "architecture": "SkylakeX"
+          },
+          {
+            "internal_api": "openblas",
+            "num_threads": 2,
+            "version": "0.3.30",
+            "architecture": "SkylakeX"
+          }
+        ],
+        "reference_seconds": 1.35610750899923,
+        "sample_rank_dof_passed": true,
+        "coefficient_scaled_error": 1.016627203587557e-11,
+        "covariance_correlation_scaled_error": 1.553930120391733e-13,
+        "stderr_relative_error": 6.328271240363392e-15,
+        "residual_weighted_relative_error": 6.6534497577169274e-12,
+        "rss_relative_error": 2.55351295663786e-15,
+        "beta": [
+          -3.5477261615932223,
+          4.048408136577627,
+          1.500890961098081
+        ],
+        "beta_reference": [
+          -3.547726161557155,
+          4.048408136541566,
+          1.5008909610980792
+        ],
+        "nobs": 5000000,
+        "rank": 3,
+        "df_absorbed": 1278,
+        "df_resid_fit": 4998719.0,
+        "df_resid": 624999.0,
+        "iterations": 34,
+        "reference_projected_condition": 1.1831515672064177,
+        "within": {
+          "backend": "within",
+          "route": "compressed_within",
+          "nobs": 5000000,
+          "n_cells": 2486057,
+          "threads": 2,
+          "weight_generation": 0,
+          "schur_fallbacks": 0,
+          "certification_fallbacks": 0,
+          "schur_condition": null,
+          "budget_scope": "reduction_workspace_and_rhs_pool_not_total_native_rss"
+        },
+        "convergence_metric": 1.3022916078853086e-13,
+        "resource_policy": {
+          "scope": "whole_call_incremental_workspace",
+          "cpu_threads": 2,
+          "memory_policy": "relaxed",
+          "thread_policy": "explicit",
+          "memory_budget_bytes": 2147483648,
+          "reserve_bytes": 257698037,
+          "remaining_memory_bytes": 1577619456,
+          "worker_divisor": 1,
+          "memory_enforcement": "cooperative_planning_not_rss_limit"
+        }
+      },
+      "peak_rss_mib": 3548.59765625,
+      "passed": true
+    }
+  ],
+  "candidate_numeric_files_at_collection": {
+    "native/within-accel/src/python.rs": "718a516e32799ff5775e60223aed97b05fecaf58fe3411c8a61ddf7ea42c4b44",
+    "native/within-accel/src/reductions.rs": "d4b36cc09f107c01e1057e875e4abac968601505b281dd9183c3e9171fab2242",
+    "econhdfe/hdfe/within_backend.py": "a24f31b4e215c27529cf7a804b728d55a2d030d87817ab85f7e7a6f3b2e5f4e2"
+  },
+  "runtime_source_sha256": {
+    "baseline_commit": "15eda97b75532937c682c1b52482baa00e85d46e",
+    "candidate_base_commit": "33e8efe2b4cfe694c496cd2fb8da63260ae41d53",
+    "baseline": {
+      "native/within-accel/src/python.rs": "ba3151cf5b22e5c5192ba00727baafdf601680616620e82af9a1fcb0321cd224",
+      "native/within-accel/src/reductions.rs": "0da936baa34b9b9cdb3d790aa6bd738c5e2f9f1d0b6ec54784007cbaf66f2de0",
+      "native/within-accel/Cargo.lock": "47d6a5eceaf7eb6a932e2fdafaccf44b9b96f716cbad6dd4b8b3c5292e959dbe",
+      "econhdfe/hdfe/within_backend.py": "2c34a76fc3f40a08b63adc4da980e1b0b668640146aaf3717e81c5152b32eef2"
+    },
+    "candidate": {
+      "native/within-accel/src/python.rs": "718a516e32799ff5775e60223aed97b05fecaf58fe3411c8a61ddf7ea42c4b44",
+      "native/within-accel/src/reductions.rs": "d4b36cc09f107c01e1057e875e4abac968601505b281dd9183c3e9171fab2242",
+      "native/within-accel/Cargo.lock": "47d6a5eceaf7eb6a932e2fdafaccf44b9b96f716cbad6dd4b8b3c5292e959dbe",
+      "econhdfe/hdfe/within_backend.py": "a24f31b4e215c27529cf7a804b728d55a2d030d87817ab85f7e7a6f3b2e5f4e2"
+    }
+  },
+  "continuation_regression": {
+    "fixture": "native/within-accel/tests/test_boundaries.py::test_progressing_continuation_uses_remaining_budget_before_fallback",
+    "fixture_source_sha256": "6f76603aa69c07086a84195bf82457f90f7c8fce1467f7cf6073831691495cc7",
+    "interpretation": "Baseline exhausts its fixed replacement count with remaining iteration budget. Candidate passes the unchanged original-row gate using continuation alone, without fallback. Independent reference-coded dense weighted least squares retains all 583 columns.",
+    "results": {
+      "baseline": {
+        "label": "baseline",
+        "rows": 4000,
+        "rhs": 1,
+        "geometry_seed": 0,
+        "weight_seed": 26,
+        "levels": [
+          400,
+          150,
+          35
+        ],
+        "strategy": "plain",
+        "tol": 1e-12,
+        "max_iter": 16000,
+        "workspace_bytes": 536870912,
+        "threads": 1,
+        "converged": [
+          false
+        ],
+        "iterations": [
+          236
+        ],
+        "metrics": [
+          3.157618949453224e-12
+        ],
+        "independent_original_row_metric": [
+          3.1576191934176634e-12
+        ],
+        "forward_max_absolute": 1.194224441558589e-09,
+        "forward_weighted_relative": 2.589586252069602e-10,
+        "reference_rank": 583,
+        "reference_columns": 583,
+        "reference_condition": 1035578138.2244024,
+        "fallback_count": 0,
+        "finite": true
+      },
+      "candidate": {
+        "label": "candidate",
+        "rows": 4000,
+        "rhs": 1,
+        "geometry_seed": 0,
+        "weight_seed": 26,
+        "levels": [
+          400,
+          150,
+          35
+        ],
+        "strategy": "plain",
+        "tol": 1e-12,
+        "max_iter": 16000,
+        "workspace_bytes": 536870912,
+        "threads": 1,
+        "converged": [
+          true
+        ],
+        "iterations": [
+          240
+        ],
+        "metrics": [
+          3.7694323022543933e-13
+        ],
+        "independent_original_row_metric": [
+          3.769425510613393e-13
+        ],
+        "forward_max_absolute": 1.1944804589880675e-09,
+        "forward_weighted_relative": 2.589582973933598e-10,
+        "reference_rank": 583,
+        "reference_columns": 583,
+        "reference_condition": 1035578138.2244024,
+        "fallback_count": 0,
+        "finite": true
+      }
+    }
+  },
+  "local_validation": {
+    "platform": "Linux x86_64",
+    "python": "3.12.14",
+    "rust_tests": {
+      "passed": 6,
+      "command": "cargo test --release --locked --manifest-path native/within-accel/Cargo.toml"
+    },
+    "native_tests": {
+      "passed": 51,
+      "skipped": 0,
+      "command": "REQUIRE_WITHIN_NATIVE=1 python -m pytest native/within-accel/tests -q"
+    },
+    "full_suite": {
+      "passed": 468,
+      "warnings": 4,
+      "command": "python scripts/run_tests.py --suite full -- -q"
+    },
+    "version_gate": "0.9.1 PASS",
+    "architecture_map": "PASS after regeneration for added validation harness",
+    "publication": false,
+    "historical_5m_replayed": false
+  }
+}
