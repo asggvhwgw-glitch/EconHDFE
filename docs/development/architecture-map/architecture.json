@@ -6224,8 +6224,8 @@
     },
     {
       "name": "tests",
-      "files": 84,
-      "python_files": 84,
+      "files": 85,
+      "python_files": 85,
       "markdown_files": 0
     },
     {
@@ -6242,9 +6242,9 @@
     },
     {
       "name": "docs",
-      "files": 112,
+      "files": 113,
       "python_files": 1,
-      "markdown_files": 78
+      "markdown_files": 79
     },
     {
       "name": "scripts",

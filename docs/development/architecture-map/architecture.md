@@ -469,10 +469,10 @@ flowchart LR
 | Area | Files | Python | Markdown |
 | --- | ---: | ---: | ---: |
 | `econhdfe/` | 132 | 130 | 2 |
-| `tests/` | 84 | 84 | 0 |
+| `tests/` | 85 | 85 | 0 |
 | `validation/` | 25 | 8 | 3 |
 | `benchmarks/` | 124 | 30 | 9 |
-| `docs/` | 112 | 1 | 78 |
+| `docs/` | 113 | 1 | 79 |
 | `scripts/` | 22 | 19 | 0 |
 | `skills/` | 17 | 4 | 12 |
 | `compatibility/` | 34 | 0 | 0 |
