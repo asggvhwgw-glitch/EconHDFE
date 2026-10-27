@@ -23,7 +23,7 @@ class PPMLConfig:
     relu_tol: float = 1e-4
     relu_zero_tol: float = 1e-8
     relu_max_iter: int = 100
-    engine: str = "replica"
+    engine: str = "replica"  # "within" selects the optional native weighted FE backend.
     dof_method: str = "pairwise"
 
     def validate(self) -> None:
