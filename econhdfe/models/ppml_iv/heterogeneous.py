@@ -244,7 +244,7 @@ def _fit_iv_irls_block(
 
 def _ivppml_vcov_block(
     X: BlockDesign, Z: BlockDesign, first_stage, residual, irls_w, *, kind,
-    clusters, effective_n, base_weights, weight_kind, bread=None,
+    clusters, effective_n, base_weights, weight_kind, bread=None, repair_psd=True,
 ):
     gamma = np.asarray(first_stage, dtype=np.float64)
     residual = np.asarray(residual, dtype=np.float64)
@@ -273,7 +273,7 @@ def _ivppml_vcov_block(
         meat = gamma.T @ Sz @ gamma
         V += sign * (g / (g - 1.0)) * (bread @ meat @ bread)
     V = (V + V.T) / 2.0
-    return fix_psd(V) if len(clusters) > 1 else V
+    return fix_psd(V) if repair_psd and len(clusters) > 1 else V
 
 
 @managed_execution
@@ -404,9 +404,12 @@ def fit_block_arrays(
     effective_n = float(np.sum(w1)) if weight_kind == "fweight" else float(len(y1))
     Vstd = _ivppml_vcov_block(
         Xdm, Zdm, solved.first_stage, solved.residuals, irls_w, kind=vce, clusters=cls,
-        effective_n=effective_n, base_weights=w1, weight_kind=weight_kind, bread=solved.bread,
+        effective_n=effective_n, base_weights=w1, weight_kind=weight_kind, bread=solved.bread, repair_psd=False,
     )
     V = scaling.unscale_vcov(Vstd)
+    # PSD repair must use the reported coefficient units, not solver scaling.
+    if normalize_ivppml_vce(vce) == "cluster" and len(cls) > 1:
+        V = fix_psd(V)
     se = np.sqrt(np.maximum(np.diag(V), 0.0))
 
     Xraw = hstack_block_designs(C1, E1)

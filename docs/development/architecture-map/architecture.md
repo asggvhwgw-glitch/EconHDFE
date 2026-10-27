@@ -75,7 +75,7 @@ flowchart TB
   n_ols -->|"5 imports"| n_contracts
   n_ols -->|"1 imports"| n_data
   n_ols -->|"2 imports"| n_frontend
-  n_ols -->|"4 imports"| n_hdfe
+  n_ols -->|"5 imports"| n_hdfe
   n_ols -->|"3 imports"| n_interface
   n_ols -->|"1 imports"| n_model_shared
   n_ols -->|"2 imports"| n_planner
@@ -89,7 +89,7 @@ flowchart TB
   n_ppml -->|"2 imports"| n_interface
   n_ppml -->|"4 imports"| n_model_shared
   n_ppml -->|"4 imports"| n_planner
-  n_ppml_iv -->|"14 imports"| n_compute
+  n_ppml_iv -->|"15 imports"| n_compute
   n_ppml_iv -->|"13 imports"| n_contracts
   n_ppml_iv -->|"2 imports"| n_frontend
   n_ppml_iv -->|"5 imports"| n_hdfe
@@ -272,7 +272,7 @@ Files/modules: 17. econhdfe/compute/__init__.py, econhdfe/compute/backend.py, ec
 | OLS model | Shared contracts | 5 | `econhdfe.models.ols → econhdfe.errors`<br>`econhdfe.models.ols → econhdfe.config`<br>`econhdfe.models.ols → econhdfe.results`<br>`econhdfe.models.ols → econhdfe.prediction`<br>`econhdfe.models.ols_bootstrap → econhdfe.errors` |
 | OLS model | Econometric data layer | 1 | `econhdfe.models.ols → econhdfe.data` |
 | OLS model | Frontend validation | 2 | `econhdfe.models.ols → econhdfe.frontend.validate`<br>`econhdfe.models.ols → econhdfe.frontend.roles` |
-| OLS model | HDFE infrastructure | 4 | `econhdfe.models.ols → econhdfe.hdfe.block_projection`<br>`econhdfe.models.ols → econhdfe.hdfe.plan`<br>`econhdfe.models.ols_bootstrap → econhdfe.hdfe.absorber`<br>`econhdfe.models.ols_bootstrap → econhdfe.hdfe.workspace` |
+| OLS model | HDFE infrastructure | 5 | `econhdfe.models.ols → econhdfe.hdfe.block_projection`<br>`econhdfe.models.ols → econhdfe.hdfe.plan`<br>`econhdfe.models.ols_bootstrap → econhdfe.hdfe.absorber`<br>`econhdfe.models.ols_bootstrap → econhdfe.hdfe.within_backend`<br>`econhdfe.models.ols_bootstrap → econhdfe.hdfe.workspace` |
 | OLS model | Public interface & orchestration | 3 | `econhdfe.models.ols → econhdfe.pipeline`<br>`econhdfe.models.ols → econhdfe.design`<br>`econhdfe.models.ols → econhdfe.collinearity` |
 | OLS model | Shared model primitives | 1 | `econhdfe.models.ols → econhdfe.models.linear` |
 | OLS model | Execution planner | 2 | `econhdfe.models.ols → econhdfe.planner.scheduler`<br>`econhdfe.models.ols_bootstrap → econhdfe.planner.scheduler` |
@@ -286,7 +286,7 @@ Files/modules: 17. econhdfe/compute/__init__.py, econhdfe/compute/backend.py, ec
 | PPML model | Public interface & orchestration | 2 | `econhdfe.models.ppml.api → econhdfe.design`<br>`econhdfe.models.ppml.heterogeneous → econhdfe.design` |
 | PPML model | Shared model primitives | 4 | `econhdfe.models.ppml.api → econhdfe.models.poisson`<br>`econhdfe.models.ppml.heterogeneous → econhdfe.models.poisson`<br>`econhdfe.models.ppml.irls → econhdfe.models.poisson` |
 | PPML model | Execution planner | 4 | `econhdfe.models.ppml.api → econhdfe.planner.scheduler`<br>`econhdfe.models.ppml.estimator → econhdfe.planner.scheduler`<br>`econhdfe.models.ppml.execution → econhdfe.planner.scheduler`<br>`econhdfe.models.ppml.heterogeneous → econhdfe.planner.scheduler` |
-| IV-PPML model | Compute/runtime kernels | 14 | `econhdfe.models.ppml_iv.api → econhdfe.compute.wls`<br>`econhdfe.models.ppml_iv.api → econhdfe.compute.weights`<br>`econhdfe.models.ppml_iv.estimator → econhdfe.compute.clusters`<br>`econhdfe.models.ppml_iv.estimator → econhdfe.compute.context`<br>`econhdfe.models.ppml_iv.estimator → econhdfe.compute.linalg` |
+| IV-PPML model | Compute/runtime kernels | 15 | `econhdfe.models.ppml_iv.api → econhdfe.compute.wls`<br>`econhdfe.models.ppml_iv.api → econhdfe.compute.weights`<br>`econhdfe.models.ppml_iv.estimator → econhdfe.compute.clusters`<br>`econhdfe.models.ppml_iv.estimator → econhdfe.compute.vcov`<br>`econhdfe.models.ppml_iv.estimator → econhdfe.compute.context` |
 | IV-PPML model | Shared contracts | 13 | `econhdfe.models.ppml_iv.api → econhdfe.errors`<br>`econhdfe.models.ppml_iv.api → econhdfe.config`<br>`econhdfe.models.ppml_iv.bias → econhdfe.errors`<br>`econhdfe.models.ppml_iv.bootstrap → econhdfe.errors`<br>`econhdfe.models.ppml_iv.config → econhdfe.errors` |
 | IV-PPML model | Frontend validation | 2 | `econhdfe.models.ppml_iv.api → econhdfe.frontend.validate`<br>`econhdfe.models.ppml_iv.api → econhdfe.frontend.roles` |
 | IV-PPML model | HDFE infrastructure | 5 | `econhdfe.models.ppml_iv.api → econhdfe.hdfe.plan`<br>`econhdfe.models.ppml_iv.estimator → econhdfe.hdfe.plan`<br>`econhdfe.models.ppml_iv.heterogeneous → econhdfe.hdfe.block_projection`<br>`econhdfe.models.ppml_iv.heterogeneous → econhdfe.hdfe.plan`<br>`econhdfe.models.ppml_iv.irls → econhdfe.hdfe.plan` |
@@ -469,9 +469,9 @@ flowchart LR
 | Area | Files | Python | Markdown |
 | --- | ---: | ---: | ---: |
 | `econhdfe/` | 133 | 131 | 2 |
-| `tests/` | 85 | 85 | 0 |
-| `validation/` | 29 | 8 | 4 |
-| `benchmarks/` | 120 | 30 | 8 |
+| `tests/` | 87 | 87 | 0 |
+| `validation/` | 30 | 8 | 5 |
+| `benchmarks/` | 125 | 31 | 9 |
 | `docs/` | 113 | 1 | 79 |
 | `scripts/` | 22 | 19 | 0 |
 | `skills/` | 17 | 4 | 12 |

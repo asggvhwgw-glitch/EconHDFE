@@ -20,7 +20,7 @@ from ...compute.block_design import BlockDesign, DenseDesignBlock
 from ...compute.linalg import weighted_lstsq, independent_columns
 from ...compute.partitioned_lstsq import partitioned_weighted_lstsq
 from ...compute.stable_linalg import equilibrated_gram_inverse
-from ...compute.vcov import sandwich_vcov_block_xe, normalize_vce
+from ...compute.vcov import sandwich_vcov_block_xe, normalize_vce, fix_psd
 from ...errors import ShapeError, InputError, ConvergenceError
 from ...hdfe.block_projection import BlockWeightedFEProjector
 from ...hdfe.plan import FEPlan
@@ -368,7 +368,7 @@ def final_wls_block(
 
 def ppml_vcov_block(
     X_tilde: BlockDesign, y, mu, true_w, *, kind="robust", clusters=None,
-    df_absorbed=0, nested_adj=0, weight_kind="none",
+    df_absorbed=0, nested_adj=0, weight_kind="none", repair_psd=True,
 ):
     """PPML model/robust/cluster VCE on an exact BlockDesign."""
     y = np.asarray(y, dtype=np.float64)
@@ -387,7 +387,7 @@ def ppml_vcov_block(
     return sandwich_vcov_block_xe(
         X_tilde, score_scalar, bread, kind=kind0, clusters=clusters,
         k_total=X_tilde.ncols + int(df_absorbed), nested_adj=int(bool(nested_adj)),
-        effective_n=effective_n, score_scale=score_scale,
+        effective_n=effective_n, score_scale=score_scale, repair_psd=repair_psd,
     )
 
 
@@ -577,11 +577,14 @@ def fit_block_arrays(
     df_a = int(dof.df_absorbed)
     Vstd = ppml_vcov_block(
         Xt, ystd, state.mu, ws, kind=vce, clusters=cls_s,
-        df_absorbed=df_a, nested_adj=int(dof.nested > 0), weight_kind=weight_kind,
+        df_absorbed=df_a, nested_adj=int(dof.nested > 0), weight_kind=weight_kind, repair_psd=False,
     )
     V = standardizer.unscale_vcov(Vstd)
     if normalize_vce(vce, "model") in MODEL_VCE_KINDS:
         V /= standardizer.y_scale
+    # Clip CGM eigenvalues in reported coefficient units, after unscaling.
+    if normalize_vce(vce) == "cluster" and len(cls_s) > 1:
+        V = fix_psd(V)
     se = np.sqrt(np.maximum(np.diag(V), 0.0))
 
     state.mu *= standardizer.y_scale

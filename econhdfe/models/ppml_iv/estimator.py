@@ -1,6 +1,7 @@
 from __future__ import annotations
 from ...planner.scheduler import managed_execution
 from ...compute.clusters import normalize_vce_clusters
+from ...compute.vcov import fix_psd
 import math
 import numpy as np
 from ...errors import InputError, CollinearityError, UnderidentifiedError, ConvergenceError
@@ -233,9 +234,12 @@ def fit_arrays(
     Vstd = ivppml_vcov(
         solved.projected_X, X_dm, solved.residuals, irls_w,
         kind=vce, clusters=cls, effective_n=effective_n,
-        base_weights=w1, weight_kind=weight_kind, bread=solved.bread,
+        base_weights=w1, weight_kind=weight_kind, bread=solved.bread, repair_psd=False,
     )
     V = scaling.unscale_vcov(Vstd)
+    # PSD repair must use the reported coefficient units, not solver scaling.
+    if normalize_ivppml_vce(vce) == "cluster" and len(cls) > 1:
+        V = fix_psd(V)
     se = np.sqrt(np.maximum(np.diag(V), 0.0))
 
     # Upstream posts a normalized constant with zero reported variance.

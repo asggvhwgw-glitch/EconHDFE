@@ -27,7 +27,7 @@ def normalize_ivppml_vce(kind):
 
 def ivppml_vcov(
     Xhat, X_dm, residual, irls_w, *, kind="robust", clusters=None,
-    effective_n=None, base_weights=None, weight_kind="none", bread=None,
+    effective_n=None, base_weights=None, weight_kind="none", bread=None, repair_psd=True,
 ):
     """IV-PPML sandwich covariance matching the upstream score convention.
 
@@ -72,4 +72,4 @@ def ivppml_vcov(
     for sign, meat, g, _ in cluster_subset_meats_xe(Xhat, score_scalar, clusters):
         V += sign * (g / (g - 1.0)) * (bread @ meat @ bread)
     V = (V + V.T) / 2.0
-    return fix_psd(V) if len(clusters) > 1 else V
+    return fix_psd(V) if repair_psd and len(clusters) > 1 else V

@@ -8,6 +8,9 @@
 - Independently implemented O(N*q+levels) queue peeler, separate zero-level
   reasons, slope-only zero-row safeguard, and policy-aware session cache keys.
 - Add typed fw/pw to plain PPML with frequency N and robust-meat semantics.
+- Repair multiway-cluster covariance in reported coefficient units after
+  unscaling in dense and structured PPML/IV-PPML, preserving frequency
+  expansion and standardization invariance when CGM has negative eigenvalues.
 - Unified IV-PPML uses FE-zero checks only; reject unsupported PPML separation
   and threshold-only mu deletion rather than silently changing IV moments.
 - Preserve statistical rows, DF and reporting; extra computational rank/bridge

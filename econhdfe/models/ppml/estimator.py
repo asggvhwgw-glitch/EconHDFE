@@ -15,7 +15,7 @@ from ...compute.linalg import independent_columns, weighted_lstsq
 from .results import PPMLResult
 from .separation import detect_separation, initial_sample_selection, sample_policy_diagnostics
 from .standardize import Standardization
-from ...compute.vcov import normalize_vce
+from ...compute.vcov import normalize_vce, fix_psd
 from .vce import ppml_vcov, MODEL_VCE_KINDS
 from .execution import resolve_execution, get_projector
 from ...reporting import cluster_counts as _cluster_counts, fe_names_from_metadata
@@ -268,13 +268,16 @@ def fit_arrays(
     Vstd = ppml_vcov(
         Xt, ystd, state.mu, ws,
         kind=vce, clusters=cls_s, df_absorbed=df_a,
-        nested_adj=int(dof.nested > 0), weight_kind=weight_kind,
+        nested_adj=int(dof.nested > 0), weight_kind=weight_kind, repair_psd=False,
     )
     V = standardizer.unscale_vcov(Vstd)
     if normalize_vce(vce, "model") in MODEL_VCE_KINDS:
         # H_std = H_original / y_scale. Robust sandwich scaling cancels,
         # but the model-based inverse Hessian requires this additional factor.
         V /= standardizer.y_scale
+    # Clip CGM eigenvalues in reported coefficient units, after unscaling.
+    if normalize_vce(vce) == "cluster" and len(cls_s) > 1:
+        V = fix_psd(V)
     se = np.sqrt(np.maximum(np.diag(V), 0.0))
 
     # The IRLS state is no longer needed in standardized units, so rescale in
