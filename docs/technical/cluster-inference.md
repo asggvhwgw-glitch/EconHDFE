@@ -12,6 +12,58 @@ Public advanced cluster inference consists of `cluster_diagnostics()` and `wild_
 
 For sufficiently small G, requested Rademacher repetitions that cover all `2**G` signs trigger exact enumeration. Otherwise Monte Carlo p-values use a finite-replication correction and never report zero.
 
+## Coefficient-only wild bootstrap
+
+`wild_bootstrap()` / `wild_cluster_bootstrap_ols()` return coefficient draws.
+For a fixed sample, FE projector and WLS metric they can reuse cluster scores.
+Write `M` for the weighted FE residual maker, `X` for the supplied design,
+`B = pinv(X' W X)`, `u` for the supplied residual, and `v_g` for a cluster's
+wild multiplier. Weighted self-adjointness, `M' W = W M`, gives
+
+```text
+Z       = M X
+center  = B Z' W (X beta)
+score_g = sum_{i in g} w_i Z_i u_i
+draw    = center + B sum_g score_g v_g
+```
+
+The design is projected once, and each draw then uses only cluster-level
+scores. Clusters need not nest in the fixed effects. `clusters=None` still
+generates one multiplier per input row; frequency-weighted rows are not
+expanded. The general center is retained because the low-level API permits
+raw or imperfectly absorbed designs, rank deficiency and arbitrary `beta`.
+The existing Gram pseudoinverse and its rank cutoff are unchanged.
+
+The optimization admits the built-in float64 NumPy generic and native within
+absorbers only when their weights exactly match the bootstrap WLS metric and
+`0 < number of columns <= reps`. A failed one-time projection raises the
+existing HDFE convergence error. The two-way Schur absorber retains the legacy
+route: re-projecting an already-within design can fail its relative PCG check
+when the Schur RHS is nearly zero. Custom/subclassed residualizers, non-float64
+projectors, other backends, unequal metrics and wider designs also keep the
+legacy per-batch absorption route.
+
+Reordering products can amplify floating-point error in weak retained design
+directions. If `||X'WX||_inf * ||B||_inf > 1/sqrt(float64 epsilon)` or is
+nonfinite, the implementation keeps the legacy arithmetic. This is a
+performance eligibility rule, not a new rank or omission rule. It does not
+repair the existing normal-Gram numerical limitations in that fallback.
+
+Seeds, batch dimensions/order and multiplier distributions are preserved,
+including serial/parallel reproducibility. Memory admission charges the
+whole one-time design projection (all columns, even when wider than one draw
+batch), scores and retained draws, then budgets cluster-sized worker arrays.
+Fallback admission is recomputed before dispatch if the condition screen
+rejects the score route. If the one-time design projection does not fit the
+budget, feasible narrow legacy batches remain available; a call is rejected
+only when its selected route cannot be admitted.
+
+This identity does not remove the per-draw residuals and covariance needed by
+`wild_cluster_test_ols()`; its WCR11/WCU11 studentization is unchanged.
+Independent dense dummy-SVD and legacy arithmetic checks are in
+`tests/numerics/test_wild_score_bootstrap.py`. The reproducible warm benchmark
+is `benchmarks/resampling/wild_bootstrap_scores.py`.
+
 ## Deliberate exclusions
 
 The Library CRV3 prototype is not public in v0.4.6. It performs full delete-cluster HDFE refits and requires raw outcome/design state in addition to within-transformed state. Before integration it needs a large-data planner, bounded memory/state semantics, weighted/group-individual coverage and external parity. Multi-way WCB, IV WCB and PPML score/bootstrap inference are also separate future work.
