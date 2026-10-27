@@ -4,7 +4,7 @@ on:
     branches: [feat/within-native-accel-20261026]
     paths: ["native/within-accel/**", "econhdfe/**", ".github/workflows/within-native.yml"]
   pull_request:
-    paths: ["native/within-accel/**", "econhdfe/hdfe/within_backend.py", "econhdfe/models/ols_bootstrap.py", "econhdfe/resampling/engine.py", "tests/numerics/test_wild_score_bootstrap.py", ".github/workflows/within-native.yml"]
+    paths: ["native/within-accel/**", "econhdfe/hdfe/within_backend.py", "econhdfe/models/ols_bootstrap.py", "econhdfe/resampling/engine.py", "econhdfe/models/ppml/**", "econhdfe/models/ppml_iv/**", "econhdfe/hdfe/weighted_projection.py", "tests/numerics/test_ppml_within_integration.py", "tests/numerics/test_wild_score_bootstrap.py", ".github/workflows/within-native.yml"]
   workflow_dispatch:
 permissions:
   contents: read
