@@ -6,7 +6,11 @@ from ...errors import SpecificationError
 
 @dataclass(slots=True)
 class PPMLConfig:
-    """Numerical controls kept separate from the estimator state."""
+    """Numerical controls kept separate from the estimator state.
+
+    ``engine='within'`` opts into the optional native weighted FE backend for
+    rank checks, IRLS and final inference; separation retains replica solvers.
+    """
 
     tolerance: float = 1e-8
     target_inner_tol: float = 1e-9
@@ -37,8 +41,8 @@ class PPMLConfig:
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, Integral) or value < 1:
                 raise SpecificationError(f"{name} must be a positive integer", code="specification.iteration_count")
-        if self.engine not in {"replica", "optimized"}:
-            raise SpecificationError("engine must be 'replica' or 'optimized'")
+        if self.engine not in {"replica", "optimized", "within"}:
+            raise SpecificationError("engine must be 'replica', 'optimized' or 'within'")
         if self.dof_method not in {"exact", "pairwise", "firstpair", "none"}:
             raise SpecificationError("dof_method must be exact/pairwise/firstpair/none")
         if not 0 < self.mu_tol < 0.1:

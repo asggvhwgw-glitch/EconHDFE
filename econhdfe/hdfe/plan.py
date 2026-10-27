@@ -137,6 +137,8 @@ class FEPlan:
     def absorber(self, weights, *, tol, engine="replica", method="map"):
         if not self.groups:
             return None
+        if engine == "within":
+            return self.projector(engine=engine, method=method).prepare(weights, tol=tol)
         if method == "within":
             from .within_backend import WithinFEAbsorber
             return WithinFEAbsorber(self.groups, weights=weights, tol=tol)
@@ -154,6 +156,9 @@ class FEPlan:
         )
 
     def residualize(self, A, weights, *, tol, engine="replica"):
+        if engine == "within" and self.groups:
+            # The shared wrapper enforces convergence even when callers discard info.
+            return self.projector(engine=engine).residualize(A, weights, tol=tol, return_info=True)
         absorber = self.absorber(weights, tol=tol, engine=engine)
         if absorber is None:
             return np.asarray(A, dtype=np.float64).copy(), None

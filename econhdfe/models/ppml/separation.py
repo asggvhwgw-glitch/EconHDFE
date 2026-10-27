@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from time import perf_counter
 import numpy as np
 from ...errors import InputError, SpecificationError
@@ -78,6 +78,11 @@ def detect_separation(
     with the positive-weight IRLS projector can disable topology-dependent
     optimized paths and increase retained memory.
     """
+    # Native selection is an estimation-backend option, not a new separation
+    # algorithm. Preserve the replica auxiliary solvers and their zero weights.
+    # replace() also preserves the IVPPMLConfig subclass and never mutates it.
+    if config.engine == "within":
+        config = replace(config, engine="replica")
     execution = ExecutionConfig() if execution_config is None else execution_config
     execution.validate()
     y0 = np.asarray(y, dtype=np.float64)
