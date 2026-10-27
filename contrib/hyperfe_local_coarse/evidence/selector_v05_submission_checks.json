@@ -1,0 +1,15 @@
+{
+  "source": "v0.5 original provided archive",
+  "local_test_command": "python -m pytest tests baseline/tests -q",
+  "local_test_result": "187 passed",
+  "local_environment": "Python 3.13, within-py 0.4.0",
+  "base_pr": "#27",
+  "default_backend_changed": false,
+  "ci_status": "not_yet_verified",
+  "frozen_kernel_source_checks": {
+    "scalable_hyperfe.py": true,
+    "budget_preconditioner.py": true,
+    "cases.py": true,
+    "validation.py": true
+  }
+}

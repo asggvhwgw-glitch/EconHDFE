@@ -1,0 +1,581 @@
+{
+  "counts": {
+    "formal": {
+      "total": 54,
+      "passed": 54
+    },
+    "supplemental": {
+      "total": 26,
+      "passed": 26
+    },
+    "reference": {
+      "total": 6,
+      "passed": 6
+    },
+    "development": {
+      "total": 8,
+      "passed": 8
+    }
+  },
+  "rows": [
+    {
+      "case": "smooth_sparse",
+      "mode": "native",
+      "n": 1000000,
+      "rhs": 3,
+      "repetitions": 3,
+      "passed": 3,
+      "median_seconds": 12.862357685999996,
+      "minimum_seconds": 12.632032375000108,
+      "maximum_seconds": 13.612363490999996,
+      "median_rss_mib": 531.88671875,
+      "routes": [
+        "native",
+        "native",
+        "native"
+      ]
+    },
+    {
+      "case": "smooth_sparse",
+      "mode": "v04",
+      "n": 1000000,
+      "rhs": 3,
+      "repetitions": 3,
+      "passed": 3,
+      "median_seconds": 8.974607607000053,
+      "minimum_seconds": 8.558735696999975,
+      "maximum_seconds": 9.387621945999967,
+      "median_rss_mib": 714.33203125,
+      "routes": [
+        "local",
+        "local",
+        "local"
+      ]
+    },
+    {
+      "case": "smooth_sparse",
+      "mode": "v05",
+      "n": 1000000,
+      "rhs": 3,
+      "repetitions": 3,
+      "passed": 3,
+      "median_seconds": 8.753672531999996,
+      "minimum_seconds": 8.552292513999987,
+      "maximum_seconds": 9.090415150000013,
+      "median_rss_mib": 714.46875,
+      "routes": [
+        "local",
+        "local",
+        "local"
+      ]
+    },
+    {
+      "case": "equal_sparse",
+      "mode": "native",
+      "n": 1000000,
+      "rhs": 12,
+      "repetitions": 3,
+      "passed": 3,
+      "median_seconds": 43.31969998300019,
+      "minimum_seconds": 41.81608179800003,
+      "maximum_seconds": 44.87398139300012,
+      "median_rss_mib": 898.71875,
+      "routes": [
+        "native",
+        "native",
+        "native"
+      ]
+    },
+    {
+      "case": "equal_sparse",
+      "mode": "v04",
+      "n": 1000000,
+      "rhs": 12,
+      "repetitions": 3,
+      "passed": 3,
+      "median_seconds": 14.346113582000044,
+      "minimum_seconds": 14.331248682000023,
+      "maximum_seconds": 15.879200703000151,
+      "median_rss_mib": 846.16015625,
+      "routes": [
+        "local",
+        "local",
+        "local"
+      ]
+    },
+    {
+      "case": "equal_sparse",
+      "mode": "v05",
+      "n": 1000000,
+      "rhs": 12,
+      "repetitions": 3,
+      "passed": 3,
+      "median_seconds": 14.510266709000007,
+      "minimum_seconds": 14.509133879000046,
+      "maximum_seconds": 15.014349646000028,
+      "median_rss_mib": 847.921875,
+      "routes": [
+        "local",
+        "local",
+        "local"
+      ]
+    },
+    {
+      "case": "weighted4",
+      "mode": "native",
+      "n": 1000000,
+      "rhs": 12,
+      "repetitions": 3,
+      "passed": 3,
+      "median_seconds": 14.15321436399995,
+      "minimum_seconds": 13.907214132000036,
+      "maximum_seconds": 14.45563961799985,
+      "median_rss_mib": 958.62109375,
+      "routes": [
+        "native",
+        "native",
+        "native"
+      ]
+    },
+    {
+      "case": "weighted4",
+      "mode": "v04",
+      "n": 1000000,
+      "rhs": 12,
+      "repetitions": 3,
+      "passed": 3,
+      "median_seconds": 13.090941973999975,
+      "minimum_seconds": 12.814364663999868,
+      "maximum_seconds": 13.142033502000004,
+      "median_rss_mib": 887.58984375,
+      "routes": [
+        "native",
+        "native",
+        "native"
+      ]
+    },
+    {
+      "case": "weighted4",
+      "mode": "v05",
+      "n": 1000000,
+      "rhs": 12,
+      "repetitions": 3,
+      "passed": 3,
+      "median_seconds": 13.385770074000106,
+      "minimum_seconds": 12.78802599100004,
+      "maximum_seconds": 14.616312684999912,
+      "median_rss_mib": 888.13671875,
+      "routes": [
+        "native",
+        "native",
+        "native"
+      ]
+    },
+    {
+      "case": "irregular",
+      "mode": "native",
+      "n": 1000000,
+      "rhs": 12,
+      "repetitions": 3,
+      "passed": 3,
+      "median_seconds": 11.448007168000004,
+      "minimum_seconds": 11.281768494999938,
+      "maximum_seconds": 13.003453755999999,
+      "median_rss_mib": 986.76171875,
+      "routes": [
+        "native",
+        "native",
+        "native"
+      ]
+    },
+    {
+      "case": "irregular",
+      "mode": "v04",
+      "n": 1000000,
+      "rhs": 12,
+      "repetitions": 3,
+      "passed": 3,
+      "median_seconds": 10.219192448000058,
+      "minimum_seconds": 9.780361019999987,
+      "maximum_seconds": 10.646062221999955,
+      "median_rss_mib": 876.55078125,
+      "routes": [
+        "native",
+        "native",
+        "native"
+      ]
+    },
+    {
+      "case": "irregular",
+      "mode": "v05",
+      "n": 1000000,
+      "rhs": 12,
+      "repetitions": 3,
+      "passed": 3,
+      "median_seconds": 10.595267588999832,
+      "minimum_seconds": 9.832697508000138,
+      "maximum_seconds": 10.702141162999965,
+      "median_rss_mib": 878.7734375,
+      "routes": [
+        "native",
+        "native",
+        "native"
+      ]
+    },
+    {
+      "case": "crossed_panel",
+      "mode": "native",
+      "n": 1000000,
+      "rhs": 3,
+      "repetitions": 3,
+      "passed": 3,
+      "median_seconds": 3.690348211000014,
+      "minimum_seconds": 3.5190489869999055,
+      "maximum_seconds": 3.704534587000012,
+      "median_rss_mib": 600.20703125,
+      "routes": [
+        "native",
+        "native",
+        "native"
+      ]
+    },
+    {
+      "case": "crossed_panel",
+      "mode": "v04",
+      "n": 1000000,
+      "rhs": 3,
+      "repetitions": 3,
+      "passed": 3,
+      "median_seconds": 3.67592416399998,
+      "minimum_seconds": 3.526577366000083,
+      "maximum_seconds": 3.7428817040000695,
+      "median_rss_mib": 598.84765625,
+      "routes": [
+        "native",
+        "native",
+        "native"
+      ]
+    },
+    {
+      "case": "crossed_panel",
+      "mode": "v05",
+      "n": 1000000,
+      "rhs": 3,
+      "repetitions": 3,
+      "passed": 3,
+      "median_seconds": 3.5043789589999506,
+      "minimum_seconds": 3.49138825,
+      "maximum_seconds": 3.542445592000149,
+      "median_rss_mib": 599.1328125,
+      "routes": [
+        "native",
+        "native",
+        "native"
+      ]
+    },
+    {
+      "case": "hub4",
+      "mode": "native",
+      "n": 1000000,
+      "rhs": 3,
+      "repetitions": 3,
+      "passed": 3,
+      "median_seconds": 0.889303757999869,
+      "minimum_seconds": 0.8571750629999997,
+      "maximum_seconds": 0.8983341790000168,
+      "median_rss_mib": 433.703125,
+      "routes": [
+        "native",
+        "native",
+        "native"
+      ]
+    },
+    {
+      "case": "hub4",
+      "mode": "v04",
+      "n": 1000000,
+      "rhs": 3,
+      "repetitions": 3,
+      "passed": 3,
+      "median_seconds": 0.9893311369999083,
+      "minimum_seconds": 0.8307034770000428,
+      "maximum_seconds": 1.0643492669998977,
+      "median_rss_mib": 437.58203125,
+      "routes": [
+        "native",
+        "native",
+        "native"
+      ]
+    },
+    {
+      "case": "hub4",
+      "mode": "v05",
+      "n": 1000000,
+      "rhs": 3,
+      "repetitions": 3,
+      "passed": 3,
+      "median_seconds": 0.9433193659999688,
+      "minimum_seconds": 0.9066255000000183,
+      "maximum_seconds": 0.9519196590000547,
+      "median_rss_mib": 437.85546875,
+      "routes": [
+        "native",
+        "native",
+        "native"
+      ]
+    }
+  ],
+  "failures": [],
+  "source_unchanged": true,
+  "main_input_hashes_identical": true,
+  "formal_and_supplemental_threads_verified": true,
+  "max_reference_error": 1.7440833643057296e-09,
+  "max_v05_reference_error": 1.7440833643057296e-09,
+  "max_oracle_error": 8.272082474629655e-11,
+  "sample_downgrades": [
+    {
+      "file": "results/formal/weighted4_v05_k12_r0.json",
+      "raw_verdict": "reject",
+      "effective_verdict": "unknown"
+    },
+    {
+      "file": "results/formal/weighted4_v05_k12_r1.json",
+      "raw_verdict": "reject",
+      "effective_verdict": "unknown"
+    },
+    {
+      "file": "results/formal/weighted4_v05_k12_r2.json",
+      "raw_verdict": "reject",
+      "effective_verdict": "unknown"
+    },
+    {
+      "file": "results/supplemental/check_weighted12_v05.json",
+      "raw_verdict": "reject",
+      "effective_verdict": "unknown"
+    },
+    {
+      "file": "results/supplemental/label_permutation.json",
+      "raw_verdict": "reject",
+      "effective_verdict": "unknown"
+    },
+    {
+      "file": "results/supplemental/regression_sample_veto_v05.json",
+      "raw_verdict": "reject",
+      "effective_verdict": "unknown"
+    },
+    {
+      "file": "results/supplemental/seed2_weighted4_v05.json",
+      "raw_verdict": "reject",
+      "effective_verdict": "unknown"
+    },
+    {
+      "file": "results/development/fixed_smooth_83132_v05.json",
+      "raw_verdict": "reject",
+      "effective_verdict": "unknown"
+    },
+    {
+      "file": "results/development/smooth_sparse_83132_v05.json",
+      "raw_verdict": "reject",
+      "effective_verdict": "unknown"
+    },
+    {
+      "file": "results/development/weighted4_73021_v05.json",
+      "raw_verdict": "reject",
+      "effective_verdict": "unknown"
+    }
+  ],
+  "supplemental": [
+    {
+      "file": "results/supplemental/ablation_fixed24.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/supplemental/ablation_no_scout.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/supplemental/adverse_dynamic.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/supplemental/adverse_fixed24.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/supplemental/check_equal12_native.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/supplemental/check_equal12_v04.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/supplemental/check_equal12_v05.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/supplemental/check_smooth_native.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/supplemental/check_smooth_v04.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/supplemental/check_smooth_v05.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/supplemental/check_weighted12_native.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/supplemental/check_weighted12_v05.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/supplemental/equal12_diagonal.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/supplemental/forced_cost_stop.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/supplemental/label_permutation.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/supplemental/memory_preflight.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/supplemental/near_crossed_v05.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/supplemental/regression_24step_v05.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/supplemental/regression_sample_veto_v04.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/supplemental/regression_sample_veto_v05.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/supplemental/seed2_high5_native.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/supplemental/seed2_high5_v05.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/supplemental/seed2_smooth_sparse_native.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/supplemental/seed2_smooth_sparse_v05.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/supplemental/seed2_weighted4_native.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/supplemental/seed2_weighted4_v05.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/reference/equal_93517_k12.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/reference/near_crossed_93518.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/reference/regression_smooth_83131.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/reference/regression_smooth_83132.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/reference/smooth_93517_k3.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    },
+    {
+      "file": "results/reference/weighted_93517_k12.json",
+      "status": null,
+      "passed": true,
+      "total_seconds": null
+    }
+  ]
+}

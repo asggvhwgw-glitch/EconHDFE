@@ -1,0 +1,35 @@
+name: Experimental FE selector v0.5
+on:
+  push:
+    paths:
+      - 'contrib/hyperfe_local_coarse/**'
+      - '.github/workflows/hyperfe-selector-v05.yml'
+  pull_request:
+    paths:
+      - 'contrib/hyperfe_local_coarse/**'
+      - '.github/workflows/hyperfe-selector-v05.yml'
+permissions:
+  contents: read
+jobs:
+  selector-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      NUMBA_NUM_THREADS: '1'
+      RAYON_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install selector dependencies
+        run: python -m pip install -r contrib/hyperfe_local_coarse/selector_requirements.txt
+      - name: Validate frozen research prototype and selector
+        working-directory: contrib/hyperfe_local_coarse
+        run: python -m pytest tests -q
+      - name: Verify selector public entry point
+        working-directory: contrib/hyperfe_local_coarse
+        run: PYTHONPATH=src python -c 'from feselection import FESelector, SelectionConfig; print(SelectionConfig(mode="observe"))'

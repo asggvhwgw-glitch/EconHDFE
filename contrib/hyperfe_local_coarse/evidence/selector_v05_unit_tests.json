@@ -1,0 +1,13 @@
+{
+  "returncode": 0,
+  "passed": 187,
+  "command": [
+    "python",
+    "-m",
+    "pytest",
+    "tests",
+    "baseline/tests",
+    "-q"
+  ],
+  "log": "results/unit_tests_final.log"
+}

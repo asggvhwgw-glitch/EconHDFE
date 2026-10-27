@@ -1,0 +1,12 @@
+{
+  "patch_applied": true,
+  "tests_returncode": 0,
+  "passed": 187,
+  "replay_compute_source_hashes_match": true,
+  "frozen_kernels_unchanged": {
+    "scalable_hyperfe.py": true,
+    "budget_preconditioner.py": true,
+    "cases.py": true,
+    "validation.py": true
+  }
+}
