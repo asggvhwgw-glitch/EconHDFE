@@ -25,31 +25,29 @@ def _fixture(n=1800, seed=26027):
 
 
 @pytest.mark.parametrize("config_type", [PPMLConfig, IVPPMLConfig])
-def test_invalid_absorb_method_rejected(config_type):
-    with pytest.raises(SpecificationError, match="absorb_method"):
-        config_type(absorb_method="unknown").validate()
+def test_invalid_engine_rejected(config_type):
+    with pytest.raises(SpecificationError, match="engine"):
+        config_type(engine="unknown").validate()
 
 
 @pytest.mark.parametrize("kind", ["ppml", "ivppml"])
-def test_explicit_lsmr_method_is_used_on_base_install(kind):
+def test_default_map_selector_unchanged(kind):
     y, c, e, z, off, groups, weights = _fixture(n=550)
-    execution = ExecutionConfig(threads=1, memory_budget_mb=64)
+    execution = ExecutionConfig(threads=1, memory_budget_mb=192)
     if kind == "ppml":
         result = ppmlhdfe(
             y=y, x=np.column_stack([e, c]), absorb=groups, weights=weights,
-            offset=off, config=PPMLConfig(absorb_method="lsmr", separation=()),
-            execution_config=execution,
+            offset=off, config=PPMLConfig(separation=()), execution_config=execution,
         )
     else:
         result = ivppmlhdfe(
             y=y, exog=c, endog=e, instruments=z, absorb=groups,
             offset=off, weights=weights, weight_type="pweight",
-            config=IVPPMLConfig(absorb_method="lsmr", separation=()),
-            execution_config=execution,
+            config=IVPPMLConfig(separation=()), execution_config=execution,
         )
     assert result.converged
     resources = result.diagnostics["projection_resources"]
-    assert resources["method"] == "lsmr" and resources["backend"] == "generic"
+    assert resources["method"] == "map"
 
 
 @pytest.mark.parametrize("kind", ["ppml", "ivppml"])
@@ -90,7 +88,7 @@ def test_native_within_matches_map_with_updated_irls_weights(kind, monkeypatch):
             )
 
     baseline = fit(cfg)
-    candidate = fit(replace(cfg, absorb_method="within"))
+    candidate = fit(replace(cfg, engine="within"))
     assert baseline.converged and candidate.converged
     resources = candidate.diagnostics["projection_resources"]
     assert resources["method"] == "within" and resources["backend"] == "within"

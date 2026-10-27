@@ -112,7 +112,7 @@ def fit_arrays(
         p0 = plan.subset(active0)
 
     pre_projector = get_projector(
-        p0, engine=config.engine, method=config.absorb_method, execution=execution,
+        p0, engine=config.engine, method=("within" if config.engine == "within" else "map"), execution=execution,
         context=exec_context, cache=True,
     )
     C0, E0, I0, exog_names, endog_names, instrument_names = _prune_iv_columns(
@@ -150,7 +150,7 @@ def fit_arrays(
         y1, C1, E1, I1, w1, off1 = y0[keep_sep], C0[keep_sep], E0[keep_sep], I0[keep_sep], w0[keep_sep], off0[keep_sep]
         p1 = p0.subset(keep_sep)
         pre_projector = get_projector(
-            p1, engine=config.engine, method=config.absorb_method, execution=execution,
+            p1, engine=config.engine, method=("within" if config.engine == "within" else "map"), execution=execution,
             context=exec_context, cache=False,
         )
         C1, E1, I1, exog_names, endog_names, instrument_names = _prune_iv_columns(
@@ -169,7 +169,7 @@ def fit_arrays(
 
     solver_plan, canonicalization = p1.for_engine(config.engine)
     projector = pre_projector if solver_plan is p1 else get_projector(
-        solver_plan, engine=config.engine, method=config.absorb_method, execution=execution,
+        solver_plan, engine=config.engine, method=("within" if config.engine == "within" else "map"), execution=execution,
         context=exec_context, cache=bool(np.all(keep_sep)),
     )
     initial_eta = None

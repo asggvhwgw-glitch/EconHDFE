@@ -1,29 +1,26 @@
 # Native within for weighted Poisson-family estimators
 
-PPML and IV-PPML now accept `PPMLConfig(absorb_method="within")`
-and `IVPPMLConfig(absorb_method="within")`. The default remains
-`absorb_method="map"`, and `"lsmr"` is available without the
-optional native extension.
+PPML and IV-PPML support `PPMLConfig(engine="within")` and
+`IVPPMLConfig(engine="within")`. The default `engine="replica"`
+and existing `engine="optimized"` remain unchanged. This adds an
+engine choice without changing published public dataclass signatures
+or the release-0.9.1 contract snapshot.
 
-Both dense and certified block-separable computation paths pass the
-selection to their weighted FE projectors during post-FE rank screening,
-IRLS, separation-induced sample rebuilding, and the final high-precision
-weighted FWL solve. Separation-specific simplex/ReLU solvers are unchanged.
+For the within engine, dense and block-separable Poisson estimators
+use the existing `WeightedFEProjector(method="within")`.
+The selection applies to post-FE rank screening, IRLS weighted solves,
+separation-induced sample rebuilding, and the final high-precision
+FWL/inference projection. Separation-specific simplex and ReLU
+operators remain unchanged.
 
-Within requires positive finite numerical weights. A weighted projector
-retains FE topology across IRLS iterations, but calls
-`update_weights` on each iteration; weights are *not* held fixed.
-When any weight is zero, the explicit within projector selects its
-existing generic LSMR fallback for that weight state. On a subsequent
-strictly positive state it can return to within.
+Native within requires strictly positive finite numerical weights.
+The FE topology is reusable, but numerical weights are updated on each
+IRLS iteration. For zero-weight states the existing generic LSMR
+backend is selected, returning to native when weights are positive.
+Absent the optional `_econhdfe_within` extension, an explicitly
+requested within solve raises a configuration error.
 
-Native within remains strictly opt-in; if requested without the
-`_econhdfe_within` extension, the model raises an actionable
-configuration error rather than reporting results from another backend.
-
-Inspect `result.diagnostics["projection_resources"]` to distinguish
-the requested method and the backend actually used on the final solve.
-Changing the absorber does not modify separation, coefficient rank,
-the PPML/IV-PPML moments, the outer IRLS convergence criteria or the
-inference formulas. End-to-end speedup is workload-dependent and must
-be established with matched accuracy and full-estimator benchmarks.
+Numerical tolerances, rank policy, moment conditions, separation,
+sample semantics and VCE remain unchanged. Inspect
+`result.diagnostics["projection_resources"]` to see the method
+and effective backend. Speedup requires end-to-end validation.

@@ -112,7 +112,7 @@ def fit_arrays(
     # The initial rank check and, when the sample/FE plan is unchanged, IRLS
     # share the same compiled projector topology.
     pre_projector = get_projector(
-        p0, engine=config.engine, method=config.absorb_method, execution=execution,
+        p0, engine=config.engine, method=("within" if config.engine == "within" else "map"), execution=execution,
         context=exec_context, cache=True,
     ) if p0.groups else None
     X0s, names, keep = _filter_columns(
@@ -155,7 +155,7 @@ def fit_arrays(
         ps_requested = p0.subset(survivor0) if p0.groups else p0
         # Rebuild for the surviving topology under the original resource policy.
         pre_projector = get_projector(
-            ps_requested, engine=config.engine, method=config.absorb_method, execution=execution,
+            ps_requested, engine=config.engine, method=("within" if config.engine == "within" else "map"), execution=execution,
             context=exec_context, cache=False,
         )
         # Only a changed estimation sample can change post-FE rank.
@@ -170,7 +170,7 @@ def fit_arrays(
         projector = pre_projector
     else:
         projector = get_projector(
-            ps_solver, engine=config.engine, method=config.absorb_method, execution=execution,
+            ps_solver, engine=config.engine, method=("within" if config.engine == "within" else "map"), execution=execution,
             context=exec_context, cache=not any_sep,
         ) if ps_solver.groups else None
 
@@ -209,7 +209,7 @@ def fit_arrays(
         ys_orig, ws, offs = ys_orig[keep_mu], ws[keep_mu], offs[keep_mu]
         ps_requested = ps_requested.subset(keep_mu) if ps_requested.groups else ps_requested
         rank_projector = get_projector(
-            ps_requested, engine=config.engine, method=config.absorb_method,
+            ps_requested, engine=config.engine, method=("within" if config.engine == "within" else "map"),
             execution=execution, context=exec_context, cache=False,
         ) if ps_requested.groups else None
         Xstd, names, keep = _filter_columns(
@@ -219,7 +219,7 @@ def fit_arrays(
         standardizer = standardizer.select_columns(keep)
         ps_solver, canonicalization = ps_requested.for_engine(config.engine)
         projector = get_projector(
-            ps_solver, engine=config.engine, method=config.absorb_method, execution=execution,
+            ps_solver, engine=config.engine, method=("within" if config.engine == "within" else "map"), execution=execution,
             context=exec_context, cache=False,
         ) if ps_solver.groups else None
         state = fit_irls(

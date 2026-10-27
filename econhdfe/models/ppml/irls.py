@@ -88,7 +88,7 @@ def fit_irls(
     positive = ~zero
     log_sep_tol = math.log(config.mu_tol)
     if projector is None and plan.groups:
-        projector = plan.projector(engine=config.engine, method=config.absorb_method)
+        projector = plan.projector(engine=config.engine, method=("within" if config.engine == "within" else "map"))
 
     # Persistent N-sized workspaces.  The fast-partial block is residualized
     # in place and reused across outer iterations.
