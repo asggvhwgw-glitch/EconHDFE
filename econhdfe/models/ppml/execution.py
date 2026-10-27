@@ -6,7 +6,7 @@ from ...config import ExecutionConfig
 from ...planner.scheduler import current_allocation, resolve_allocation
 from ...compute.context import ExecutionContext
 from ...hdfe.plan import FEPlan
-from ...hdfe.weighted_projection import WeightedFEProjector
+from ...hdfe.weighted_projection import WeightedFEProjector, make_weighted_projector
 
 
 def resolve_execution(
@@ -62,7 +62,7 @@ def get_projector(
         hit = context.get(key)
         if isinstance(hit, WeightedFEProjector):
             return hit
-    out = WeightedFEProjector(
+    out = make_weighted_projector(
         plan.groups,
         engine=engine,
         method=method,

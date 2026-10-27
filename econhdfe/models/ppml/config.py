@@ -50,8 +50,8 @@ class PPMLConfig:
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, Integral) or value < 1:
                 raise SpecificationError(f"{name} must be a positive integer", code="specification.iteration_count")
-        if self.engine not in {"replica", "optimized", "within"}:
-            raise SpecificationError("engine must be 'replica', 'optimized', or 'within'")
+        if self.engine not in {"replica", "optimized", "within", "adaptive"}:
+            raise SpecificationError("engine must be 'replica', 'optimized', 'within', or 'adaptive'")
         if self.dof_method not in {"exact", "pairwise", "firstpair", "none"}:
             raise SpecificationError("dof_method must be exact/pairwise/firstpair/none")
         if not 0 < self.mu_tol < 0.1:

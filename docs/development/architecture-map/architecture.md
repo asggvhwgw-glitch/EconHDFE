@@ -40,9 +40,9 @@ flowchart TB
   n_frontend -->|"1 imports"| n_hdfe
   n_frontend -->|"2 imports"| n_interface
   n_hdfe -->|"7 imports"| n_compute
-  n_hdfe -->|"6 imports"| n_contracts
+  n_hdfe -->|"7 imports"| n_contracts
   n_hdfe -->|"2 imports"| n_interface
-  n_hdfe -->|"5 imports"| n_planner
+  n_hdfe -->|"6 imports"| n_planner
   n_interface -->|"16 imports"| n_compute
   n_interface -->|"11 imports"| n_contracts
   n_interface -->|"3 imports"| n_data
@@ -190,7 +190,7 @@ Files/modules: 3. econhdfe/models/__init__.py, econhdfe/models/linear.py, econhd
 
 Controls for large sets of fixed effects and heterogeneous FE structures without estimating/reporting every nuisance coefficient explicitly.
 
-Files/modules: 26. econhdfe/effects/__init__.py, econhdfe/effects/adapters.py, econhdfe/effects/diagnostics.py, econhdfe/effects/prediction.py, econhdfe/effects/recover.py, … (+21)
+Files/modules: 27. econhdfe/effects/__init__.py, econhdfe/effects/adapters.py, econhdfe/effects/diagnostics.py, econhdfe/effects/prediction.py, econhdfe/effects/recover.py, … (+22)
 
 ### Generic IV primitives
 
@@ -237,9 +237,9 @@ Files/modules: 17. econhdfe/compute/__init__.py, econhdfe/compute/backend.py, ec
 | Frontend validation | HDFE infrastructure | 1 | `econhdfe.frontend.columns → econhdfe.hdfe.specs` |
 | Frontend validation | Public interface & orchestration | 2 | `econhdfe.frontend.columns → econhdfe.design_specs`<br>`econhdfe.frontend.columns → econhdfe.factorvars` |
 | HDFE infrastructure | Compute/runtime kernels | 7 | `econhdfe.effects.adapters → econhdfe.compute.encoding`<br>`econhdfe.effects.diagnostics → econhdfe.compute.encoding`<br>`econhdfe.hdfe.absorber → econhdfe.compute.backend`<br>`econhdfe.hdfe.block_projection → econhdfe.compute.block_design`<br>`econhdfe.hdfe.block_projection → econhdfe.compute.design_plan` |
-| HDFE infrastructure | Shared contracts | 6 | `econhdfe.effects.diagnostics → econhdfe.errors`<br>`econhdfe.effects.prediction → econhdfe.prediction`<br>`econhdfe.hdfe.absorber → econhdfe.errors`<br>`econhdfe.hdfe.factorvars → econhdfe.errors`<br>`econhdfe.hdfe.weighted_projection → econhdfe.errors` |
+| HDFE infrastructure | Shared contracts | 7 | `econhdfe.effects.diagnostics → econhdfe.errors`<br>`econhdfe.effects.prediction → econhdfe.prediction`<br>`econhdfe.hdfe.absorber → econhdfe.errors`<br>`econhdfe.hdfe.adaptive_weighted → econhdfe.errors`<br>`econhdfe.hdfe.factorvars → econhdfe.errors` |
 | HDFE infrastructure | Public interface & orchestration | 2 | `econhdfe.hdfe.absorb_spec → econhdfe.factorvars`<br>`econhdfe.hdfe.factorvars → econhdfe.factorvars` |
-| HDFE infrastructure | Execution planner | 5 | `econhdfe.hdfe.block_projection → econhdfe.planner`<br>`econhdfe.hdfe.projection → econhdfe.planner`<br>`econhdfe.hdfe.projection → econhdfe.planner.calibration`<br>`econhdfe.hdfe.projection → econhdfe.planner.scheduler`<br>`econhdfe.hdfe.weighted_projection → econhdfe.planner` |
+| HDFE infrastructure | Execution planner | 6 | `econhdfe.hdfe.adaptive_weighted → econhdfe.planner`<br>`econhdfe.hdfe.block_projection → econhdfe.planner`<br>`econhdfe.hdfe.projection → econhdfe.planner`<br>`econhdfe.hdfe.projection → econhdfe.planner.calibration`<br>`econhdfe.hdfe.projection → econhdfe.planner.scheduler` |
 | Public interface & orchestration | Compute/runtime kernels | 16 | `econhdfe.collinearity → econhdfe.compute.block_design`<br>`econhdfe.design → econhdfe.compute.execution`<br>`econhdfe.design → econhdfe.compute.block_design`<br>`econhdfe.design → econhdfe.compute.design_plan`<br>`econhdfe.pipeline → econhdfe.compute.encoding` |
 | Public interface & orchestration | Shared contracts | 11 | `econhdfe.api → econhdfe.config`<br>`econhdfe.api → econhdfe.reporting`<br>`econhdfe.design → econhdfe.prediction`<br>`econhdfe.design → econhdfe.errors`<br>`econhdfe.factorvars → econhdfe.errors` |
 | Public interface & orchestration | Econometric data layer | 3 | `econhdfe.sessions → econhdfe.data.dataset`<br>`econhdfe.sessions → econhdfe.data.persistent`<br>`econhdfe.sessions → econhdfe.data.source` |
@@ -468,11 +468,11 @@ flowchart LR
 
 | Area | Files | Python | Markdown |
 | --- | ---: | ---: | ---: |
-| `econhdfe/` | 133 | 131 | 2 |
-| `tests/` | 88 | 88 | 0 |
+| `econhdfe/` | 134 | 132 | 2 |
+| `tests/` | 89 | 89 | 0 |
 | `validation/` | 30 | 8 | 5 |
-| `benchmarks/` | 128 | 33 | 9 |
-| `docs/` | 114 | 1 | 80 |
+| `benchmarks/` | 129 | 33 | 9 |
+| `docs/` | 115 | 1 | 81 |
 | `scripts/` | 22 | 19 | 0 |
 | `skills/` | 17 | 4 | 12 |
 | `compatibility/` | 35 | 0 | 0 |

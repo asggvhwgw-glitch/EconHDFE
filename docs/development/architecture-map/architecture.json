@@ -280,6 +280,7 @@
         "econhdfe/hdfe/__init__.py",
         "econhdfe/hdfe/absorb_spec.py",
         "econhdfe/hdfe/absorber.py",
+        "econhdfe/hdfe/adaptive_weighted.py",
         "econhdfe/hdfe/block_projection.py",
         "econhdfe/hdfe/codes.py",
         "econhdfe/hdfe/dof.py",
@@ -297,7 +298,7 @@
         "econhdfe/hdfe/within_backend.py",
         "econhdfe/hdfe/workspace.py"
       ],
-      "module_count": 26
+      "module_count": 27
     },
     {
       "id": "iv",
@@ -563,13 +564,13 @@
     {
       "source": "hdfe",
       "target": "contracts",
-      "count": 6,
+      "count": 7,
       "examples": [
         "econhdfe.effects.diagnostics → econhdfe.errors",
         "econhdfe.effects.prediction → econhdfe.prediction",
         "econhdfe.hdfe.absorber → econhdfe.errors",
-        "econhdfe.hdfe.factorvars → econhdfe.errors",
-        "econhdfe.hdfe.weighted_projection → econhdfe.errors"
+        "econhdfe.hdfe.adaptive_weighted → econhdfe.errors",
+        "econhdfe.hdfe.factorvars → econhdfe.errors"
       ]
     },
     {
@@ -584,13 +585,13 @@
     {
       "source": "hdfe",
       "target": "planner",
-      "count": 5,
+      "count": 6,
       "examples": [
+        "econhdfe.hdfe.adaptive_weighted → econhdfe.planner",
         "econhdfe.hdfe.block_projection → econhdfe.planner",
         "econhdfe.hdfe.projection → econhdfe.planner",
         "econhdfe.hdfe.projection → econhdfe.planner.calibration",
-        "econhdfe.hdfe.projection → econhdfe.planner.scheduler",
-        "econhdfe.hdfe.weighted_projection → econhdfe.planner"
+        "econhdfe.hdfe.projection → econhdfe.planner.scheduler"
       ]
     },
     {
@@ -2381,6 +2382,46 @@
       "reexport_surface": false
     },
     {
+      "source_module": "econhdfe.hdfe.adaptive_weighted",
+      "source_path": "econhdfe/hdfe/adaptive_weighted.py",
+      "source_group": "hdfe",
+      "target_module": "econhdfe.hdfe.weighted_projection",
+      "target_group": "hdfe",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.hdfe.adaptive_weighted",
+      "source_path": "econhdfe/hdfe/adaptive_weighted.py",
+      "source_group": "hdfe",
+      "target_module": "econhdfe.hdfe.workspace",
+      "target_group": "hdfe",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.hdfe.adaptive_weighted",
+      "source_path": "econhdfe/hdfe/adaptive_weighted.py",
+      "source_group": "hdfe",
+      "target_module": "econhdfe.errors",
+      "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.hdfe.adaptive_weighted",
+      "source_path": "econhdfe/hdfe/adaptive_weighted.py",
+      "source_group": "hdfe",
+      "target_module": "econhdfe.planner",
+      "target_group": "planner",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.hdfe.adaptive_weighted",
+      "source_path": "econhdfe/hdfe/adaptive_weighted.py",
+      "source_group": "hdfe",
+      "target_module": "econhdfe.hdfe.within_backend",
+      "target_group": "hdfe",
+      "reexport_surface": false
+    },
+    {
       "source_module": "econhdfe.hdfe.block_projection",
       "source_path": "econhdfe/hdfe/block_projection.py",
       "source_group": "hdfe",
@@ -2642,6 +2683,14 @@
       "source_group": "hdfe",
       "target_module": "econhdfe.errors",
       "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.hdfe.weighted_projection",
+      "source_path": "econhdfe/hdfe/weighted_projection.py",
+      "source_group": "hdfe",
+      "target_module": "econhdfe.hdfe.adaptive_weighted",
+      "target_group": "hdfe",
       "reexport_surface": false
     },
     {
@@ -6300,14 +6349,14 @@
   "repo_areas": [
     {
       "name": "econhdfe",
-      "files": 133,
-      "python_files": 131,
+      "files": 134,
+      "python_files": 132,
       "markdown_files": 2
     },
     {
       "name": "tests",
-      "files": 88,
-      "python_files": 88,
+      "files": 89,
+      "python_files": 89,
       "markdown_files": 0
     },
     {
@@ -6318,15 +6367,15 @@
     },
     {
       "name": "benchmarks",
-      "files": 128,
+      "files": 129,
       "python_files": 33,
       "markdown_files": 9
     },
     {
       "name": "docs",
-      "files": 114,
+      "files": 115,
       "python_files": 1,
-      "markdown_files": 80
+      "markdown_files": 81
     },
     {
       "name": "scripts",

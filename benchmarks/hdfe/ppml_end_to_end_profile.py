@@ -173,6 +173,7 @@ def main():
     ap.add_argument('--rows', type=int, default=1000000)
     ap.add_argument('--case', choices=('crossed','repeated','weak','schur'), required=True)
     ap.add_argument('--model', choices=('ppml','ivppml'), required=True)
+    ap.add_argument('--candidate', choices=('within', 'adaptive'), default='within')
     ap.add_argument('--repeat', type=int, default=3)
     ap.add_argument('--seed', type=int, default=20261027)
     ap.add_argument('--budget-mb', type=int, default=2048)
@@ -181,7 +182,7 @@ def main():
     if a.rows < 2000 or a.repeat < 1 or a.budget_mb < 1:
         ap.error("rows >= 2000, repeat >= 1 and budget-mb >= 1 are required")
     import scipy, numba, _econhdfe_within as native
-    record = dict(rows=a.rows, case=a.case, model=a.model, seed=a.seed,
+    record = dict(rows=a.rows, case=a.case, model=a.model, seed=a.seed, candidate=a.candidate,
                   repeat=a.repeat, threads=1, budget_mb=a.budget_mb,
                   platform=platform.platform(), python=platform.python_version(),
                   numpy=np.__version__, scipy=scipy.__version__, numba=numba.__version__,
@@ -201,7 +202,7 @@ def main():
             # Exclude JIT/runtime initialization by warming both engines and model.
             small = fixture(4000, 'crossed', a.seed+1)
             small['groups'] = [np.arange(4000, dtype=np.int32)%L for L in (40,25,7)]
-            for engine in ('optimized','within'):
+            for engine in ('optimized', a.candidate):
                 fit(small, a.model, engine, a.budget_mb)
             d = fixture(a.rows, a.case, a.seed)
             record['input_hashes'] = {k: digest(v) for k,v in d.items() if k != 'groups'}
@@ -209,7 +210,7 @@ def main():
             record['fe_levels'] = [int(g.max())+1 for g in d['groups']]
             for rep in range(a.repeat):
                 outputs = {}
-                for engine in (('optimized','within') if rep%2==0 else ('within','optimized')):
+                for engine in (('optimized', a.candidate) if rep%2==0 else (a.candidate, 'optimized')):
                     with profile() as prof:
                         start = time.perf_counter()
                         r = fit(d, a.model, engine, a.budget_mb)
@@ -223,6 +224,7 @@ def main():
                              initial_prepare_seconds=build, weight_update_seconds=total_prepare-build,
                              solve_seconds=solve, other_seconds=elapsed-total_prepare-solve,
                              iterations=r.iterations, nobs=int(r.sample_mask.sum()),
+                             projection_resources=r.diagnostics.get('projection_resources'),
                              params=r.params.tolist(), stderr=r.stderr.tolist(),
                              deviance=float(r.deviance), loglike=float(r.loglike),
                              scores=scores(d,r,a.model), calls=prof,
@@ -233,7 +235,7 @@ def main():
                     outputs[engine] = r
                     print(json.dumps({k:v for k,v in t.items() if k!='calls'}), flush=True)
                     save()
-                b, r = outputs['optimized'], outputs['within']
+                b, r = outputs['optimized'], outputs[a.candidate]
                 assert np.array_equal(b.sample_mask, r.sample_mask)
                 assert np.array_equal(b.separation_mask, r.separation_mask)
                 assert b.names == r.names and b.df_absorbed == r.df_absorbed
