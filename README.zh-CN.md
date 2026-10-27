@@ -1,5 +1,17 @@
 # econhdfe
 
+## 加权样本双模式（0.10.0 候选）
+
+默认保留 `singleton_mode="stata_compat"`。线性估计器及 session 使用
+`HDFEConfig(singleton_mode="unified")`，Poisson 两类估计器使用相应的
+`PPMLConfig` / `IVPPMLConfig`。普通 PPML 新增显式 `weight_type="fw"` / `"pw"`。
+统一模式在所有清理阶段按频数定义 singleton，单独报告全零 FE separation；
+IV-PPML 默认只检查全零 FE，不误用普通 PPML 的解释变量分离判据。
+参见[完整规范](docs/technical/hdfe/singleton-policies.md)和
+[验证边界](validation/singleton_policy/README.md)。本次未加入秩/桥边计算消元，
+也不声称已完成新的持牌 Stata 对照认证；不创建发布或标签。
+
+
 [English](README.md) | [简体中文](README.zh-CN.md)
 
 **面向现代实证研究的高性能高维固定效应计量经济学工具。**

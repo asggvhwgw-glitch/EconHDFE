@@ -1,0 +1,70 @@
+{
+  "passed": true,
+  "scope": "sample-peeling only; single-run timings, no relative speed claim",
+  "python": "3.13.5",
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+  "numpy": "2.3.5",
+  "numba": "0.65.1",
+  "records": [
+    {
+      "case": "chain_unit",
+      "rows": 1000000,
+      "fe_levels": [
+        500000,
+        500001,
+        1000,
+        53
+      ],
+      "expected_kept": 0,
+      "kept": 0,
+      "seconds": 0.42880592599999545,
+      "passed": true
+    },
+    {
+      "case": "chain_frequency_protected",
+      "rows": 1000000,
+      "fe_levels": [
+        500000,
+        500001,
+        1000,
+        53
+      ],
+      "expected_kept": 1000000,
+      "kept": 1000000,
+      "seconds": 0.034576459999925646,
+      "passed": true
+    },
+    {
+      "case": "four_fe_stata_compat",
+      "rows": 1000000,
+      "fe_levels": [
+        190000,
+        40,
+        5000,
+        200
+      ],
+      "expected_kept": 900000,
+      "kept": 900000,
+      "singletons": 100000,
+      "separated": 0,
+      "seconds": 0.2244742140001108,
+      "passed": true
+    },
+    {
+      "case": "four_fe_unified",
+      "rows": 1000000,
+      "fe_levels": [
+        190000,
+        40,
+        5000,
+        200
+      ],
+      "expected_kept": 947500,
+      "kept": 947500,
+      "singletons": 47500,
+      "separated": 5000,
+      "seconds": 0.06113370099978965,
+      "passed": true
+    }
+  ]
+}

@@ -14,7 +14,7 @@ from inspect import signature
 from time import perf_counter
 import numpy as np
 from ..config import ExecutionConfig, HDFEConfig, InferenceConfig, resolve_override
-from ..errors import ConvergenceError
+from ..errors import ConvergenceError, SpecificationError
 from ..hdfe.absorber import HDFEConvergenceError
 from ..data import EstimationSampleState
 from ..frontend.validate import require_numeric
@@ -153,7 +153,18 @@ def config_precedence(function):
                     arguments[config_name] = replace(config, **updates)
             else:
                 arguments.update(resolved)
-        return function(*bound.args, **bound.kwargs)
+        config = arguments.get("hdfe_config")
+        mode = "stata_compat" if config is None else config.singleton_mode
+        if mode == "unified" and arguments.get("group") is not None:
+            raise SpecificationError(
+                "unified singleton policy is not yet supported with group()/individual()",
+                code="specification.unified_group", stage="specification",
+            )
+        result = function(*bound.args, **bound.kwargs)
+        if hasattr(result, "estimator_info"):
+            result.estimator_info = dict(result.estimator_info or {})
+            result.estimator_info["singleton_mode"] = mode
+        return result
 
     return wrapped
 
@@ -187,7 +198,7 @@ def reporting_options(inference_config):
             "diagnostics_mode": inference_config.diagnostics}
 
 
-def prepare_standard_sample(data, y, weights, weight_type, absorb, *, canonicalize_fe, drop_singletons):
+def prepare_standard_sample(data, y, weights, weight_type, absorb, *, canonicalize_fe, drop_singletons, singleton_mode="stata_compat"):
     """Outcome, raw weights and the FE structure of a standard (non-group) fit.
 
     Weights are validated on the input rows before singleton pruning; the
@@ -200,9 +211,12 @@ def prepare_standard_sample(data, y, weights, weight_type, absorb, *, canonicali
     )
     wkind = normalize_weight_type(weight_type, has_weights=w0 is not None)
     _ = prepare_weights(w0, len(y0), wkind)  # validate before singleton pruning
+    if singleton_mode == "unified" and w0 is not None and np.any(w0 <= 0):
+        from ..errors import InvalidWeightError
+        raise InvalidWeightError("unified mode requires strictly positive user weights; filter zero-weight rows explicitly", code="input.invalid_weight.range")
     fe = prepare_standard_fe_structure(
         data, absorb, canonicalize_fe=canonicalize_fe, drop_singletons=drop_singletons,
-        weights=w0, weight_kind=wkind,
+        weights=w0, weight_kind=wkind, singleton_mode=singleton_mode,
     )
     if fe.dropped:
         sample_state.keep(fe.mask, stage="hdfe", reason="singleton_pruning")

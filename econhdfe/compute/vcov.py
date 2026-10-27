@@ -364,9 +364,12 @@ def score_covariance(
 def sandwich_vcov_xe(
     X, e, bread, *, kind="robust", clusters=None, k_total=None, nested_adj=0,
     time=None, panel=None, bandwidth=None, kernel="bartlett", effective_n=None,
-    score_scale=None, chunk_rows=250_000,
+    score_scale=None, chunk_rows=250_000, repair_psd=True,
 ):
     """Sandwich covariance for scores ``X_i * e_i`` without an N x K score copy.
+
+    Set ``repair_psd=False`` when the caller must first transform covariance
+    to reported coefficient units before multiway-cluster eigenvalue clipping.
 
     Robust and clustered paths stream or aggregate directly from ``X`` and the
     scalar score multiplier.  HAC/DK paths retain the generic score-matrix
@@ -400,7 +403,7 @@ def sandwich_vcov_xe(
             bandwidth=bandwidth, kernel=kernel, effective_n=n_eff,
         )
     V = bread @ meat @ bread
-    return _fix_psd(V) if _is_multiway_cluster(kind0, clusters) else V
+    return _fix_psd(V) if repair_psd and _is_multiway_cluster(kind0, clusters) else V
 
 
 
@@ -478,9 +481,12 @@ def _block_cluster_meat_xe(X: BlockDesign, e: np.ndarray, clusters, score_scale=
 
 def sandwich_vcov_block_xe(
     X: BlockDesign, e, bread, *, kind="robust", clusters=None, k_total=None,
-    nested_adj=0, effective_n=None, score_scale=None,
+    nested_adj=0, effective_n=None, score_scale=None, repair_psd=True,
 ):
     """Sandwich covariance for block-local scores ``X_i * e_i``.
+
+    Set ``repair_psd=False`` to defer multiway-cluster clipping until after
+    transforming to reported coefficient units.
 
     The robust path uses block-local weighted Gram matrices.  Clustered paths
     preserve clusters that span multiple structural components by explicitly
@@ -510,7 +516,7 @@ def sandwich_vcov_block_xe(
         # materializing here; callers can use the established dense fallback.
         raise ValueError(f"block score covariance does not support kind: {kind0}")
     V = np.asarray(bread, dtype=np.float64) @ meat @ np.asarray(bread, dtype=np.float64)
-    return _fix_psd(V) if _is_multiway_cluster(kind0, clusters) else V
+    return _fix_psd(V) if repair_psd and _is_multiway_cluster(kind0, clusters) else V
 
 
 def block_cluster_meat_xe(X: BlockDesign, e, clusters, *, score_scale=None):

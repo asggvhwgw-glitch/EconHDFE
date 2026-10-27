@@ -67,3 +67,19 @@ is `benchmarks/resampling/wild_bootstrap_scores.py`.
 ## Deliberate exclusions
 
 The Library CRV3 prototype is not public in v0.4.6. It performs full delete-cluster HDFE refits and requires raw outcome/design state in addition to within-transformed state. Before integration it needs a large-data planner, bounded memory/state semantics, weighted/group-individual coverage and external parity. Multi-way WCB, IV WCB and PPML score/bootstrap inference are also separate future work.
+
+## Poisson multiway covariance and standardization
+
+PPML and IV-PPML form the signed multiway cluster sandwich before any
+positive-semidefinite repair. They then undo solver standardization and clip
+negative eigenvalues in the reported coefficient units. Clipping before a
+nonuniform change of units produces a different covariance, so it must not
+occur inside the standardized dense or block solver. Internal sandwich
+helpers retain their default repair behavior for callers already using the
+reported units; Poisson estimators explicitly defer that repair.
+
+The regression reference uses explicit weighted FE dummy projection and
+independently aggregated cluster scores. It covers a genuinely indefinite
+CGM covariance, frequency-weight expansion, standardization on/off, and
+dense/block PPML and IV-PPML paths. IV-PPML keeps its per-subset G/(G-1)
+correction; PPML keeps its existing N, absorbed-DF and nesting correction.
