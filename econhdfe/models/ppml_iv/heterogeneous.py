@@ -31,7 +31,7 @@ from ...reporting import cluster_counts as _cluster_counts, fe_names_from_metada
 from ..poisson import exp_clip_into, poisson_deviance, prepare_poisson_base, working_state
 from ..ppml.execution import resolve_execution
 from ..ppml.heterogeneous import detect_separation_block
-from ..ppml.separation import initial_sample_mask
+from ..ppml.separation import initial_sample_selection, sample_policy_diagnostics
 from .config import IVPPMLConfig
 from .results import IVPPMLResult
 from .standardize import IVPPMLStandardization
@@ -293,7 +293,8 @@ def fit_block_arrays(
     if any(A.nobs != n for A in (C, E, I)) or w.shape != (n,) or off.shape != (n,):
         raise ShapeError("structured IV-PPML inputs have incompatible observation counts")
 
-    singleton, n_fe_separated = initial_sample_mask(y, plan, config)
+    initial = initial_sample_selection(y, plan, config, weights=w, weight_kind=weight_kind)
+    singleton, n_fe_separated = initial.dropped, initial.n_fe
     active0 = ~singleton
     if not np.any(active0):
         raise InputError(
@@ -317,7 +318,7 @@ def fit_block_arrays(
         y0, X0, p0, w0, config, execution, frequency_weights=(weight_kind == "fweight"),
     )
     if "fe" in sep.by_method:
-        sep.by_method["fe"] = n_fe_separated
+        sep.by_method["fe"] += n_fe_separated
     keep_sep = ~(sep.separated | sep.singletons)
     if not np.any(keep_sep) or not np.any(y0[keep_sep] > 0):
         raise InputError(
@@ -332,12 +333,12 @@ def fit_block_arrays(
             suggestion="Inspect all-zero FE levels and separated support; changing normalization cannot create a finite PPML estimate.",
         )
 
-    separation = np.zeros(n, dtype=bool)
+    separation = initial.separated.copy()
     if not np.all(keep_sep):
         idx0 = np.flatnonzero(active0)
         sample = np.zeros(n, dtype=bool)
         sample[idx0[keep_sep]] = True
-        separation[idx0[~keep_sep]] = True
+        separation[idx0[sep.separated if config.singleton_mode == "unified" else ~keep_sep]] = True
         y1, w1, off1 = y0[keep_sep], w0[keep_sep], off0[keep_sep]
         C1, E1, I1 = C0.subset_rows(keep_sep), E0.subset_rows(keep_sep), I0.subset_rows(keep_sep)
         p1 = p0.subset(keep_sep)
@@ -427,6 +428,7 @@ def fit_block_arrays(
     if num_sep_mu:
         sep_by_method["mu"] = num_sep_mu
 
+    n_singletons = int(np.sum(initial.singletons)) + (int(np.sum(sep.singletons)) if config.singleton_mode == "unified" else 0)
     return IVPPMLResult(
         coef, Vfull, sefull, names, True, state.iterations, state.deviance, ll,
         int(round(effective_n)), int(np.sum(separation)), sample, separation,
@@ -434,6 +436,7 @@ def fit_block_arrays(
         tuple(instrument_names), moments,
         diagnostics={
             "engine": config.engine,
+            "sample_policy": sample_policy_diagnostics(config, sample, w, weight_kind),
             "separation_by_method": sep_by_method,
             "separation_seconds": sep.timings,
             "separation_iterations": sep.iterations,
@@ -443,7 +446,7 @@ def fit_block_arrays(
             "n_rows": int(np.sum(sample)),
             "weight_type": weight_kind,
             "sum_weights": float(np.sum(w1)),
-            "n_singletons": int(np.sum(singleton)),
+            "n_singletons": n_singletons,
             "absorb_iterations": state.absorb_iterations,
             "epsilon": state.epsilon,
             "standardized": config.standardize,
@@ -457,7 +460,7 @@ def fit_block_arrays(
         df_resid=(min([max(len(np.unique(c)) - 1, 0) for c in cls]) if cls else max(effective_n - len(coef) - int(dof.df_absorbed), 0.0)),
         vce=normalize_ivppml_vce(vce), cluster_counts=_cluster_counts(cls),
         fe_names=fe_names_from_metadata(p1.metadata), weight_type=weight_kind,
-        sum_weights=float(np.sum(w1)), n_singletons=int(np.sum(singleton)),
+        sum_weights=float(np.sum(w1)), n_singletons=n_singletons,
     )
 
 

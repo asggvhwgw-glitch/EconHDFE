@@ -1,25 +1,55 @@
 {
   "approved": [
     {
-      "id": "b18a4c775ea9cb97",
+      "id": "062921f9607cca96",
       "kind": "changed",
-      "path": "signatures.ExecutionConfig",
-      "reason": "Optional memory_policy keyword exposes the monitored relaxed strategy without altering numerical tolerances or estimator specification."
+      "path": "signatures.PPMLConfig",
+      "reason": "Add opt-in unified singleton policy and retain compatibility by default. IVPPML separation None resolves at construction to compatibility fe/simplex/relu or unified fe only; no licensed Stata parity is claimed."
     },
     {
-      "id": "e04401650a13e005",
+      "id": "4f6d2a79da693bf8",
       "kind": "changed",
-      "path": "config_schemas.ExecutionConfig",
-      "reason": "User-requested opt-in relaxed memory policy; conservative default and live safeguards retained; documented in docs/development/execution-planner.md."
+      "path": "exported_dataclass_schemas.HDFEConfig",
+      "reason": "Add opt-in unified singleton policy and retain compatibility by default. IVPPML separation None resolves at construction to compatibility fe/simplex/relu or unified fe only; no licensed Stata parity is claimed."
     },
     {
-      "id": "f564745b4a9d3820",
+      "id": "662c60d7c7f7b544",
       "kind": "changed",
-      "path": "exported_dataclass_schemas.ExecutionConfig",
-      "reason": "Additive trailing ExecutionConfig field; existing calls and default policy unchanged."
+      "path": "signatures.HDFEConfig",
+      "reason": "Add opt-in unified singleton policy and retain compatibility by default. IVPPML separation None resolves at construction to compatibility fe/simplex/relu or unified fe only; no licensed Stata parity is claimed."
+    },
+    {
+      "id": "7b0b1ce32eaaeacd",
+      "kind": "changed",
+      "path": "signatures.IVPPMLConfig",
+      "reason": "Add opt-in unified singleton policy and retain compatibility by default. IVPPML separation None resolves at construction to compatibility fe/simplex/relu or unified fe only; no licensed Stata parity is claimed."
+    },
+    {
+      "id": "bfc9e753c69650f4",
+      "kind": "changed",
+      "path": "config_schemas.HDFEConfig",
+      "reason": "Add opt-in unified singleton policy and retain compatibility by default. IVPPML separation None resolves at construction to compatibility fe/simplex/relu or unified fe only; no licensed Stata parity is claimed."
+    },
+    {
+      "id": "dfba9bbedfe1f33f",
+      "kind": "changed",
+      "path": "signatures.ppmlhdfe",
+      "reason": "Add explicit fw/pw and frequency robust-N/meat semantics to plain PPML; omitted type retains legacy generic weighting."
+    },
+    {
+      "id": "f33ffa2cf9469413",
+      "kind": "changed",
+      "path": "exported_dataclass_schemas.IVPPMLConfig",
+      "reason": "Add opt-in unified singleton policy and retain compatibility by default. IVPPML separation None resolves at construction to compatibility fe/simplex/relu or unified fe only; no licensed Stata parity is claimed."
+    },
+    {
+      "id": "f6918a927102558b",
+      "kind": "changed",
+      "path": "exported_dataclass_schemas.PPMLConfig",
+      "reason": "Add opt-in unified singleton policy and retain compatibility by default. IVPPML separation None resolves at construction to compatibility fe/simplex/relu or unified fe only; no licensed Stata parity is claimed."
     }
   ],
-  "baseline_version": "0.9.0",
-  "release_version": "0.9.1",
+  "baseline_version": "0.9.1",
+  "release_version": "0.10.0",
   "schema_version": 1
 }

@@ -78,3 +78,13 @@ def poisson_deviance(y, mu, weights, eta=None):
     if dev / max(len(y), 1) < np.finfo(float).eps:
         dev = 0.0
     return max(dev, 0.0)
+
+
+def prepare_ppml_weights(weights, n, weight_type=None):
+    """Validate positive PPML weights without renormalizing their likelihood."""
+    from ..compute.weights import prepare_weights
+    info = prepare_weights(weights, n, weight_type, normalize_ap=False)
+    if info.kind == "aweight":
+        raise SpecificationError("PPML supports fweight/pweight, not aweight", code="specification.weight_type")
+    w = np.ones(n, dtype=np.float64) if info.estimation is None else info.estimation
+    return w, info.kind

@@ -187,7 +187,7 @@ class StandardFEStructure:
 
 def prepare_standard_fe_structure(
     data, absorb, *, canonicalize_fe, drop_singletons, weights, weight_kind,
-    canonical_sample_size=32_768, component_cache=None,
+    canonical_sample_size=32_768, component_cache=None, singleton_mode="stata_compat",
 ):
     """Encode, canonicalize and singleton-prune a standard HDFE structure.
 
@@ -215,9 +215,16 @@ def prepare_standard_fe_structure(
     mask = np.ones(n, dtype=bool)
     dropped = 0
     if drop_singletons:
+        eligible = None
+        if singleton_mode == "unified":
+            # A slope-only singleton with all slopes zero cannot fit its row.
+            eligible = [np.ones(n, dtype=bool) if intercept else
+                        (np.zeros(n, dtype=bool) if slope is None else
+                         np.any(np.asarray(slope).reshape(n, -1) != 0, axis=1))
+                        for slope, intercept in zip(pre_slopes, pre_intercepts)]
         mask, dropped = iterative_singleton_mask(
             pre_groups, weights if weight_kind == "fweight" else None,
-            frequency_weights=(weight_kind == "fweight"),
+            frequency_weights=(weight_kind == "fweight"), singleton_eligible=eligible,
         )
 
     requested_groups, requested_slopes = _dense_active(all_groups, all_slopes, mask)

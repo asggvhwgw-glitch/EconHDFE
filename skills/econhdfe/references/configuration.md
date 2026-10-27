@@ -196,3 +196,22 @@ Use `projection_resources["requested_threads"]` and `projection_resources["actua
 Public estimator and Session calls now use one shared resource scope. `ExecutionConfig(threads="auto", memory_budget_mb="auto")` uses effective CPU capacity and available host/container memory after a 12% total-memory reserve. An explicit memory or thread value caps that scope. Nested stages inherit it; resampling workers divide it. Independent root calls in the same process queue to avoid overlapping full-host budgets and BLAS-setting races.
 
 Automatic inner HDFE kernels now retain that policy through the managed scope: small problems use one thread, while large problems select the smallest measured thread count within 5% of the best synthetic bandwidth timing. The root CPU capacity stays available to independent outer tasks. Calibration runs before workspace reservations and fits available memory; reserved/parallel cold paths temporarily use one thread until a safe calibration boundary. Explicit integer threads bypass calibration. The shared scope is cooperative planning, not an OS RSS or GPU-memory limit; unknown-size file reads and third-party temporaries cannot all be bounded in advance. Inspect `resource_schedule` in linear `absorb_info` or nonlinear `diagnostics` for the admitted envelope.
+
+## Singleton policy and typed Poisson weights
+
+The default `singleton_mode="stata_compat"` is a source-audited sample profile,
+not a blanket promise of Stata parity. For frequency-expansion-invariant rules,
+construct `HDFEConfig(singleton_mode="unified")` for linear fits/sessions or
+`PPMLConfig(singleton_mode="unified")` / `IVPPMLConfig(singleton_mode="unified")`.
+Use explicit `weight_type="fw"` or `"pw"` for Poisson weights; do not infer weight
+type from values. All typed weights must be strictly positive; zero weights
+require explicit prefiltering. Plain Poisson does not support `aw`.
+
+Unified Poisson keeps ordinary singleton and all-zero FE counts separate;
+`drop_singletons=False` does not disable `fe` separation. Unified IV-PPML defaults
+to `separation=("fe",)` and rejects PPML simplex/ReLU/mu choices; they are not
+IV existence certificates. Construct a fresh config when changing modes.
+Grouped/individual FE unified mode is explicitly unsupported. This version
+retains all statistical rows in the work sample; no extra computational
+elimination should be inferred from the policy name. Compare sample, N, DF and
+VCE, not only coefficients, when checking modes or frequency expansion.

@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.10.0 — weighted sample-policy development candidate
+
+- Add explicit `stata_compat` (default) and frequency-invariant `unified`
+  singleton policies to linear and Poisson configs; propagate through sessions,
+  array/DataFrame calls and structured-design paths.
+- Independently implemented O(N*q+levels) queue peeler, separate zero-level
+  reasons, slope-only zero-row safeguard, and policy-aware session cache keys.
+- Add typed fw/pw to plain PPML with frequency N and robust-meat semantics.
+- Unified IV-PPML uses FE-zero checks only; reject unsupported PPML separation
+  and threshold-only mu deletion rather than silently changing IV moments.
+- Preserve statistical rows, DF and reporting; extra computational rank/bridge
+  elimination is not implemented. Positive-weight input remains required.
+- New immutable API snapshot; no historical baseline rewrite or publication.
+  See validation/singleton_policy for actual execution and external limitations.
+
+
 ## 0.9.1 — unreleased candidate
 
 - Add an optional, explicitly selected `method="within"` Rust backend for CPU categorical-intercept OLS/IV and sessions, with weighted reductions and bounded Schur/compression routes over pinned upstream within. Preserve default routing and weak-design conditioning. Local 0.9.0 integration tests and existing-sample comparisons show workload-dependent gains; see the native validation report for limitations.

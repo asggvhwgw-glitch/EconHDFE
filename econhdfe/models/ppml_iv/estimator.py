@@ -11,7 +11,7 @@ from ...compute.linalg import independent_columns
 from ...hdfe.plan import FEPlan
 from ...iv.moments import additive_moments
 from ...iv.solve import weighted_2sls
-from ..ppml.separation import detect_separation, initial_sample_mask
+from ..ppml.separation import detect_separation, initial_sample_selection, sample_policy_diagnostics
 from ..ppml.execution import resolve_execution, get_projector
 from .config import IVPPMLConfig
 from .irls import fit_iv_irls
@@ -93,10 +93,10 @@ def fit_arrays(
     # ivppmlhdfe first stage: fixed_effects(..., "iweight", depvar) when
     # separation includes "fe" -- singletons by row count (user weights never
     # enter) pruned jointly with FE separation; all counted as singletons.
-    singleton, n_fe_separated = initial_sample_mask(y, plan, config)
     if not plan.groups:
         plan = FEPlan.from_arrays([np.zeros(n, dtype=np.int8)])
-        singleton = plan.singleton_mask()
+    initial = initial_sample_selection(y, plan, config, weights=w, weight_kind=weight_kind)
+    singleton, n_fe_separated = initial.dropped, initial.n_fe
     active0 = ~singleton
     if not np.any(active0):
         raise InputError(
@@ -124,7 +124,7 @@ def fit_arrays(
         y0, X0, p0, w0, config, execution, frequency_weights=(weight_kind == "fweight"),
     )
     if "fe" in sep.by_method:
-        sep.by_method["fe"] = n_fe_separated
+        sep.by_method["fe"] += n_fe_separated
     # Upstream re-prunes singletons after simplex/ReLU trims (fweight mass for
     # fweights) and counts them in num_separated (num_sep_advanced).
     keep_sep = ~(sep.separated | sep.singletons)
@@ -141,12 +141,12 @@ def fit_arrays(
             suggestion="Inspect all-zero FE levels and separated support; changing normalization cannot create a finite PPML estimate.",
         )
 
-    separation = np.zeros(n, dtype=bool)
+    separation = initial.separated.copy()
     if not np.all(keep_sep):
         idx0 = np.flatnonzero(active0)
         sample = np.zeros(n, dtype=bool)
         sample[idx0[keep_sep]] = True
-        separation[idx0[~keep_sep]] = True
+        separation[idx0[sep.separated if config.singleton_mode == "unified" else ~keep_sep]] = True
         y1, C1, E1, I1, w1, off1 = y0[keep_sep], C0[keep_sep], E0[keep_sep], I0[keep_sep], w0[keep_sep], off0[keep_sep]
         p1 = p0.subset(keep_sep)
         pre_projector = get_projector(
@@ -260,6 +260,7 @@ def fit_arrays(
     if num_sep_mu:
         sep_by_method["mu"] = num_sep_mu
 
+    n_singletons = int(np.sum(initial.singletons)) + (int(np.sum(sep.singletons)) if config.singleton_mode == "unified" else 0)
     return IVPPMLResult(
         coef, Vfull, sefull, names, True, state.iterations, state.deviance, ll,
         int(round(effective_n)), int(np.sum(separation)), sample, separation,
@@ -267,6 +268,7 @@ def fit_arrays(
         tuple(instrument_names), moments,
         diagnostics={
             "engine": config.engine,
+            "sample_policy": sample_policy_diagnostics(config, sample, w, weight_kind),
             "separation_by_method": sep_by_method,
             "separation_seconds": sep.timings,
             "separation_iterations": sep.iterations,
@@ -281,7 +283,7 @@ def fit_arrays(
             "n_rows": int(np.sum(sample)),
             "weight_type": weight_kind,
             "sum_weights": float(np.sum(w1)),
-            "n_singletons": int(np.sum(singleton)),
+            "n_singletons": n_singletons,
             "absorb_iterations": state.absorb_iterations,
             "epsilon": state.epsilon,
             "standardized": config.standardize,
@@ -298,5 +300,5 @@ def fit_arrays(
         fe_names=fe_names_from_metadata(p1.metadata),
         weight_type=weight_kind,
         sum_weights=float(np.sum(w1)),
-        n_singletons=int(np.sum(singleton)),
+        n_singletons=n_singletons,
     )

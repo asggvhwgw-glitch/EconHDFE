@@ -27,7 +27,7 @@ from ...hdfe.plan import FEPlan
 from ..poisson import exp_clip_into, working_state, poisson_deviance
 from .config import PPMLConfig
 from .irls import IRLSState, _predict_eps
-from .separation import SeparationResult, detect_separation, initial_sample_mask
+from .separation import SeparationResult, detect_separation, initial_sample_selection, sample_policy_diagnostics
 from .standardize import Standardization
 from .results import PPMLResult
 from .execution import resolve_execution
@@ -368,7 +368,7 @@ def final_wls_block(
 
 def ppml_vcov_block(
     X_tilde: BlockDesign, y, mu, true_w, *, kind="robust", clusters=None,
-    df_absorbed=0, nested_adj=0,
+    df_absorbed=0, nested_adj=0, weight_kind="none",
 ):
     """PPML model/robust/cluster VCE on an exact BlockDesign."""
     y = np.asarray(y, dtype=np.float64)
@@ -379,11 +379,15 @@ def ppml_vcov_block(
     if kind0 in MODEL_VCE_KINDS:
         return bread
     score_scalar = tw * (y - mu)
+    from ...compute.vcov import ROBUST_VCE_KINDS
+    score_scale = 1.0 / np.sqrt(tw) if weight_kind == "fweight" and kind0 in ROBUST_VCE_KINDS else None
+    effective_n = float(np.sum(tw)) if weight_kind == "fweight" else float(len(y))
     if kind0 == "cluster":
         clusters = normalize_vce_clusters(clusters, nobs=len(y))
     return sandwich_vcov_block_xe(
         X_tilde, score_scalar, bread, kind=kind0, clusters=clusters,
         k_total=X_tilde.ncols + int(df_absorbed), nested_adj=int(bool(nested_adj)),
+        effective_n=effective_n, score_scale=score_scale,
     )
 
 
@@ -406,6 +410,7 @@ def fit_block_arrays(
     *,
     offset,
     true_w,
+    weight_kind="none",
     vce,
     clusters,
     names,
@@ -434,7 +439,8 @@ def fit_block_arrays(
     n = len(y)
     execution, _ = resolve_execution(execution_config, None)
 
-    singleton, n_fe_separated = initial_sample_mask(y, plan, config)
+    initial = initial_sample_selection(y, plan, config, weights=true_w, weight_kind=weight_kind)
+    singleton, n_fe_separated = initial.dropped, initial.n_fe
     has_singletons = bool(np.any(singleton))
     if has_singletons:
         active0 = ~singleton
@@ -460,9 +466,9 @@ def fit_block_arrays(
     )
     standardizer = standardizer.select_columns(keep)
 
-    sep0 = detect_separation_block(y0s, B0s, p0, w0, config, execution)
+    sep0 = detect_separation_block(y0s, B0s, p0, w0, config, execution, frequency_weights=(weight_kind == "fweight"))
     if "fe" in sep0.by_method:
-        sep0.by_method["fe"] = n_fe_separated
+        sep0.by_method["fe"] += n_fe_separated
     survivor0 = ~(sep0.separated | sep0.singletons)
     any_sep = not bool(np.all(survivor0))
     if not np.any(survivor0) or not np.any(y0s[survivor0] > 0):
@@ -478,7 +484,7 @@ def fit_block_arrays(
             suggestion="Inspect all-zero FE levels and separated support; changing normalization cannot create a finite PPML estimate.",
         )
 
-    separation = np.zeros(n, dtype=bool)
+    separation = initial.separated.copy()
     if not any_sep:
         sample = active0.copy() if has_singletons else np.ones(n, dtype=bool)
         ystd, Bstd = y0s, B0s
@@ -529,7 +535,9 @@ def fit_block_arrays(
         separation[current[mu_sep]] = True
         keep_mu = ~mu_sep
         # Upstream trim + HDFE reload also prunes the singletons this creates.
-        keep_mu[np.flatnonzero(keep_mu)[ps_requested.subset(keep_mu).singleton_mask()]] = False
+        if config.drop_singletons:
+            fw = ws[keep_mu] if weight_kind == "fweight" else None
+            keep_mu[np.flatnonzero(keep_mu)[ps_requested.subset(keep_mu).singleton_mask(frequency_weights=fw)]] = False
         sample[current[~keep_mu]] = False
         ystd, Bstd = ystd[keep_mu], Bstd.subset_rows(keep_mu)
         ys_orig, ws, offs = ys_orig[keep_mu], ws[keep_mu], offs[keep_mu]
@@ -569,7 +577,7 @@ def fit_block_arrays(
     df_a = int(dof.df_absorbed)
     Vstd = ppml_vcov_block(
         Xt, ystd, state.mu, ws, kind=vce, clusters=cls_s,
-        df_absorbed=df_a, nested_adj=int(dof.nested > 0),
+        df_absorbed=df_a, nested_adj=int(dof.nested > 0), weight_kind=weight_kind,
     )
     V = standardizer.unscale_vcov(Vstd)
     if normalize_vce(vce, "model") in MODEL_VCE_KINDS:
@@ -598,16 +606,18 @@ def fit_block_arrays(
         full_mu[sample] = mu_orig
         full_eta[sample] = eta_orig
 
+    effective_n = float(np.sum(ws)) if weight_kind == "fweight" else float(np.sum(sample))
     return PPMLResult(
         params=beta, vcov=V, stderr=se, names=tuple(names), converged=True,
         iterations=state.iterations, deviance=deviance, loglike=ll,
-        nobs=int(np.sum(sample)), n_separated=int(np.sum(separation)),
+        nobs=int(round(effective_n)), n_separated=int(np.sum(separation)),
         sample_mask=sample, separation_mask=separation, mu=full_mu, eta=full_eta,
         df_absorbed=df_a, loglike_null=ll0, pseudo_r2=pseudo_r2,
-        chi2=wald_chi2, chi2_pvalue=wald_p, df_model=df_m, nobs_full=int(n),
+        chi2=wald_chi2, chi2_pvalue=wald_p, df_model=df_m, nobs_full=int(round(np.sum(true_w))) if weight_kind == "fweight" else int(n),
         vcov_rank=(int(np.linalg.matrix_rank(V)) if V.size else 0),
         diagnostics={
             "engine": config.engine,
+            "sample_policy": sample_policy_diagnostics(config, sample, true_w, weight_kind),
             "separation_by_method": sep0.by_method,
             "separation_seconds": sep0.timings,
             "separation_iterations": sep0.iterations,
@@ -627,11 +637,11 @@ def fit_block_arrays(
             "warm_started": initial_eta is not None,
             "heterogeneous_spec_path": True,
         },
-        df_resid=(min([max(len(np.unique(c)) - 1, 0) for c in cls_s]) if cls_s else max(float(np.sum(sample)) - len(beta) - df_a, 0.0)),
+        df_resid=(min([max(len(np.unique(c)) - 1, 0) for c in cls_s]) if cls_s else max(effective_n - len(beta) - df_a, 0.0)),
         vce="model" if vce is None else str(vce),
         cluster_counts=_cluster_counts(cls_s),
         fe_names=fe_names_from_metadata(ps_requested.metadata),
-        weight_type="none" if np.allclose(ws, 1.0) else "weight",
+        weight_type=weight_kind if weight_kind in {"fweight", "pweight"} else ("none" if np.allclose(ws, 1.0) else "weight"),
         sum_weights=float(np.sum(ws)),
         n_singletons=int(n - np.sum(sample) - np.sum(separation)),
     )
@@ -646,6 +656,7 @@ def fit_structured_dataframe(
     offset=None,
     exposure=None,
     weights=None,
+    weight_type=None,
     vce="robust",
     clusters=None,
     config: PPMLConfig | None = None,
@@ -663,7 +674,7 @@ def fit_structured_dataframe(
     exact or not worthwhile.
     """
     from ...design import _compile_execution_design
-    from ..poisson import prepare_poisson_base
+    from ..poisson import prepare_poisson_base, prepare_ppml_weights
 
     cfg = PPMLConfig() if config is None else config
     cfg.validate()
@@ -685,6 +696,7 @@ def fit_structured_dataframe(
         exposure=col_or_value(exposure),
         weights=col_or_value(weights),
     )
+    w, weight_kind = prepare_ppml_weights(col_or_value(weights), len(yv), weight_type)
     if plan.groups and plan.nobs != len(yv):
         raise ShapeError("FE plan and outcome have different observation counts")
 
@@ -708,7 +720,7 @@ def fit_structured_dataframe(
     )
     if use_block and not shared_separation:
         result = fit_block_arrays(
-            yv, design.values, plan, offset=off, true_w=w, vce=vce,
+            yv, design.values, plan, offset=off, true_w=w, weight_kind=weight_kind, vce=vce,
             clusters=cls, names=design.names, config=cfg,
             execution_config=execution_config, warm_start=warm_start,
         )
@@ -716,7 +728,7 @@ def fit_structured_dataframe(
         from .estimator import fit_arrays
         values = design.values.materialize() if use_block else design.values
         result = fit_arrays(
-            yv, values, plan, offset=off, true_w=w, vce=vce,
+            yv, values, plan, offset=off, true_w=w, weight_kind=weight_kind, vce=vce,
             clusters=cls, names=design.names, config=cfg,
             execution_config=execution_config, warm_start=warm_start,
         )

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "econhdfe",
-  "version": "0.9.1",
+  "version": "0.10.0",
   "evidence": {
     "topology": "Python AST import analysis; package __init__ re-export imports excluded from aggregated dependency counts.",
     "execution_flows": "Explicit semantic overlays reviewed against estimator orchestration modules; not presented as import edges."
@@ -289,6 +289,7 @@
         "econhdfe/hdfe/plan.py",
         "econhdfe/hdfe/projection.py",
         "econhdfe/hdfe/rank.py",
+        "econhdfe/hdfe/sample.py",
         "econhdfe/hdfe/specs.py",
         "econhdfe/hdfe/structure.py",
         "econhdfe/hdfe/two_way.py",
@@ -296,7 +297,7 @@
         "econhdfe/hdfe/within_backend.py",
         "econhdfe/hdfe/workspace.py"
       ],
-      "module_count": 25
+      "module_count": 26
     },
     {
       "id": "iv",
@@ -607,7 +608,7 @@
     {
       "source": "interface",
       "target": "contracts",
-      "count": 10,
+      "count": 11,
       "examples": [
         "econhdfe.api → econhdfe.config",
         "econhdfe.api → econhdfe.reporting",
@@ -811,15 +812,16 @@
     {
       "source": "model_shared",
       "target": "compute",
-      "count": 1,
+      "count": 2,
       "examples": [
-        "econhdfe.models.linear → econhdfe.compute.weights"
+        "econhdfe.models.linear → econhdfe.compute.weights",
+        "econhdfe.models.poisson → econhdfe.compute.weights"
       ]
     },
     {
       "source": "model_shared",
       "target": "contracts",
-      "count": 9,
+      "count": 10,
       "examples": [
         "econhdfe.models.linear → econhdfe.config",
         "econhdfe.models.linear → econhdfe.errors",
@@ -972,7 +974,7 @@
     {
       "source": "ppml",
       "target": "compute",
-      "count": 22,
+      "count": 24,
       "examples": [
         "econhdfe.models.ppml.api → econhdfe.compute.context",
         "econhdfe.models.ppml.api → econhdfe.compute.wls",
@@ -984,13 +986,13 @@
     {
       "source": "ppml",
       "target": "contracts",
-      "count": 13,
+      "count": 14,
       "examples": [
         "econhdfe.models.ppml.api → econhdfe.errors",
         "econhdfe.models.ppml.api → econhdfe.config",
         "econhdfe.models.ppml.config → econhdfe.errors",
-        "econhdfe.models.ppml.estimator → econhdfe.errors",
-        "econhdfe.models.ppml.estimator → econhdfe.config"
+        "econhdfe.models.ppml.config → econhdfe.config",
+        "econhdfe.models.ppml.estimator → econhdfe.errors"
       ]
     },
     {
@@ -1005,7 +1007,7 @@
     {
       "source": "ppml",
       "target": "hdfe",
-      "count": 12,
+      "count": 14,
       "examples": [
         "econhdfe.models.ppml.api → econhdfe.hdfe.plan",
         "econhdfe.models.ppml.estimator → econhdfe.hdfe.plan",
@@ -2370,6 +2372,14 @@
       "reexport_surface": false
     },
     {
+      "source_module": "econhdfe.hdfe.absorber",
+      "source_path": "econhdfe/hdfe/absorber.py",
+      "source_group": "hdfe",
+      "target_module": "econhdfe.hdfe.sample",
+      "target_group": "hdfe",
+      "reexport_surface": false
+    },
+    {
       "source_module": "econhdfe.hdfe.block_projection",
       "source_path": "econhdfe/hdfe/block_projection.py",
       "source_group": "hdfe",
@@ -2974,6 +2984,14 @@
       "source_path": "econhdfe/models/linear.py",
       "source_group": "model_shared",
       "target_module": "econhdfe.reporting",
+      "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.linear",
+      "source_path": "econhdfe/models/linear.py",
+      "source_group": "model_shared",
+      "target_module": "econhdfe.errors",
       "target_group": "contracts",
       "reexport_surface": false
     },
@@ -3637,6 +3655,14 @@
       "source_module": "econhdfe.models.poisson",
       "source_path": "econhdfe/models/poisson.py",
       "source_group": "model_shared",
+      "target_module": "econhdfe.compute.weights",
+      "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.poisson",
+      "source_path": "econhdfe/models/poisson.py",
+      "source_group": "model_shared",
       "target_module": "econhdfe.errors",
       "target_group": "contracts",
       "reexport_surface": false
@@ -3790,6 +3816,14 @@
       "source_path": "econhdfe/models/ppml/config.py",
       "source_group": "ppml",
       "target_module": "econhdfe.errors",
+      "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ppml.config",
+      "source_path": "econhdfe/models/ppml/config.py",
+      "source_group": "ppml",
+      "target_module": "econhdfe.config",
       "target_group": "contracts",
       "reexport_surface": false
     },
@@ -4117,6 +4151,14 @@
       "source_module": "econhdfe.models.ppml.heterogeneous",
       "source_path": "econhdfe/models/ppml/heterogeneous.py",
       "source_group": "ppml",
+      "target_module": "econhdfe.compute.vcov",
+      "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ppml.heterogeneous",
+      "source_path": "econhdfe/models/ppml/heterogeneous.py",
+      "source_group": "ppml",
       "target_module": "econhdfe.models.ppml.estimator",
       "target_group": "ppml",
       "reexport_surface": false
@@ -4250,6 +4292,22 @@
       "reexport_surface": false
     },
     {
+      "source_module": "econhdfe.models.ppml.separation",
+      "source_path": "econhdfe/models/ppml/separation.py",
+      "source_group": "ppml",
+      "target_module": "econhdfe.hdfe.sample",
+      "target_group": "hdfe",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ppml.separation",
+      "source_path": "econhdfe/models/ppml/separation.py",
+      "source_group": "ppml",
+      "target_module": "econhdfe.hdfe.sample",
+      "target_group": "hdfe",
+      "reexport_surface": false
+    },
+    {
       "source_module": "econhdfe.models.ppml.separation_relu",
       "source_path": "econhdfe/models/ppml/separation_relu.py",
       "source_group": "ppml",
@@ -4342,6 +4400,14 @@
       "source_path": "econhdfe/models/ppml/vce.py",
       "source_group": "ppml",
       "target_module": "econhdfe.compute.stable_linalg",
+      "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ppml.vce",
+      "source_path": "econhdfe/models/ppml/vce.py",
+      "source_group": "ppml",
+      "target_module": "econhdfe.compute.vcov",
       "target_group": "compute",
       "reexport_surface": false
     },
@@ -5626,6 +5692,14 @@
       "reexport_surface": false
     },
     {
+      "source_module": "econhdfe.sessions",
+      "source_path": "econhdfe/sessions.py",
+      "source_group": "interface",
+      "target_module": "econhdfe.errors",
+      "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
       "source_module": "econhdfe.support_reports",
       "source_path": "econhdfe/support_reports.py",
       "source_group": "contracts",
@@ -6209,33 +6283,33 @@
   "repo_areas": [
     {
       "name": "econhdfe",
-      "files": 132,
-      "python_files": 130,
+      "files": 133,
+      "python_files": 131,
       "markdown_files": 2
     },
     {
       "name": "tests",
-      "files": 83,
-      "python_files": 83,
+      "files": 85,
+      "python_files": 85,
       "markdown_files": 0
     },
     {
       "name": "validation",
-      "files": 25,
+      "files": 29,
       "python_files": 8,
-      "markdown_files": 3
+      "markdown_files": 4
     },
     {
       "name": "benchmarks",
-      "files": 119,
-      "python_files": 29,
+      "files": 120,
+      "python_files": 30,
       "markdown_files": 8
     },
     {
       "name": "docs",
-      "files": 112,
+      "files": 113,
       "python_files": 1,
-      "markdown_files": 78
+      "markdown_files": 79
     },
     {
       "name": "scripts",
@@ -6251,7 +6325,7 @@
     },
     {
       "name": "compatibility",
-      "files": 34,
+      "files": 35,
       "python_files": 0,
       "markdown_files": 0
     }
