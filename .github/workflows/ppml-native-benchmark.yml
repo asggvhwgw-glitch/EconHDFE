@@ -1,0 +1,46 @@
+name: Native nonlinear weighted projection benchmark
+on:
+  pull_request:
+    paths:
+      - benchmarks/hdfe/ppml_dynamic_weights.py
+      - .github/workflows/ppml-native-benchmark.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  benchmark:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      NUMBA_NUM_THREADS: '2'
+      RAYON_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@stable
+      - run: python -m pip install -e '.[test]' maturin
+      - run: python -m pip wheel --no-deps ./native/within-accel -w native-wheels
+      - run: python -m pip install native-wheels/*.whl
+      - name: Dynamic weights 100k, 3 FE
+        run: |
+          mkdir -p benchmark-results
+          python benchmarks/hdfe/ppml_dynamic_weights.py --rows 100000 --budget-mb 768 > benchmark-results/dynamic-100k.json
+          cat benchmark-results/dynamic-100k.json
+      - name: Dynamic weights 1m, 3 FE
+        run: |
+          python benchmarks/hdfe/ppml_dynamic_weights.py --rows 1000000 --budget-mb 1536 > benchmark-results/dynamic-1m.json
+          cat benchmark-results/dynamic-1m.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nonlinear-within-bench-${{ runner.os }}-${{ github.run_id }}
+          path: benchmark-results/
