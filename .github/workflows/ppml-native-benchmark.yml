@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - benchmarks/hdfe/ppml_dynamic_weights.py
+      - benchmarks/hdfe/ppml_end_to_end_profile.py
+      - tests/numerics/test_ppml_within_integration.py
       - .github/workflows/ppml-native-benchmark.yml
   workflow_dispatch:
 permissions:
@@ -39,6 +41,13 @@ jobs:
         run: |
           python benchmarks/hdfe/ppml_dynamic_weights.py --rows 1000000 --budget-mb 1536 > benchmark-results/dynamic-1m.json
           cat benchmark-results/dynamic-1m.json
+      - name: Complete estimators, four million-row structures
+        run: |
+          for case in repeated crossed weak schur; do
+            for model in ppml ivppml; do
+              python benchmarks/hdfe/ppml_end_to_end_profile.py --rows 1000000 --budget-mb 2048 --case "$case" --model "$model" --repeat 1 --output "benchmark-results/${case}-${model}.json" > "benchmark-results/${case}-${model}.log" 2>&1 || { cat "benchmark-results/${case}-${model}.log"; exit 1; }
+            done
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
