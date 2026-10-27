@@ -37,6 +37,22 @@ def _wild_memory_estimate(workspace_cost, *, nobs, ncols, groups, batch_size, re
     return int(setup), int(worker)
 
 
+def _wild_score_memory_estimate(workspace_cost, *, nobs, ncols, groups,
+                                batch_size, reps):
+    """Admission for a single design projection and cluster-score draws.
+
+    Preparation projects all k design columns, even when k exceeds a bootstrap
+    batch's width. Workers only hold group multipliers and small coefficient
+    products. Inputs and Python/JIT/BLAS overhead remain outside this estimate.
+    """
+    fixed, per_column = workspace_cost
+    n, k, g = int(nobs), int(ncols), int(groups)
+    b, total = min(int(batch_size), int(reps)), int(reps)
+    setup = fixed + per_column*k + 8 * (3*n*k + 8*k*k + 8*n + 2*g*k)
+    worker = 8 * (3*g*b + 4*k*b + 2*total*k + b)
+    return int(setup), max(1, int(worker))
+
+
 def _check_worker_memory(estimated_worker_bytes, *, setup_bytes=0):
     required = int(estimated_worker_bytes) + int(setup_bytes)
     available = current_allocation().remaining_memory_bytes()

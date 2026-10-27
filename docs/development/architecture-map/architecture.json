@@ -908,11 +908,12 @@
     {
       "source": "ols",
       "target": "hdfe",
-      "count": 4,
+      "count": 5,
       "examples": [
         "econhdfe.models.ols → econhdfe.hdfe.block_projection",
         "econhdfe.models.ols → econhdfe.hdfe.plan",
         "econhdfe.models.ols_bootstrap → econhdfe.hdfe.absorber",
+        "econhdfe.models.ols_bootstrap → econhdfe.hdfe.within_backend",
         "econhdfe.models.ols_bootstrap → econhdfe.hdfe.workspace"
       ]
     },
@@ -3581,6 +3582,14 @@
       "source_module": "econhdfe.models.ols_bootstrap",
       "source_path": "econhdfe/models/ols_bootstrap.py",
       "source_group": "ols",
+      "target_module": "econhdfe.hdfe.within_backend",
+      "target_group": "hdfe",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ols_bootstrap",
+      "source_path": "econhdfe/models/ols_bootstrap.py",
+      "source_group": "ols",
       "target_module": "econhdfe.hdfe.workspace",
       "target_group": "hdfe",
       "reexport_surface": false
@@ -6215,8 +6224,8 @@
     },
     {
       "name": "tests",
-      "files": 83,
-      "python_files": 83,
+      "files": 84,
+      "python_files": 84,
       "markdown_files": 0
     },
     {
@@ -6227,9 +6236,9 @@
     },
     {
       "name": "benchmarks",
-      "files": 119,
-      "python_files": 29,
-      "markdown_files": 8
+      "files": 122,
+      "python_files": 30,
+      "markdown_files": 9
     },
     {
       "name": "docs",

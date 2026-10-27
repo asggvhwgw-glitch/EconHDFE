@@ -75,7 +75,7 @@ flowchart TB
   n_ols -->|"5 imports"| n_contracts
   n_ols -->|"1 imports"| n_data
   n_ols -->|"2 imports"| n_frontend
-  n_ols -->|"4 imports"| n_hdfe
+  n_ols -->|"5 imports"| n_hdfe
   n_ols -->|"3 imports"| n_interface
   n_ols -->|"1 imports"| n_model_shared
   n_ols -->|"2 imports"| n_planner
@@ -272,7 +272,7 @@ Files/modules: 17. econhdfe/compute/__init__.py, econhdfe/compute/backend.py, ec
 | OLS model | Shared contracts | 5 | `econhdfe.models.ols → econhdfe.errors`<br>`econhdfe.models.ols → econhdfe.config`<br>`econhdfe.models.ols → econhdfe.results`<br>`econhdfe.models.ols → econhdfe.prediction`<br>`econhdfe.models.ols_bootstrap → econhdfe.errors` |
 | OLS model | Econometric data layer | 1 | `econhdfe.models.ols → econhdfe.data` |
 | OLS model | Frontend validation | 2 | `econhdfe.models.ols → econhdfe.frontend.validate`<br>`econhdfe.models.ols → econhdfe.frontend.roles` |
-| OLS model | HDFE infrastructure | 4 | `econhdfe.models.ols → econhdfe.hdfe.block_projection`<br>`econhdfe.models.ols → econhdfe.hdfe.plan`<br>`econhdfe.models.ols_bootstrap → econhdfe.hdfe.absorber`<br>`econhdfe.models.ols_bootstrap → econhdfe.hdfe.workspace` |
+| OLS model | HDFE infrastructure | 5 | `econhdfe.models.ols → econhdfe.hdfe.block_projection`<br>`econhdfe.models.ols → econhdfe.hdfe.plan`<br>`econhdfe.models.ols_bootstrap → econhdfe.hdfe.absorber`<br>`econhdfe.models.ols_bootstrap → econhdfe.hdfe.within_backend`<br>`econhdfe.models.ols_bootstrap → econhdfe.hdfe.workspace` |
 | OLS model | Public interface & orchestration | 3 | `econhdfe.models.ols → econhdfe.pipeline`<br>`econhdfe.models.ols → econhdfe.design`<br>`econhdfe.models.ols → econhdfe.collinearity` |
 | OLS model | Shared model primitives | 1 | `econhdfe.models.ols → econhdfe.models.linear` |
 | OLS model | Execution planner | 2 | `econhdfe.models.ols → econhdfe.planner.scheduler`<br>`econhdfe.models.ols_bootstrap → econhdfe.planner.scheduler` |
@@ -469,9 +469,9 @@ flowchart LR
 | Area | Files | Python | Markdown |
 | --- | ---: | ---: | ---: |
 | `econhdfe/` | 132 | 130 | 2 |
-| `tests/` | 83 | 83 | 0 |
+| `tests/` | 84 | 84 | 0 |
 | `validation/` | 25 | 8 | 3 |
-| `benchmarks/` | 119 | 29 | 8 |
+| `benchmarks/` | 122 | 30 | 9 |
 | `docs/` | 112 | 1 | 78 |
 | `scripts/` | 22 | 19 | 0 |
 | `skills/` | 17 | 4 | 12 |

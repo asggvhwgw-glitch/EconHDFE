@@ -116,3 +116,39 @@ def test_memory_limited_workers_preserve_draws(fitted):
     parallel = wild_bootstrap(fitted, n_jobs=8, **kwargs,
                               execution_config=ExecutionConfig(threads=8, memory_budget_mb=128))
     np.testing.assert_allclose(serial, parallel, atol=1e-12)
+
+
+def test_coefficient_unfit_design_and_batches_fail_before_setup(runtime, monkeypatch):
+    from econhdfe.hdfe.absorber import HDFEAbsorber
+    from econhdfe.models.ols_bootstrap import wild_cluster_bootstrap_ols
+    n, k = 150_000, 24
+    absorber = HDFEAbsorber([np.arange(n, dtype=np.int32) % 200], absorb_threads=1)
+    def forbidden(*args, **kwargs):
+        pytest.fail("wide design matrix setup ran before memory admission")
+    monkeypatch.setattr(np.linalg, "pinv", forbidden)
+    with pytest.raises(SpecificationError) as raised:
+        wild_cluster_bootstrap_ols(
+            absorber=absorber, y_within=np.zeros(n), X_within=np.zeros((n, k)),
+            beta=np.zeros(k), residuals=np.ones(n), clusters=np.arange(n) % 10,
+            reps=32, batch_size=1, n_jobs=1,
+            execution_config=ExecutionConfig(threads=1, memory_budget_mb=32),
+        )
+    assert raised.value.code == "resource.memory"
+
+
+def test_coefficient_wide_design_uses_feasible_legacy_batches(runtime):
+    from econhdfe.hdfe.absorber import HDFEAbsorber
+    from econhdfe.models.ols_bootstrap import wild_cluster_bootstrap_ols
+    rng = np.random.default_rng(219)
+    n, k = 25_000, 24
+    absorber = HDFEAbsorber([np.arange(n, dtype=np.int32) % 200], absorb_threads=1)
+    kwargs = dict(absorber=absorber, y_within=np.zeros(n), X_within=rng.normal(size=(n, k)),
+                  beta=rng.normal(size=k), residuals=rng.normal(size=n),
+                  clusters=np.arange(n) % 17, reps=32, batch_size=1, n_jobs=1)
+    low = wild_cluster_bootstrap_ols(
+        **kwargs, execution_config=ExecutionConfig(threads=1, memory_budget_mb=32),
+    )
+    high = wild_cluster_bootstrap_ols(
+        **kwargs, execution_config=ExecutionConfig(threads=1, memory_budget_mb=128),
+    )
+    np.testing.assert_allclose(low, high, rtol=1e-10, atol=1e-12)
