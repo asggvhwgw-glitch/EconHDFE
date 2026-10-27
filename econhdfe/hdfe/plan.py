@@ -130,9 +130,10 @@ class FEPlan:
             return self.canonicalized()
         return self, {"requested": len(self.groups), "effective": len(self.groups), "changed": False}
 
-    def projector(self, *, engine="replica", method="map"):
+    def projector(self, *, engine="replica", method="map", require_convergence=False):
         from .weighted_projection import WeightedFEProjector
-        return WeightedFEProjector(self.groups, engine=engine, method=method)
+        return WeightedFEProjector(self.groups, engine=engine, method=method,
+                                   require_convergence=require_convergence)
 
     def absorber(self, weights, *, tol, engine="replica", method="map"):
         if not self.groups:

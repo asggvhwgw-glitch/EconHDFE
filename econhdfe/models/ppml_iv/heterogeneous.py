@@ -63,7 +63,7 @@ def _prune_iv_columns_block(C, E, I, names_c, names_e, names_i, plan, weights, c
     """Post-FE rank pruning while preserving included-exogenous instrument roles."""
     combined = hstack_block_designs(C, E, I)
     projector = BlockWeightedFEProjector.from_design(
-        combined, plan, engine=config.engine, method=("within" if config.engine == "within" else "map"),
+        combined, plan, engine=config.engine, method=("within" if config.engine == "within" else "map"), require_convergence=(config.engine == "within"),
         absorb_threads=execution.threads,
         projection_memory_budget_mb=execution.memory_budget_mb,
     )
@@ -356,7 +356,7 @@ def fit_block_arrays(
     Es = Xs.select_columns(np.arange(kc, Xs.ncols, dtype=np.int64))
     combined = hstack_block_designs(Cs, Es, Is)
     projector = BlockWeightedFEProjector.from_design(
-        combined, p1, engine=config.engine, method=("within" if config.engine == "within" else "map"),
+        combined, p1, engine=config.engine, method=("within" if config.engine == "within" else "map"), require_convergence=(config.engine == "within"),
         absorb_threads=execution.threads,
         projection_memory_budget_mb=execution.memory_budget_mb,
     )

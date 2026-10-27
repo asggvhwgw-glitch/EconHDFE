@@ -133,7 +133,7 @@ def filter_columns_block(
     original = np.asarray(keep, dtype=np.int64)
     if plan.groups and out.ncols:
         if projector is None:
-            projector = BlockWeightedFEProjector.from_design(out, plan, engine=engine, method=("within" if engine == "within" else "map"))
+            projector = BlockWeightedFEProjector.from_design(out, plan, engine=engine, method=("within" if engine == "within" else "map"), require_convergence=(engine == "within"))
         residual = projector.residualize_design(out, weights, tol=tol)
         keep2, _ = independent_columns(residual, tol=max(tol, 1e-12))
         out = out.select_columns(keep2)
@@ -229,7 +229,7 @@ def fit_irls_block(
 
     if projector is None:
         projector = BlockWeightedFEProjector.from_design(
-            X, plan, engine=config.engine, method=("within" if config.engine == "within" else "map")
+            X, plan, engine=config.engine, method=("within" if config.engine == "within" else "map"), require_convergence=(config.engine == "within")
         )
 
     mu = np.empty(n, dtype=np.float64)
@@ -351,7 +351,7 @@ def final_wls_block(
     off = np.asarray(offset, dtype=np.float64)
     if projector is None:
         projector = BlockWeightedFEProjector.from_design(
-            X, plan, engine=config.engine, method=("within" if config.engine == "within" else "map")
+            X, plan, engine=config.engine, method=("within" if config.engine == "within" else "map"), require_convergence=(config.engine == "within")
         )
     wfinal = tw * state.mu
     z = state.eta - off - 1.0
@@ -392,7 +392,7 @@ def _resource_block_projector(X: BlockDesign, plan: FEPlan, config: PPMLConfig, 
     if not plan.groups:
         return None
     return BlockWeightedFEProjector.from_design(
-        X, plan, engine=config.engine, method=("within" if config.engine == "within" else "map"),
+        X, plan, engine=config.engine, method=("within" if config.engine == "within" else "map"), require_convergence=(config.engine == "within"),
         absorb_threads=execution.threads,
         projection_memory_budget_mb=execution.memory_budget_mb,
     )

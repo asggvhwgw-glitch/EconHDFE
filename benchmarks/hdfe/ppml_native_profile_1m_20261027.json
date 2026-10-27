@@ -1,0 +1,334 @@
+{
+  "schema": 1,
+  "runtime_source": "bcfd4bdd9c19f4d18eac4b25ee3c441bc74da677",
+  "measurement": "Before fail-closed wrapper; every timed inner solve was independently checked for its converged flag and finite certificate by the profiler.",
+  "hardware": "Linux x86_64 container",
+  "threads": 1,
+  "repetitions": 3,
+  "order": "alternated by repetition",
+  "configs": {
+    "outer_tolerance": 1e-09,
+    "target_inner_tolerance": 1e-10,
+    "separation": [
+      "fe"
+    ],
+    "vce": "robust"
+  },
+  "included": "Full public estimator including FE encoding, FE-only separation, rank filtering, changing IRLS weights, final projection and covariance; excludes simulated data generation, JIT warm-up and independent post-fit auditing.",
+  "native_library_sha256": "bdfea3e86e96ce8667c76522ab2b321f210d0eba40b7c491803720f42a99c2f9",
+  "environment": {
+    "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+    "python": "3.13.5",
+    "numpy": "2.3.5",
+    "scipy": "1.17.0",
+    "numba": "0.65.1",
+    "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c"
+  },
+  "measured_harness_sha256": "9920b7b8e79fdc4394f8d7dfc43dd58e09d395989b0a0b67afd87a84569592ac",
+  "raw_record_sha256": {
+    "repeated_ppml_1m.json": "b0b2379f738ccf89d325daa7b81074f266fe5f93c89636ea6baf527379551505",
+    "repeated_ivppml_1m.json": "80099232e60004402443b6aee829a2931e184607dc84e01ac2af25385ea9c984",
+    "crossed_ppml_1m.json": "6dcdef4e588cbbd311934bc6ad0a765afbbc02c18975657d19fb6d10398bf213",
+    "crossed_ivppml_1m.json": "986a490f0878c677838628dee3e1e99888ad5f2c88e8b62980c20849266ffe65",
+    "weak_ppml_1m.json": "08147ad1753d41942df5105190ca8a15b378c61b0eaebdafcf7cbe1cd2983431",
+    "weak_ivppml_1m.json": "a331ea6f9edea2a99909965ae72067ec65f61a46b02050d3e5db4cb9f48967c6",
+    "schur_ppml_1m.json": "a534cf64a6f5e9811976283a0f16e5ea1b0c55a17550e87854928dfffc7182f5",
+    "schur_ivppml_1m.json": "f3fe2e7494dfa59de96b11aa28d59d12791a81c1793bb31c9e72654cb7b7a749"
+  },
+  "results": [
+    {
+      "case": "repeated",
+      "model": "ppml",
+      "rows": 1000000,
+      "fe_levels": [
+        12000,
+        2000,
+        48
+      ],
+      "median": {
+        "optimized": {
+          "total_seconds": 4.316936349000002,
+          "initial_prepare_seconds": 0.015373940000017683,
+          "weight_update_seconds": 0.050939132999928916,
+          "solve_seconds": 3.4523364960000436,
+          "other_seconds": 0.7044951650000257
+        },
+        "within": {
+          "total_seconds": 1.8816834040000003,
+          "initial_prepare_seconds": 0.12003021199996056,
+          "weight_update_seconds": 0.12717397800008712,
+          "solve_seconds": 0.9021146159997215,
+          "other_seconds": 0.7464799220001623
+        }
+      },
+      "speedup": 2.2941884590272985,
+      "native_update_fraction": 0.06789579706363964,
+      "ideal_update_removal_speedup": 1.0728414235766248,
+      "ideal_all_preparation_removal_speedup": 1.1433671440942614,
+      "route": [
+        "compressed_within"
+      ],
+      "maximum_coefficient_difference": 6.106226635438361e-16,
+      "maximum_covariance_difference": 4.743384504624082e-20,
+      "maximum_mu_difference": 9.117429033977942e-12
+    },
+    {
+      "case": "repeated",
+      "model": "ivppml",
+      "rows": 1000000,
+      "fe_levels": [
+        12000,
+        2000,
+        48
+      ],
+      "median": {
+        "optimized": {
+          "total_seconds": 7.750549414000034,
+          "initial_prepare_seconds": 0.013263101999996252,
+          "weight_update_seconds": 0.05234034399995835,
+          "solve_seconds": 5.511584772000106,
+          "other_seconds": 2.174519602999908
+        },
+        "within": {
+          "total_seconds": 4.299295545000064,
+          "initial_prepare_seconds": 0.08228599000005943,
+          "weight_update_seconds": 0.10712108800009901,
+          "solve_seconds": 1.7812012489996505,
+          "other_seconds": 2.2652764119999347
+        }
+      },
+      "speedup": 1.8027486905415615,
+      "native_update_fraction": 0.02664688352953373,
+      "ideal_update_removal_speedup": 1.0273763787043284,
+      "ideal_all_preparation_removal_speedup": 1.048728816268997,
+      "route": [
+        "compressed_within"
+      ],
+      "maximum_coefficient_difference": 1.5543122344752192e-15,
+      "maximum_covariance_difference": 3.451659260061274e-20,
+      "maximum_mu_difference": 2.3714363805993344e-11
+    },
+    {
+      "case": "crossed",
+      "model": "ppml",
+      "rows": 1000000,
+      "fe_levels": [
+        20000,
+        4000,
+        48
+      ],
+      "median": {
+        "optimized": {
+          "total_seconds": 3.6882161780000615,
+          "initial_prepare_seconds": 0.013666913999941244,
+          "weight_update_seconds": 0.0473262549996889,
+          "solve_seconds": 2.9446684330000608,
+          "other_seconds": 0.7169052299998384
+        },
+        "within": {
+          "total_seconds": 4.426060313000107,
+          "initial_prepare_seconds": 0.10666434999996,
+          "weight_update_seconds": 0.32074895200003084,
+          "solve_seconds": 3.281175864999909,
+          "other_seconds": 0.7536988470000097
+        }
+      },
+      "speedup": 0.8332955082349716,
+      "native_update_fraction": 0.07007222479588122,
+      "ideal_update_removal_speedup": 1.075352330217796,
+      "ideal_all_preparation_removal_speedup": 1.1027732415468514,
+      "route": [
+        "within"
+      ],
+      "maximum_coefficient_difference": 1.609823385706477e-15,
+      "maximum_covariance_difference": 4.6692691217393306e-20,
+      "maximum_mu_difference": 3.469491360874599e-10
+    },
+    {
+      "case": "crossed",
+      "model": "ivppml",
+      "rows": 1000000,
+      "fe_levels": [
+        20000,
+        4000,
+        48
+      ],
+      "median": {
+        "optimized": {
+          "total_seconds": 9.562669847000052,
+          "initial_prepare_seconds": 0.012548575999971945,
+          "weight_update_seconds": 0.061957092000056946,
+          "solve_seconds": 6.807110025000043,
+          "other_seconds": 2.6791765469998836
+        },
+        "within": {
+          "total_seconds": 12.021972086000005,
+          "initial_prepare_seconds": 0.13053711899999598,
+          "weight_update_seconds": 0.31969473799983916,
+          "solve_seconds": 8.366012792999868,
+          "other_seconds": 2.7882219310000664
+        }
+      },
+      "speedup": 0.7954327109223707,
+      "native_update_fraction": 0.028019275791439636,
+      "ideal_update_removal_speedup": 1.0288269870930358,
+      "ideal_all_preparation_removal_speedup": 1.0410811135270632,
+      "route": [
+        "within"
+      ],
+      "maximum_coefficient_difference": 5.128675262255911e-13,
+      "maximum_covariance_difference": 1.2252331582033454e-18,
+      "maximum_mu_difference": 8.318501443227433e-11
+    },
+    {
+      "case": "weak",
+      "model": "ppml",
+      "rows": 1000000,
+      "fe_levels": [
+        10000,
+        2000,
+        80
+      ],
+      "median": {
+        "optimized": {
+          "total_seconds": 10.191615049999996,
+          "initial_prepare_seconds": 0.011446630999898844,
+          "weight_update_seconds": 0.050909588999843436,
+          "solve_seconds": 9.413802578999821,
+          "other_seconds": 0.7412842040001806
+        },
+        "within": {
+          "total_seconds": 6.7424177300000565,
+          "initial_prepare_seconds": 0.11823992799997995,
+          "weight_update_seconds": 0.336709944999825,
+          "solve_seconds": 5.544463358000144,
+          "other_seconds": 0.7651352259997566
+        }
+      },
+      "speedup": 1.5115668382059606,
+      "native_update_fraction": 0.050489822729385306,
+      "ideal_update_removal_speedup": 1.0531745987963175,
+      "ideal_all_preparation_removal_speedup": 1.0732146594122405,
+      "route": [
+        "compressed_within"
+      ],
+      "maximum_coefficient_difference": 1.942890293094024e-15,
+      "maximum_covariance_difference": 1.4678022184732957e-18,
+      "maximum_mu_difference": 3.8636835952843285e-09
+    },
+    {
+      "case": "weak",
+      "model": "ivppml",
+      "rows": 1000000,
+      "fe_levels": [
+        10000,
+        2000,
+        80
+      ],
+      "median": {
+        "optimized": {
+          "total_seconds": 22.420203893999997,
+          "initial_prepare_seconds": 0.012363919999984319,
+          "weight_update_seconds": 0.05071070100007091,
+          "solve_seconds": 20.032986056999903,
+          "other_seconds": 2.3231045029999677
+        },
+        "within": {
+          "total_seconds": 17.84098304500003,
+          "initial_prepare_seconds": 0.09966684299990902,
+          "weight_update_seconds": 0.2743832570004088,
+          "solve_seconds": 14.520216099000208,
+          "other_seconds": 2.8994588100003966
+        }
+      },
+      "speedup": 1.256668639696023,
+      "native_update_fraction": 0.01515318036113235,
+      "ideal_update_removal_speedup": 1.0153863322284868,
+      "ideal_all_preparation_removal_speedup": 1.0210121256403295,
+      "route": [
+        "compressed_within"
+      ],
+      "maximum_coefficient_difference": 2.0683454948766666e-13,
+      "maximum_covariance_difference": 7.270930819230914e-18,
+      "maximum_mu_difference": 7.725056949681175e-08
+    },
+    {
+      "case": "schur",
+      "model": "ppml",
+      "rows": 1000000,
+      "fe_levels": [
+        20000,
+        32,
+        8
+      ],
+      "median": {
+        "optimized": {
+          "total_seconds": 3.4244793420000406,
+          "initial_prepare_seconds": 0.017752210000026025,
+          "weight_update_seconds": 0.046668787999919914,
+          "solve_seconds": 2.6893531259996735,
+          "other_seconds": 0.6800286050001887
+        },
+        "within": {
+          "total_seconds": 2.1647567410000192,
+          "initial_prepare_seconds": 0.08990163699991172,
+          "weight_update_seconds": 0.5030000059998656,
+          "solve_seconds": 0.8408660349999764,
+          "other_seconds": 0.7267084490002844
+        }
+      },
+      "speedup": 1.5819233991243222,
+      "native_update_fraction": 0.2253297133518866,
+      "ideal_update_removal_speedup": 1.2908717647179366,
+      "ideal_all_preparation_removal_speedup": 1.3637104912957694,
+      "route": [
+        "schur"
+      ],
+      "maximum_coefficient_difference": 5.551115123125783e-16,
+      "maximum_covariance_difference": 2.1281702799764296e-20,
+      "maximum_mu_difference": 1.2256862191861728e-12
+    },
+    {
+      "case": "schur",
+      "model": "ivppml",
+      "rows": 1000000,
+      "fe_levels": [
+        20000,
+        32,
+        8
+      ],
+      "median": {
+        "optimized": {
+          "total_seconds": 6.1488543079999545,
+          "initial_prepare_seconds": 0.01224431100001766,
+          "weight_update_seconds": 0.04487030499979028,
+          "solve_seconds": 4.037320918000091,
+          "other_seconds": 2.0580997569995816
+        },
+        "within": {
+          "total_seconds": 3.7801785929999596,
+          "initial_prepare_seconds": 0.06765308700005335,
+          "weight_update_seconds": 0.3507335909999938,
+          "solve_seconds": 1.3076292169999988,
+          "other_seconds": 2.0518848799999887
+        }
+      },
+      "speedup": 1.6266041819786634,
+      "native_update_fraction": 0.09141181911188484,
+      "ideal_update_removal_speedup": 1.100608637702653,
+      "ideal_all_preparation_removal_speedup": 1.1223902186315784,
+      "route": [
+        "schur"
+      ],
+      "maximum_coefficient_difference": 5.551115123125783e-17,
+      "maximum_covariance_difference": 1.2705494208814505e-21,
+      "maximum_mu_difference": 1.2434497875801753e-13
+    }
+  ],
+  "limitations": [
+    "Synthetic strong-instrument fixtures; not a weak-IV validation.",
+    "Only FE separation is timed; no large-sample simplex/ReLU or near-separation performance claim.",
+    "The weak-community corpus also has repeated cells; its speedup is not attributable solely to preconditioning.",
+    "Results are from one machine; no universal native speedup."
+  ]
+}

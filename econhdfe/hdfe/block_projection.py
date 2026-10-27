@@ -38,6 +38,7 @@ class BlockWeightedFEProjector:
         engine: str,
         method: str = "map",
         max_iter: int = 16_000,
+        require_convergence: bool = False,
         absorb_threads="auto",
         projection_memory_budget_mb: float = 512,
     ):
@@ -51,6 +52,7 @@ class BlockWeightedFEProjector:
         self._init_parts(
             parts, plan, engine=engine, method=method, max_iter=max_iter, absorb_threads=absorb_threads,
             projection_memory_budget_mb=projection_memory_budget_mb,
+            require_convergence=require_convergence,
         )
 
     @classmethod
@@ -62,6 +64,7 @@ class BlockWeightedFEProjector:
         engine: str,
         method: str = "map",
         max_iter: int = 16_000,
+        require_convergence: bool = False,
         absorb_threads="auto",
         projection_memory_budget_mb: float = 512,
     ):
@@ -85,12 +88,13 @@ class BlockWeightedFEProjector:
         obj._init_parts(
             parts, plan, engine=engine, method=method, max_iter=max_iter, absorb_threads=absorb_threads,
             projection_memory_budget_mb=projection_memory_budget_mb,
+            require_convergence=require_convergence,
         )
         return obj
 
     def _init_parts(
         self, parts, plan: FEPlan, *, engine: str, method: str, max_iter: int, absorb_threads,
-        projection_memory_budget_mb: float,
+        projection_memory_budget_mb: float, require_convergence: bool,
     ) -> None:
         if plan.groups:
             max_row = max((int(np.max(rows)) for _, rows in parts if len(rows)), default=-1)
@@ -108,6 +112,7 @@ class BlockWeightedFEProjector:
             if local_plan.groups:
                 projector = WeightedFEProjector(
                     local_plan.groups, engine=engine, method=method, max_iter=max_iter,
+                    require_convergence=require_convergence,
                     absorb_threads=absorb_threads,
                     projection_memory_budget_mb=projection_memory_budget_mb,
                 )

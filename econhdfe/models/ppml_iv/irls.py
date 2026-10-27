@@ -71,7 +71,7 @@ def fit_iv_irls(
     target_tol = max(1e-12, min(config.target_inner_tol, 0.1 * config.tolerance))
     hdfe_tol = max(config.start_inner_tol, config.tolerance)
     alt_tol = config.start_inner_tol
-    projector = projector if projector is not None else (plan.projector(engine=config.engine, method=("within" if config.engine == "within" else "map")) if plan.groups else None)
+    projector = projector if projector is not None else (plan.projector(engine=config.engine, method=("within" if config.engine == "within" else "map"), require_convergence=(config.engine == "within")) if plan.groups else None)
 
     irls_w = np.empty(n, dtype=np.float64)
     z = np.empty(n, dtype=np.float64)

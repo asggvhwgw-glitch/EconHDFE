@@ -15,6 +15,7 @@ import time
 import numpy as np
 
 from econhdfe.hdfe.weighted_projection import WeightedFEProjector
+from econhdfe.hdfe.plan import FEPlan
 
 
 def sample(n, rhs, seed):
@@ -26,7 +27,7 @@ def sample(n, rhs, seed):
         rng.integers(0, 2000, base_n, dtype=np.int32),
         rng.integers(0, 48, base_n, dtype=np.int32),
     ])
-    groups = tuple(np.repeat(base[:, i], 8)[:n] for i in range(3))
+    groups = FEPlan.from_arrays([np.repeat(base[:, i], 8)[:n] for i in range(3)]).groups
     x = rng.standard_normal((n, rhs))
     latent = rng.standard_normal(n)
     w0 = np.exp(np.clip(0.4 * latent, -2, 2))

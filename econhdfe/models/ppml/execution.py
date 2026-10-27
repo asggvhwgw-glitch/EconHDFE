@@ -66,6 +66,7 @@ def get_projector(
         plan.groups,
         engine=engine,
         method=method,
+        require_convergence=(method == "within"),
         absorb_threads=execution.threads,
         projection_memory_budget_mb=execution.memory_budget_mb,
     )

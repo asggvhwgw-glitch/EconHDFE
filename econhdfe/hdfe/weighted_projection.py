@@ -11,7 +11,7 @@ from .workspace import (
 )
 from ..planner import scheduler
 from ..compute.execution import _plan_workspace
-from ..errors import SpecificationError
+from ..errors import SpecificationError, ConvergenceError
 
 
 class WeightedFEProjector:
@@ -21,6 +21,8 @@ class WeightedFEProjector:
     numerical weights through the public absorber ``update_weights`` contract.
     Resource controls are explicit so iterative estimators can honor the same
     ``ExecutionConfig`` thread and memory policy as the linear estimators.
+    Native nonlinear callers opt into ``require_convergence``; low-level and
+    linear callers retain the historical status-returning contract.
     """
 
     def __init__(
@@ -30,6 +32,7 @@ class WeightedFEProjector:
         engine: str,
         method: str = "map",
         max_iter: int = 16_000,
+        require_convergence: bool = False,
         absorb_threads="auto",
         projection_memory_budget_mb: float = 512,
     ):
@@ -37,6 +40,7 @@ class WeightedFEProjector:
         self.engine = str(engine)
         self.method = str(method)
         self.max_iter = int(max_iter)
+        self.require_convergence = bool(require_convergence)
         self.absorb_threads_requested = absorb_threads
         self.projection_memory_budget_mb = float(projection_memory_budget_mb)
         self._absorber = None
@@ -147,6 +151,21 @@ class WeightedFEProjector:
                         matrix[:, lo:hi], copy=False, return_info=True,
                         absorb_threads=plan.threads,
                     )
+                    # An outer deviance check cannot certify an unfinished FE
+                    # projection. Refuse it even when a caller discards info.
+                    if self.require_convergence and (not info.converged or not np.isfinite(info.max_update)):
+                        raise ConvergenceError(
+                            "Weighted FE projection failed its convergence certificate.",
+                            code="convergence.weighted_fe", stage="absorption",
+                            details={
+                                "method": self.method, "backend": self._active_kind,
+                                "iterations": int(info.iterations),
+                                "max_update": float(info.max_update),
+                                "criterion": str(info.criterion), "tol": float(tol),
+                                "rhs_start": lo, "rhs_stop": hi,
+                            },
+                            suggestion="Inspect FE conditioning and numerical weights, or use another supported backend.",
+                        )
                     matrix[:, lo:hi] = projected
                     infos.append(info)
             output = matrix[:, 0] if one_dim else matrix
