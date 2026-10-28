@@ -153,7 +153,7 @@ Never silently reinterpret one weight type as another. Some estimator/VCE combin
 
 Use the public `vce`, `cluster`, `time`, `panel`, `bandwidth` and `kernel` controls supported by the chosen estimator. One- and multi-way clustering are distinct inference specifications; do not change them for speed.
 
-Standard one-/multi-way CRV1 is part of estimator covariance. `cluster_diagnostics()` and `wild_cluster_test_ols()` are post-estimation tools: the latter is currently one-way OLS only and must not be substituted for a substantively required multi-way cluster specification.
+Standard one-/multi-way CRV1 is part of estimator covariance. An indefinite multiway covariance is repaired as in reghdfe (eigenvalue clipping in original-regressor stdev coordinates) for OLS, IV, PPML and IV-PPML; ivreghdfe does not repair by default. `cluster_diagnostics()` and `wild_cluster_test_ols()` are post-estimation tools: the latter is currently one-way OLS only and must not be substituted for a substantively required multi-way cluster specification.
 
 Diagnostics policy:
 
@@ -210,7 +210,8 @@ require explicit prefiltering. Plain Poisson does not support `aw`.
 Unified Poisson keeps ordinary singleton and all-zero FE counts separate;
 `drop_singletons=False` does not disable `fe` separation. Unified IV-PPML defaults
 to `separation=("fe",)` and rejects PPML simplex/ReLU/mu choices; they are not
-IV existence certificates. Construct a fresh config when changing modes.
+IV existence certificates. The default `separation=None` follows the mode, also
+through `dataclasses.replace`; an explicit tuple is kept as given.
 Grouped/individual FE unified mode is explicitly unsupported. This version
 retains all statistical rows in the work sample; no extra computational
 elimination should be inferred from the policy name. Compare sample, N, DF and

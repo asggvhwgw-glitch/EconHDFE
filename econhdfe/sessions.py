@@ -21,7 +21,8 @@ from .frontend.columns import compile_data_requirements, merge_data_requirements
 from .errors import SpecificationError, error_boundary
 from .frontend.roles import VariableRole
 from .frontend.validate import require_numeric
-from .compute.weights import normalize_weight_type, prepare_weights, resolve_vce_for_weights
+from .compute.weights import normalize_weight_type, prepare_weights, reject_nonpositive_weights, resolve_vce_for_weights
+from .compute.vcov import finalize_cluster_vcov, regressor_scale
 from .hdfe.absorb_spec import absorb_columns, is_column_interaction
 from .hdfe.dof import absorbed_dof
 from .hdfe.factorvars import compile_absorb_factor_variable
@@ -526,11 +527,23 @@ class _LinearHDFESessionBase:
             "source_signature": source_sig,
             "mask_signature": mask_sig,
             "weights": self._persistent_external_descriptor(self.weights_spec),
+            **self._entry_config(),
+        }
+        return self._persistent_store.within_signature(entry_payload=payload)
+
+    def _entry_config(self) -> dict:
+        """Session settings that determine a compiled FE entry.
+
+        The single source of both the in-memory entry key and the persistent
+        within-cache signature, so changing ``session.hdfe`` (solver,
+        canonicalize, dof_method, singleton_mode, ...) or the sample settings
+        can never reuse an entry built under the old ones.
+        """
+        return {
             "weight_type": self.weight_type,
             "drop_singletons": self.drop_singletons,
             "hdfe": asdict(self.hdfe),
         }
-        return self._persistent_store.within_signature(entry_payload=payload)
 
     def _persistent_result_key(self, estimator: str, spec, *, extra: dict | None = None) -> str | None:
         if self._persistent_store is None or self.execution.profile != "off":
@@ -600,7 +613,8 @@ class _LinearHDFESessionBase:
         return require_numeric(self.weights_spec, name="weights", role=VariableRole.WEIGHT, ndim=1)
 
     def _entry_key(self, absorb: tuple) -> tuple:
-        return absorb if self.hdfe.singleton_mode == "stata_compat" else (absorb, self.hdfe.singleton_mode)
+        config = self._entry_config()
+        return absorb, config["weight_type"], config["drop_singletons"], tuple(config["hdfe"].items())
 
     def _entry_source_columns(self, absorb: tuple) -> tuple[str, ...]:
         cols = list(absorb_columns(absorb))
@@ -657,9 +671,8 @@ class _LinearHDFESessionBase:
         w0 = self._weights_full()
         wkind = normalize_weight_type(self.weight_type, has_weights=w0 is not None)
         _ = prepare_weights(w0, len(self.data), wkind)
-        if self.hdfe.singleton_mode == "unified" and w0 is not None and np.any(w0 <= 0):
-            from .errors import InvalidWeightError
-            raise InvalidWeightError("unified mode requires strictly positive user weights; filter zero-weight rows explicitly", code="input.invalid_weight.range")
+        if self.hdfe.sample_policy.requires_positive_user_weights:
+            reject_nonpositive_weights(w0)
         if absorb:
             fe = prepare_standard_fe_structure(
                 self.data, absorb,
@@ -667,7 +680,7 @@ class _LinearHDFESessionBase:
                 drop_singletons=self.drop_singletons,
                 weights=w0,
                 weight_kind=wkind,
-                component_cache=self._component_cache, singleton_mode=self.hdfe.singleton_mode,
+                component_cache=self._component_cache, policy=self.hdfe.sample_policy,
             )
             method, solver_selection = resolve_method(
                 self.hdfe.solver, fe.groups, fe.slopes, fe.intercepts, backend="numpy"
@@ -983,6 +996,10 @@ class OLSHDFESession(_LinearHDFESessionBase):
             clusters=entry.clusters, df_absorbed=entry.dof.df_absorbed,
             nested_adj=int(entry.dof.nested > 0),
         )
+        fw_scale = entry.weights if self.hdfe.sample_policy.psd_frequency_scale(entry.winfo.kind) else None
+        V = finalize_cluster_vcov(
+            V, vce_kind, entry.clusters, lambda: regressor_scale(Xactive, frequency_weights=fw_scale),
+        )
         absorb_info = self._absorb_info(entry, info, len(spec.x) + 1)
         if conditioning is not None:
             absorb_info["conditioning"] = conditioning
@@ -1089,18 +1106,20 @@ class IVHDFESession(_LinearHDFESessionBase):
             )
 
         Cw0, C0 = stack(spec.exog); Ew0, E0 = stack(spec.endog); Zw0, Z0 = stack(spec.instruments)
-        Cw, Ew, Zw, _, _, _, cn, en, _zn, collin_info = resolve_iv_columns(
+        Cw, Ew, Zw, C1, E1, _, cn, en, _zn, collin_info = resolve_iv_columns(
             Cw0, Ew0, Zw0, C0, E0, Z0, spec.exog, spec.endog, spec.instruments,
             weights=entry.weights, tolerance=self.collinear_tol, mode=self.collinearity,
         )
         vce_kind = self._vce_kind(entry)
+        fw_scale = entry.weights if self.hdfe.sample_policy.psd_frequency_scale(entry.winfo.kind) else None
         stage_callback = bind_callback(self.on_stage, cn + en, spec.y, df_absorbed=entry.dof.df_absorbed)
         if self.estimator == "gmm2s":
             beta, V, resid, rank, df_resid, first, diagnostics, meta = fit_iv_gmm2s(
                 yw, Cw, Ew, Zw, weights=entry.weights, weight_info=entry.winfo,
                 advanced_statistics=self.inference.iv_advanced_statistics, on_stage=stage_callback,
                 vce=vce_kind, clusters=entry.clusters, df_absorbed=entry.dof.df_absorbed,
-                nested_adj=int(entry.dof.nested > 0), center=self.gmm_center,
+                nested_adj=int(entry.dof.nested > 0), center=self.gmm_center, regressors=(C1, E1),
+                regressor_weights=fw_scale,
             )
         else:
             beta, V, resid, rank, df_resid, first, diagnostics, meta = fit_iv_kclass(
@@ -1108,7 +1127,7 @@ class IVHDFESession(_LinearHDFESessionBase):
                 advanced_statistics=self.inference.iv_advanced_statistics, on_stage=stage_callback,
                 vce=vce_kind, clusters=entry.clusters, df_absorbed=entry.dof.df_absorbed,
                 nested_adj=int(entry.dof.nested > 0), estimator=self.estimator,
-                kappa=self.kappa, fuller=self.fuller,
+                kappa=self.kappa, fuller=self.fuller, regressors=(C1, E1), regressor_weights=fw_scale,
             )
         info = entry.last_info
         estimator = meta.get("estimator", self.estimator)

@@ -42,11 +42,13 @@ weight magnitude. `pw` sums are not sample counts.
 | IV-PPML default separation | `fe`, `simplex`, `relu` | `fe` only |
 | Threshold-only `mu` deletion | Existing estimator-specific behavior | Rejected |
 
-For IV-PPML, `separation=None` is the construction-time default sentinel: it
-resolves to the appropriate tuple in `__post_init__`. The instantiated default
-compatibility config still has `('fe','simplex','relu')`. Construct a new config
-to switch policy; changing a populated compatibility config to unified with
-`dataclasses.replace` also requires specifying a safe separation tuple.
+For IV-PPML, `separation=None` (the default) means "the policy default" and is
+stored as given; `IVPPMLConfig.separation_methods` resolves it where it is used
+(`('fe','simplex','relu')` for compatibility, `('fe',)` for unified). A default
+config therefore follows `dataclasses.replace(cfg, singleton_mode=...)` in both
+directions. An explicit tuple is kept and validated against the policy.
+Code queries `config.sample_policy` (`econhdfe.config.SamplePolicy`) rather than
+comparing mode names.
 
 The compatibility label identifies a **sample-policy profile**, not complete
 Stata syntax, missing-value handling, arbitrary VCE parity, or a promise of

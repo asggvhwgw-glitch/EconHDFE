@@ -8,9 +8,8 @@ from ...frontend.roles import VariableRole
 import numpy as np
 import pandas as pd
 from ...compute.wls import as_2d
-from ...compute.weights import prepare_weights
 from ...hdfe.plan import FEPlan
-from ..poisson import prepare_poisson_base
+from ..poisson import prepare_poisson_base, prepare_ppml_weights
 from ..ppml.api import (
     _ReusableFEModel, _finish_result, _require_frame, _resolve_call_configs, _spec_tuple,
     resolve_ppml_vce,
@@ -26,10 +25,7 @@ def _prepare(y, exog, endog, instruments, *, offset, exposure, weights, weight_t
         y, offset=offset, exposure=exposure, weights=weights
     )
     n = len(y)
-    winfo = prepare_weights(weights, n, weight_type, normalize_ap=False)
-    if winfo.kind == "aweight":
-        raise SpecificationError("IV-PPML supports upstream-compatible fweight/pweight, not aweight", code="specification.weight_type")
-    w = np.ones(n, dtype=np.float64) if winfo.estimation is None else winfo.estimation
+    w, weight_kind = prepare_ppml_weights(weights, n, weight_type, family="ivppml")
     C, E, I = as_2d(exog, n), as_2d(endog, n), as_2d(instruments, n)
     if E.shape[1] == 0:
         raise UnderidentifiedError("at least one endogenous regressor is required", details={"n_endog": 0})
@@ -43,7 +39,7 @@ def _prepare(y, exog, endog, instruments, *, offset, exposure, weights, weight_t
     names_i = tuple(instrument_names or [f"z{i}" for i in range(I.shape[1])])
     if len(names_c) != C.shape[1] or len(names_e) != E.shape[1] or len(names_i) != I.shape[1]:
         raise ShapeError("IV-PPML name lengths must match their matrices")
-    return y, C, E, I, off, w, winfo.kind, names_c, names_e, names_i
+    return y, C, E, I, off, w, weight_kind, names_c, names_e, names_i
 
 
 @error_boundary("ivppml")

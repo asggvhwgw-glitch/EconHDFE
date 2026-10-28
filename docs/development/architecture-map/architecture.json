@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "econhdfe",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "evidence": {
     "topology": "Python AST import analysis; package __init__ re-export imports excluded from aggregated dependency counts.",
     "execution_flows": "Explicit semantic overlays reviewed against estimator orchestration modules; not presented as import edges."
@@ -596,7 +596,7 @@
     {
       "source": "interface",
       "target": "compute",
-      "count": 16,
+      "count": 17,
       "examples": [
         "econhdfe.collinearity → econhdfe.compute.block_design",
         "econhdfe.design → econhdfe.compute.execution",
@@ -608,7 +608,7 @@
     {
       "source": "interface",
       "target": "contracts",
-      "count": 11,
+      "count": 10,
       "examples": [
         "econhdfe.api → econhdfe.config",
         "econhdfe.api → econhdfe.reporting",
@@ -726,7 +726,7 @@
     {
       "source": "linear_iv",
       "target": "compute",
-      "count": 20,
+      "count": 22,
       "examples": [
         "econhdfe.models.linear_iv.api → econhdfe.compute.weights",
         "econhdfe.models.linear_iv.api → econhdfe.compute.vcov",
@@ -813,16 +813,18 @@
     {
       "source": "model_shared",
       "target": "compute",
-      "count": 2,
+      "count": 4,
       "examples": [
         "econhdfe.models.linear → econhdfe.compute.weights",
+        "econhdfe.models.poisson → econhdfe.compute.clusters",
+        "econhdfe.models.poisson → econhdfe.compute.vcov",
         "econhdfe.models.poisson → econhdfe.compute.weights"
       ]
     },
     {
       "source": "model_shared",
       "target": "contracts",
-      "count": 10,
+      "count": 9,
       "examples": [
         "econhdfe.models.linear → econhdfe.config",
         "econhdfe.models.linear → econhdfe.errors",
@@ -975,13 +977,13 @@
     {
       "source": "ppml",
       "target": "compute",
-      "count": 24,
+      "count": 23,
       "examples": [
         "econhdfe.models.ppml.api → econhdfe.compute.context",
         "econhdfe.models.ppml.api → econhdfe.compute.wls",
-        "econhdfe.models.ppml.estimator → econhdfe.compute.clusters",
         "econhdfe.models.ppml.estimator → econhdfe.compute.context",
-        "econhdfe.models.ppml.estimator → econhdfe.compute.linalg"
+        "econhdfe.models.ppml.estimator → econhdfe.compute.linalg",
+        "econhdfe.models.ppml.estimator → econhdfe.compute.vcov"
       ]
     },
     {
@@ -1029,9 +1031,10 @@
     {
       "source": "ppml",
       "target": "model_shared",
-      "count": 4,
+      "count": 5,
       "examples": [
         "econhdfe.models.ppml.api → econhdfe.models.poisson",
+        "econhdfe.models.ppml.estimator → econhdfe.models.poisson",
         "econhdfe.models.ppml.heterogeneous → econhdfe.models.poisson",
         "econhdfe.models.ppml.irls → econhdfe.models.poisson"
       ]
@@ -1050,13 +1053,13 @@
     {
       "source": "ppml_iv",
       "target": "compute",
-      "count": 15,
+      "count": 14,
       "examples": [
         "econhdfe.models.ppml_iv.api → econhdfe.compute.wls",
-        "econhdfe.models.ppml_iv.api → econhdfe.compute.weights",
-        "econhdfe.models.ppml_iv.estimator → econhdfe.compute.clusters",
         "econhdfe.models.ppml_iv.estimator → econhdfe.compute.vcov",
-        "econhdfe.models.ppml_iv.estimator → econhdfe.compute.context"
+        "econhdfe.models.ppml_iv.estimator → econhdfe.compute.context",
+        "econhdfe.models.ppml_iv.estimator → econhdfe.compute.linalg",
+        "econhdfe.models.ppml_iv.heterogeneous → econhdfe.compute.block_design"
       ]
     },
     {
@@ -1116,9 +1119,10 @@
     {
       "source": "ppml_iv",
       "target": "model_shared",
-      "count": 3,
+      "count": 4,
       "examples": [
         "econhdfe.models.ppml_iv.api → econhdfe.models.poisson",
+        "econhdfe.models.ppml_iv.estimator → econhdfe.models.poisson",
         "econhdfe.models.ppml_iv.heterogeneous → econhdfe.models.poisson",
         "econhdfe.models.ppml_iv.irls → econhdfe.models.poisson"
       ]
@@ -1593,6 +1597,14 @@
       "source_path": "econhdfe/compute/vcov.py",
       "source_group": "compute",
       "target_module": "econhdfe.compute.block_design",
+      "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.compute.vcov",
+      "source_path": "econhdfe/compute/vcov.py",
+      "source_group": "compute",
+      "target_module": "econhdfe.compute.design_ops",
       "target_group": "compute",
       "reexport_surface": false
     },
@@ -3013,14 +3025,6 @@
       "reexport_surface": false
     },
     {
-      "source_module": "econhdfe.models.linear",
-      "source_path": "econhdfe/models/linear.py",
-      "source_group": "model_shared",
-      "target_module": "econhdfe.errors",
-      "target_group": "contracts",
-      "reexport_surface": false
-    },
-    {
       "source_module": "econhdfe.models.linear_iv",
       "source_path": "econhdfe/models/linear_iv/__init__.py",
       "source_group": "linear_iv",
@@ -3240,7 +3244,23 @@
       "source_module": "econhdfe.models.linear_iv.diagnostics",
       "source_path": "econhdfe/models/linear_iv/diagnostics.py",
       "source_group": "linear_iv",
+      "target_module": "econhdfe.compute.vcov",
+      "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.linear_iv.diagnostics",
+      "source_path": "econhdfe/models/linear_iv/diagnostics.py",
+      "source_group": "linear_iv",
       "target_module": "econhdfe.compute.weights",
+      "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.linear_iv.estimators",
+      "source_path": "econhdfe/models/linear_iv/estimators.py",
+      "source_group": "linear_iv",
+      "target_module": "econhdfe.compute.vcov",
       "target_group": "compute",
       "reexport_surface": false
     },
@@ -3688,6 +3708,22 @@
       "source_module": "econhdfe.models.poisson",
       "source_path": "econhdfe/models/poisson.py",
       "source_group": "model_shared",
+      "target_module": "econhdfe.compute.clusters",
+      "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.poisson",
+      "source_path": "econhdfe/models/poisson.py",
+      "source_group": "model_shared",
+      "target_module": "econhdfe.compute.vcov",
+      "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.poisson",
+      "source_path": "econhdfe/models/poisson.py",
+      "source_group": "model_shared",
       "target_module": "econhdfe.compute.weights",
       "target_group": "compute",
       "reexport_surface": false
@@ -3872,14 +3908,6 @@
       "source_module": "econhdfe.models.ppml.estimator",
       "source_path": "econhdfe/models/ppml/estimator.py",
       "source_group": "ppml",
-      "target_module": "econhdfe.compute.clusters",
-      "target_group": "compute",
-      "reexport_surface": false
-    },
-    {
-      "source_module": "econhdfe.models.ppml.estimator",
-      "source_path": "econhdfe/models/ppml/estimator.py",
-      "source_group": "ppml",
       "target_module": "econhdfe.errors",
       "target_group": "contracts",
       "reexport_surface": false
@@ -3962,6 +3990,14 @@
       "source_group": "ppml",
       "target_module": "econhdfe.compute.vcov",
       "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ppml.estimator",
+      "source_path": "econhdfe/models/ppml/estimator.py",
+      "source_group": "ppml",
+      "target_module": "econhdfe.models.poisson",
+      "target_group": "model_shared",
       "reexport_surface": false
     },
     {
@@ -4088,6 +4124,14 @@
       "source_module": "econhdfe.models.ppml.heterogeneous",
       "source_path": "econhdfe/models/ppml/heterogeneous.py",
       "source_group": "ppml",
+      "target_module": "econhdfe.compute.weights",
+      "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ppml.heterogeneous",
+      "source_path": "econhdfe/models/ppml/heterogeneous.py",
+      "source_group": "ppml",
       "target_module": "econhdfe.errors",
       "target_group": "contracts",
       "reexport_surface": false
@@ -4178,14 +4222,6 @@
       "source_group": "ppml",
       "target_module": "econhdfe.reporting",
       "target_group": "contracts",
-      "reexport_surface": false
-    },
-    {
-      "source_module": "econhdfe.models.ppml.heterogeneous",
-      "source_path": "econhdfe/models/ppml/heterogeneous.py",
-      "source_group": "ppml",
-      "target_module": "econhdfe.compute.vcov",
-      "target_group": "compute",
       "reexport_surface": false
     },
     {
@@ -4432,7 +4468,7 @@
       "source_module": "econhdfe.models.ppml.vce",
       "source_path": "econhdfe/models/ppml/vce.py",
       "source_group": "ppml",
-      "target_module": "econhdfe.compute.stable_linalg",
+      "target_module": "econhdfe.compute.weights",
       "target_group": "compute",
       "reexport_surface": false
     },
@@ -4440,7 +4476,7 @@
       "source_module": "econhdfe.models.ppml.vce",
       "source_path": "econhdfe/models/ppml/vce.py",
       "source_group": "ppml",
-      "target_module": "econhdfe.compute.vcov",
+      "target_module": "econhdfe.compute.stable_linalg",
       "target_group": "compute",
       "reexport_surface": false
     },
@@ -4529,14 +4565,6 @@
       "source_path": "econhdfe/models/ppml_iv/api.py",
       "source_group": "ppml_iv",
       "target_module": "econhdfe.compute.wls",
-      "target_group": "compute",
-      "reexport_surface": false
-    },
-    {
-      "source_module": "econhdfe.models.ppml_iv.api",
-      "source_path": "econhdfe/models/ppml_iv/api.py",
-      "source_group": "ppml_iv",
-      "target_module": "econhdfe.compute.weights",
       "target_group": "compute",
       "reexport_surface": false
     },
@@ -4680,14 +4708,6 @@
       "source_module": "econhdfe.models.ppml_iv.estimator",
       "source_path": "econhdfe/models/ppml_iv/estimator.py",
       "source_group": "ppml_iv",
-      "target_module": "econhdfe.compute.clusters",
-      "target_group": "compute",
-      "reexport_surface": false
-    },
-    {
-      "source_module": "econhdfe.models.ppml_iv.estimator",
-      "source_path": "econhdfe/models/ppml_iv/estimator.py",
-      "source_group": "ppml_iv",
       "target_module": "econhdfe.compute.vcov",
       "target_group": "compute",
       "reexport_surface": false
@@ -4762,6 +4782,14 @@
       "source_group": "ppml_iv",
       "target_module": "econhdfe.models.ppml.execution",
       "target_group": "ppml",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ppml_iv.estimator",
+      "source_path": "econhdfe/models/ppml_iv/estimator.py",
+      "source_group": "ppml_iv",
+      "target_module": "econhdfe.models.poisson",
+      "target_group": "model_shared",
       "reexport_surface": false
     },
     {
@@ -5073,6 +5101,14 @@
       "source_path": "econhdfe/models/ppml_iv/vce.py",
       "source_group": "ppml_iv",
       "target_module": "econhdfe.compute.vcov",
+      "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ppml_iv.vce",
+      "source_path": "econhdfe/models/ppml_iv/vce.py",
+      "source_group": "ppml_iv",
+      "target_module": "econhdfe.compute.weights",
       "target_group": "compute",
       "reexport_surface": false
     },
@@ -5616,6 +5652,14 @@
       "source_module": "econhdfe.sessions",
       "source_path": "econhdfe/sessions.py",
       "source_group": "interface",
+      "target_module": "econhdfe.compute.vcov",
+      "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.sessions",
+      "source_path": "econhdfe/sessions.py",
+      "source_group": "interface",
       "target_module": "econhdfe.hdfe.absorb_spec",
       "target_group": "hdfe",
       "reexport_surface": false
@@ -5721,14 +5765,6 @@
       "source_path": "econhdfe/sessions.py",
       "source_group": "interface",
       "target_module": "econhdfe.prediction",
-      "target_group": "contracts",
-      "reexport_surface": false
-    },
-    {
-      "source_module": "econhdfe.sessions",
-      "source_path": "econhdfe/sessions.py",
-      "source_group": "interface",
-      "target_module": "econhdfe.errors",
       "target_group": "contracts",
       "reexport_surface": false
     },
@@ -6322,8 +6358,8 @@
     },
     {
       "name": "tests",
-      "files": 87,
-      "python_files": 87,
+      "files": 88,
+      "python_files": 88,
       "markdown_files": 0
     },
     {
@@ -6358,7 +6394,7 @@
     },
     {
       "name": "compatibility",
-      "files": 35,
+      "files": 36,
       "python_files": 0,
       "markdown_files": 0
     }

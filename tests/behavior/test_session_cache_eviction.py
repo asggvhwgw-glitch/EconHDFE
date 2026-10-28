@@ -39,13 +39,13 @@ def test_array_views_count_shared_owner_once_and_exclude_input_storage():
 def test_lru_keeps_hot_entry_and_evicts_cold_without_changing_results(data, monkeypatch, iv, cache):
     s = session(data, iv, cache)
     s.fit(**spec(iv, "a")); s.fit(**spec(iv, "b")); s.fit(**spec(iv, "a"))
-    hot = s._entries[("a",)]
+    hot = s._entries[s._entry_key(("a",))]
     within = hot.within["y"]
     old = s.cache_info()["retained_bytes"]
     monkeypatch.setattr(s, "_cache_limit_bytes", lambda: old - 1)
     s._prepare_resource_admission()
-    assert ("b",) not in s._entries
-    assert s._entries[("a",)] is hot and hot.within["y"] is within
+    assert s._entry_key(("b",)) not in s._entries
+    assert s._entries[s._entry_key(("a",))] is hot and hot.within["y"] is within
     assert s.cache_info()["evictions"] >= 1
     assert s.cache_info()["retained_bytes"] < old
     calls = hot.residualize_calls
@@ -109,7 +109,7 @@ def test_auto_to_explicit_same_thread_cap_rebuilds_absorber(data, monkeypatch, i
     s = session(data, iv)
     s.execution = ExecutionConfig(threads="auto", memory_budget_mb=64)
     s.fit(**spec(iv, "a"))
-    entry = s._entries[("a",)]
+    entry = s._entries[s._entry_key(("a",))]
     absorber = entry.absorber
     within = entry.within["y"]
     assert entry.execution_auto_threads

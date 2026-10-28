@@ -39,13 +39,14 @@ def _validate_structure(A: np.ndarray, structure: StructuralDesignPlan | None) -
     return structure
 
 
-def column_moments(X, *, structure: StructuralDesignPlan | None = None) -> ColumnMoments:
+def column_moments(X, *, structure: StructuralDesignPlan | None = None, frequency_weights=None) -> ColumnMoments:
     """Return exact first and second column moments.
 
     When an exact disconnected-component certificate is already available,
     only each block's active row/column rectangle is scanned.  No structural
     zeros are multiplied or copied.  Without such a certificate this reduces
-    to the dense BLAS/NumPy path.
+    to the dense BLAS/NumPy path. Integer ``frequency_weights`` give the
+    moments of the expanded rows (``nobs`` is their sum).
     """
     A = np.asarray(X, dtype=np.float64)
     if A.ndim == 1:
@@ -58,6 +59,12 @@ def column_moments(X, *, structure: StructuralDesignPlan | None = None) -> Colum
     ss = np.zeros(k, dtype=np.float64)
     if k == 0:
         return ColumnMoments(int(n), sums, ss)
+
+    if frequency_weights is not None:
+        w = np.asarray(frequency_weights, dtype=np.float64)
+        sums[:] = w @ A
+        ss[:] = np.einsum("i,ij,ij->j", w, A, A, optimize=True)
+        return ColumnMoments(int(round(float(np.sum(w)))), sums, ss)
 
     if p is not None and p.certified_block_separable:
         rb = np.asarray(p.row_blocks)

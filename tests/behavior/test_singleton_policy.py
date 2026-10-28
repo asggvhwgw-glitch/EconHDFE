@@ -100,7 +100,7 @@ def test_iv_unified_does_not_apply_ppml_regressor_separation():
     x = np.array([0.,0.,1.,1.])
     z = np.array([0.,4.,3.,5.])
     cfg = IVPPMLConfig(singleton_mode='unified', tolerance=1e-11)
-    assert cfg.separation == ('fe',)
+    assert cfg.separation is None and cfg.separation_methods == ('fe',)
     r = ivppmlhdfe(y=y,endog=x,instruments=z,config=cfg)
     assert r.sample_mask.all() and r.n_separated == 0
     np.testing.assert_allclose(r.params,0,atol=1e-9)
@@ -234,7 +234,8 @@ def test_session_policy_change_partitions_memory_and_disk_cache(tmp_path):
     frame = pd.DataFrame(dict(y=y,c=c,g=g,h=h,w=fw))
     session = OLSHDFESession(frame,weights='w',weight_type='fw').enable_persistent_cache(tmp_path/'cache')
     old = session.fit(y='y',x=['c'],absorb=['g','h'])
-    entry = session._entries[('g','h')]
+    old_key = session._entry_key(('g','h'))
+    entry = session._entries[old_key]
     hits = session.persistent_cache_info()['result_hits']
     session.hdfe = HDFEConfig(singleton_mode='unified')
     new = session.fit(y='y',x=['c'],absorb=['g','h'])
@@ -245,7 +246,8 @@ def test_session_policy_change_partitions_memory_and_disk_cache(tmp_path):
     assert new.estimator_info['singleton_mode']=='unified'
     assert session.persistent_cache_info()['result_hits']==hits
     assert session.cache_info()['fe_entries']==2
-    assert session._entries[(('g','h'),'unified')] is not entry
+    assert session._entries[old_key] is entry
+    assert session._entries[session._entry_key(('g','h'))] is not entry
 
 
 def test_unified_group_individual_scope_is_explicit():
@@ -290,3 +292,58 @@ def test_unified_frequency_against_independent_dense_moment_root_and_sandwich(fa
     np.testing.assert_allclose(actual.params[:2],solved.x[:2],rtol=3e-7,atol=2e-8)
     np.testing.assert_allclose(actual.vcov[:2,:2],oracle_vcov[:2,:2],rtol=3e-6,atol=2e-9)
     np.testing.assert_allclose(actual.mu[mask],mu,rtol=3e-7,atol=2e-8)
+
+
+def test_sample_policy_truth_table():
+    from econhdfe.config import SamplePolicy
+    compat, unified = HDFEConfig().sample_policy, PPMLConfig(singleton_mode='unified').sample_policy
+    assert compat == SamplePolicy('stata_compat') and unified == SamplePolicy('unified')
+    for policy, u in ((compat, False), (unified, True)):
+        assert policy.unified is u
+        assert policy.requires_positive_user_weights is u and policy.slope_only_eligibility is u
+        assert policy.disjoint_reasons is u and policy.allows_group_individual is (not u)
+        assert policy.profile == ('frequency-invariant-v1' if u else 'stata-source-20261027')
+        assert policy.iv_default_separation == (('fe',) if u else ('fe', 'simplex', 'relu'))
+        assert policy.initial_frequency_count('fweight') is u
+        assert policy.initial_frequency_count('pweight') is False
+        assert policy.psd_frequency_scale('fweight') is u
+        assert policy.psd_frequency_scale('pweight') is False and policy.psd_frequency_scale('aweight') is False
+        for drop in (True, False):
+            assert policy.fe_zero_peeling(('fe', 'relu'), drop) is (u or drop)
+            assert policy.fe_zero_peeling(('relu',), drop) is False
+
+
+def test_iv_separation_default_follows_policy_through_replace():
+    from dataclasses import replace
+    compat = IVPPMLConfig()
+    assert compat.separation is None and compat.separation_methods == ('fe', 'simplex', 'relu')
+    unified = replace(compat, singleton_mode='unified')
+    unified.validate()
+    assert unified.separation_methods == ('fe',)
+    back = replace(IVPPMLConfig(singleton_mode='unified'), singleton_mode='stata_compat')
+    back.validate()
+    assert back.separation_methods == ('fe', 'simplex', 'relu')
+    explicit = replace(IVPPMLConfig(separation=('fe', 'relu')), singleton_mode='unified')
+    with pytest.raises(ValueError, match='separation'):
+        explicit.validate()
+
+
+@pytest.mark.parametrize('change', [dict(dof_method='none'), dict(canonicalize=False), dict(solver='lsmr')])
+def test_session_config_change_never_reuses_stale_fe_entry(change):
+    import pandas as pd
+    from dataclasses import replace
+    from econhdfe import OLSHDFESession
+    y, c, d, z, g, h, fw = _fixture()
+    frame = pd.DataFrame(dict(y=y, c=c, g=g, h=h, gh=g * 10 + h % 2))
+    absorb = ['g', 'h', 'gh']
+    session = OLSHDFESession(frame)
+    session.fit(y='y', x=['c'], absorb=absorb)
+    entry = session._entries[session._entry_key(tuple(absorb))]
+    session.hdfe = replace(session.hdfe, **change)
+    got = session.fit(y='y', x=['c'], absorb=absorb)
+    assert session._entries[session._entry_key(tuple(absorb))] is not entry
+    reference = olshdfe(frame, y='y', x=['c'], absorb=absorb, hdfe_config=session.hdfe)
+    assert got.df_absorbed == reference.df_absorbed
+    assert got.absorb_info['solver_selection'] == reference.absorb_info['solver_selection']
+    np.testing.assert_allclose(got.params, reference.params, rtol=1e-8, atol=1e-10)
+    np.testing.assert_allclose(got.vcov, reference.vcov, rtol=1e-7, atol=1e-12)

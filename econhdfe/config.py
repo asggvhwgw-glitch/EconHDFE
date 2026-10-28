@@ -5,6 +5,61 @@ from .errors import SpecificationError
 
 
 @dataclass(slots=True, frozen=True)
+class SamplePolicy:
+    """Semantics of a ``singleton_mode`` value, queried instead of comparing names.
+
+    ``stata_compat`` reproduces the upstream reghdfe/ppmlhdfe/ivppmlhdfe
+    sample rules; ``unified`` counts frequency multiplicity at every stage
+    and keeps singleton and FE-zero removals as separate reasons.
+    """
+    mode: str = "stata_compat"
+
+    @property
+    def unified(self) -> bool:
+        return self.mode == "unified"
+
+    @property
+    def profile(self) -> str:
+        """Versioned profile label reported in sample-policy diagnostics."""
+        return "frequency-invariant-v1" if self.unified else "stata-source-20261027"
+
+    @property
+    def requires_positive_user_weights(self) -> bool:
+        return self.unified
+
+    @property
+    def allows_group_individual(self) -> bool:
+        return not self.unified
+
+    @property
+    def slope_only_eligibility(self) -> bool:
+        """A slope-only singleton whose slopes are all zero cannot fit its row."""
+        return self.unified
+
+    @property
+    def disjoint_reasons(self) -> bool:
+        """Report singleton and FE-zero (separation) removals separately."""
+        return self.unified
+
+    def psd_frequency_scale(self, weight_kind) -> bool:
+        """Multiway PSD-repair scale from frequency-expanded rows (otherwise reghdfe's unweighted rows)."""
+        return self.unified and weight_kind == "fweight"
+
+    def initial_frequency_count(self, weight_kind) -> bool:
+        """Whether initial Poisson singleton clearing counts fweight mass."""
+        return self.unified and weight_kind == "fweight"
+
+    def fe_zero_peeling(self, methods, drop_singletons) -> bool:
+        """Initial FE-zero clearing; compatibility couples it to singleton dropping."""
+        return "fe" in methods and (self.unified or drop_singletons)
+
+    @property
+    def iv_default_separation(self) -> tuple[str, ...]:
+        """IV-PPML separation when unset: PPML regressor separation is not an IV existence test."""
+        return ("fe",) if self.unified else ("fe", "simplex", "relu")
+
+
+@dataclass(slots=True, frozen=True)
 class HDFEConfig:
     """Stable strategy-level controls for HDFE execution.
 
@@ -21,6 +76,10 @@ class HDFEConfig:
     dof_method: str = "pairwise"
     canonicalize: bool = True
     singleton_mode: str = "stata_compat"
+
+    @property
+    def sample_policy(self) -> SamplePolicy:
+        return SamplePolicy(self.singleton_mode)
 
     def validate(self) -> None:
         validate_singleton_mode(self.singleton_mode)

@@ -187,7 +187,7 @@ class StandardFEStructure:
 
 def prepare_standard_fe_structure(
     data, absorb, *, canonicalize_fe, drop_singletons, weights, weight_kind,
-    canonical_sample_size=32_768, component_cache=None, singleton_mode="stata_compat",
+    policy, canonical_sample_size=32_768, component_cache=None,
 ):
     """Encode, canonicalize and singleton-prune a standard HDFE structure.
 
@@ -216,7 +216,7 @@ def prepare_standard_fe_structure(
     dropped = 0
     if drop_singletons:
         eligible = None
-        if singleton_mode == "unified":
+        if policy.slope_only_eligibility:
             # A slope-only singleton with all slopes zero cannot fit its row.
             eligible = [np.ones(n, dtype=bool) if intercept else
                         (np.zeros(n, dtype=bool) if slope is None else

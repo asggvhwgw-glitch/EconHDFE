@@ -3,7 +3,8 @@ import numpy as np
 import scipy.linalg as la
 from scipy.stats import chi2
 from ...compute.vcov import kclass_vcov, gmm_vcov, score_covariance
-from ...compute.vcov import block_cluster_meat_xe, fix_psd, _cluster_meat_xe, _cluster_scale
+from ...compute.vcov import block_cluster_meat_xe, _cluster_meat_xe, _cluster_scale
+from ...compute.vcov import finalize_cluster_vcov, regressor_scale
 from ...compute.vcov import normalize_vce, is_iid_vce, cluster_df_resid, ROBUST_VCE_KINDS
 from ...compute.weights import robust_score_scale
 from ...compute.wls import weighted_arrays
@@ -225,17 +226,21 @@ def _block_kclass_vcov(X: BlockDesign, Z: BlockDesign, resid, w, bread, *, kind,
         raise ValueError(f"partitioned IV covariance does not support kind: {kind0}")
     meat = gamma.T @ Sz @ gamma
     V = bread @ meat @ bread
-    V = (V + V.T) / 2
-    return fix_psd(V) if kind0 == "cluster" and clusters and len(clusters) > 1 else V
+    return (V + V.T) / 2
 
 
 def fit_iv_kclass_block(
     y, exog: BlockDesign, endog: BlockDesign, instruments: BlockDesign, *,
     weights=None, weight_info=None, vce="iid", clusters=None, df_absorbed=0,
     nested_adj=0, estimator="2sls", kappa=None, fuller=0.0,
-    advanced_statistics=True, on_stage=None,
+    advanced_statistics=True, on_stage=None, regressors=None, regressor_weights=None,
 ):
     """Block-native linear IV core for common robust/cluster specifications.
+
+    ``regressors`` are the original (pre-absorption) exogenous and endogenous
+    columns on the estimation sample, which set the multiway-cluster repair
+    coordinates; they default to ``exog``/``endog`` (no absorbed FE).
+    ``regressor_weights`` are frequency weights for that scale (unified policy).
 
     Heavy weak-IV diagnostics still reuse the established dense implementation
     after the coefficient/inference solve; this keeps statistical compatibility
@@ -291,6 +296,10 @@ def fit_iv_kclass_block(
         X, Z, resid, w, bread, kind=vce, clusters=clusters, k_total=k_total,
         nested_adj=nested_adj, effective_n=n_eff, score_scale=score_scale,
         kappa=est_kappa if est == "kclass" else 1.0,
+    )
+    V = finalize_cluster_vcov(
+        V, vce, clusters,
+        lambda: regressor_scale(*(regressors or (exog, endog)), frequency_weights=regressor_weights) / xscale,
     )
 
     estimation_ready(on_stage, beta, V, xscale, nobs_raw=len(y), effective_n=n_eff,
@@ -361,8 +370,9 @@ def fit_iv_kclass(
     panel=None,
     bandwidth=None,
     kernel="bartlett",
-    advanced_statistics=True, on_stage=None,
+    advanced_statistics=True, on_stage=None, regressors=None, regressor_weights=None,
 ):
+    """Dense k-class IV core; ``regressors`` as in ``fit_iv_kclass_block``."""
     y = np.asarray(y, dtype=np.float64)
     df_absorbed = max(int(df_absorbed), int(bool(nested_adj)))
     nested_adj = 0
@@ -457,6 +467,12 @@ def fit_iv_kclass(
             projected_X=projected_X,
         )
     del projected_X
+    V = finalize_cluster_vcov(
+        V, vce, clusters,
+        lambda: regressor_scale(
+            *(regressors or (design.exog, design.endog)), frequency_weights=regressor_weights,
+        ) / xscale,
+    )
     if pi_x is None:
         pi_x = _first_stage_projection(Cw, Ew, Iw)
     estimation_ready(on_stage, beta, V, xscale, nobs_raw=len(y), effective_n=n_eff,
@@ -555,8 +571,9 @@ def fit_iv_gmm2s(
     panel=None,
     bandwidth=None,
     kernel="bartlett",
-    advanced_statistics=True, on_stage=None,
+    advanced_statistics=True, on_stage=None, regressors=None, regressor_weights=None,
 ):
+    """Two-step efficient GMM core; ``regressors`` as in ``fit_iv_kclass_block``."""
     y = np.asarray(y, dtype=np.float64)
     df_absorbed = max(int(df_absorbed), int(bool(nested_adj)))
     nested_adj = 0
@@ -595,6 +612,12 @@ def fit_iv_gmm2s(
         k_total=k_total, nested_adj=int(bool(nested_adj)), center=center,
         time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
         effective_n=n_eff, score_scale=score_scale,
+    )
+    V = finalize_cluster_vcov(
+        V, vce, clusters,
+        lambda: regressor_scale(
+            *(regressors or (design.exog, design.endog)), frequency_weights=regressor_weights,
+        ) / xscale,
     )
 
     estimation_ready(on_stage, beta, V, xscale, nobs_raw=len(y), effective_n=n_eff,
