@@ -1,17 +1,16 @@
 from __future__ import annotations
 import math
 from contextlib import nullcontext
+from functools import cache
 import numpy as np
 
 from ..compute.clusters import normalize_cluster_arrays
 from ..errors import InputError, error_boundary
 from ..hdfe.absorber import HDFEAbsorber, HDFEConvergenceError
-from ..hdfe.within_backend import WithinFEAbsorber
-from ..hdfe.workspace import _absorption_workspace_cost
+from ..hdfe.protocol import capability
 from ..resampling.sampling import wild_weights
 from ..resampling.engine import (
-    run_replicates, _wild_memory_estimate, _wild_score_memory_estimate,
-    _check_worker_memory,
+    run_replicates, wild_memory_estimate, wild_score_memory_estimate, check_worker_memory,
 )
 from ..planner.scheduler import current_allocation, managed_execution, reserve_memory
 
@@ -23,14 +22,7 @@ def _same_projection_metric(absorber, weights):
     custom residualizer; those calls retain their original per-batch algorithm.
     Exact equality is conservative: proportional weights need not be detected.
     """
-    # TwoWayFEAbsorber can report false nonconvergence when re-projecting an
-    # already-within design (its PCG denominator is a near-zero Schur RHS).
-    # Keep its legacy route until that solver has a reliable final certificate.
-    if type(absorber) not in (HDFEAbsorber, WithinFEAbsorber):
-        return False
-    if getattr(absorber, "backend", "numpy") != "numpy":
-        return False
-    if np.dtype(getattr(absorber, "dtype", np.float64)) != np.dtype(np.float64):
+    if not capability(absorber, "supports_projection_shortcut"):
         return False
     aw = absorber.weights
     if weights is not None and (not np.isfinite(weights).all() or np.any(weights <= 0)):
@@ -40,6 +32,27 @@ def _same_projection_metric(absorber, weights):
     if aw is None:
         return bool(np.all(weights == 1.0))
     return bool(np.array_equal(weights, aw))
+
+
+def _plan_wild_route(absorber, weights, *, nobs, ncols, groups, batch_size, reps):
+    """Admission-stage route: ``(score_route, setup, worker, legacy_estimate)``.
+
+    ``legacy_estimate()`` returns the per-batch route's (setup, worker) bytes,
+    computed at most once. The conditioning fallback needs ``pinv`` and must
+    therefore run after admission, inside the preparation reservation.
+    """
+    score_route = 0 < ncols <= int(reps) and _same_projection_metric(absorber, weights)
+    workspace = absorber.workspace_cost()
+    sizes = dict(nobs=nobs, ncols=ncols, groups=groups, batch_size=batch_size, reps=reps)
+    legacy_estimate = cache(lambda: wild_memory_estimate(workspace, **sizes))
+    if score_route:
+        setup_bytes, worker_bytes = wild_score_memory_estimate(workspace, **sizes)
+        # A wide one-time projection must not reject a formerly feasible call
+        # whose narrow legacy RHS batches fit the same resource envelope.
+        score_route = setup_bytes + worker_bytes <= current_allocation().remaining_memory_bytes()
+    if not score_route:
+        setup_bytes, worker_bytes = legacy_estimate()
+    return score_route, setup_bytes, worker_bytes, legacy_estimate
 
 
 @error_boundary("ols_bootstrap")
@@ -69,21 +82,10 @@ def wild_cluster_bootstrap_ols(*, absorber: HDFEAbsorber, y_within, X_within,
         dense = normalize_cluster_arrays(clusters, nobs=n, required=True)[0]
         G = int(dense.max()) + 1
     w = None if weights is None else np.asarray(weights, dtype=np.float64)
-    score_route = 0 < X.shape[1] <= int(reps) and _same_projection_metric(absorber, w)
-    memory_estimate = _wild_score_memory_estimate if score_route else _wild_memory_estimate
-    setup_bytes, worker_bytes = memory_estimate(
-        _absorption_workspace_cost(absorber), nobs=n, ncols=X.shape[1],
-        groups=G, batch_size=batch_size, reps=reps,
+    score_route, setup_bytes, worker_bytes, legacy_estimate = _plan_wild_route(
+        absorber, w, nobs=n, ncols=X.shape[1], groups=G, batch_size=batch_size, reps=reps,
     )
-    if score_route and setup_bytes + worker_bytes > current_allocation().remaining_memory_bytes():
-        # A wide one-time projection must not reject a formerly feasible call
-        # whose narrow legacy RHS batches fit the same resource envelope.
-        score_route = False
-        setup_bytes, worker_bytes = _wild_memory_estimate(
-            _absorption_workspace_cost(absorber), nobs=n, ncols=X.shape[1],
-            groups=G, batch_size=batch_size, reps=reps,
-        )
-    _check_worker_memory(worker_bytes, setup_bytes=setup_bytes)
+    check_worker_memory(worker_bytes, setup_bytes=setup_bytes)
     scores = None
     preparation = (reserve_memory(setup_bytes, label="wild bootstrap score preparation")
                    if score_route else nullcontext())
@@ -100,11 +102,8 @@ def wild_cluster_bootstrap_ols(*, absorber: HDFEAbsorber, y_within, X_within,
             if (not np.isfinite(retained_condition)
                     or retained_condition > 1 / np.sqrt(np.finfo(np.float64).eps)):
                 score_route = False
-                setup_bytes, worker_bytes = _wild_memory_estimate(
-                    _absorption_workspace_cost(absorber), nobs=n, ncols=X.shape[1],
-                    groups=G, batch_size=batch_size, reps=reps,
-                )
-                _check_worker_memory(worker_bytes, setup_bytes=setup_bytes)
+                setup_bytes, worker_bytes = legacy_estimate()
+                check_worker_memory(worker_bytes, setup_bytes=setup_bytes)
         del gram
         fitted = X @ beta
         if score_route:

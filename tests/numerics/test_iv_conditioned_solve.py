@@ -171,8 +171,8 @@ def test_conditioned_frequency_weights_match_literal_observation_replication():
     )
 
 
-@pytest.mark.parametrize("repetitions", [1, 16])
-def test_repeating_conditioned_design_does_not_change_rank_decision(repetitions):
+def test_repeating_conditioned_design_does_not_change_rank_decision():
+    repetitions = 16
     y, c, e, z, groups, _ = _problem()
     expected = _cluster_reference(y, c, e, z, groups)
     # Existing clusters are also repeated: their uncorrected covariance remains

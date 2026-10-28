@@ -13,12 +13,12 @@ from .config import PPMLConfig
 from .estimator import fit_arrays
 from ...hdfe.plan import FEPlan
 from ...compute.wls import as_2d
-from ..poisson import prepare_poisson_base
+from ..poisson import prepare_poisson_base, prepare_ppml_weights
 from ...design import is_heterogeneous_spec_candidate
 from .heterogeneous import fit_structured_dataframe
 
 
-def _prepare_inputs(y, X, *, offset, exposure, weights, names):
+def _prepare_inputs(y, X, *, offset, exposure, weights, names, weight_type=None):
     y, off, w = prepare_poisson_base(
         y, offset=offset, exposure=exposure, weights=weights
     )
@@ -27,7 +27,8 @@ def _prepare_inputs(y, X, *, offset, exposure, weights, names):
     names = tuple(names or [f"x{i}" for i in range(X.shape[1])])
     if len(names) != X.shape[1]:
         raise ShapeError("names length mismatch", details={"expected": X.shape[1], "actual": len(names)})
-    return y, X, off, w, names
+    w, weight_kind = prepare_ppml_weights(weights, len(y), weight_type)
+    return y, X, off, w, names, weight_kind
 
 
 #: PPML-family default VCE. It deliberately differs from OLS/IV (``None``,
@@ -152,6 +153,7 @@ def ppmlhdfe(
     offset=None,
     exposure=None,
     weights=None,
+    weight_type=None,
     vce="robust",
     cluster=None,
     names=None,
@@ -169,6 +171,11 @@ def ppmlhdfe(
     are arrays: ``absorb`` and ``cluster`` are sequences of 1-D arrays and
     ``names`` labels the columns of ``x``.
 
+    ``weight_type="fw"`` counts frequency copies in N and the robust meat;
+    ``"pw"`` counts sampled rows. Omission preserves legacy generic weights.
+    ``config.singleton_mode`` selects ``"stata_compat"`` (default) or the
+    frequency-invariant ``"unified"`` sample policy.
+
     ``vce`` defaults to ``"robust"`` (Stata ppmlhdfe's default), unlike
     OLS/IV whose ``None`` default is reghdfe's unadjusted VCE.  A non-default
     ``vce`` and a different ``inference_config.vce`` raise
@@ -176,7 +183,7 @@ def ppmlhdfe(
     """
     if data is None:
         return _ppmlhdfe_arrays(
-            y, x, absorb=absorb, offset=offset, exposure=exposure, weights=weights,
+            y, x, absorb=absorb, offset=offset, exposure=exposure, weights=weights, weight_type=weight_type,
             vce=vce, cluster=cluster, names=names, config=config,
             inference_config=inference_config, execution_config=execution_config,
             warm_start=warm_start,
@@ -187,27 +194,27 @@ def ppmlhdfe(
         inference_config=inference_config, execution_config=execution_config,
     )
     return model.fit(
-        y, _spec_tuple(x), offset=offset, exposure=exposure, weights=weights,
+        y, _spec_tuple(x), offset=offset, exposure=exposure, weights=weights, weight_type=weight_type,
         vce=vce, cluster=cluster, warm_start=warm_start,
     )
 
 
 @managed_execution
 def _ppmlhdfe_arrays(
-    y, x, *, absorb, offset, exposure, weights, vce, cluster, names,
+    y, x, *, absorb, offset, exposure, weights, weight_type, vce, cluster, names,
     config, inference_config, execution_config, warm_start,
 ):
     vce, config, execution_config, context, t0 = _resolve_call_configs(
         vce, config, PPMLConfig, inference_config, execution_config,
     )
-    y, X, off, w, names = _prepare_inputs(
-        y, x, offset=offset, exposure=exposure, weights=weights, names=names,
+    y, X, off, w, names, weight_kind = _prepare_inputs(
+        y, x, offset=offset, exposure=exposure, weights=weights, names=names, weight_type=weight_type,
     )
     plan = FEPlan.from_arrays(absorb or ())
     if plan.groups and plan.nobs != len(y):
         raise ShapeError("absorb arrays must have nobs rows", details={"expected": len(y), "actual": plan.nobs})
     result = fit_arrays(
-        y, X, plan, offset=off, true_w=w, vce=vce,
+        y, X, plan, offset=off, true_w=w, weight_kind=weight_kind, vce=vce,
         clusters=cluster, names=names, config=config, warm_start=warm_start,
         execution_config=execution_config, execution_context=context,
     )
@@ -225,7 +232,7 @@ class PPMLHDFE(_ReusableFEModel):
 
     @error_boundary("ppml")
     @managed_execution
-    def fit(self, y: str, x=(), *, offset=None, exposure=None, weights=None, vce="robust", cluster=None, warm_start=None):
+    def fit(self, y: str, x=(), *, offset=None, exposure=None, weights=None, weight_type=None, vce="robust", cluster=None, warm_start=None):
         """Fit one PPML specification on the model's DataFrame.
 
         ``vce`` defaults to ``"robust"`` (ppmlhdfe's default); it conflicts
@@ -237,7 +244,7 @@ class PPMLHDFE(_ReusableFEModel):
             if is_heterogeneous_spec_candidate(x):
                 result, _ = fit_structured_dataframe(
                     self.data, y=y, x=x, plan=self.plan,
-                    offset=offset, exposure=exposure, weights=weights,
+                    offset=offset, exposure=exposure, weights=weights, weight_type=weight_type,
                     vce=vce,
                     clusters=cluster, config=self.config,
                     execution_config=self.execution_config,
@@ -246,13 +253,13 @@ class PPMLHDFE(_ReusableFEModel):
                 return _finish_result(result, self.inference_config, self.execution_config, None)
 
             cols = tuple(x)
-            yv, Xv, off, w, names = _prepare_inputs(
+            yv, Xv, off, w, names, weight_kind = _prepare_inputs(
                 self.data[y].to_numpy(),
                 self.data[list(cols)].to_numpy() if cols else None,
                 offset=None if offset is None else self.data[offset].to_numpy(),
                 exposure=None if exposure is None else self.data[exposure].to_numpy(),
                 weights=None if weights is None else self.data[weights].to_numpy(),
-                names=cols,
+                names=cols, weight_type=weight_type,
             )
             cluster_arrays = None
             if cluster is not None:
@@ -260,7 +267,7 @@ class PPMLHDFE(_ReusableFEModel):
                 cluster_arrays = [self.data[c].to_numpy() for c in ccols]
             t0 = perf_counter() if self.execution_config.profile != "off" else None
             result = fit_arrays(
-                yv, Xv, self.plan, offset=off, true_w=w, vce=vce,
+                yv, Xv, self.plan, offset=off, true_w=w, weight_kind=weight_kind, vce=vce,
                 clusters=cluster_arrays, names=names, config=self.config, warm_start=warm_start,
                 execution_config=self.execution_config, execution_context=self.context,
             )

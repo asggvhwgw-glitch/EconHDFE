@@ -16,7 +16,7 @@ from ...pipeline import (
     block_absorb_metadata, resolve_pool_size,
 )
 from ..linear import (
-    IV_DESIGN_ROLES, StageClock, config_precedence, reporting_options,
+    IV_DESIGN_ROLES, StageClock, config_precedence, sample_policy, sample_policy_scope, reporting_options,
     prepare_standard_sample, finish_group_mode, nonconvergence_error, recover_fixed_effects,
     linear_result, prediction_state, with_saved_effects,
 )
@@ -113,7 +113,7 @@ def _ivreghdfe_group_mode(
         on_stage=bind_callback(on_stage, c_names + e_names, y, df_absorbed=dof.df_absorbed),
         vce=vce_kind, clusters=prep["clusters"], df_absorbed=dof.df_absorbed,
         nested_adj=int(dof.nested > 0), time=prep["time"], panel=prep["panel"],
-        bandwidth=bandwidth, kernel=kernel,
+        bandwidth=bandwidth, kernel=kernel, regressors=(C1_active, E1_active),
     )
     fixed_effects = None
     if save_fe:
@@ -135,6 +135,7 @@ def _ivreghdfe_group_mode(
 
 @error_boundary("linear_iv")
 @config_precedence
+@sample_policy_scope
 @managed_execution
 def ivhdfe(
     data=None, *, y, exog=None, endog, instruments, absorb,
@@ -219,6 +220,7 @@ def ivhdfe(
     y0, w0, wkind, fe, sample_state = prepare_standard_sample(
         data, y, weights, weight_type, absorb,
         canonicalize_fe=canonicalize_fe, drop_singletons=drop_singletons,
+        policy=sample_policy(hdfe_config),
     )
     groups, slopes, intercepts, mask = fe.groups, fe.slopes, fe.intercepts, fe.mask
     method_resolved, solver_selection = resolve_method(
@@ -351,12 +353,14 @@ def ivhdfe(
     clock.credit("control_refinement_seconds", refinement_seconds)
     clock.lap("columns_and_dof_seconds")
     stage_callback = bind_callback(on_stage, c_names + e_names, y, df_absorbed=dof.df_absorbed)
+    fw_scale = w1 if sample_policy(hdfe_config).psd_frequency_scale(winfo.kind) else None
     if isinstance(Cw, BlockDesign):
         beta, V, resid, rank, df_resid, first, diagnostics, meta = fit_iv_kclass_block(
             yw, Cw, Ew, Zw, weights=w1, weight_info=winfo, vce=vce_kind, clusters=clusters,
             advanced_statistics=advanced_statistics, on_stage=stage_callback,
             df_absorbed=dof.df_absorbed, nested_adj=int(dof.nested > 0),
-            estimator=est, kappa=kappa, fuller=fuller,
+            estimator=est, kappa=kappa, fuller=fuller, regressors=(C1_active, E1_active),
+            regressor_weights=fw_scale,
         )
     else:
         beta, V, resid, rank, df_resid, first, diagnostics, meta = _fit_dense_iv(
@@ -365,6 +369,7 @@ def ivhdfe(
             advanced_statistics=advanced_statistics, on_stage=stage_callback,
             df_absorbed=dof.df_absorbed, nested_adj=int(dof.nested > 0),
             time=time1, panel=panel1, bandwidth=bandwidth, kernel=kernel,
+            regressors=(C1_active, E1_active), regressor_weights=fw_scale,
         )
     clock.lap("core_seconds")
     fixed_effects = None

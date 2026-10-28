@@ -13,13 +13,13 @@ from functools import wraps
 from inspect import signature
 from time import perf_counter
 import numpy as np
-from ..config import ExecutionConfig, HDFEConfig, InferenceConfig, resolve_override
-from ..errors import ConvergenceError
+from ..config import ExecutionConfig, HDFEConfig, InferenceConfig, SamplePolicy, resolve_override
+from ..errors import ConvergenceError, SpecificationError
 from ..hdfe.absorber import HDFEConvergenceError
 from ..data import EstimationSampleState
 from ..frontend.validate import require_numeric
 from ..frontend.roles import VariableRole
-from ..compute.weights import normalize_weight_type, prepare_weights
+from ..compute.weights import normalize_weight_type, prepare_weights, reject_nonpositive_weights
 from ..pipeline import column_values, prepare_standard_fe_structure
 from ..results import RegressionResult, FixedEffectEstimates, FixedEffectTermEstimate
 from ..prediction import linear_prediction_state
@@ -158,6 +158,37 @@ def config_precedence(function):
     return wrapped
 
 
+def sample_policy(hdfe_config) -> SamplePolicy:
+    """Sample policy of a linear call; no config means the compatibility default."""
+    return SamplePolicy() if hdfe_config is None else hdfe_config.sample_policy
+
+
+def sample_policy_scope(function):
+    """Reject call shapes outside the sample policy and record it on the result.
+
+    Apply between ``config_precedence`` (which validates ``hdfe_config``) and
+    ``managed_execution``, so rejections precede resource admission.
+    """
+    sig = signature(function)
+
+    @wraps(function)
+    def wrapped(*args, **kwargs):
+        arguments = sig.bind(*args, **kwargs).arguments
+        policy = sample_policy(arguments.get("hdfe_config"))
+        if not policy.allows_group_individual and arguments.get("group") is not None:
+            raise SpecificationError(
+                "unified singleton policy is not yet supported with group()/individual()",
+                code="specification.unified_group", stage="specification",
+            )
+        result = function(*args, **kwargs)
+        if hasattr(result, "estimator_info"):
+            result.estimator_info = dict(result.estimator_info or {})
+            result.estimator_info["singleton_mode"] = policy.mode
+        return result
+
+    return wrapped
+
+
 def nonconvergence_error(message, *, iterations, metric=None, info=None):
     """``HDFEConvergenceError`` for an estimator-level FE absorption failure.
 
@@ -187,7 +218,7 @@ def reporting_options(inference_config):
             "diagnostics_mode": inference_config.diagnostics}
 
 
-def prepare_standard_sample(data, y, weights, weight_type, absorb, *, canonicalize_fe, drop_singletons):
+def prepare_standard_sample(data, y, weights, weight_type, absorb, *, canonicalize_fe, drop_singletons, policy):
     """Outcome, raw weights and the FE structure of a standard (non-group) fit.
 
     Weights are validated on the input rows before singleton pruning; the
@@ -200,9 +231,11 @@ def prepare_standard_sample(data, y, weights, weight_type, absorb, *, canonicali
     )
     wkind = normalize_weight_type(weight_type, has_weights=w0 is not None)
     _ = prepare_weights(w0, len(y0), wkind)  # validate before singleton pruning
+    if policy.requires_positive_user_weights:
+        reject_nonpositive_weights(w0)
     fe = prepare_standard_fe_structure(
         data, absorb, canonicalize_fe=canonicalize_fe, drop_singletons=drop_singletons,
-        weights=w0, weight_kind=wkind,
+        weights=w0, weight_kind=wkind, policy=policy,
     )
     if fe.dropped:
         sample_state.keep(fe.mask, stage="hdfe", reason="singleton_pruning")

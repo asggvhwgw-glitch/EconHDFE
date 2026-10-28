@@ -1,0 +1,14 @@
+{
+  "profile": "stata-source-20261027",
+  "audit_date": "2026-10-27",
+  "scope": "sample counting and stage routing on validated positive categorical-intercept support; not certified numerical Stata parity",
+  "licensed_stata_run": false,
+  "sources": [
+    {"repository": "sergiocorreia/reghdfe", "path": "src/reghdfe.ado", "version_header": "6.14.1 08Jul2026", "blob_sha": "415bde490a57501d099576e5fa9a84076261ae50"},
+    {"repository": "sergiocorreia/reghdfe", "path": "src/reghdfe.mata", "blob_sha": "c515da206214b7f87aee63315fa8c699ae3950ef", "symbol": "FE_Factor::drop_singletons"},
+    {"repository": "sergiocorreia/ivreghdfe", "path": "src/ivreghdfe.ado", "version_header": "1.1.4 29nov2025", "blob_sha": "321dc6dec33b8c738b8be705343750e42fcec9fa"},
+    {"repository": "sergiocorreia/ppmlhdfe", "path": "src/ppmlhdfe.ado", "version_header": "2.3.4 11jan2025", "blob_sha": "6c76e888ec0dc6b0d10d16d596b725d7a10e08fd"},
+    {"repository": "sergiocorreia/ppmlhdfe", "path": "src/ppmlhdfe_functions.mata", "blob_sha": "23831c3d4a229d15648f258a0457db306d6de822", "symbol": "trim_separated_obs"},
+    {"repository": "ekwonomist/ivppmlhdfe", "path": "ivppmlhdfe.ado", "version_header": "0.9.4 23apr2026", "blob_sha": "186ce35c1ed289646dc15d0916d6519152fc5e78"}
+  ]
+}

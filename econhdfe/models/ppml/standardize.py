@@ -2,7 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import numpy as np
 
-from ...compute.design_ops import column_moments
+from ...compute.design_ops import ColumnMoments, column_moments
 from ...compute.block_design import BlockDesign
 from ...compute.design_plan import StructuralDesignPlan
 
@@ -72,6 +72,15 @@ class Standardization:
 
     def unscale_coef(self, beta):
         return np.asarray(beta, dtype=np.float64) / self.x_scale
+
+    def original_scale(self, Xs, frequency_weights=None) -> np.ndarray:
+        """``regressor_scale`` of the unstandardized columns of ``Xs``.
+
+        Rescales the column moments instead of materializing ``Xs * x_scale``.
+        """
+        m = (Xs.column_moments(frequency_weights=frequency_weights) if isinstance(Xs, BlockDesign)
+             else column_moments(Xs, frequency_weights=frequency_weights))
+        return ColumnMoments(m.nobs, m.sum * self.x_scale, m.sum_squares * (self.x_scale * self.x_scale)).sample_scale()
 
     def unscale_vcov(self, V):
         s = self.x_scale

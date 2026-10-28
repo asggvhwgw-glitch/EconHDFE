@@ -111,6 +111,15 @@ def prepare_weights(weights, n: int, weight_type=None, *, normalize_ap: bool = T
     )
 
 
+def reject_nonpositive_weights(weights) -> None:
+    """Unified sample policy: zero-weight rows must be filtered explicitly."""
+    if weights is not None and np.any(weights <= 0):
+        raise InvalidWeightError(
+            "unified mode requires strictly positive user weights; filter zero-weight rows explicitly",
+            code="input.invalid_weight.range",
+        )
+
+
 def resolve_vce_for_weights(vce, info: WeightInfo, *, has_clusters: bool = False):
     """Apply Stata's pweight => robust rule without overriding cluster/HAC VCE."""
     if vce is None:
@@ -131,7 +140,11 @@ def robust_score_scale(info: WeightInfo, vce_kind: str, n: int) -> np.ndarray | 
     scores are *not* adjusted because duplicates inside a cluster aggregate to
     ``w*x*e`` before the outer product.
     """
-    kind = normalize_vce(vce_kind)
-    if info.kind != "fweight" or kind not in ROBUST_VCE_KINDS:
+    return frequency_score_scale(info.kind, info.estimation, vce_kind)
+
+
+def frequency_score_scale(weight_kind: str, weights, vce_kind: str) -> np.ndarray | None:
+    """``robust_score_scale`` from a weight kind and its estimation weights."""
+    if weight_kind != "fweight" or normalize_vce(vce_kind) not in ROBUST_VCE_KINDS:
         return None
-    return 1.0 / np.sqrt(np.asarray(info.estimation, dtype=np.float64))
+    return 1.0 / np.sqrt(np.asarray(weights, dtype=np.float64))

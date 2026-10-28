@@ -2,6 +2,7 @@ from __future__ import annotations
 import numpy as np
 from ...compute.vcov import sandwich_vcov_xe, normalize_vce, IID_VCE_KINDS
 from ...compute.clusters import normalize_vce_clusters
+from ...compute.weights import frequency_score_scale
 from ...compute.stable_linalg import equilibrated_gram_inverse
 
 
@@ -25,7 +26,7 @@ def _bread_streamed(X, w, *, chunk_rows=250_000):
 
 def ppml_vcov(
     X_tilde, y, mu, true_w, *, kind="robust", clusters=None,
-    df_absorbed=0, nested_adj=0,
+    df_absorbed=0, nested_adj=0, weight_kind="none",
 ):
     """PPML sandwich covariance without materializing a full score matrix."""
     X = np.asarray(X_tilde, dtype=np.float64)
@@ -42,9 +43,11 @@ def ppml_vcov(
 
     # PPML score_i = X_tilde_i * true_w_i * (y_i - mu_i).
     score_scalar = tw * (y - mu)
+    score_scale = frequency_score_scale(weight_kind, tw, kind0)
+    effective_n = float(np.sum(tw)) if weight_kind == "fweight" else float(len(y))
     return sandwich_vcov_xe(
         X, score_scalar, bread,
         kind=kind0, clusters=clusters,
         k_total=X.shape[1] + int(df_absorbed),
-        nested_adj=int(bool(nested_adj)),
+        nested_adj=int(bool(nested_adj)), effective_n=effective_n, score_scale=score_scale,
     )

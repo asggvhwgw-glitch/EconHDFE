@@ -80,7 +80,7 @@ def test_session_refreshes_compiled_resources_without_discarding_within(data, ho
     session = Session(data, execution_config=config,
                       inference_config=InferenceConfig(iv_advanced_statistics=False))
     session.fit(**specification(iv))
-    entry = session._entries[("g",)]
+    entry = session._entries[session._entry_key(("g",))]
     old_absorber = entry.absorber
     old_budget = entry.memory_budget_mb
     old_within = dict(entry.within)
@@ -88,7 +88,7 @@ def test_session_refreshes_compiled_resources_without_discarding_within(data, ho
     assert session.execution is config  # policy stays auto between calls
     host["resources"] = RuntimeResources(4, 16 * 1024**3, 12 * 1024**3)
     session.fit(**specification(iv))
-    assert session._entries[("g",)] is entry
+    assert session._entries[session._entry_key(("g",))] is entry
     assert entry.memory_budget_mb < old_budget
     assert entry.absorber is not old_absorber
     assert all(entry.within[name] is values for name, values in old_within.items())

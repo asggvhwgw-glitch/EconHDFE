@@ -15,7 +15,7 @@ are local helpers. Stages, in execution order:
   ``resolve_iv_columns``, ``collinearity_metadata``,
   ``design_collinearity_metadata``;
 * absorption metadata: ``absorb_metadata``, ``block_absorb_metadata``,
-  ``conditioning_info``, ``resolve_pool_size``.
+  ``weak_basis_eligible``, ``conditioning_info``, ``resolve_pool_size``.
 """
 from __future__ import annotations
 from collections.abc import Sequence
@@ -23,8 +23,7 @@ from dataclasses import dataclass
 from time import perf_counter
 import warnings
 import numpy as np
-from .hdfe.absorber import HDFEAbsorber, HDFEConvergenceError, iterative_singleton_mask
-from .hdfe.two_way import TwoWayFEAbsorber
+from .hdfe.absorber import HDFEConvergenceError, iterative_singleton_mask
 from .hdfe.group_individual import (
     GroupIndividualAbsorber, GroupIndividualInfo, group_compression,
     compress_constant, validate_unique_memberships, group_individual_singleton_mask,
@@ -39,8 +38,9 @@ from .design import build_design, Factor, RegressorInteraction, _compile_executi
 from .compute.block_design import BlockDesign
 from .collinearity import resolve_collinearity, OmittedVariableWarning, format_omission_warning
 from .compute.execution import _plan_workspace, should_probe_plain_map, ReusableRHSWorkspace
-from .hdfe.projection import estimate_index_bytes, resolve_threads
-from .hdfe.workspace import _absorption_workspace_cost, _absorption_build_cost
+from .hdfe.projection import estimate_index_bytes
+from .hdfe.factory import make_standard_absorber
+from .hdfe.workspace import absorption_build_cost, slope_build_bytes
 from .planner import scheduler
 from .compute.weights import normalize_weight_type, prepare_weights, resolve_vce_for_weights
 from .compute.stable_linalg import _apply_absorption_basis
@@ -187,7 +187,7 @@ class StandardFEStructure:
 
 def prepare_standard_fe_structure(
     data, absorb, *, canonicalize_fe, drop_singletons, weights, weight_kind,
-    canonical_sample_size=32_768, component_cache=None,
+    policy, canonical_sample_size=32_768, component_cache=None,
 ):
     """Encode, canonicalize and singleton-prune a standard HDFE structure.
 
@@ -215,9 +215,16 @@ def prepare_standard_fe_structure(
     mask = np.ones(n, dtype=bool)
     dropped = 0
     if drop_singletons:
+        eligible = None
+        if policy.slope_only_eligibility:
+            # A slope-only singleton with all slopes zero cannot fit its row.
+            eligible = [np.ones(n, dtype=bool) if intercept else
+                        (np.zeros(n, dtype=bool) if slope is None else
+                         np.any(np.asarray(slope).reshape(n, -1) != 0, axis=1))
+                        for slope, intercept in zip(pre_slopes, pre_intercepts)]
         mask, dropped = iterative_singleton_mask(
             pre_groups, weights if weight_kind == "fweight" else None,
-            frequency_weights=(weight_kind == "fweight"),
+            frequency_weights=(weight_kind == "fweight"), singleton_eligible=eligible,
         )
 
     requested_groups, requested_slopes = _dense_active(all_groups, all_slopes, mask)
@@ -288,7 +295,7 @@ def resolve_pool_size(absorber, ncols, pool_size, memory_budget_mb):
     # inconsistent memory heuristic after absorption.
     if hasattr(absorber, "execution_plan"):
         return absorber.execution_plan.pool_size
-    resident, per_col = _absorption_workspace_cost(absorber)
+    resident, per_col = absorber.workspace_cost()
     return _plan_workspace(
         nobs=absorber.nobs, ncols=ncols, pool_size=pool_size,
         memory_budget_mb=memory_budget_mb, bytes_per_column=per_col,
@@ -311,7 +318,7 @@ def residualize_blocks(
     Later pools retain the first pool's choice without repeating the probe.
     """
     ncols = int(matrix.shape[1])
-    resident, per_col = _absorption_workspace_cost(absorber)
+    resident, per_col = absorber.workspace_cost()
     plan = _plan_workspace(
         nobs=absorber.nobs, ncols=ncols, pool_size=pool_size,
         memory_budget_mb=memory_budget_mb, bytes_per_column=per_col,
@@ -461,6 +468,15 @@ def residualize_in_basis(absorber, y, X, basis, pool_size, memory_budget_mb,
     return within[:, 0], within[:, 1:], info
 
 
+def weak_basis_eligible(groups, slopes, intercepts, *, method, backend="numpy"):
+    """Whether weak-direction design scaling applies before absorption."""
+    return (
+        backend == "numpy" and method in {"map", "within"}
+        and all(intercepts) and all(s is None for s in slopes)
+        and len(groups) > 1
+    )
+
+
 def conditioning_info(basis, stage, tolerance):
     """``absorb_info["conditioning"]`` for a weak-direction absorption basis."""
     return {"basis": "symmetric_weak_direction_scaling", "stage": stage,
@@ -481,8 +497,7 @@ def absorb_metadata(plan, absorber, info, pool_size, solver_selection=None):
         "convergence_criterion": getattr(info, "criterion", "unknown"),
         "pool_size": (absorber.execution_plan.pool_size if hasattr(absorber, "execution_plan") else pool_size),
     }
-    if absorber.method == "within":
-        out["within"] = absorber.resource_info
+    out.update(absorber.absorb_info_extras())
     if solver_selection is not None:
         out["solver_selection"] = dict(solver_selection)
     if hasattr(absorber, "execution_plan"):
@@ -864,59 +879,6 @@ def prepare_group_mode(data, *, group, individual, absorb, arrays, weights, clus
     }
 
 
-def _slope_build_bytes(groups, slopes):
-    """Slope copies, centered vectors, means and Gram/inverse work of slope FEs."""
-    total = 0
-    for codes, slope in zip(groups, slopes, strict=True):
-        if slope is not None:
-            width = 1 if slope.ndim == 1 else slope.shape[1]
-            levels = int(codes.max()) + 1 if len(codes) else 0
-            total += 8 * (len(codes) * (width + 5) + levels * (3 * width**2 + width))
-    return total
-
-
-def make_standard_absorber(
-    groups, slopes, intercepts, *, weights, tol, max_iter, backend, method,
-    transform, acceleration, preconditioner, projection_backend, absorb_threads,
-    memory_budget_mb,
-):
-    if method == "within":
-        if backend != "numpy" or any(s is not None for s in slopes) or not all(intercepts):
-            raise ValueError("method='within' requires CPU pure-intercept categorical FEs")
-    if method == "twoway":
-        if backend != "numpy":
-            raise ValueError("method='twoway' currently requires backend='numpy'")
-        if len(groups) != 2 or any(s is not None for s in slopes) or not all(intercepts):
-            raise ValueError(
-                "method='twoway' requires exactly two intercept-only fixed effects "
-                "after FE canonicalization"
-            )
-    build_bytes = _absorption_build_cost(groups, "twoway" if method == "twoway" else "generic")
-    build_bytes += _slope_build_bytes(groups, slopes)
-    if backend == "numpy" and groups:
-        # Warm the saturation cache before construction reserves workspace.
-        # Small samples/explicit requests do not run a calibration probe.
-        resolve_threads(absorb_threads, nobs=len(groups[0]))
-    with scheduler.reserve_memory(build_bytes, label="linear_fe_build"):
-        if method == "within":
-            from .hdfe.within_backend import WithinFEAbsorber
-            return WithinFEAbsorber(
-                groups, weights=weights, tol=tol, max_iter=max_iter,
-                absorb_threads=absorb_threads, projection_memory_budget_mb=memory_budget_mb,
-            )
-        if method == "twoway":
-            return TwoWayFEAbsorber(
-                groups, weights=weights, tol=tol, max_iter=max_iter
-            )._configure_execution(absorb_threads=absorb_threads)
-        return HDFEAbsorber(
-            groups, slopes=slopes, intercepts=intercepts, weights=weights,
-            tol=tol, max_iter=max_iter, backend=backend, method=method,
-            transform=transform, acceleration=acceleration,
-            preconditioner=preconditioner, projection_backend=projection_backend,
-            absorb_threads=absorb_threads, projection_memory_budget_mb=memory_budget_mb,
-        )
-
-
 def make_group_absorber(prep, *, method, transform, backend, acceleration, preconditioner, tol, max_iter, aggregation, incidence_backend, memory_budget_mb, projection_backend="auto", absorb_threads="auto"):
     indiv = prep["individual_spec"]
     if indiv is None:
@@ -954,9 +916,9 @@ def make_group_absorber(prep, *, method, transform, backend, acceleration, preco
         # alternative when concurrent workspace leaves less construction room.
         selected = "csr" if (32 * nnz + 16 * n <= .45 * memory_budget_mb * 1024**2
                              and csr_bytes <= available) else "matrix_free"
-    build_bytes = csr_bytes if selected == "csr" else base_bytes + _absorption_build_cost(prep["groups"], "generic")
+    build_bytes = csr_bytes if selected == "csr" else base_bytes + absorption_build_cost(prep["groups"], "generic")
     if selected != "csr":
-        build_bytes += _slope_build_bytes(prep["groups"], prep["slopes"])
+        build_bytes += slope_build_bytes(prep["groups"], prep["slopes"])
     with scheduler.reserve_memory(build_bytes, label="group_individual_build"):
         return GroupIndividualAbsorber(
             prep["groups"], standard_slopes=prep["slopes"], standard_intercepts=prep["intercepts"],

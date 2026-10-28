@@ -5,8 +5,17 @@ import numpy as np
 from scipy.sparse import coo_matrix, hstack
 from scipy.sparse.linalg import LinearOperator, lsmr, lsqr
 
-from .absorber import AbsorbInfo, HDFEAbsorber, singleton_rows
+from .absorber import AbsorbInfo, HDFEAbsorber
 from .dof import DofInfo, absorbed_dof
+
+
+def _singleton_rows(groups, levels, idx) -> np.ndarray:
+    """One pruning pass: flag active rows ``idx`` whose level has one active row in any group."""
+    flags = np.zeros(len(idx), dtype=bool)
+    for g, nlev in zip(groups, levels, strict=True):
+        active = g[idx]
+        flags |= np.bincount(active, minlength=nlev)[active] <= 1
+    return flags
 
 
 @dataclass(slots=True)
@@ -120,7 +129,7 @@ def group_individual_singleton_mask(
         if active_groups.size == 0:
             break
 
-        drop[active_groups] = singleton_rows(std, std_levels, active_groups)
+        drop[active_groups] = _singleton_rows(std, std_levels, active_groups)
 
         active_membership = keep[mg]
         degree = np.bincount(ind[active_membership], minlength=nind)
@@ -457,6 +466,22 @@ class GroupIndividualAbsorber:
             sol = lsqr(self._operator, b, atol=self.tol, btol=self.tol, iter_lim=self.max_iter)
             theta, istop, itn, normr = sol[0], int(sol[1]), int(sol[2]), float(sol[3])
         return theta, istop in {0, 1, 2, 4, 5}, itn, normr
+
+    supports_projection_shortcut = False
+    supports_fe_orthogonality_certificate = False
+    supports_wild_cluster_test = False
+
+    def workspace_cost(self):
+        # Only weights and two pooled RHS vectors are inventoried; incidence
+        # and operator state are not.
+        fixed = 0 if self.weights is None else self.weights.nbytes
+        return int(fixed), max(1, 16 * int(self.nobs))
+
+    def pending_cost(self):
+        return 0
+
+    def absorb_info_extras(self):
+        return {}
 
     def residualize(self, data, *, copy=True, return_info=False):
         a = np.asarray(data, dtype=np.float64)

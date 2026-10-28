@@ -1,81 +1,81 @@
 {
   "schema_version": 1,
-  "release_version": "0.9.1",
-  "previous_version": "0.9.0",
+  "release_version": "0.9.2",
+  "previous_version": "0.9.1",
   "checks": {
     "frontend_api": {
       "status": "changed",
-      "evidence": "Additive trailing ExecutionConfig.memory_policy; existing estimator call signatures unchanged.",
+      "evidence": "Weighted singleton policies (#30): Config singleton_mode defaults to stata_compat; plain PPML adds weight_type. Full/alias/reusable/structured entry points reviewed and tested in tests/behavior/test_singleton_policy.py. Absorber/sample-policy refactor: No signature/export change (contract snapshot unchanged by this part). olshdfe/ivhdfe keep error priority via sample_policy_scope between config_precedence and managed_execution; s-equivalence linear-group/zero-weight cases bitwise equal.",
       "description": "Public call signatures, exports, aliases, CLI/front-end validation and compatibility."
     },
     "backend_compute": {
       "status": "changed",
-      "evidence": "Relaxed root reserve and explicit-budget admission; live headroom, RSS, reservations and worker slices retained. Native adapter inherited from PR25; no numerical solver changes in this follow-up.",
+      "evidence": "Weighted singleton policies (#30): Independent Numba queue with frequency-unit predicate and exact positive support. No new absorber or computational rank elimination. tests/numerics/test_sample_peeling.py and million.json. Absorber/sample-policy refactor: Multiway-cluster PSD repair moved to compute.vcov.finalize_cluster_vcov in reghdfe original-regressor stdev coordinates for all estimators; repair_psd chain and public internal fix_psd removed; IV-PPML robust VCE uses shared sandwich/frequency_score_scale. Stata reghdfe parity 1e-7 (tests/numerics/test_multiway_psd_coordinates.py).",
       "description": "Solver/compute/cache/backend contracts, numerical defaults and resource controls."
     },
     "errors": {
       "status": "changed",
-      "evidence": "resource.memory includes allocation/headroom counters; exception classes and codes unchanged. 5M within convergence.hdfe remains a reported failure.",
+      "evidence": "Weighted singleton policies (#30): Fail closed for unknown policy, unsupported unified group/individual semantics and unsafe IV-PPML separation/mu choices; typed frequency validation precedes pruning. Absorber/sample-policy refactor: Error codes/texts unchanged; Poisson empty/no-finite errors moved to shared helpers with identical text and details (s-equivalence poisson-edge cases bitwise equal).",
       "description": "Structured exception classes, codes, stages, suggestions and public error boundaries."
     },
     "public_contract": {
       "status": "changed",
-      "evidence": "Three reviewed ExecutionConfig schema/signature changes versus immutable 0.9.0; new 0.9.1 snapshot captured.",
+      "evidence": "Eight intentional additive/default-sentinel contract changes (singleton policy configs, #30) recorded against immutable 0.9.1; the absorber/sample-policy refactor adds none. New immutable 0.9.2 snapshot. The development numbers 0.10.0/0.10.1 were never tagged or published and their snapshots are folded into 0.9.2. IVPPMLConfig.separation default was already None in the schema.",
       "description": "Public exports/signatures, result/config schemas and stable structured-error compatibility."
     },
     "skill": {
-      "status": "reviewed",
-      "evidence": "Existing default commands and strategy routing remain valid; advanced opt-in is documented in docs/development/execution-planner.md. No installed or central skill modified.",
+      "status": "changed",
+      "evidence": "Weighted singleton policies (#30): skills/econhdfe/references/configuration.md documents selection, typed Poisson weights, deletion boundaries and IV-specific restrictions. Absorber/sample-policy refactor: skills/econhdfe/references/configuration.md: IV-PPML separation default follows replace(); multiway repair coordinates documented.",
       "description": "Agent skill commands, examples, decision rules and newly exposed controls."
     },
     "linked_modules": {
       "status": "changed",
-      "evidence": "Config policy inherited by scheduler/core/design admission and nested/worker scopes; generated architecture map checked.",
+      "evidence": "Weighted singleton policies (#30): Linear direct/session paths, dense/block Poisson paths and shared VCE all propagate policy and original user weight kind. Numeric peeler owns no estimator-specific routing. Absorber/sample-policy refactor: SamplePolicy (config) queried by pipeline, linear, sessions, PPML/IV-PPML separation and estimators; Poisson helpers in models/poisson; singleton_rows moved private to group_individual; initial_sample_mask removed. Architecture map regenerated, dependency contract test passes.",
       "description": "Cross-module imports, shared schemas, adapters, compatibility shims and downstream consumers."
     },
     "results_reporting": {
       "status": "changed",
-      "evidence": "resource_schedule reports memory_policy; coefficient/inference result schemas unchanged.",
+      "evidence": "Weighted singleton policies (#30): Unified Poisson disjoint physical-row deletion reasons; frequency N/DF/robust meat; explicit statistical/work counts with computational_elimination=False. Legacy initial combined reporting preserved. Absorber/sample-policy refactor: Multiway-cluster vcov/stderr and derived Wald/F statistics change only where the CGM repair clips (99 of 215 s-equivalence cases, all multiway and clipping); diagnostics dict order unchanged.",
       "description": "Result fields, publication output, diagnostics metadata and serialization-facing schemas."
     },
     "config_defaults": {
       "status": "changed",
-      "evidence": "Default memory_policy=conservative preserves existing reserve and initial cap; relaxed is explicit, validated and inherited.",
+      "evidence": "Weighted singleton policies (#30): Compatibility remains default. IVPPMLConfig separation None resolves to old tuple in compatibility, fe only in unified. Unsafe explicit combinations rejected. Absorber/sample-policy refactor: IVPPMLConfig.separation=None now stays None and resolves through separation_methods; __post_init__ rewrite removed; resolved defaults unchanged.",
       "description": "Config objects, defaults, deprecations, aliases and backwards-compatible behavior."
     },
     "cache_state": {
-      "status": "reviewed",
-      "evidence": "No cache formats or numerical cache keys changed; worker/nested inheritance and scope restoration tested.",
+      "status": "changed",
+      "evidence": "Weighted singleton policies (#30): Policy partitions in-memory session FE keys, with compatibility key preserved. Persistent cache already fingerprints full configs; targeted memory/disk separation test passes. Absorber/sample-policy refactor: Session memory FE-entry key and persistent within signature share _entry_config (hdfe, weight_type, drop_singletons); persistent result ABI linear-session-result-6 for the E covariance change. Regression test for stale entries after dof_method/canonicalize/solver change.",
       "description": "Reusable state/cache invalidation, fingerprints, lifecycle semantics and stale-state hazards."
     },
     "tests_validation": {
       "status": "changed",
-      "evidence": "511 tests passed (468 base plus 43 native), four expected omission warnings. Added relaxed admission/inheritance/live-pressure and OLS/IV numerical parity tests. New 0.9.1 snapshot preserves immutable 0.9.0.",
+      "evidence": "Weighted singleton policies (#30): Baseline 468 passed; candidate full suite 509 passed including 41 new targeted tests. Independent brute-force, dense moment-root/sandwich, frequency expansion and four million-record peeling checks. See validation/singleton_policy/local_checks.json. Absorber/sample-policy refactor: Full suite with/without native extension, native/within-accel tests, tooling; new tests for stdev-coordinate repair (Stata references), unit invariance (OLS/IV/PPML/IV-PPML), SamplePolicy, replace(), session staleness; bitwise equivalence harnesses in archive/econhdfe/v0.10.0/development/arch-p1-refactor-20261027.",
       "description": "Regression tests, install smoke tests, golden/parity coverage and failure-path tests."
     },
     "performance": {
-      "status": "changed",
-      "evidence": "5M default full IV completed in 970.075s with relaxed admission; N=4850080 and independent coefficient/residual/conditional-covariance checks pass. Native failed original 1e-12 convergence gate after 243.153s; no speedup claim.",
+      "status": "reviewed",
+      "evidence": "Weighted singleton policies (#30): Four actual million-record four-FE sample-peeling checks pass; counts and single-run scope timings in validation/singleton_policy/million.json. No end-to-end estimator speedup claim. Absorber/sample-policy refactor: Regressor scale computed lazily only for multiway clustering (one column-moment pass); no other hot-path change; equivalence suites show identical iteration counts.",
       "description": "Representative benchmark/resource regressions for code paths materially changed by the release."
     },
     "docs_migration": {
       "status": "changed",
-      "evidence": "CHANGELOG, execution-planner memory-policy documentation, native validation limitations and benchmark records updated.",
+      "evidence": "Weighted singleton policies (#30): README English/Chinese, changelog, weighted policy technical note, economic module map, skill configuration and generated maps updated. Scope limitations explicit. Absorber/sample-policy refactor: CHANGELOG 0.9.2; docs/technical/cluster-inference.md and hdfe/singleton-policies.md; economic module map and architecture map.",
       "description": "README/architecture/changelog/migration/versioning documentation and user-visible examples."
     },
     "packaging_dependencies": {
       "status": "reviewed",
-      "evidence": "Version advanced with controlled tool to 0.9.1; runtime dependencies and native wheel unchanged. No new wheel built or published.",
+      "evidence": "Weighted singleton policies (#30): No dependency or Python-support changes. New hdfe/sample.py is inside existing econhdfe package discovery. Local offline build/smoke is recorded in local_checks.json; remote matrix results remain separate. Absorber/sample-policy refactor: No dependency, extra or build metadata change beyond the version.",
       "description": "Python/dependency matrix, optional extras, wheel/source contents and build metadata."
     },
     "external_validation": {
       "status": "reviewed",
-      "evidence": "Existing independent analytic IV reference used for 5M, covariance conditional on reported DoF; no new licensed Stata/R corpus run or external certification claimed.",
+      "evidence": "Weighted singleton policies (#30): No licensed Stata executable. Version/header/blob source audit in upstream.json is not golden numerical parity. Cross-platform/reference certification deferred explicitly, not marked executed. Absorber/sample-policy refactor: Local Stata 18 MP reghdfe 6.12.5/ppmlhdfe 2.3.0 comparison for multiway repair (three seeds); PPML small-sample constant difference remains registered and out of scope; no licensed certification claimed.",
       "description": "Licensed/reference-environment parity gates and explicitly deferred external certification."
     },
     "release_artifacts": {
       "status": "not_applicable",
-      "evidence": "User authorized merging source PR25 after validation; no public wheel/tag/PyPI publication requested. Remote CI validates candidate artifacts; prior-head checks do not replace final-head validation.",
+      "evidence": "Source candidate only: no sdist/wheel built, tagged or published. Untagged development numbers 0.10.0/0.10.1 are renumbered as patch 0.9.2.",
       "description": "Version consistency, source/wheel parity, hashes, clean install and reproducible bundle contents."
     }
   }

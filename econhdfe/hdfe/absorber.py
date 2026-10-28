@@ -12,6 +12,7 @@ from .projection import (
     build_group_index, estimate_index_bytes, numba_thread_limit,
     _project_indexed_inplace_current, _max_relative_update_parallel, resolve_threads,
 )
+from .workspace import absorption_build_cost
 
 
 @njit(cache=True, nogil=True)
@@ -708,6 +709,60 @@ class HDFEAbsorber:
             and all(self.intercepts) and all(s is None for s in self.slopes)
         )
 
+    @property
+    def supports_projection_shortcut(self) -> bool:
+        """Known CPU weighted-orthogonal projector; subclasses are not certified."""
+        return (
+            type(self) is HDFEAbsorber and self.backend == "numpy"
+            and np.dtype(self.dtype) == np.dtype(np.float64)
+        )
+
+    supports_wild_cluster_test = True
+
+    def workspace_cost(self):
+        """Conservative byte inventory for pooled CPU absorption, excluding input."""
+        arrays = {}
+
+        def add(a):
+            if isinstance(a, np.ndarray):
+                arrays[id(a)] = a.nbytes
+
+        for a in (*self.groups, *self.slopes, *self._denoms, self.weights, self._projection_scratch):
+            add(a)
+        for proj in self._projectors:
+            for a in (proj.denom, proj.slope_means, proj.slope_gram_inv, proj.slope_inv_ss):
+                add(a)
+        fixed = int(self.index_bytes) + sum(arrays.values())
+        n = int(self.nobs)
+        vectors = 4 if self.acceleration in ("cg", "auto") else 2
+        per_col = 8 * n * vectors
+        if self.acceleration in ("cg", "auto") and self.absorb_threads > 1:
+            # At most 16 partial reductions plus their per-column result.
+            per_col += 17 * 8
+        # Fused fallback accumulators are reused across FE, so reserve only
+        # the largest group matrix. This also bounds one-column bincount work.
+        unindexed = [L for L, index in zip(self.levels, self._group_indexes, strict=True) if index is None]
+        if unindexed:
+            per_col += 8 * max(unindexed) * 3
+        if any(s is not None for s in self.slopes):
+            per_col += 8 * n * 4
+        core = self._core_plan
+        if core is not None:
+            fixed += core.core_index.nbytes + sum(g.nbytes for g in core.core_groups)
+            core_levels = [int(g.max()) + 1 if g.size else 0 for g in core.core_groups]
+            fixed += estimate_index_bytes(core.core_nobs, core_levels) + 8 * sum(core_levels)
+            per_col += 8 * core.core_nobs
+        return int(fixed), max(1, int(per_col))
+
+    def pending_cost(self):
+        """Known lazy topology allocations not yet represented in process RSS."""
+        if self._core_plan is not None and self._core_absorber is None:
+            return absorption_build_cost(self._core_plan.core_groups, "generic")
+        return 0
+
+    def absorb_info_extras(self):
+        return {}
+
     def fe_orthogonality_error(self, data) -> float:
         """Maximum normalized within-FE mean left in a residualized block.
 
@@ -1289,69 +1344,20 @@ class HDFEAbsorber:
         return AbsorbInfo(False, self.max_iter, float(max_update))
 
 
-def singleton_rows(groups, levels, idx, frequency_weights=None, positive=None) -> np.ndarray:
-    """One pruning pass: flag active rows ``idx`` whose level has degree one in any group.
-
-    Degree is the active row count, or the active frequency mass when
-    ``frequency_weights`` (full-length) is given. Row counts are integers, so
-    the mass tolerance ``<= 1 + 1e-12`` is exactly ``== 1`` for them.
-    With a full-length boolean ``positive`` outcome mask, levels without an
-    active positive outcome are flagged as well (ppmlhdfe's FE-separation
-    rule, applied jointly with singletons).
-    """
-    flags = np.zeros(len(idx), dtype=bool)
-    pos = None if positive is None else positive[idx]
-    for g, nlev in zip(groups, levels, strict=True):
-        active = g[idx]
-        if frequency_weights is None:
-            counts = np.bincount(active, minlength=nlev)
-        else:
-            counts = np.bincount(active, weights=frequency_weights[idx], minlength=nlev)
-        flags |= counts[active] <= 1.0 + 1e-12
-        if pos is not None:
-            flags |= np.bincount(active[pos], minlength=nlev)[active] == 0
-    return flags
-
-
 def iterative_singleton_mask(
     groups: list[np.ndarray], weights=None, *, frequency_weights: bool = False, positive=None,
+    singleton_eligible=None,
 ) -> tuple[np.ndarray, int]:
-    """Iteratively remove observations singleton in any absorbed FE group.
+    """Recursive row/frequency peeling on a fixed positive-weight support.
 
-    With Stata frequency weights, group degree is the sum of frequency mass,
-    matching the dataset that would be obtained by physically expanding the
-    rows. Analytic/probability/generic weights must leave ``frequency_weights``
-    false because a weighted row still counts as one sampled observation.
-    ``positive`` (boolean outcome mask) additionally removes levels with no
-    positive outcome inside the same fixed point, as ppmlhdfe's first stage
-    does with ``separation(fe)``.
+    The frequency rule is exactly equivalent to expanding positive integer
+    multiplicities. User analytic/probability and IRLS weights are not counts.
     """
-    if not groups:
-        return np.ones(0, dtype=bool), 0
-    n = len(groups[0])
-    keep = np.ones(n, dtype=bool)
-    fw = None
-    if frequency_weights:
-        if weights is None:
-            raise ValueError("frequency_weights=True requires weights")
-        fw = np.asarray(weights, dtype=np.float64)
-        if len(fw) != n:
-            raise ValueError("frequency weights length mismatch")
-    pos = None
-    if positive is not None:
-        pos = np.asarray(positive, dtype=bool)
-        if len(pos) != n:
-            raise ValueError("positive outcome mask length mismatch")
-    levels = [int(g.max()) + 1 if len(g) else 0 for g in groups]
-    dropped_total = 0
-    while True:
-        drop = np.zeros(n, dtype=bool)
-        idx = np.flatnonzero(keep)
-        drop[idx] = singleton_rows(groups, levels, idx, fw, pos)
-        new = drop & keep
-        c = int(new.sum())
-        if c == 0:
-            break
-        keep[new] = False
-        dropped_total += c
-    return keep, dropped_total
+    from .sample import peel_sample
+    if frequency_weights and weights is None:
+        raise ValueError("frequency_weights=True requires weights")
+    selected = peel_sample(
+        groups, frequency_weights=weights if frequency_weights else None,
+        positive=positive, singleton_eligible=singleton_eligible,
+    )
+    return selected.keep, int(np.sum(~selected.keep))

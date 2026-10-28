@@ -28,38 +28,66 @@ class SeparationResult:
 _UPSTREAM_ORDER = ("fe", "simplex", "relu", "mu")
 
 
-def initial_sample_mask(y, plan: FEPlan, config: PPMLConfig) -> tuple[np.ndarray, int]:
-    """ppmlhdfe first stage: rows dropped before any regressor-based check.
+@dataclass(slots=True)
+class InitialSampleSelection:
+    dropped: np.ndarray
+    singletons: np.ndarray
+    separated: np.ndarray
+    n_fe: int
 
-    Singletons are counted by rows (user weights do not enter this stage).
-    With ``"fe"`` in ``config.separation``, levels whose outcome sums to zero
-    are removed in the same fixed point (``fixed_effects(..., "iweight",
-    depvar)``), so FE separation can create singletons and vice versa.
-    Returns the dropped-row mask and, for diagnostics, how many of those rows
-    pure singleton pruning would have kept.
+
+def initial_sample_selection(y, plan, config, *, weights=None, weight_kind="none"):
+    """Versioned sample semantics, separate from the numerical FE peeler.
+
+    Compatibility preserves upstream's combined initial singleton/zero-level
+    count. Unified mode counts frequencies at every stage and keeps the two
+    removal reasons disjoint. Both operate only on validated positive weights.
     """
-    n = len(y)
-    if not plan.groups:
-        return np.zeros(n, dtype=bool), 0
-    single = plan.singleton_mask()
+    from ...hdfe.sample import peel_sample
     y = np.asarray(y, dtype=np.float64)
-    if "fe" not in config.separation or np.all(y > 0):
-        return single, 0
-    joint = plan.singleton_mask(positive=y > 0)
-    n_fe = int(np.sum(joint) - np.sum(single))
-    if n_fe and np.all(joint):
+    n = len(y)
+    policy = config.sample_policy
+    fw = weights if policy.initial_frequency_count(weight_kind) else None
+    fe_on = policy.fe_zero_peeling(config.separation_methods, config.drop_singletons)
+    selected = peel_sample(
+        plan.groups, nobs=n, frequency_weights=fw,
+        positive=y > 0 if fe_on else None, drop_singletons=config.drop_singletons,
+    )
+    dropped = ~selected.keep
+    if policy.disjoint_reasons:
+        singles, separated = selected.singletons, selected.separated
+        n_fe = int(np.sum(separated))
+    else:
+        singles, separated = dropped, np.zeros(n, dtype=bool)
+        pure = peel_sample(plan.groups, nobs=n, drop_singletons=config.drop_singletons)
+        n_fe = int(np.sum(dropped) - np.sum(~pure.keep))
+    if n_fe and np.all(dropped):
         raise InputError(
             "PPML has no finite estimable sample after separation",
             code="identification.no_finite_estimate", stage="separation",
-            details={
-                "nobs_after_singletons": int(n - np.sum(single)),
-                "n_separated": n_fe,
-                "separation_by_method": {"fe": n_fe},
-                "reason": "ppml_separation_no_finite_mle",
-            },
-            suggestion="Inspect all-zero FE levels and separated support; changing normalization cannot create a finite PPML estimate.",
+            details={"nobs_after_singletons": int(n - np.sum(singles)),
+                     "n_separated": n_fe, "separation_by_method": {"fe": n_fe},
+                     "reason": "ppml_separation_no_finite_mle"},
+            suggestion="Inspect all-zero FE levels and separated support.",
         )
-    return joint, n_fe
+    return InitialSampleSelection(dropped, singles, separated, n_fe)
+
+
+def sample_policy_diagnostics(config, sample, weights, weight_kind):
+    """Counts only: never place row-level identifiers in diagnostic reports."""
+    rows = int(np.sum(sample))
+    observations = float(np.sum(np.asarray(weights)[sample])) if weight_kind == "fweight" else float(rows)
+    policy = config.sample_policy
+    return {
+        "mode": policy.mode,
+        "profile": policy.profile,
+        "initial_count": "frequency" if policy.initial_frequency_count(weight_kind) else "rows",
+        "post_separation_count": "frequency" if weight_kind == "fweight" else "rows",
+        "drop_singletons": config.drop_singletons,
+        "statistical_rows": rows, "statistical_observations": observations,
+        "working_rows": rows, "computational_elimination": False,
+        "separation_methods": tuple(config.separation_methods),
+    }
 
 
 def detect_separation(
@@ -95,8 +123,13 @@ def detect_separation(
     iterations: dict[str, int] = {}
     solvers: dict[str, str] = {}
 
-    for method in [m for m in _UPSTREAM_ORDER if m in config.separation]:
+    policy = config.sample_policy
+    methods = config.separation_methods
+    for method in [m for m in _UPSTREAM_ORDER if m in methods]:
         t0 = perf_counter()
+        if method == "fe" and not policy.fe_zero_peeling(methods, config.drop_singletons):
+            counts[method], timings[method], iterations[method], solvers[method] = 0, 0.0, 0, "disabled-with-singletons"
+            continue
         if method == "mu":
             counts[method] = 0
             timings[method] = 0.0
@@ -168,11 +201,23 @@ def detect_separation(
                 idx = np.flatnonzero(active)
                 full_sep[idx[local]] = True
             alive = ~(full_sep | full_single)
-            if method != "fe" and plan.groups and np.any(alive):
+            if plan.groups and np.any(alive):
                 fw = w0[alive] if frequency_weights else None
-                new = plan.subset(alive).singleton_mask(frequency_weights=fw)
-                full_single[np.flatnonzero(alive)[new]] = True
-        counts[method] = nlocal
+                if policy.disjoint_reasons:
+                    from ...hdfe.sample import peel_sample
+                    new = peel_sample(
+                        plan.subset(alive).groups, frequency_weights=fw,
+                        positive=y0[alive] > 0 if "fe" in methods else None,
+                        drop_singletons=config.drop_singletons,
+                    )
+                    idx = np.flatnonzero(alive)
+                    full_single[idx[new.singletons]] = True
+                    full_sep[idx[new.separated]] = True
+                    counts["fe"] = counts.get("fe", 0) + int(np.sum(new.separated))
+                elif method != "fe" and config.drop_singletons:
+                    new = plan.subset(alive).singleton_mask(frequency_weights=fw)
+                    full_single[np.flatnonzero(alive)[new]] = True
+        counts[method] = counts.get(method, 0) + nlocal
         timings[method] = perf_counter() - t0
         iterations[method] = nit
         solvers[method] = solver

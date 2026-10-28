@@ -13,9 +13,10 @@ from ..pipeline import (
     design_collinearity_metadata, check_collinearity_mode, resolve_method, resolve_acceleration,
     standard_dof, make_standard_absorber, check_absorption, cluster_arrays, masked_array,
     absorb_metadata, block_absorb_metadata, conditioning_info, resolve_pool_size,
+    weak_basis_eligible,
 )
 from .linear import (
-    StageClock, config_precedence, reporting_options, prepare_standard_sample,
+    StageClock, config_precedence, sample_policy, sample_policy_scope, reporting_options, prepare_standard_sample,
     finish_group_mode, nonconvergence_error, recover_fixed_effects, linear_result, prediction_state,
     with_saved_effects,
 )
@@ -27,6 +28,7 @@ from ..compute.stable_linalg import (
 )
 from ..compute.vcov import (
     ols_vcov, sandwich_vcov_block_xe, normalize_vce, is_iid_vce, cluster_df_resid, BLOCK_VCE_KINDS,
+    finalize_cluster_vcov, regressor_scale,
 )
 from ..compute.block_design import BlockDesign
 from ..compute.execution import _check_allocation_headroom
@@ -149,6 +151,8 @@ def _reghdfe_group_mode(
         nested_adj=int(dof.nested > 0), time=prep["time"], panel=prep["panel"],
         bandwidth=bandwidth, kernel=kernel,
     )
+    # group()/individual() is compatibility-only, so the scale is reghdfe's unweighted one.
+    V = finalize_cluster_vcov(V, vce_kind, prep["clusters"], lambda: regressor_scale(X1_active))
     fixed_effects = None
     if save_fe:
         fixed_effects = recover_fixed_effects(absorber, y1 - X1_active @ beta - resid, prep["names"])
@@ -166,6 +170,7 @@ def _reghdfe_group_mode(
 
 @error_boundary("ols")
 @config_precedence
+@sample_policy_scope
 @managed_execution
 def olshdfe(
     data=None, *, y, x, absorb, weights=None, weight_type=None, cluster=None,
@@ -235,6 +240,7 @@ def olshdfe(
     y0, w0, wkind, fe, sample_state = prepare_standard_sample(
         data, y, weights, weight_type, absorb,
         canonicalize_fe=canonicalize_fe, drop_singletons=drop_singletons,
+        policy=sample_policy(hdfe_config),
     )
     groups, slopes, intercepts, mask = fe.groups, fe.slopes, fe.intercepts, fe.mask
     method_resolved, solver_selection = resolve_method(
@@ -307,10 +313,8 @@ def olshdfe(
         _check_allocation_headroom(len(y1) * (X1.shape[1] + 1) * 8)
         block = np.column_stack([y1, X1])
         basis = None
-        conditioning_eligible = (
-            backend == "numpy" and method_resolved in {"map", "within"}
-            and all(intercepts) and all(s is None for s in slopes)
-            and len(groups) > 1
+        conditioning_eligible = weak_basis_eligible(
+            groups, slopes, intercepts, method=method_resolved, backend=backend,
         )
         if conditioning_eligible:
             raw_gram = _weighted_gram(X1, w1)
@@ -393,6 +397,10 @@ def olshdfe(
             df_absorbed=dof.df_absorbed, nested_adj=int(dof.nested > 0),
             time=time1, panel=panel1, bandwidth=bandwidth, kernel=kernel,
         )
+    fw_scale = w1 if sample_policy(hdfe_config).psd_frequency_scale(winfo.kind) else None
+    V = finalize_cluster_vcov(
+        V, vce_kind, clusters, lambda: regressor_scale(X1_active, frequency_weights=fw_scale),
+    )
     clock.lap("ols_and_vce_seconds")
     fixed_effects = None
     if save_fe:

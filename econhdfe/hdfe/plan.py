@@ -2,9 +2,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 import hashlib
 import numpy as np
-from .absorber import HDFEAbsorber, iterative_singleton_mask
+from .absorber import iterative_singleton_mask
 from .absorb_spec import absorb_columns, term_columns
-from .two_way import TwoWayFEAbsorber
+from .factory import build_absorber, projection_kind
 from ..compute.encoding import factorize_1d, factorize_interaction
 from .dof import absorbed_dof
 from .structure import canonicalize_fixed_effects, FEPartitionMeta
@@ -137,22 +137,12 @@ class FEPlan:
     def absorber(self, weights, *, tol, engine="replica", method="map"):
         if not self.groups:
             return None
-        if engine == "within":
-            return self.projector(engine=engine, method=method).prepare(weights, tol=tol)
-        if method == "within":
-            from .within_backend import WithinFEAbsorber
-            return WithinFEAbsorber(self.groups, weights=weights, tol=tol)
-        if engine == "optimized" and len(self.groups) == 2 and method != "lsmr":
-            return TwoWayFEAbsorber(self.groups, weights=weights, tol=tol)
-        return HDFEAbsorber(
-            self.groups,
-            weights=weights,
-            tol=tol,
-            method=method,
-            transform="symmetric",
-            acceleration="auto" if method == "map" else "none",
+        kind, solver = projection_kind(method, engine=engine, ngroups=len(self.groups))
+        # Constructor defaults otherwise; the two-way solver stays single-threaded.
+        return build_absorber(
+            kind, self.groups, weights=weights, tol=tol, method=solver,
+            transform="symmetric", acceleration="auto" if method == "map" else "none",
             projection_backend="auto",
-            absorb_threads="auto",
         )
 
     def residualize(self, A, weights, *, tol, engine="replica"):

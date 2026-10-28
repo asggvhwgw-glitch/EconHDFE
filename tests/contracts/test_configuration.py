@@ -107,18 +107,13 @@ def test_estimator_defaults_come_from_their_signatures():
     }
 
 
-@pytest.mark.parametrize("iv", [False, True])
 @pytest.mark.parametrize("name,scalar,config", _CONFLICTS, ids=_IDS)
-def test_scalar_and_config_conflict_is_rejected(iv, name, scalar, config):
+def test_each_scalar_conflicts_or_resolves_with_its_config_field(name, scalar, config):
+    (config_kw, cfg), = config.items()
     with pytest.raises(SpecificationError) as info:
-        _fit(iv, _linear_df(n=400), **scalar, **config)
+        _resolve(**scalar, **config)                                             # both set: conflict
     assert info.value.code == "specification.config_conflict"
     assert info.value.details == {"argument": name}
-
-
-@pytest.mark.parametrize("name,scalar,config", _CONFLICTS, ids=_IDS)
-def test_one_sided_or_equal_settings_resolve_without_error(name, scalar, config):
-    (config_kw, cfg), = config.items()
     from_config = _resolve(**config)[name]
     assert _resolve(**scalar, **{config_kw: type(cfg)()})[name] == scalar[name]  # scalar only
     assert from_config != _DEFAULTS[name]                                        # config only
@@ -140,6 +135,9 @@ def test_execution_config_auto_budget_no_longer_overrides_scalar():
 @pytest.mark.parametrize("iv", [False, True])
 def test_scalars_and_config_fields_combine_end_to_end(iv):
     df = _linear_df(n=600)
+    with pytest.raises(SpecificationError) as info:
+        _fit(iv, df, tol=1e-10, hdfe_config=HDFEConfig(tolerance=1e-12))
+    assert info.value.details == {"argument": "tol"}
     r = _fit(iv, df, method="lsmr", vce="robust",
              hdfe_config=HDFEConfig(dof_method="firstpair"),
              inference_config=InferenceConfig(confidence_level=0.9))

@@ -6,6 +6,7 @@ from .stable_linalg import equilibrated_gram_inverse
 from .encoding import factorize_1d, factorize_interaction
 from .kernels import hac_meat, driscoll_kraay_meat
 from .block_design import BlockDesign
+from .design_ops import column_moments
 
 
 IID_VCE_KINDS = ("iid", "unadjusted", "homoskedastic")
@@ -272,16 +273,11 @@ def _cluster_scale(n: int, k_total: int, g: int, nested_adj: int = 0) -> float:
     return ((n - 1.0) / (n - k_total - nested_adj)) * (g / (g - 1.0))
 
 
-def _fix_psd(v: np.ndarray, *, tol: float = 0.0) -> np.ndarray:
-    """Clip negative eigenvalues caused by multiway inclusion-exclusion.
-
-    reghdfe applies this repair to the final clustered covariance matrix for
-    multiway clustering.  It is intentionally not applied to the raw meat so
-    that sandwich transformations remain algebraically correct.
-    """
+def _fix_psd(v: np.ndarray) -> np.ndarray:
+    """Clip negative eigenvalues of a symmetric matrix (Cameron-Gelbach-Miller)."""
     v = (np.asarray(v, dtype=np.float64) + np.asarray(v, dtype=np.float64).T) / 2.0
     evals, evecs = np.linalg.eigh(v)
-    if np.min(evals) >= -tol:
+    if np.min(evals) >= 0.0:
         return v
     evals = np.clip(evals, 0.0, None)
     out = (evecs * evals) @ evecs.T
@@ -290,6 +286,57 @@ def _fix_psd(v: np.ndarray, *, tol: float = 0.0) -> np.ndarray:
 
 def _is_multiway_cluster(kind, clusters) -> bool:
     return normalize_vce(kind) == "cluster" and clusters is not None and len(clusters) > 1
+
+
+def regressor_scale(*designs, frequency_weights=None) -> np.ndarray:
+    """reghdfe's standardization scale of the original regressor columns.
+
+    Unweighted sample standard deviation (N-1 denominator) of each column on
+    the estimation sample, before FE demeaning, floored at 1e-3
+    (``reghdfe_standardize`` in reghdfe 6.12.5). Dense arrays and
+    BlockDesigns are concatenated in argument order. With integer
+    ``frequency_weights`` it is the stdev of the expanded rows (the unified
+    policy; see ``SamplePolicy.psd_frequency_scale``).
+    """
+    parts = [
+        (A.column_moments(frequency_weights=frequency_weights) if isinstance(A, BlockDesign)
+         else column_moments(A, frequency_weights=frequency_weights)).sample_scale()
+        for A in designs
+    ]
+    return np.concatenate(parts) if parts else np.empty(0, dtype=np.float64)
+
+
+def finalize_cluster_vcov(V, kind, clusters, scale, constant_index=None):
+    """Repair a multiway-cluster covariance as reghdfe/ppmlhdfe do.
+
+    The signed CGM sandwich can be indefinite. Upstream clips its negative
+    eigenvalues in the standardized coordinates of the original regressors,
+    which makes the repair independent of user units and of any solver
+    scaling. ``scale()`` returns those column scales expressed in the
+    coordinates of ``V`` (``regressor_scale`` for reported units); it is
+    evaluated only when a repair can apply. With a reported constant at
+    ``constant_index`` (scale 1), the full matrix is clipped first and its
+    slope block is then replaced by the separately clipped slope block, as
+    in ``reghdfe_fix_psd``. Any other VCE is returned unchanged.
+    """
+    if not _is_multiway_cluster(kind, clusters):
+        return V
+    V = np.asarray(V, dtype=np.float64)
+    V = (V + V.T) / 2.0
+    s = np.array(scale(), dtype=np.float64)
+    if constant_index is not None:
+        s[constant_index] = 1.0
+    outer = np.outer(s, s)
+    W = V * outer
+    evals, evecs = np.linalg.eigh(W)
+    if np.min(evals) >= 0.0:
+        return V
+    fixed = (evecs * np.clip(evals, 0.0, None)) @ evecs.T
+    fixed = (fixed + fixed.T) / 2.0
+    if constant_index is not None:
+        slopes = np.ix_(*(2 * [np.delete(np.arange(len(s)), constant_index)]))
+        fixed[slopes] = _fix_psd(W[slopes])
+    return fixed / outer
 
 
 def score_covariance(
@@ -368,6 +415,8 @@ def sandwich_vcov_xe(
 ):
     """Sandwich covariance for scores ``X_i * e_i`` without an N x K score copy.
 
+    Multiway-cluster results are unrepaired; see ``finalize_cluster_vcov``.
+
     Robust and clustered paths stream or aggregate directly from ``X`` and the
     scalar score multiplier.  HAC/DK paths retain the generic score-matrix
     implementation because they need observation ordering across all columns.
@@ -399,8 +448,7 @@ def sandwich_vcov_xe(
             nested_adj=nested_adj, small_sample=True, time=time, panel=panel,
             bandwidth=bandwidth, kernel=kernel, effective_n=n_eff,
         )
-    V = bread @ meat @ bread
-    return _fix_psd(V) if _is_multiway_cluster(kind0, clusters) else V
+    return bread @ meat @ bread
 
 
 
@@ -482,6 +530,8 @@ def sandwich_vcov_block_xe(
 ):
     """Sandwich covariance for block-local scores ``X_i * e_i``.
 
+    Multiway-cluster results are unrepaired; see ``finalize_cluster_vcov``.
+
     The robust path uses block-local weighted Gram matrices.  Clustered paths
     preserve clusters that span multiple structural components by explicitly
     joining component group-score tables before constructing the meat.
@@ -509,18 +559,12 @@ def sandwich_vcov_block_xe(
         # they depend on the global observation sequence.  Refuse silently
         # materializing here; callers can use the established dense fallback.
         raise ValueError(f"block score covariance does not support kind: {kind0}")
-    V = np.asarray(bread, dtype=np.float64) @ meat @ np.asarray(bread, dtype=np.float64)
-    return _fix_psd(V) if _is_multiway_cluster(kind0, clusters) else V
+    return np.asarray(bread, dtype=np.float64) @ meat @ np.asarray(bread, dtype=np.float64)
 
 
 def block_cluster_meat_xe(X: BlockDesign, e, clusters, *, score_scale=None):
     """Public exact cluster meat for a BlockDesign and scalar score multiplier."""
     return _block_cluster_meat_xe(X, e, clusters, score_scale=score_scale)
-
-
-def fix_psd(V, *, tol=0.0):
-    """Public PSD repair used by multi-way sandwich estimators."""
-    return _fix_psd(V, tol=tol)
 
 
 def ols_vcov(Xw, ew, bread, *, kind="iid", clusters=None, k_total=None, nested_adj=0,
@@ -598,5 +642,4 @@ def gmm_vcov(
         )
     middle = D @ S @ D.T
     V = bread @ middle @ bread
-    V = (V + V.T) / 2
-    return _fix_psd(V) if _is_multiway_cluster(kind, clusters) else V
+    return (V + V.T) / 2

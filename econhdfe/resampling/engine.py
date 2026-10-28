@@ -14,8 +14,8 @@ from .results import ReplicateBatch, ReplicateFailure
 _IN_REPLICATES = ContextVar("econhdfe_in_replicates", default=False)
 
 
-def _wild_memory_estimate(workspace_cost, *, nobs, ncols, groups, batch_size, reps,
-                          restrictions=0, enumeration=False):
+def wild_memory_estimate(workspace_cost, *, nobs, ncols, groups, batch_size, reps,
+                         restrictions=0, enumeration=False):
     """Conservative CPU wild-bootstrap setup and per-worker peak bytes.
 
     Includes absorber scratch/lazy state, RHS copies, multiplier generation,
@@ -37,8 +37,8 @@ def _wild_memory_estimate(workspace_cost, *, nobs, ncols, groups, batch_size, re
     return int(setup), int(worker)
 
 
-def _wild_score_memory_estimate(workspace_cost, *, nobs, ncols, groups,
-                                batch_size, reps):
+def wild_score_memory_estimate(workspace_cost, *, nobs, ncols, groups,
+                               batch_size, reps):
     """Admission for a single design projection and cluster-score draws.
 
     Preparation projects all k design columns, even when k exceeds a bootstrap
@@ -53,7 +53,7 @@ def _wild_score_memory_estimate(workspace_cost, *, nobs, ncols, groups,
     return int(setup), max(1, int(worker))
 
 
-def _check_worker_memory(estimated_worker_bytes, *, setup_bytes=0):
+def check_worker_memory(estimated_worker_bytes, *, setup_bytes=0):
     required = int(estimated_worker_bytes) + int(setup_bytes)
     available = current_allocation().remaining_memory_bytes()
     if required > available:
@@ -100,7 +100,7 @@ def run_replicates(
     if estimated_worker_bytes is not None:
         if not isinstance(estimated_worker_bytes, (int, np.integer)) or estimated_worker_bytes < 1:
             raise ValueError("estimated_worker_bytes must be a positive integer or None")
-        _check_worker_memory(estimated_worker_bytes)
+        check_worker_memory(estimated_worker_bytes)
     worker_floor = max(32 * 1024**2, estimated_worker_bytes or 0)
     memory_workers = max(1, allocation.remaining_memory_bytes() // worker_floor)
     workers = max(1, min(effective_n_jobs(n_jobs), allocation.cpu_threads,

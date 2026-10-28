@@ -7,7 +7,7 @@ import scipy.linalg as la
 from scipy.stats import chi2
 
 from ...compute.encoding import factorize_interaction
-from ...compute.vcov import score_covariance, _cluster_scale, fix_psd, normalize_vce, is_iid_vce, ROBUST_VCE_KINDS
+from ...compute.vcov import score_covariance, _cluster_scale, normalize_vce, is_iid_vce, ROBUST_VCE_KINDS
 from ...errors import InferenceError
 
 
@@ -52,7 +52,7 @@ def stable_2sls_inference(factor, *, n_exog, kind="iid", clusters=None,
 
     Scores are transformed before their outer products. This avoids cancellation
     in a sandwich containing the squared condition number of the design.
-    Multiway inclusion-exclusion is applied before the existing final VCE repair.
+    The multiway-cluster V is returned unrepaired (``finalize_cluster_vcov``).
     """
     n = factor.nobs
     l = factor.instrument_coordinates.shape[1]
@@ -142,8 +142,6 @@ def stable_2sls_inference(factor, *, n_exog, kind="iid", clusters=None,
                 bandwidth=bandwidth, kernel=kernel, effective_n=n_eff,
             )
         S = raw[:l, :l]
-        if kind0 == "cluster" and len(clusters) > 1:
-            V = fix_psd(V)
     V = (V + V.T) / 2
     df = l - k
     over = {"stat": np.nan, "df": 0, "pvalue": np.nan}
