@@ -5,17 +5,17 @@
   "checks": {
     "frontend_api": {
       "status": "changed",
-      "evidence": "Weighted singleton policies (#30): Config singleton_mode defaults to stata_compat; plain PPML adds weight_type. Full/alias/reusable/structured entry points reviewed and tested in tests/behavior/test_singleton_policy.py. Absorber/sample-policy refactor: No signature/export change (contract snapshot unchanged by this part). olshdfe/ivhdfe keep error priority via sample_policy_scope between config_precedence and managed_execution; s-equivalence linear-group/zero-weight cases bitwise equal.",
+      "evidence": "Weighted singleton policies (#30): Config singleton_mode defaults to stata_compat; plain PPML adds weight_type. Full/alias/reusable/structured entry points reviewed and tested in tests/behavior/test_singleton_policy.py. Absorber/sample-policy refactor: No signature/export change (contract snapshot unchanged by this part). olshdfe/ivhdfe keep error priority via sample_policy_scope between config_precedence and managed_execution; s-equivalence linear-group/zero-weight cases bitwise equal. Native PPML within (#32): engine='within' accepted by PPMLConfig/IVPPMLConfig; no new field or export.",
       "description": "Public call signatures, exports, aliases, CLI/front-end validation and compatibility."
     },
     "backend_compute": {
       "status": "changed",
-      "evidence": "Weighted singleton policies (#30): Independent Numba queue with frequency-unit predicate and exact positive support. No new absorber or computational rank elimination. tests/numerics/test_sample_peeling.py and million.json. Absorber/sample-policy refactor: Multiway-cluster PSD repair moved to compute.vcov.finalize_cluster_vcov in reghdfe original-regressor stdev coordinates for all estimators; repair_psd chain and public internal fix_psd removed; IV-PPML robust VCE uses shared sandwich/frequency_score_scale. Stata reghdfe parity 1e-7 (tests/numerics/test_multiway_psd_coordinates.py).",
+      "evidence": "Weighted singleton policies (#30): Independent Numba queue with frequency-unit predicate and exact positive support. No new absorber or computational rank elimination. tests/numerics/test_sample_peeling.py and million.json. Absorber/sample-policy refactor: Multiway-cluster PSD repair moved to compute.vcov.finalize_cluster_vcov in reghdfe original-regressor stdev coordinates for all estimators; repair_psd chain and public internal fix_psd removed; IV-PPML robust VCE uses shared sandwich/frequency_score_scale. Stata reghdfe parity 1e-7 (tests/numerics/test_multiway_psd_coordinates.py). Native PPML within (#32): factory.projection_route decides engine routing and certification once; WeightedFEProjector and block-local projectors use it; FEPlan.residualize delegates certified engines to the projector.",
       "description": "Solver/compute/cache/backend contracts, numerical defaults and resource controls."
     },
     "errors": {
       "status": "changed",
-      "evidence": "Weighted singleton policies (#30): Fail closed for unknown policy, unsupported unified group/individual semantics and unsafe IV-PPML separation/mu choices; typed frequency validation precedes pruning. Absorber/sample-policy refactor: Error codes/texts unchanged; Poisson empty/no-finite errors moved to shared helpers with identical text and details (s-equivalence poisson-edge cases bitwise equal).",
+      "evidence": "Weighted singleton policies (#30): Fail closed for unknown policy, unsupported unified group/individual semantics and unsafe IV-PPML separation/mu choices; typed frequency validation precedes pruning. Absorber/sample-policy refactor: Error codes/texts unchanged; Poisson empty/no-finite errors moved to shared helpers with identical text and details (s-equivalence poisson-edge cases bitwise equal). Native PPML within (#32): uncertified/nonfinite solves on engine='within' raise the existing HDFEConvergenceError (convergence.hdfe, stage hdfe); missing extension raises.",
       "description": "Structured exception classes, codes, stages, suggestions and public error boundaries."
     },
     "public_contract": {
@@ -35,12 +35,12 @@
     },
     "results_reporting": {
       "status": "changed",
-      "evidence": "Weighted singleton policies (#30): Unified Poisson disjoint physical-row deletion reasons; frequency N/DF/robust meat; explicit statistical/work counts with computational_elimination=False. Legacy initial combined reporting preserved. Absorber/sample-policy refactor: Multiway-cluster vcov/stderr and derived Wald/F statistics change only where the CGM repair clips (99 of 215 s-equivalence cases, all multiway and clipping); diagnostics dict order unchanged.",
+      "evidence": "Weighted singleton policies (#30): Unified Poisson disjoint physical-row deletion reasons; frequency N/DF/robust meat; explicit statistical/work counts with computational_elimination=False. Legacy initial combined reporting preserved. Absorber/sample-policy refactor: Multiway-cluster vcov/stderr and derived Wald/F statistics change only where the CGM repair clips (99 of 215 s-equivalence cases, all multiway and clipping); diagnostics dict order unchanged. Native PPML within (#32): projection_resources merges absorb_info_extras() (key 'within' on the native route).",
       "description": "Result fields, publication output, diagnostics metadata and serialization-facing schemas."
     },
     "config_defaults": {
       "status": "changed",
-      "evidence": "Weighted singleton policies (#30): Compatibility remains default. IVPPMLConfig separation None resolves to old tuple in compatibility, fe only in unified. Unsafe explicit combinations rejected. Absorber/sample-policy refactor: IVPPMLConfig.separation=None now stays None and resolves through separation_methods; __post_init__ rewrite removed; resolved defaults unchanged.",
+      "evidence": "Weighted singleton policies (#30): Compatibility remains default. IVPPMLConfig separation None resolves to old tuple in compatibility, fe only in unified. Unsafe explicit combinations rejected. Absorber/sample-policy refactor: IVPPMLConfig.separation=None now stays None and resolves through separation_methods; __post_init__ rewrite removed; resolved defaults unchanged. Native PPML within (#32): engine defaults unchanged; PPMLConfig.separation_engine derived property keeps separation on replica.",
       "description": "Config objects, defaults, deprecations, aliases and backwards-compatible behavior."
     },
     "cache_state": {
@@ -50,7 +50,7 @@
     },
     "tests_validation": {
       "status": "changed",
-      "evidence": "Weighted singleton policies (#30): Baseline 468 passed; candidate full suite 509 passed including 41 new targeted tests. Independent brute-force, dense moment-root/sandwich, frequency expansion and four million-record peeling checks. See validation/singleton_policy/local_checks.json. Absorber/sample-policy refactor: Full suite with/without native extension, native/within-accel tests, tooling; new tests for stdev-coordinate repair (Stata references), unit invariance (OLS/IV/PPML/IV-PPML), SamplePolicy, replace(), session staleness; bitwise equivalence harnesses in archive/econhdfe/v0.10.0/development/arch-p1-refactor-20261027.",
+      "evidence": "Weighted singleton policies (#30): Baseline 468 passed; candidate full suite 509 passed including 41 new targeted tests. Independent brute-force, dense moment-root/sandwich, frequency expansion and four million-record peeling checks. See validation/singleton_policy/local_checks.json. Absorber/sample-policy refactor: Full suite with/without native extension, native/within-accel tests, tooling; new tests for stdev-coordinate repair (Stata references), unit invariance (OLS/IV/PPML/IV-PPML), SamplePolicy, replace(), session staleness; bitwise equivalence harnesses in archive/econhdfe/v0.10.0/development/arch-p1-refactor-20261027. Native PPML within (#32): native/within-accel/tests/test_poisson.py (independent moment roots, replica parity, rank/irls/final x PPML/IV-PPML certificate failures, unchecked explicit method), contract tests for routing and default MAP; 100k-row estimator audit on PRs.",
       "description": "Regression tests, install smoke tests, golden/parity coverage and failure-path tests."
     },
     "performance": {
@@ -60,7 +60,7 @@
     },
     "docs_migration": {
       "status": "changed",
-      "evidence": "Weighted singleton policies (#30): README English/Chinese, changelog, weighted policy technical note, economic module map, skill configuration and generated maps updated. Scope limitations explicit. Absorber/sample-policy refactor: CHANGELOG 0.9.2; docs/technical/cluster-inference.md and hdfe/singleton-policies.md; economic module map and architecture map.",
+      "evidence": "Weighted singleton policies (#30): README English/Chinese, changelog, weighted policy technical note, economic module map, skill configuration and generated maps updated. Scope limitations explicit. Absorber/sample-policy refactor: CHANGELOG 0.9.2; docs/technical/cluster-inference.md and hdfe/singleton-policies.md; economic module map and architecture map. Native PPML within (#32): CHANGELOG, within-native.md, skill configuration reference.",
       "description": "README/architecture/changelog/migration/versioning documentation and user-visible examples."
     },
     "packaging_dependencies": {

@@ -4,7 +4,7 @@ import hashlib
 import numpy as np
 from .absorber import iterative_singleton_mask
 from .absorb_spec import absorb_columns, term_columns
-from .factory import build_absorber, projection_kind
+from .factory import build_absorber, projection_kind, projection_route
 from ..compute.encoding import factorize_1d, factorize_interaction
 from .dof import absorbed_dof
 from .structure import canonicalize_fixed_effects, FEPartitionMeta
@@ -146,6 +146,9 @@ class FEPlan:
         )
 
     def residualize(self, A, weights, *, tol, engine="replica"):
+        if self.groups and projection_route(engine, "map")[1]:
+            # Certified engines check every solve in the weighted projector.
+            return self.projector(engine=engine).residualize(A, weights, tol=tol, return_info=True)
         absorber = self.absorber(weights, tol=tol, engine=engine)
         if absorber is None:
             return np.asarray(A, dtype=np.float64).copy(), None

@@ -189,6 +189,8 @@ Use `projection_resources["requested_threads"]` and `projection_resources["actua
 
 `PPMLConfig(engine="optimized")` now routes simplex separation through the optimized FE plan and ReLU through an optimized MAP/HDFE projector. `engine="replica"` retains the replica-oriented paths. Do not disable `simplex` or `relu` solely because a previous dataset/run found zero additional separated observations: that is an empirical observation, not a general safety certificate. Use FE-only separation only as an explicitly labelled sensitivity/performance experiment.
 
+`PPMLConfig(engine="within")` / `IVPPMLConfig(engine="within")` opt into the optional native weighted within absorber (install `native/within-accel` first) for rank checks, IRLS and final inference; separation stays on the replica solvers (`config.separation_engine`). A failed or nonfinite inner certificate raises `HDFEConvergenceError` instead of producing an estimate, and a missing extension raises rather than falling back. Check `diagnostics["projection_resources"]["backend"]` and its `within` entry to confirm the route; no speedup is guaranteed.
+
 
 
 ## Automatic thread calibration

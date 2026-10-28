@@ -3,7 +3,8 @@ from __future__ import annotations
 from dataclasses import replace
 import numpy as np
 
-from .factory import build_absorber, projection_kind
+from .absorber import HDFEConvergenceError
+from .factory import build_absorber, projection_kind, projection_route
 from .projection import resolve_threads
 from .protocol import ReweightableAbsorber
 from .workspace import absorption_build_cost
@@ -33,7 +34,7 @@ class WeightedFEProjector:
     ):
         self.groups = tuple(np.asarray(g, dtype=np.int32) for g in groups)
         self.engine = str(engine)
-        self.method = str(method)
+        self.method, self.certified = projection_route(self.engine, str(method))
         self.max_iter = int(max_iter)
         self.absorb_threads_requested = absorb_threads
         self.projection_memory_budget_mb = float(projection_memory_budget_mb)
@@ -115,6 +116,9 @@ class WeightedFEProjector:
                         matrix[:, lo:hi], copy=False, return_info=True,
                         absorb_threads=plan.threads,
                     )
+                    # Rank filters, IRLS and final VCE callers may discard info.
+                    if self.certified and not (info.converged and np.isfinite(info.max_update)):
+                        raise HDFEConvergenceError(info, context="Certified weighted FE projection")
                     matrix[:, lo:hi] = projected
                     infos.append(info)
             output = matrix[:, 0] if one_dim else matrix
@@ -139,4 +143,5 @@ class WeightedFEProjector:
             "backend": self._active_kind,
             "projection_backend": None if absorber is None else str(getattr(absorber, "projection_backend", getattr(absorber, "method", "unknown"))),
             "index_bytes": None if absorber is None else int(getattr(absorber, "index_bytes", 0)),
+            **({} if absorber is None else absorber.absorb_info_extras()),
         }

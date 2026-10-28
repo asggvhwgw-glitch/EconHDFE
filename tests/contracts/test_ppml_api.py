@@ -171,3 +171,35 @@ def test_dataframe_form_rejects_array_only_labels_and_non_frames(panel_data):
     with pytest.raises(DataTypeError) as err:
         ppmlhdfe(df.to_numpy(), y='count', x=['c'])
     assert err.value.code == 'input.data_type'
+
+
+@pytest.mark.parametrize('config_type', [PPMLConfig, IVPPMLConfig])
+def test_engine_routing_contract(config_type):
+    from econhdfe.hdfe.factory import projection_route
+    with pytest.raises(SpecificationError, match='engine'):
+        config_type(engine='unknown').validate()
+    assert config_type(engine='within').separation_engine == 'replica'
+    assert config_type(engine='optimized').separation_engine == 'optimized'
+    assert projection_route('within', 'map') == ('within', True)
+    assert projection_route('within', 'lsmr') == ('lsmr', True)
+    assert projection_route('replica', 'within') == ('within', False)
+    assert projection_route('optimized', 'map') == ('map', False)
+
+
+@pytest.mark.parametrize('family', ['ppml', 'ivppml'])
+def test_default_engine_keeps_the_map_projector(family):
+    rng = np.random.default_rng(26027)
+    n = 550
+    groups = [rng.integers(0, L, size=n) for L in (45, 25, 10)]
+    z, c = rng.normal(size=n), rng.normal(size=n)
+    x = 0.75 * z + 0.4 * c + rng.normal(scale=0.6, size=n)
+    y = rng.poisson(np.exp(0.2 + 0.11 * x + 0.07 * c)).astype(float)
+    common = dict(y=y, absorb=groups, weights=np.exp(rng.normal(scale=0.3, size=n)),
+                  execution_config=ExecutionConfig(threads=1, memory_budget_mb=192))
+    if family == 'ppml':
+        result = ppmlhdfe(x=np.column_stack([x, c]), config=PPMLConfig(separation=()), **common)
+    else:
+        result = ivppmlhdfe(exog=c, endog=x, instruments=z, weight_type='pweight',
+                            config=IVPPMLConfig(separation=()), **common)
+    resources = result.diagnostics['projection_resources']
+    assert result.converged and resources['method'] == 'map' and 'within' not in resources

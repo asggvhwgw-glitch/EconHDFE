@@ -61,6 +61,23 @@ never published and are folded into this version.
   `fix_psd` (item 2). Bitwise equivalence against main `2ab8cdd` outside the
   changes above (validation harnesses in the development archive).
 
+### Opt-in native within for PPML and IV-PPML
+
+- `PPMLConfig(engine="within")` / `IVPPMLConfig(engine="within")` select the
+  optional native weighted within absorber for rank checks, every IRLS
+  projection, post-separation rebuilds, final inference and block-local
+  projectors. Defaults (`replica`, `optimized`) are unchanged; no config field
+  is added, only the accepted engine value.
+- The route is decided once in `hdfe.factory.projection_route`. Every solve on
+  that engine, including the exact LSMR fallback for zero-weight levels, must
+  return a finite converged certificate or raises `HDFEConvergenceError`
+  (`convergence.hdfe`, stage `hdfe`); an explicit `method="within"` on other
+  engines keeps returning its info unchecked.
+- Separation runs on `config.separation_engine` (`replica` for `within`).
+- `projection_resources` now carries the absorber's `absorb_info_extras()`; the
+  native route reports them under `within`.
+- A missing native extension raises instead of falling back silently.
+
 ### Compatibility
 
 - New immutable API snapshot 0.9.2; the eight additive/default-sentinel
