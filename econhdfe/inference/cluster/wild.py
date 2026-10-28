@@ -5,11 +5,9 @@ import numpy as np
 
 from ...compute.clusters import normalize_cluster_arrays
 from ...errors import BootstrapError, InferenceError, InputError, error_boundary
-from ...hdfe.absorber import HDFEAbsorber
-from ...hdfe.two_way import TwoWayFEAbsorber
-from ...hdfe.workspace import _absorption_workspace_cost
+from ...hdfe.protocol import capability
 from ...resampling.sampling import wild_weights
-from ...resampling.engine import run_replicates, _wild_memory_estimate, _check_worker_memory
+from ...resampling.engine import run_replicates, wild_memory_estimate, check_worker_memory
 from ...planner.scheduler import current_allocation, managed_execution
 from .results import WildClusterTestResult
 
@@ -27,7 +25,7 @@ def _state_arrays(result):
             "wild_cluster_test_ols supports OLS-HDFE results only",
             code="resampling.estimator", stage="resampling",
         )
-    if not isinstance(state.absorber, (HDFEAbsorber, TwoWayFEAbsorber)):
+    if not capability(state.absorber, "supports_wild_cluster_test"):
         raise InferenceError(
             f"wild cluster inference is not yet certified for absorber type {type(state.absorber).__name__}",
             code="resampling.absorber", stage="resampling",
@@ -173,12 +171,12 @@ def wild_cluster_test_ols(
     dist0 = str(weight_distribution).lower().replace("-", "_")
     full_enumeration = bool(dist0 in {"rademacher", "radem", "rad"} and G <= 16 and (1 << G) <= requested_B)
     B = (1 << G) if full_enumeration else requested_B
-    setup_bytes, worker_bytes = _wild_memory_estimate(
-        _absorption_workspace_cost(state.absorber), nobs=n, ncols=X.shape[1],
+    setup_bytes, worker_bytes = wild_memory_estimate(
+        state.absorber.workspace_cost(), nobs=n, ncols=X.shape[1],
         groups=G, batch_size=batch_size,
         reps=B, restrictions=Rm.shape[0], enumeration=full_enumeration,
     )
-    _check_worker_memory(worker_bytes, setup_bytes=setup_bytes)
+    check_worker_memory(worker_bytes, setup_bytes=setup_bytes)
     sw = np.ones(n, dtype=np.float64) if w is None else np.sqrt(w)
     Xw = X * sw[:, None]
     bread = np.linalg.pinv(Xw.T @ Xw, hermitian=True)

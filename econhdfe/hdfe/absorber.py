@@ -12,6 +12,7 @@ from .projection import (
     build_group_index, estimate_index_bytes, numba_thread_limit,
     _project_indexed_inplace_current, _max_relative_update_parallel, resolve_threads,
 )
+from .workspace import absorption_build_cost
 
 
 @njit(cache=True, nogil=True)
@@ -707,6 +708,60 @@ class HDFEAbsorber:
             self.backend == "numpy" and self.method == "map"
             and all(self.intercepts) and all(s is None for s in self.slopes)
         )
+
+    @property
+    def supports_projection_shortcut(self) -> bool:
+        """Known CPU weighted-orthogonal projector; subclasses are not certified."""
+        return (
+            type(self) is HDFEAbsorber and self.backend == "numpy"
+            and np.dtype(self.dtype) == np.dtype(np.float64)
+        )
+
+    supports_wild_cluster_test = True
+
+    def workspace_cost(self):
+        """Conservative byte inventory for pooled CPU absorption, excluding input."""
+        arrays = {}
+
+        def add(a):
+            if isinstance(a, np.ndarray):
+                arrays[id(a)] = a.nbytes
+
+        for a in (*self.groups, *self.slopes, *self._denoms, self.weights, self._projection_scratch):
+            add(a)
+        for proj in self._projectors:
+            for a in (proj.denom, proj.slope_means, proj.slope_gram_inv, proj.slope_inv_ss):
+                add(a)
+        fixed = int(self.index_bytes) + sum(arrays.values())
+        n = int(self.nobs)
+        vectors = 4 if self.acceleration in ("cg", "auto") else 2
+        per_col = 8 * n * vectors
+        if self.acceleration in ("cg", "auto") and self.absorb_threads > 1:
+            # At most 16 partial reductions plus their per-column result.
+            per_col += 17 * 8
+        # Fused fallback accumulators are reused across FE, so reserve only
+        # the largest group matrix. This also bounds one-column bincount work.
+        unindexed = [L for L, index in zip(self.levels, self._group_indexes, strict=True) if index is None]
+        if unindexed:
+            per_col += 8 * max(unindexed) * 3
+        if any(s is not None for s in self.slopes):
+            per_col += 8 * n * 4
+        core = self._core_plan
+        if core is not None:
+            fixed += core.core_index.nbytes + sum(g.nbytes for g in core.core_groups)
+            core_levels = [int(g.max()) + 1 if g.size else 0 for g in core.core_groups]
+            fixed += estimate_index_bytes(core.core_nobs, core_levels) + 8 * sum(core_levels)
+            per_col += 8 * core.core_nobs
+        return int(fixed), max(1, int(per_col))
+
+    def pending_cost(self):
+        """Known lazy topology allocations not yet represented in process RSS."""
+        if self._core_plan is not None and self._core_absorber is None:
+            return absorption_build_cost(self._core_plan.core_groups, "generic")
+        return 0
+
+    def absorb_info_extras(self):
+        return {}
 
     def fe_orthogonality_error(self, data) -> float:
         """Maximum normalized within-FE mean left in a residualized block.

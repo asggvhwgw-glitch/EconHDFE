@@ -86,10 +86,10 @@ def unknown_memory(monkeypatch):
 
 
 def test_auto_cg_memory_inventory_and_failure_preserve_input(unknown_memory):
-    from econhdfe.pipeline import _absorption_workspace_cost, residualize_blocks
+    from econhdfe.pipeline import residualize_blocks
     groups, rhs = groups_and_rhs()
     a = HDFEAbsorber(groups, acceleration="auto", projection_backend="indexed", absorb_threads=2)
-    fixed, per_col = _absorption_workspace_cost(a)
+    fixed, per_col = a.workspace_cost()
     assert per_col >= 4 * rhs.shape[0] * 8 and fixed >= a.index_bytes
     original = rhs.copy()
     with pytest.raises(SpecificationError):
