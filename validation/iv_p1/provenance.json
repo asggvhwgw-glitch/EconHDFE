@@ -1,0 +1,43 @@
+{
+  "parent_artifact": "econhdfe_ivppml_overidentified_20261028.zip",
+  "parent_runtime": "local 0.10.1.dev1; NOT current main integration",
+  "github_PR36": "76523437e7e3f2ab5911f17d802c74a9b7041420",
+  "source_push_performed": false,
+  "default_algorithms_changed": false,
+  "new_public_top_level_exports": false,
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+  "python": "3.13.5 (main, Jul 15 2026, 20:25:40) [GCC 14.2.0]",
+  "runtime_sha256": {
+    "econhdfe/hdfe/scaled_projection.py": "e2fa096ac794596fcdc2b0e2227ae8a5058e4e1afa8d2cb0f106238e4ff94dae",
+    "econhdfe/inference/iv_poisson/__init__.py": "4951e965fb898a1c145ac515d9f7bb3a55c6a8b69a7014704884efc329e1a11b",
+    "econhdfe/inference/iv_poisson/circuits.py": "a220e7f45062626dc5bc0ea8029e90a6c4ae00b4738b4ce671b06acea20ea5ad",
+    "econhdfe/inference/iv_poisson/inversion.py": "27d958f5f7c9dadde5938893bb6137ccd300b9702b4e6013090e0d0a66c2e2e7",
+    "econhdfe/inference/iv_poisson/panel.py": "638c21550b0bc8b84b346e5909997bcd2cf460646cd9fdc7f132874d2f2df47d",
+    "econhdfe/inference/iv_poisson/prepared_panel.py": "6f2f150950b00000213507a2a216d222d9a5889ef7b85284f06f31e760db20dd",
+    "econhdfe/inference/iv_poisson/restricted.py": "f43f2c562d711b988eea1107c239ca8c6c46ff1030aecf6052dd1dfed91763d1",
+    "econhdfe/inference/iv_poisson/statistic.py": "de9ce79513bd0b76563c8cdf2bc147608eff721da6f237dd2c5f9f28828e571c"
+  },
+  "mc_seeds": {
+    "fixed_nuisance": "110000 + repetition",
+    "one_way_panels": "210000 + repetition",
+    "circuits": "310000 + repetition",
+    "inversion_example": 5500
+  },
+  "monte_carlo_replicates_per_cell": 1000,
+  "failure_policy": "failures recorded; no unconditional rejection rate if any failures",
+  "numerical_limitation": "null nuisance uses LSMR after isolated dev1 MAP/CG range-fidelity counterexample",
+  "adapter_relocation": {
+    "old_module": "models/ppml_iv/overidentified.py",
+    "new_module": "hdfe/scaled_projection.py",
+    "function_AST_identical": true,
+    "parent_module_unchanged": true,
+    "MC_timing_before_import_relocation": true,
+    "statistical_calculations_changed": false
+  },
+  "runtime_copy_test": {
+    "kind": "copied runtime outside source, existing host dependencies",
+    "passed": 47,
+    "isolated_install": false
+  },
+  "optional_native_extension_available": false
+}
