@@ -1,0 +1,304 @@
+{
+  "checkpoint": "overidentified follow-on to PR #36; local dev1; not rebased onto main",
+  "parent_github_commit": "76523437e7e3f2ab5911f17d802c74a9b7041420",
+  "main_observed": "85e5ff90fec2847e3dc8d5e4cf223a560f47a152",
+  "defaults_unchanged": true,
+  "new_overid_cases": 28,
+  "full_tests": {
+    "passed": 589,
+    "skipped": 1
+  },
+  "installed_wheel_tests": 116,
+  "benchmarks": [
+    {
+      "n": 1000000,
+      "mode": "moment",
+      "inference": "estimating_equation",
+      "repetitions": 3,
+      "median_seconds": 6.034405348000064,
+      "min_seconds": 5.9438072559999,
+      "max_seconds": 6.532857744000012,
+      "median_peak_rss_mib": 757.6953125,
+      "outer_iterations": [
+        7
+      ],
+      "overid_test_included": true,
+      "files": [
+        "formal/1000000_moment_estimating_equation_r1.json",
+        "formal/1000000_moment_estimating_equation_r2.json",
+        "formal/1000000_moment_estimating_equation_r3.json"
+      ]
+    },
+    {
+      "n": 1000000,
+      "mode": "moment",
+      "inference": "standard",
+      "repetitions": 3,
+      "median_seconds": 5.124763096999914,
+      "min_seconds": 5.023623945000054,
+      "max_seconds": 5.673774386999867,
+      "median_peak_rss_mib": 749.96875,
+      "outer_iterations": [
+        7
+      ],
+      "overid_test_included": false,
+      "files": [
+        "formal/1000000_moment_standard_r1.json",
+        "formal/1000000_moment_standard_r2.json",
+        "formal/1000000_moment_standard_r3.json"
+      ]
+    },
+    {
+      "n": 1000000,
+      "mode": "profile",
+      "inference": "estimating_equation",
+      "repetitions": 3,
+      "median_seconds": 7.235541570000123,
+      "min_seconds": 7.190707664999991,
+      "max_seconds": 7.302834832999906,
+      "median_peak_rss_mib": 687.72265625,
+      "outer_iterations": [
+        3
+      ],
+      "overid_test_included": true,
+      "files": [
+        "formal/1000000_profile_estimating_equation_r1.json",
+        "formal/1000000_profile_estimating_equation_r2.json",
+        "formal/1000000_profile_estimating_equation_r3.json"
+      ]
+    },
+    {
+      "n": 1000000,
+      "mode": "profile",
+      "inference": "standard",
+      "repetitions": 3,
+      "median_seconds": 6.738321195000026,
+      "min_seconds": 6.679222467000045,
+      "max_seconds": 6.99459942600015,
+      "median_peak_rss_mib": 687.765625,
+      "outer_iterations": [
+        3
+      ],
+      "overid_test_included": false,
+      "files": [
+        "formal/1000000_profile_standard_r1.json",
+        "formal/1000000_profile_standard_r2.json",
+        "formal/1000000_profile_standard_r3.json"
+      ]
+    },
+    {
+      "n": 5000000,
+      "mode": "moment",
+      "inference": "standard",
+      "repetitions": 1,
+      "median_seconds": 49.16798172300014,
+      "min_seconds": 49.16798172300014,
+      "max_seconds": 49.16798172300014,
+      "median_peak_rss_mib": 2540.875,
+      "outer_iterations": [
+        7
+      ],
+      "overid_test_included": false,
+      "files": [
+        "formal/5000000_moment_standard_r1.json"
+      ]
+    },
+    {
+      "n": 5000000,
+      "mode": "profile",
+      "inference": "estimating_equation",
+      "repetitions": 1,
+      "median_seconds": 48.9827730909999,
+      "min_seconds": 48.9827730909999,
+      "max_seconds": 48.9827730909999,
+      "median_peak_rss_mib": 2385.07421875,
+      "outer_iterations": [
+        3
+      ],
+      "overid_test_included": true,
+      "files": [
+        "formal/5000000_profile_estimating_equation_r1.json"
+      ]
+    }
+  ],
+  "parameter_and_vcov_parity": [
+    {
+      "n": 1000000,
+      "max_abs_coefficient_difference": 6.49875209202122e-10,
+      "standard_covariance_parity": {
+        "max_abs": 1.101296567910517e-15
+      },
+      "estimating_equation_covariance_parity": {
+        "max_abs": 1.991703954811342e-15
+      }
+    },
+    {
+      "n": 5000000,
+      "max_abs_coefficient_difference": 6.736270985463477e-10,
+      "standard_covariance_parity": null,
+      "estimating_equation_covariance_parity": null
+    }
+  ],
+  "simulations": [
+    {
+      "n": 3000,
+      "repetitions_per_specification": 300,
+      "summary": [
+        {
+          "delta": 0.0,
+          "success": 300,
+          "failed": 0,
+          "mean_coef": [
+            0.09961218981379313,
+            0.25175575078459544
+          ],
+          "empirical_sd": [
+            0.02069931176492985,
+            0.03002778606753321
+          ],
+          "rms_se_full": [
+            0.0216427528761087,
+            0.026740939351484277
+          ],
+          "rms_se_standard": [
+            0.021643249127365465,
+            0.02672246200335713
+          ],
+          "coverage_full": [
+            0.95,
+            0.9133333333333333
+          ],
+          "coverage_standard": [
+            0.95,
+            0.9133333333333333
+          ],
+          "reject_overid": 0.03333333333333333
+        },
+        {
+          "delta": 0.7,
+          "success": 300,
+          "failed": 0,
+          "mean_coef": [
+            0.09999726554366964,
+            0.250414875493754
+          ],
+          "empirical_sd": [
+            0.028125285337503296,
+            0.03974235993217837
+          ],
+          "rms_se_full": [
+            0.028437913565074645,
+            0.038284482492577626
+          ],
+          "rms_se_standard": [
+            0.02846358203893938,
+            0.035380333488452737
+          ],
+          "coverage_full": [
+            0.9466666666666667,
+            0.94
+          ],
+          "coverage_standard": [
+            0.9466666666666667,
+            0.9166666666666666
+          ],
+          "reject_overid": 1.0
+        }
+      ],
+      "source": "simulation.json"
+    },
+    {
+      "n": 12000,
+      "repetitions_per_specification": 300,
+      "summary": [
+        {
+          "delta": 0.0,
+          "success": 300,
+          "failed": 0,
+          "mean_coef": [
+            0.09966948091315311,
+            0.24987731785222966
+          ],
+          "empirical_sd": [
+            0.011017575142240287,
+            0.013924854942538917
+          ],
+          "rms_se_full": [
+            0.010823577821352385,
+            0.01336117291567342
+          ],
+          "rms_se_standard": [
+            0.010823606578574054,
+            0.013358601913676393
+          ],
+          "coverage_full": [
+            0.9533333333333334,
+            0.9466666666666667
+          ],
+          "coverage_standard": [
+            0.9533333333333334,
+            0.9466666666666667
+          ],
+          "reject_overid": 0.04666666666666667
+        },
+        {
+          "delta": 0.7,
+          "success": 300,
+          "failed": 0,
+          "mean_coef": [
+            0.10035103095846679,
+            0.24999516081952214
+          ],
+          "empirical_sd": [
+            0.015058621778277192,
+            0.020872842029731668
+          ],
+          "rms_se_full": [
+            0.014361907457922521,
+            0.019632616760637923
+          ],
+          "rms_se_standard": [
+            0.014373461211034397,
+            0.018257229095150002
+          ],
+          "coverage_full": [
+            0.9233333333333333,
+            0.93
+          ],
+          "coverage_standard": [
+            0.9233333333333333,
+            0.91
+          ],
+          "reject_overid": 1.0
+        }
+      ],
+      "source": "simulation_12k.json"
+    }
+  ],
+  "source_tests": {
+    "full-tests-final.log": {
+      "expected_marker": "589 passed, 1 skipped",
+      "verified": true,
+      "sha256": "e44f2150bd1ff27d6b1b5cbd89aabbcacc005de4d8c1c3fc0ba61c438163bca0"
+    },
+    "installed-tests.log": {
+      "expected_marker": "116 passed",
+      "verified": true,
+      "sha256": "e2466dc1e7216fe393508cfc34d76d75c3a6b204529f7eb1f6db5b7315356781"
+    },
+    "numerics_final.log": {
+      "expected_marker": "64 passed",
+      "verified": true,
+      "sha256": "e942df3c21caf8eef7e94cfc70ba98b8005da909079fb9adb8502b4c7ede60ec"
+    }
+  },
+  "limitations": [
+    "5M timings have one run per configuration, not repeated speed certification.",
+    "EE timing includes the optional overidentification test; standard timing does not.",
+    "2048 MiB is the requested workspace admission budget, not a process RSS limit.",
+    "Full profile changes numerical path, not the projected-IV estimating equation.",
+    "No weak-IV, arbitrary growing-FE or finite-sample nominal coverage guarantee.",
+    "Installed wheel uses host dependencies; not isolated build or clean dependency-resolution certification.",
+    "PR #35/main integration and public version reconciliation remain pending."
+  ]
+}

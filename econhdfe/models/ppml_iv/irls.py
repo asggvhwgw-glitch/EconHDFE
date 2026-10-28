@@ -45,6 +45,10 @@ def fit_iv_irls(
     detect_mu=False,
 ) -> IVIRLSState:
     """IRLS-IV core; legacy by default, with opt-in moment globalization."""
+    if config.outer_solver == "profile":
+        from .profile import fit_profile_irls
+        return fit_profile_irls(y, exog, endog, excluded, plan, true_w, offset,
+                               config, projector=projector, initial_eta=initial_eta)
     if config.outer_solver == "moment":
         from .outer import fit_moment_irls
         return fit_moment_irls(y, exog, endog, excluded, plan, true_w, offset,

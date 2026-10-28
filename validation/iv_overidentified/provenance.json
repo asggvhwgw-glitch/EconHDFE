@@ -1,0 +1,32 @@
+{
+  "checkpoint_version": "0.10.1.dev1",
+  "parent_github_commit": "76523437e7e3f2ab5911f17d802c74a9b7041420",
+  "observed_main": "85e5ff90fec2847e3dc8d5e4cf223a560f47a152",
+  "source_uploaded_to_github": false,
+  "code_fingerprint_sha256": "0076b566d01eebdf42947190690a28a1a6678d8460a9b8e6081435e16fa0ebe9",
+  "environment": {
+    "python": "3.13.5 (main, Jul 15 2026, 20:25:40) [GCC 14.2.0]",
+    "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+    "numba_num_threads": 4,
+    "openblas_num_threads": 1
+  },
+  "runtime_files": {
+    "econhdfe/models/ppml_iv/overidentified.py": "a58022fc337969c22e1492e6c10aee6ee007ab30bcd6fffb020fb10a1a1e250a",
+    "econhdfe/models/ppml_iv/profile.py": "4a5bc0041328cd4d3f87612b186f858d387588d9bb6e09f06c09679daf311e66",
+    "econhdfe/models/ppml_iv/config.py": "2c2c1ce8438231cd1b60f335bc2f667ecc6d889cab1b46a18110edce00d0c1b2",
+    "econhdfe/models/ppml_iv/estimator.py": "943dea142ad53aeca7c85f922f8d179aa4b66f482b60921339ff4667dfd43f5f",
+    "econhdfe/models/ppml_iv/irls.py": "cdc9523cbe31d0d4abef47eb85155ce765b3b32e80007e06d7df033cb337d695",
+    "tests/numerics/test_iv_overidentified.py": "195416c8b10545c58f65296c5bc254f023cb40ab3b176587c1915993a2f86a58",
+    "benchmarks/ivppml_overidentified.py": "b3bd14130b31b75794f08bdea01f18285cde274d7def67e96beb2bb6dd490ff7"
+  },
+  "benchmark_protocol": "14 serial fresh-process runs after memory fix. Three repeats for each 1M variant; one run for each 5M variant. Warm-up and DGP generation excluded; full estimator included. No runtime source changes during final runs.",
+  "simulation_protocol": "Final-source rerun: N=3000 and N=12000; 300 correct and 300 misspecified replications at each N; seed 20261029; all 1200 successful. Fixed 4 FE groups.",
+  "original_failures_retained": [
+    "full-tests.log: initial 577 pass/8 fail from thread capability and stale metadata",
+    "full-tests-before-map-regeneration.log: 588 pass/1 fail from stale generated architecture after code changes",
+    "before_memory_fix/: first 5M profile attempt rejected by 2048 MiB workspace admission; fixed ownership/lifetime, not budget",
+    "bench_profile_1m_r1.json: preliminary concurrent run, not used for formal timings"
+  ],
+  "independence": "Parameter/weight finite differences of explicit full-dummy estimating functions; no comparison only against copied symbolic formula.",
+  "statistical_scope": "Regular smooth strongly identified fixed-dimensional random-design asymptotics; no weak-IV or arbitrary growing-FE coverage certification."
+}

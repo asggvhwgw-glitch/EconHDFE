@@ -201,7 +201,7 @@ def fit_arrays(
         sample_idx = np.flatnonzero(sample)
         separation[sample_idx[state.separated]] = True
 
-    if config.outer_solver == "moment":
+    if config.outer_solver in {"moment", "profile"}:
         # Reuse a certified system at the accepted eta/mu.  Do NOT take the
         # historical unchecked last beta-only Newton update.
         irls_w = state.irls_w
@@ -243,11 +243,30 @@ def fit_arrays(
         cls = normalize_vce_clusters(cls, nobs=len(y1))
     dof = p1.dof_info(clusters=cls, method=config.dof_method)
     effective_n = float(np.sum(w1)) if weight_kind == "fweight" else float(len(y1))
-    Vstd = ivppml_vcov(
-        projected_X, X_dm, inference_residual, irls_w,
-        kind=vce, clusters=cls, effective_n=effective_n,
-        base_weights=w1, weight_kind=weight_kind, bread=solved.bread, repair_psd=False,
-    )
+    inference_info = {"mode": "standard", "misspecification_robust": False,
+                      "weak_iv_robust": False, "growing_fe_certified": False}
+    overid_info = {"status": "not_requested"}
+    if config.outer_inference == "estimating_equation" or config.outer_overid_test:
+        from .overidentified import profile_geometry, estimating_equation_vcov, overidentification_test
+        geometry = profile_geometry(X_dm, Z_dm, projected_X, irls_w, w1*(y1-state.mu),
+                                    chunk_rows=config.outer_chunk_rows)
+    if config.outer_inference == "estimating_equation":
+        Vstd, inference_info = estimating_equation_vcov(
+            X_dm, projected_X, geometry, irls_w, w1*(y1-state.mu),
+            projector=projector, tol=config.target_inner_tol,
+            kind=normalize_ivppml_vce(vce), clusters=cls, effective_n=effective_n,
+            base_weights=w1, weight_kind=weight_kind, chunk_rows=config.outer_chunk_rows)
+    else:
+        Vstd = ivppml_vcov(
+            projected_X, X_dm, inference_residual, irls_w,
+            kind=vce, clusters=cls, effective_n=effective_n,
+            base_weights=w1, weight_kind=weight_kind, bread=solved.bread, repair_psd=False,
+        )
+    if config.outer_overid_test:
+        overid_info = overidentification_test(
+            Z_dm, geometry, w1*(y1-state.mu), kind=normalize_ivppml_vce(vce),
+            clusters=cls, effective_n=effective_n, base_weights=w1,
+            weight_kind=weight_kind, chunk_rows=config.outer_chunk_rows)
     V = scaling.unscale_vcov(Vstd)
     # PSD repair must use the reported coefficient units, not solver scaling.
     if normalize_ivppml_vce(vce) == "cluster" and len(cls) > 1:
@@ -310,6 +329,8 @@ def fit_arrays(
             "rank": solved.rank,
             "warm_started": initial_eta is not None,
             "outer": state.outer_diagnostics,
+            "outer_inference": inference_info,
+            "overidentification": overid_info,
         },
         df_resid=(min([max(len(np.unique(c)) - 1, 0) for c in cls]) if cls else max(effective_n - len(coef) - int(dof.df_absorbed), 0.0)),
         vce=normalize_ivppml_vce(vce),
