@@ -37,7 +37,9 @@ local native extension previously built and validated from the merged PR29.
 - `python scripts/run_tests.py --suite full -- -q`: **526 passed**, 4 expected warnings.
 - `REQUIRE_WITHIN_NATIVE=1 python -m pytest native/within-accel/tests -q`:
   **53 passed**, no skips.
-- `python scripts/version.py gate`: **0.10.0**, passed.
+- `python scripts/version.py gate`: **0.10.0**, passed. (The untagged development
+  number 0.10.0 was later renumbered 0.9.2 before any release; this record is
+  otherwise unchanged.)
 - `python scripts/generate_architecture_map.py --check`: passed.
 - Four 1,000,000-row sample-peeling cases: all known retained sets reproduced.
 - Sixteen default-call comparisons with current main: exactly equal for

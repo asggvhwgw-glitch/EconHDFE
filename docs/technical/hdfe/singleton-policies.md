@@ -1,6 +1,7 @@
 # Weighted singleton policies
 
-Status: 0.10.0 development candidate, based on main `33e8efe` (0.9.1).
+Status: 0.9.2 candidate (developed under the untagged number 0.10.0), based on
+main `33e8efe` (0.9.1).
 This is a sample-policy change, not a new FE solver or a Stata certification.
 The default is `stata_compat`; `unified` is explicit opt-in.
 

@@ -1,6 +1,6 @@
 # econhdfe
 
-## 加权样本双模式（0.10.0 候选）
+## 加权样本双模式（0.9.2 候选）
 
 默认保留 `singleton_mode="stata_compat"`。线性估计器及 session 使用
 `HDFEConfig(singleton_mode="unified")`，Poisson 两类估计器使用相应的

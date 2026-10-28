@@ -44,5 +44,5 @@ CI results must be checked on the final PR head independently of local results.
 No rank/bridge computational elimination was added. Statistical and working
 rows are equal. Arbitrary FE-recession certificates, grouped individual FE
 unified semantics, automatic zero/missing-weight sample selection, and new
-HC2/HC3/CR2 guarantees are outside scope. Candidate version 0.10.0 is not a tag,
+HC2/HC3/CR2 guarantees are outside scope. Candidate version 0.9.2 (developed as untagged 0.10.0) is not a tag,
 published package, or authorized release; acceptance records remain pending.

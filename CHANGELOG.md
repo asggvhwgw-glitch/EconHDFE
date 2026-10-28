@@ -1,6 +1,24 @@
 # Changelog
 
-## 0.10.1 — unreleased candidate
+## 0.9.2 — unreleased candidate
+
+Patch on 0.9.1. The untagged development numbers 0.10.0 and 0.10.1 were
+never published and are folded into this version.
+
+### Weighted sample policies
+
+- Add explicit `stata_compat` (default) and frequency-invariant `unified`
+  singleton policies to linear and Poisson configs; propagate through sessions,
+  array/DataFrame calls and structured-design paths.
+- Independently implemented O(N*q+levels) queue peeler, separate zero-level
+  reasons, slope-only zero-row safeguard, and policy-aware session cache keys.
+- Add typed fw/pw to plain PPML with frequency N and robust-meat semantics.
+- Unified IV-PPML uses FE-zero checks only; reject unsupported PPML separation
+  and threshold-only mu deletion rather than silently changing IV moments.
+- Preserve statistical rows, DF and reporting; extra computational rank/bridge
+  elimination is not implemented. Positive-weight input remains required.
+
+### Multiway-cluster VCE, session cache and internal architecture
 
 - **Correctness (multiway-cluster VCE).** An indefinite Cameron-Gelbach-Miller
   covariance is now repaired as in reghdfe 6.12.5 / ppmlhdfe 2.3.0 for every
@@ -9,7 +27,7 @@
   coordinates of the original regressors (unweighted N-1 stdev on the
   estimation sample before FE demeaning, floor 1e-3, constant scale 1; with a
   reported constant the slope block is clipped separately), through one
-  `finalize_cluster_vcov`. Up to 0.10.0 the clip ran in reported or internal
+  `finalize_cluster_vcov`. Previously the clip ran in reported or internal
   solver units, which is not unit invariant and can be badly wrong. Stata 18 MP
   references (n=240, 5x4 two-way clusters, regressor scales 1/1e3/1e-2, three
   seeds, all repaired): OLS vs reghdfe slope-block relative difference was
@@ -40,29 +58,16 @@
   one absorber factory (item 1); `SamplePolicy` queried instead of mode names,
   `sample_policy_scope`, shared Poisson finishing helpers, removal of the
   `repair_psd` parameter chain, `initial_sample_mask` and the public internal
-  `fix_psd` (item 2). Bitwise equivalence against 0.10.0 outside the changes
-  above (validation harnesses in the development archive).
-- Public contract snapshot unchanged from 0.10.0; advanced through the
-  controlled version workflow. No package is published.
+  `fix_psd` (item 2). Bitwise equivalence against main `2ab8cdd` outside the
+  changes above (validation harnesses in the development archive).
 
-## 0.10.0 — weighted sample-policy development candidate
+### Compatibility
 
-- Add explicit `stata_compat` (default) and frequency-invariant `unified`
-  singleton policies to linear and Poisson configs; propagate through sessions,
-  array/DataFrame calls and structured-design paths.
-- Independently implemented O(N*q+levels) queue peeler, separate zero-level
-  reasons, slope-only zero-row safeguard, and policy-aware session cache keys.
-- Add typed fw/pw to plain PPML with frequency N and robust-meat semantics.
-- Repair multiway-cluster covariance in reported coefficient units after
-  unscaling in dense and structured PPML/IV-PPML, preserving frequency
-  expansion and standardization invariance when CGM has negative eigenvalues.
-- Unified IV-PPML uses FE-zero checks only; reject unsupported PPML separation
-  and threshold-only mu deletion rather than silently changing IV moments.
-- Preserve statistical rows, DF and reporting; extra computational rank/bridge
-  elimination is not implemented. Positive-weight input remains required.
-- New immutable API snapshot; no historical baseline rewrite or publication.
-  See validation/singleton_policy for actual execution and external limitations.
-
+- New immutable API snapshot 0.9.2; the eight additive/default-sentinel
+  config changes against 0.9.1 are the approved singleton-policy fields. No
+  historical baseline is rewritten; the untagged 0.10.0/0.10.1 snapshots are
+  removed. See validation/singleton_policy for actual execution and external
+  limitations. No package is published.
 
 ## 0.9.1 — unreleased candidate
 
