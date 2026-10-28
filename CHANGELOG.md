@@ -1,5 +1,50 @@
 # Changelog
 
+## 0.10.1 — unreleased candidate
+
+- **Correctness (multiway-cluster VCE).** An indefinite Cameron-Gelbach-Miller
+  covariance is now repaired as in reghdfe 6.12.5 / ppmlhdfe 2.3.0 for every
+  estimator (OLS, linear IV/LIML/k-class/GMM2S, OLS/IV sessions, PPML, IV-PPML;
+  dense and block paths): negative eigenvalues are clipped in the standardized
+  coordinates of the original regressors (unweighted N-1 stdev on the
+  estimation sample before FE demeaning, floor 1e-3, constant scale 1; with a
+  reported constant the slope block is clipped separately), through one
+  `finalize_cluster_vcov`. Up to 0.10.0 the clip ran in reported or internal
+  solver units, which is not unit invariant and can be badly wrong. Stata 18 MP
+  references (n=240, 5x4 two-way clusters, regressor scales 1/1e3/1e-2, three
+  seeds, all repaired): OLS vs reghdfe slope-block relative difference was
+  1.0 (x3 SE 0.0005-0.003 times reghdfe's) and is now 1.1e-7 to 1.6e-7 (SE
+  ratios 1.000000); PPML vs ppmlhdfe improves from 6.6e-2-1.8e-1 (one SE 20x)
+  to 2.7e-2-5.4e-2, the remainder being the registered PPML small-sample
+  constant difference. Results change only for multiway clustering where the
+  repair clips; they are now invariant to rescaling a regressor (tested to
+  rtol 1e-10). ivreghdfe does not repair by default (`psd0`/`psda` only);
+  econhdfe keeps the repair for linear IV with the reghdfe coordinates.
+  `stata_compat` keeps reghdfe's unweighted stdev of the stored rows; under
+  `unified` with fweights the scale is the frequency-weighted stdev, so a
+  compact fweight fit and its expanded copy repair identically (tested to
+  rtol 1e-10 for OLS, IV, PPML and IV-PPML). Persistent session results are
+  invalidated (`linear-session-result-6`).
+- **Session cache (bug fix).** The in-memory FE-entry key and the persistent
+  within-cache signature now share one configuration fingerprint (`hdfe`,
+  `weight_type`, `drop_singletons`). Changing `session.hdfe` (e.g.
+  `dof_method`, `canonicalize`, `solver`) no longer reuses an entry built under
+  the old settings (previously stale DoF or solver).
+- **IV-PPML `separation=None`** is kept as "policy default" and resolved where
+  used (`IVPPMLConfig.separation_methods`), so `dataclasses.replace` of
+  `singleton_mode` follows the policy in both directions; the construction-time
+  rewrite is removed. Resolved methods of existing configs are unchanged.
+- IV-PPML robust VCE uses the shared frequency score scale and sandwich;
+  fweight results differ by at most a few ulp (max relative 1e-15).
+- Refactor without behaviour change: absorber protocol, capability queries and
+  one absorber factory (item 1); `SamplePolicy` queried instead of mode names,
+  `sample_policy_scope`, shared Poisson finishing helpers, removal of the
+  `repair_psd` parameter chain, `initial_sample_mask` and the public internal
+  `fix_psd` (item 2). Bitwise equivalence against 0.10.0 outside the changes
+  above (validation harnesses in the development archive).
+- Public contract snapshot unchanged from 0.10.0; advanced through the
+  controlled version workflow. No package is published.
+
 ## 0.10.0 — weighted sample-policy development candidate
 
 - Add explicit `stata_compat` (default) and frequency-invariant `unified`

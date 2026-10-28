@@ -46,15 +46,15 @@ def initial_sample_selection(y, plan, config, *, weights=None, weight_kind="none
     from ...hdfe.sample import peel_sample
     y = np.asarray(y, dtype=np.float64)
     n = len(y)
-    unified = config.singleton_mode == "unified"
-    fw = weights if unified and weight_kind == "fweight" else None
-    fe_on = "fe" in config.separation and (unified or config.drop_singletons)
+    policy = config.sample_policy
+    fw = weights if policy.initial_frequency_count(weight_kind) else None
+    fe_on = policy.fe_zero_peeling(config.separation_methods, config.drop_singletons)
     selected = peel_sample(
         plan.groups, nobs=n, frequency_weights=fw,
         positive=y > 0 if fe_on else None, drop_singletons=config.drop_singletons,
     )
     dropped = ~selected.keep
-    if unified:
+    if policy.disjoint_reasons:
         singles, separated = selected.singletons, selected.separated
         n_fe = int(np.sum(separated))
     else:
@@ -73,25 +73,20 @@ def initial_sample_selection(y, plan, config, *, weights=None, weight_kind="none
     return InitialSampleSelection(dropped, singles, separated, n_fe)
 
 
-def initial_sample_mask(y, plan, config, *, weights=None, weight_kind="none"):
-    """Backward-compatible internal tuple adapter."""
-    selected = initial_sample_selection(y, plan, config, weights=weights, weight_kind=weight_kind)
-    return selected.dropped, selected.n_fe
-
-
 def sample_policy_diagnostics(config, sample, weights, weight_kind):
     """Counts only: never place row-level identifiers in diagnostic reports."""
     rows = int(np.sum(sample))
     observations = float(np.sum(np.asarray(weights)[sample])) if weight_kind == "fweight" else float(rows)
+    policy = config.sample_policy
     return {
-        "mode": config.singleton_mode,
-        "profile": "stata-source-20261027" if config.singleton_mode == "stata_compat" else "frequency-invariant-v1",
-        "initial_count": "frequency" if weight_kind == "fweight" and config.singleton_mode == "unified" else "rows",
+        "mode": policy.mode,
+        "profile": policy.profile,
+        "initial_count": "frequency" if policy.initial_frequency_count(weight_kind) else "rows",
         "post_separation_count": "frequency" if weight_kind == "fweight" else "rows",
         "drop_singletons": config.drop_singletons,
         "statistical_rows": rows, "statistical_observations": observations,
         "working_rows": rows, "computational_elimination": False,
-        "separation_methods": tuple(config.separation),
+        "separation_methods": tuple(config.separation_methods),
     }
 
 
@@ -123,9 +118,11 @@ def detect_separation(
     iterations: dict[str, int] = {}
     solvers: dict[str, str] = {}
 
-    for method in [m for m in _UPSTREAM_ORDER if m in config.separation]:
+    policy = config.sample_policy
+    methods = config.separation_methods
+    for method in [m for m in _UPSTREAM_ORDER if m in methods]:
         t0 = perf_counter()
-        if method == "fe" and not config.drop_singletons and config.singleton_mode == "stata_compat":
+        if method == "fe" and not policy.fe_zero_peeling(methods, config.drop_singletons):
             counts[method], timings[method], iterations[method], solvers[method] = 0, 0.0, 0, "disabled-with-singletons"
             continue
         if method == "mu":
@@ -201,11 +198,11 @@ def detect_separation(
             alive = ~(full_sep | full_single)
             if plan.groups and np.any(alive):
                 fw = w0[alive] if frequency_weights else None
-                if config.singleton_mode == "unified":
+                if policy.disjoint_reasons:
                     from ...hdfe.sample import peel_sample
                     new = peel_sample(
                         plan.subset(alive).groups, frequency_weights=fw,
-                        positive=y0[alive] > 0 if "fe" in config.separation else None,
+                        positive=y0[alive] > 0 if "fe" in methods else None,
                         drop_singletons=config.drop_singletons,
                     )
                     idx = np.flatnonzero(alive)

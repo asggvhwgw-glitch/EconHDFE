@@ -15,20 +15,23 @@ from scipy.special import gammaln
 
 from ...collinearity import resolve_collinearity
 from ...compute.block_design import BlockDesign, align_dense_to_blocks, hstack_block_designs, same_row_partition
-from ...compute.vcov import block_cluster_subset_meats_xe, fix_psd
-from ...compute.weights import prepare_weights
+from ...compute.vcov import block_cluster_subset_meats_xe, regressor_scale
+from ...compute.weights import frequency_score_scale, normalize_weight_type
 from ...compute.clusters import normalize_vce_clusters
 from ...compute.stable_linalg import equilibrated_gram_inverse
 from .vce import normalize_ivppml_vce
 from ...errors import (
-    CollinearityError, ConvergenceError, DivergenceError, InputError,
+    CollinearityError, ConvergenceError, DivergenceError,
     NumericalError, ShapeError, UnderidentifiedError,
 )
 from ...hdfe.block_projection import BlockWeightedFEProjector
 from ...hdfe.plan import FEPlan
 from ...iv.solve import weighted_2sls_block
 from ...reporting import cluster_counts as _cluster_counts, fe_names_from_metadata
-from ..poisson import exp_clip_into, poisson_deviance, prepare_poisson_base, working_state
+from ..poisson import (
+    exp_clip_into, poisson_deviance, prepare_poisson_base, prepare_ppml_weights, working_state,
+    initial_active_rows, separation_survivors, poisson_clusters, poisson_inference, poisson_df_resid,
+)
 from ..ppml.execution import resolve_execution
 from ..ppml.heterogeneous import detect_separation_block
 from ..ppml.separation import initial_sample_selection, sample_policy_diagnostics
@@ -244,7 +247,7 @@ def _fit_iv_irls_block(
 
 def _ivppml_vcov_block(
     X: BlockDesign, Z: BlockDesign, first_stage, residual, irls_w, *, kind,
-    clusters, effective_n, base_weights, weight_kind, bread=None, repair_psd=True,
+    clusters, effective_n, base_weights, weight_kind, bread=None,
 ):
     gamma = np.asarray(first_stage, dtype=np.float64)
     residual = np.asarray(residual, dtype=np.float64)
@@ -255,10 +258,8 @@ def _ivppml_vcov_block(
     score = irls_w * residual
 
     if kind0 in {"robust", "unadjusted", "iid", "model", "homoskedastic"}:
-        robust_score = score
-        if str(weight_kind).lower() == "fweight":
-            bw = np.asarray(base_weights, dtype=np.float64)
-            robust_score = (irls_w / np.sqrt(bw)) * residual
+        scale = frequency_score_scale(str(weight_kind).lower(), base_weights, "robust")
+        robust_score = score if scale is None else score * scale
         Sz = Z.gram(weights=robust_score * robust_score)
         if effective_n > 1:
             Sz *= float(effective_n) / (float(effective_n) - 1.0)
@@ -272,8 +273,7 @@ def _ivppml_vcov_block(
     for sign, Sz, g, _ in block_cluster_subset_meats_xe(Z, score, clusters):
         meat = gamma.T @ Sz @ gamma
         V += sign * (g / (g - 1.0)) * (bread @ meat @ bread)
-    V = (V + V.T) / 2.0
-    return fix_psd(V) if repair_psd and len(clusters) > 1 else V
+    return (V + V.T) / 2.0
 
 
 @managed_execution
@@ -294,15 +294,7 @@ def fit_block_arrays(
         raise ShapeError("structured IV-PPML inputs have incompatible observation counts")
 
     initial = initial_sample_selection(y, plan, config, weights=w, weight_kind=weight_kind)
-    singleton, n_fe_separated = initial.dropped, initial.n_fe
-    active0 = ~singleton
-    if not np.any(active0):
-        raise InputError(
-            "no observations remain after recursive singleton removal",
-            code="input.empty_after_singletons", stage="sample",
-            details={"nobs_raw": int(n), "n_singletons": int(np.sum(singleton)), "reason": "all_rows_pruned_as_singletons"},
-            suggestion="Simplify the FE specification or retain levels with repeated support; no FE coefficient can be recovered from an empty sample.",
-        )
+    active0 = initial_active_rows(initial, require_rows=True)
     if np.all(active0):
         y0, C0, E0, I0, w0, off0, p0 = y, C, E, I, w, off, plan
     else:
@@ -317,28 +309,14 @@ def fit_block_arrays(
     sep = detect_separation_block(
         y0, X0, p0, w0, config, execution, frequency_weights=(weight_kind == "fweight"),
     )
-    if "fe" in sep.by_method:
-        sep.by_method["fe"] += n_fe_separated
-    keep_sep = ~(sep.separated | sep.singletons)
-    if not np.any(keep_sep) or not np.any(y0[keep_sep] > 0):
-        raise InputError(
-            "PPML has no finite estimable sample after separation",
-            code="identification.no_finite_estimate", stage="separation",
-            details={
-                "nobs_after_singletons": int(len(y0)),
-                "n_separated": int(np.sum(sep.separated)),
-                "separation_by_method": dict(sep.by_method),
-                "reason": "ppml_separation_no_finite_mle",
-            },
-            suggestion="Inspect all-zero FE levels and separated support; changing normalization cannot create a finite PPML estimate.",
-        )
+    keep_sep = separation_survivors(y0, sep, initial.n_fe)
 
     separation = initial.separated.copy()
     if not np.all(keep_sep):
         idx0 = np.flatnonzero(active0)
         sample = np.zeros(n, dtype=bool)
         sample[idx0[keep_sep]] = True
-        separation[idx0[sep.separated if config.singleton_mode == "unified" else ~keep_sep]] = True
+        separation[idx0[sep.separated if config.sample_policy.disjoint_reasons else ~keep_sep]] = True
         y1, w1, off1 = y0[keep_sep], w0[keep_sep], off0[keep_sep]
         C1, E1, I1 = C0.subset_rows(keep_sep), E0.subset_rows(keep_sep), I0.subset_rows(keep_sep)
         p1 = p0.subset(keep_sep)
@@ -371,7 +349,7 @@ def fit_block_arrays(
 
     state = _fit_iv_irls_block(
         y1, Cs, Es, Is, p1, w1, off1, config, projector=projector,
-        initial_eta=initial_eta, detect_mu="mu" in config.separation,
+        initial_eta=initial_eta, detect_mu="mu" in config.separation_methods,
     )
     if not state.converged:
         raise ConvergenceError(
@@ -394,25 +372,20 @@ def fit_block_arrays(
     solved = weighted_2sls_block(projected.response, Xdm, Zdm, weights=irls_w)
     beta = scaling.unscale_coef(solved.beta)
 
-    cls = None
-    if clusters is not None:
-        raw = clusters if isinstance(clusters, (list, tuple)) else [clusters]
-        cls = [np.asarray(c)[sample] for c in raw]
-    if str(vce).lower() == "cluster":
-        cls = normalize_vce_clusters(cls, nobs=len(y1))
+    cls = poisson_clusters(clusters, sample, vce)
     dof = p1.dof_info(clusters=cls, method=config.dof_method)
     effective_n = float(np.sum(w1)) if weight_kind == "fweight" else float(len(y1))
     Vstd = _ivppml_vcov_block(
         Xdm, Zdm, solved.first_stage, solved.residuals, irls_w, kind=vce, clusters=cls,
-        effective_n=effective_n, base_weights=w1, weight_kind=weight_kind, bread=solved.bread, repair_psd=False,
+        effective_n=effective_n, base_weights=w1, weight_kind=weight_kind, bread=solved.bread,
     )
-    V = scaling.unscale_vcov(Vstd)
-    # PSD repair must use the reported coefficient units, not solver scaling.
-    if normalize_ivppml_vce(vce) == "cluster" and len(cls) > 1:
-        V = fix_psd(V)
-    se = np.sqrt(np.maximum(np.diag(V), 0.0))
-
     Xraw = hstack_block_designs(C1, E1)
+    V, se = poisson_inference(
+        scaling.unscale_vcov(Vstd), kind=normalize_ivppml_vce(vce), clusters=cls,
+        scale=lambda: regressor_scale(
+            Xraw, frequency_weights=w1 if config.sample_policy.psd_frequency_scale(weight_kind) else None),
+    )
+
     mean_x = Xraw.t_matvec(irls_w) / float(np.sum(irls_w))
     b_cons = float(np.average(state.eta - off1, weights=irls_w) - mean_x @ beta)
     names = tuple(exog_names) + tuple(endog_names) + ("_cons",)
@@ -431,7 +404,7 @@ def fit_block_arrays(
     if num_sep_mu:
         sep_by_method["mu"] = num_sep_mu
 
-    n_singletons = int(np.sum(initial.singletons)) + (int(np.sum(sep.singletons)) if config.singleton_mode == "unified" else 0)
+    n_singletons = int(np.sum(initial.singletons)) + (int(np.sum(sep.singletons)) if config.sample_policy.disjoint_reasons else 0)
     return IVPPMLResult(
         coef, Vfull, sefull, names, True, state.iterations, state.deviance, ll,
         int(round(effective_n)), int(np.sum(separation)), sample, separation,
@@ -460,7 +433,7 @@ def fit_block_arrays(
             "warm_started": initial_eta is not None,
             "heterogeneous_spec_path": True,
         },
-        df_resid=(min([max(len(np.unique(c)) - 1, 0) for c in cls]) if cls else max(effective_n - len(coef) - int(dof.df_absorbed), 0.0)),
+        df_resid=poisson_df_resid(cls, effective_n, len(coef), int(dof.df_absorbed)),
         vce=normalize_ivppml_vce(vce), cluster_counts=_cluster_counts(cls),
         fe_names=fe_names_from_metadata(p1.metadata), weight_type=weight_kind,
         sum_weights=float(np.sum(w1)), n_singletons=n_singletons,
@@ -493,10 +466,11 @@ def fit_structured_dataframe(
         yraw, offset=col_or_value(offset), exposure=col_or_value(exposure),
         weights=col_or_value(weights),
     )
-    winfo = prepare_weights(col_or_value(weights), len(yv), weight_type, normalize_ap=False)
-    if winfo.kind == "aweight":
+    # Weights already passed prepare_poisson_base, so an aweight request can
+    # fail only on its type; the dense frontend reports that rejection.
+    if normalize_weight_type(weight_type, has_weights=weights is not None) == "aweight":
         return None
-    w = np.ones(len(yv), dtype=np.float64) if winfo.estimation is None else winfo.estimation
+    w, weight_kind = prepare_ppml_weights(col_or_value(weights), len(yv), weight_type, family="ivppml")
     memory_budget = getattr(execution_config, "memory_budget_mb", 512.0)
     c = _compile_execution_design(
         data, exog, len(yv), groups=plan.groups, expected_passes=2,
@@ -523,7 +497,7 @@ def fit_structured_dataframe(
     E = e.values if isinstance(e.values, BlockDesign) else align_dense_to_blocks(e.values, template)
     I = i.values if isinstance(i.values, BlockDesign) else align_dense_to_blocks(i.values, template)
     Xcheck = hstack_block_designs(C, E)
-    if (not Xcheck.columns_disjoint) and any(m in {"simplex", "relu"} for m in cfg.separation):
+    if (not Xcheck.columns_disjoint) and any(m in {"simplex", "relu"} for m in cfg.separation_methods):
         return None
 
     cls = None
@@ -531,7 +505,7 @@ def fit_structured_dataframe(
         raw = clusters if isinstance(clusters, (list, tuple)) else [clusters]
         cls = [np.asarray(data[v]) if isinstance(v, str) else np.asarray(v) for v in raw]
     result = fit_block_arrays(
-        yv, C, E, I, plan, offset=off, true_w=w, weight_kind=winfo.kind,
+        yv, C, E, I, plan, offset=off, true_w=w, weight_kind=weight_kind,
         vce=vce, clusters=cls, exog_names=c.names, endog_names=e.names,
         instrument_names=i.names, config=cfg, warm_start=warm_start,
         execution_config=execution_config,

@@ -27,7 +27,8 @@ from .source import DataFrameSource, DataSource, as_data_source
 PERSISTENT_CACHE_FORMAT = 1
 # CG roundoff protection and specification-level conditioning invalidate older caches.
 PERSISTENT_NUMERICAL_ABI = "linear-session-3"
-PERSISTENT_RESULT_ABI = "linear-session-result-5"
+# Multiway-cluster PSD repair in stdev coordinates changes stored covariances.
+PERSISTENT_RESULT_ABI = "linear-session-result-6"
 
 _PREDICTION_STATE_TYPES = {
     cls.__name__: cls

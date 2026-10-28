@@ -1,10 +1,9 @@
 from __future__ import annotations
 from ...planner.scheduler import managed_execution
-from ...compute.clusters import normalize_vce_clusters
-from ...compute.vcov import fix_psd
+from ...compute.vcov import regressor_scale
 import math
 import numpy as np
-from ...errors import InputError, CollinearityError, UnderidentifiedError, ConvergenceError
+from ...errors import CollinearityError, UnderidentifiedError, ConvergenceError
 from ...config import ExecutionConfig
 from ...compute.context import ExecutionContext
 from scipy.special import gammaln
@@ -14,6 +13,9 @@ from ...iv.moments import additive_moments
 from ...iv.solve import weighted_2sls
 from ..ppml.separation import detect_separation, initial_sample_selection, sample_policy_diagnostics
 from ..ppml.execution import resolve_execution, get_projector
+from ..poisson import (
+    initial_active_rows, separation_survivors, poisson_clusters, poisson_inference, poisson_df_resid,
+)
 from .config import IVPPMLConfig
 from .irls import fit_iv_irls
 from .results import IVPPMLResult
@@ -97,15 +99,7 @@ def fit_arrays(
     if not plan.groups:
         plan = FEPlan.from_arrays([np.zeros(n, dtype=np.int8)])
     initial = initial_sample_selection(y, plan, config, weights=w, weight_kind=weight_kind)
-    singleton, n_fe_separated = initial.dropped, initial.n_fe
-    active0 = ~singleton
-    if not np.any(active0):
-        raise InputError(
-            "no observations remain after recursive singleton removal",
-            code="input.empty_after_singletons", stage="sample",
-            details={"nobs_raw": int(n), "n_singletons": int(np.sum(singleton)), "reason": "all_rows_pruned_as_singletons"},
-            suggestion="Simplify the FE specification or retain levels with repeated support; no FE coefficient can be recovered from an empty sample.",
-        )
+    active0 = initial_active_rows(initial, require_rows=True)
     if np.all(active0):
         y0, C0, E0, I0, w0, off0, p0 = y, C, E, I, w, off, plan
     else:
@@ -124,30 +118,16 @@ def fit_arrays(
     sep = detect_separation(
         y0, X0, p0, w0, config, execution, frequency_weights=(weight_kind == "fweight"),
     )
-    if "fe" in sep.by_method:
-        sep.by_method["fe"] += n_fe_separated
     # Upstream re-prunes singletons after simplex/ReLU trims (fweight mass for
     # fweights) and counts them in num_separated (num_sep_advanced).
-    keep_sep = ~(sep.separated | sep.singletons)
-    if not np.any(keep_sep) or not np.any(y0[keep_sep] > 0):
-        raise InputError(
-            "PPML has no finite estimable sample after separation",
-            code="identification.no_finite_estimate", stage="separation",
-            details={
-                "nobs_after_singletons": int(len(y0)),
-                "n_separated": int(np.sum(sep.separated)),
-                "separation_by_method": dict(sep.by_method),
-                "reason": "ppml_separation_no_finite_mle",
-            },
-            suggestion="Inspect all-zero FE levels and separated support; changing normalization cannot create a finite PPML estimate.",
-        )
+    keep_sep = separation_survivors(y0, sep, initial.n_fe)
 
     separation = initial.separated.copy()
     if not np.all(keep_sep):
         idx0 = np.flatnonzero(active0)
         sample = np.zeros(n, dtype=bool)
         sample[idx0[keep_sep]] = True
-        separation[idx0[sep.separated if config.singleton_mode == "unified" else ~keep_sep]] = True
+        separation[idx0[sep.separated if config.sample_policy.disjoint_reasons else ~keep_sep]] = True
         y1, C1, E1, I1, w1, off1 = y0[keep_sep], C0[keep_sep], E0[keep_sep], I0[keep_sep], w0[keep_sep], off0[keep_sep]
         p1 = p0.subset(keep_sep)
         pre_projector = get_projector(
@@ -183,7 +163,7 @@ def fit_arrays(
 
     state = fit_iv_irls(
         y1, Cs, Es, Is, solver_plan, w1, off1, config,
-        projector=projector, initial_eta=initial_eta, detect_mu="mu" in config.separation,
+        projector=projector, initial_eta=initial_eta, detect_mu="mu" in config.separation_methods,
     )
     if not state.converged:
         raise ConvergenceError(
@@ -223,27 +203,22 @@ def fit_arrays(
     solved = weighted_2sls(z_dm, X_dm, Z_dm, weights=irls_w)
     beta = scaling.unscale_coef(solved.beta)
 
-    cls = None
-    if clusters is not None:
-        raw = clusters if isinstance(clusters, (list, tuple)) else [clusters]
-        cls = [np.asarray(c)[sample] for c in raw]
-    if str(vce).lower() == "cluster":
-        cls = normalize_vce_clusters(cls, nobs=len(y1))
+    cls = poisson_clusters(clusters, sample, vce)
     dof = p1.dof_info(clusters=cls, method=config.dof_method)
     effective_n = float(np.sum(w1)) if weight_kind == "fweight" else float(len(y1))
     Vstd = ivppml_vcov(
         solved.projected_X, X_dm, solved.residuals, irls_w,
         kind=vce, clusters=cls, effective_n=effective_n,
-        base_weights=w1, weight_kind=weight_kind, bread=solved.bread, repair_psd=False,
+        base_weights=w1, weight_kind=weight_kind, bread=solved.bread,
     )
-    V = scaling.unscale_vcov(Vstd)
-    # PSD repair must use the reported coefficient units, not solver scaling.
-    if normalize_ivppml_vce(vce) == "cluster" and len(cls) > 1:
-        V = fix_psd(V)
-    se = np.sqrt(np.maximum(np.diag(V), 0.0))
+    Xraw = np.column_stack([C1, E1])
+    V, se = poisson_inference(
+        scaling.unscale_vcov(Vstd), kind=normalize_ivppml_vce(vce), clusters=cls,
+        scale=lambda: regressor_scale(
+            Xraw, frequency_weights=w1 if config.sample_policy.psd_frequency_scale(weight_kind) else None),
+    )
 
     # Upstream posts a normalized constant with zero reported variance.
-    Xraw = np.column_stack([C1, E1])
     b_cons = float(np.average(state.eta - off1, weights=irls_w) - np.average(Xraw, axis=0, weights=irls_w) @ beta)
     names = tuple(exog_names) + tuple(endog_names) + ("_cons",)
     coef = np.r_[beta, b_cons]
@@ -264,7 +239,7 @@ def fit_arrays(
     if num_sep_mu:
         sep_by_method["mu"] = num_sep_mu
 
-    n_singletons = int(np.sum(initial.singletons)) + (int(np.sum(sep.singletons)) if config.singleton_mode == "unified" else 0)
+    n_singletons = int(np.sum(initial.singletons)) + (int(np.sum(sep.singletons)) if config.sample_policy.disjoint_reasons else 0)
     return IVPPMLResult(
         coef, Vfull, sefull, names, True, state.iterations, state.deviance, ll,
         int(round(effective_n)), int(np.sum(separation)), sample, separation,
@@ -298,7 +273,7 @@ def fit_arrays(
             "rank": solved.rank,
             "warm_started": initial_eta is not None,
         },
-        df_resid=(min([max(len(np.unique(c)) - 1, 0) for c in cls]) if cls else max(effective_n - len(coef) - int(dof.df_absorbed), 0.0)),
+        df_resid=poisson_df_resid(cls, effective_n, len(coef), int(dof.df_absorbed)),
         vce=normalize_ivppml_vce(vce),
         cluster_counts=_cluster_counts(cls),
         fe_names=fe_names_from_metadata(p1.metadata),

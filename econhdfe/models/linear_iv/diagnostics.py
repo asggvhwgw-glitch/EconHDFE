@@ -6,6 +6,7 @@ import scipy.linalg as la
 from scipy.stats import chi2, f
 from ...compute.encoding import factorize_interaction
 from ...compute.vcov import ols_vcov, score_covariance, _cluster_meat_xe, _cluster_kron_meat
+from ...compute.vcov import finalize_cluster_vcov
 from ...compute.vcov import is_iid_vce, IID_VCE_KINDS, ROBUST_VCE_KINDS
 from ...compute.weights import robust_score_scale
 
@@ -209,6 +210,9 @@ def _first_stage_inverse(zp, resid, bread, ccols, *, vce, clusters,
         time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
         effective_n=effective_n, score_scale=score_scale,
     )
+    # A first-stage test statistic, not a reported covariance: its multiway
+    # repair stays in these max-abs-equilibrated (already unit-free) coordinates.
+    V = finalize_cluster_vcov(V, vce, clusters, lambda: np.ones(len(V)))
     return np.linalg.pinv(V, hermitian=True)
 
 

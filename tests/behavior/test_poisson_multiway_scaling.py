@@ -1,4 +1,4 @@
-"""CGM repair uses reported units, independently of storage and frequency coding."""
+"""Unified CGM repair uses frequency-expanded original-regressor stdev coordinates in every storage path."""
 import numpy as np
 import pytest
 
@@ -82,14 +82,18 @@ def _oracle(result, family):
     if family == 'ppml':
         assert result.df_absorbed == 0  # Both FEs nested in cluster dimensions.
         raw *= ((fw.sum()-1)/(fw.sum()-4-1)) * (8/7)
-    eig, vec = np.linalg.eigh((raw + raw.T)/2)
-    assert eig[0] < -1e-7  # Exercise repair, not an already positive covariance.
-    return (vec * np.maximum(eig, 0)) @ vec.T
+    # Unified mode: the stdev of the frequency-expanded original regressors.
+    n = fw.sum()
+    s = np.sqrt(((fw[:, None] * X**2).sum(0) - (fw @ X)**2 / n) / (n - 1))
+    std = (raw + raw.T)/2 * np.outer(s, s)
+    eig, vec = np.linalg.eigh(std)
+    assert eig[0] < -1e-7 * np.max(eig)  # Exercise repair, not an already positive covariance.
+    return ((vec * np.maximum(eig, 0)) @ vec.T) / np.outer(s, s)
 
 
 @pytest.mark.parametrize('family', ['ppml', 'ivppml'])
 @pytest.mark.parametrize('block', [False, True], ids=['dense', 'block'])
-def test_multiway_cgm_matches_reported_unit_oracle_under_scaling_and_replication(family, block):
+def test_multiway_cgm_matches_stdev_coordinate_oracle_under_standardization_and_replication(family, block):
     base = _fit(family, block, False, False)
     expected = _oracle(base, family)
     np.testing.assert_allclose(base.vcov[:4, :4], expected, rtol=2e-7, atol=2e-10)

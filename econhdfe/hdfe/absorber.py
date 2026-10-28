@@ -1344,30 +1344,6 @@ class HDFEAbsorber:
         return AbsorbInfo(False, self.max_iter, float(max_update))
 
 
-def singleton_rows(groups, levels, idx, frequency_weights=None, positive=None) -> np.ndarray:
-    """One pruning pass: flag active rows ``idx`` whose level has degree one in any group.
-
-    Degree is the active row count, or the active frequency mass when
-    ``frequency_weights`` (full-length) is given. Row counts are integers, so
-    the mass tolerance ``<= 1 + 1e-12`` is exactly ``== 1`` for them.
-    With a full-length boolean ``positive`` outcome mask, levels without an
-    active positive outcome are flagged as well (ppmlhdfe's FE-separation
-    rule, applied jointly with singletons).
-    """
-    flags = np.zeros(len(idx), dtype=bool)
-    pos = None if positive is None else positive[idx]
-    for g, nlev in zip(groups, levels, strict=True):
-        active = g[idx]
-        if frequency_weights is None:
-            counts = np.bincount(active, minlength=nlev)
-        else:
-            counts = np.bincount(active, weights=frequency_weights[idx], minlength=nlev)
-        flags |= counts[active] <= 1.0 + 1e-12
-        if pos is not None:
-            flags |= np.bincount(active[pos], minlength=nlev)[active] == 0
-    return flags
-
-
 def iterative_singleton_mask(
     groups: list[np.ndarray], weights=None, *, frequency_weights: bool = False, positive=None,
     singleton_eligible=None,

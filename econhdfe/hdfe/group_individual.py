@@ -5,8 +5,17 @@ import numpy as np
 from scipy.sparse import coo_matrix, hstack
 from scipy.sparse.linalg import LinearOperator, lsmr, lsqr
 
-from .absorber import AbsorbInfo, HDFEAbsorber, singleton_rows
+from .absorber import AbsorbInfo, HDFEAbsorber
 from .dof import DofInfo, absorbed_dof
+
+
+def _singleton_rows(groups, levels, idx) -> np.ndarray:
+    """One pruning pass: flag active rows ``idx`` whose level has one active row in any group."""
+    flags = np.zeros(len(idx), dtype=bool)
+    for g, nlev in zip(groups, levels, strict=True):
+        active = g[idx]
+        flags |= np.bincount(active, minlength=nlev)[active] <= 1
+    return flags
 
 
 @dataclass(slots=True)
@@ -120,7 +129,7 @@ def group_individual_singleton_mask(
         if active_groups.size == 0:
             break
 
-        drop[active_groups] = singleton_rows(std, std_levels, active_groups)
+        drop[active_groups] = _singleton_rows(std, std_levels, active_groups)
 
         active_membership = keep[mg]
         degree = np.bincount(ind[active_membership], minlength=nind)

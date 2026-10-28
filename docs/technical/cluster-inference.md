@@ -68,17 +68,37 @@ is `benchmarks/resampling/wild_bootstrap_scores.py`.
 
 The Library CRV3 prototype is not public in v0.4.6. It performs full delete-cluster HDFE refits and requires raw outcome/design state in addition to within-transformed state. Before integration it needs a large-data planner, bounded memory/state semantics, weighted/group-individual coverage and external parity. Multi-way WCB, IV WCB and PPML score/bootstrap inference are also separate future work.
 
-## Poisson multiway covariance and standardization
+## Multiway covariance repair (all estimators)
 
-PPML and IV-PPML form the signed multiway cluster sandwich before any
-positive-semidefinite repair. They then undo solver standardization and clip
-negative eigenvalues in the reported coefficient units. Clipping before a
-nonuniform change of units produces a different covariance, so it must not
-occur inside the standardized dense or block solver. Internal sandwich
-helpers retain their default repair behavior for callers already using the
-reported units; Poisson estimators explicitly defer that repair.
+The signed Cameron-Gelbach-Miller multiway sandwich can be indefinite. OLS,
+linear IV/GMM, the linear sessions, PPML and IV-PPML (dense and block paths)
+form it without repair and then call `compute.vcov.finalize_cluster_vcov`,
+which follows reghdfe 6.12.5 / ppmlhdfe 2.3.0: negative eigenvalues are clipped
+in the standardized coordinates of the original regressors, i.e. after scaling
+`V` by `s s'`, where `s` is the unweighted sample standard deviation (N-1) of
+each regressor on the estimation sample before FE demeaning, floored at 1e-3.
+A reported constant has scale 1; when present, the full matrix is clipped and
+its slope block is replaced by the separately clipped slope block
+(`reghdfe_fix_psd`). Collinear omitted columns do not participate, and the
+zero-variance `_cons` posted by IV-PPML is appended afterwards. The repair is
+thus independent of user units and of every internal solver scaling or
+conditioning basis. Up to 0.10.0 the clip used reported (or internal) units,
+which can differ from reghdfe by orders of magnitude when regressor scales
+differ; see the 0.10.1 changelog. Under `singleton_mode="stata_compat"` the
+scale is reghdfe's unweighted stdev of the stored rows, so a compact
+frequency-weighted fit and its expanded copy can clip differently. Under
+`"unified"` with fweights the scale is the frequency-weighted stdev
+(`sum f` observations, N-1 = `sum f - 1`), identical to the expanded data;
+pweights/aweights are never used for the scale
+(`SamplePolicy.psd_frequency_scale`).
 
-The regression reference uses explicit weighted FE dummy projection and
+ivreg2/ivreghdfe do not repair by default (only with `psd0`/`psda`); econhdfe
+keeps the repair for linear IV/GMM with the reghdfe coordinates. The
+first-stage robust F diagnostics keep their repair in the max-abs-equilibrated
+coordinates they already use. PPML still has an unrelated, registered
+small-sample constant difference from ppmlhdfe.
+
+The Poisson regression reference uses explicit weighted FE dummy projection and
 independently aggregated cluster scores. It covers a genuinely indefinite
 CGM covariance, frequency-weight expansion, standardization on/off, and
 dense/block PPML and IV-PPML paths. IV-PPML keeps its per-subset G/(G-1)

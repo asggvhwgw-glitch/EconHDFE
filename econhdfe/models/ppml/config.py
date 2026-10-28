@@ -2,7 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from numbers import Integral
 from ...errors import SpecificationError
-from ...config import validate_singleton_mode
+from ...config import SamplePolicy, validate_singleton_mode
 
 
 @dataclass(slots=True)
@@ -29,13 +29,22 @@ class PPMLConfig:
     singleton_mode: str = "stata_compat"
     drop_singletons: bool = True
 
+    @property
+    def sample_policy(self) -> SamplePolicy:
+        return SamplePolicy(self.singleton_mode)
+
+    @property
+    def separation_methods(self) -> tuple[str, ...]:
+        """Separation methods to run, in the order given."""
+        return tuple(self.separation)
+
     def validate(self) -> None:
         validate_singleton_mode(self.singleton_mode)
         if not isinstance(self.separation, (tuple, list)):
             raise SpecificationError("separation must be a tuple or list of method names")
         if not isinstance(self.drop_singletons, bool):
             raise SpecificationError("drop_singletons must be boolean")
-        if self.singleton_mode == "unified" and "mu" in self.separation:
+        if self.sample_policy.unified and "mu" in self.separation:
             raise SpecificationError(
                 "unified mode requires a separation certificate; mu thresholding is not supported",
                 code="specification.unified_separation",

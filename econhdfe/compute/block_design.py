@@ -189,14 +189,22 @@ class BlockDesign:
             out[np.ix_(b.rows, b.columns)] = b.values
         return out
 
-    def column_moments(self) -> ColumnMoments:
+    def column_moments(self, *, frequency_weights=None) -> ColumnMoments:
+        """Column moments; integer ``frequency_weights`` give those of the expanded rows."""
         self._ensure_layout()
         sums = np.zeros(self.ncols, dtype=np.float64)
         ss = np.zeros(self.ncols, dtype=np.float64)
+        if frequency_weights is None:
+            for b in self.blocks:
+                sums[b.columns] += np.sum(b.values, axis=0, dtype=np.float64)
+                ss[b.columns] += np.einsum("ij,ij->j", b.values, b.values, optimize=True)
+            return ColumnMoments(self.nobs, sums, ss)
+        w = np.asarray(frequency_weights, dtype=np.float64)
         for b in self.blocks:
-            sums[b.columns] += np.sum(b.values, axis=0, dtype=np.float64)
-            ss[b.columns] += np.einsum("ij,ij->j", b.values, b.values, optimize=True)
-        return ColumnMoments(self.nobs, sums, ss)
+            wb = w[b.rows]
+            sums[b.columns] += wb @ b.values
+            ss[b.columns] += np.einsum("i,ij,ij->j", wb, b.values, b.values, optimize=True)
+        return ColumnMoments(int(round(float(np.sum(w)))), sums, ss)
 
     def gram(self, *, weights=None) -> np.ndarray:
         self._ensure_layout()
