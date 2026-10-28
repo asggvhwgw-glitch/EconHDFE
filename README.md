@@ -1,6 +1,6 @@
 # econhdfe
 
-## Weighted sample policies (0.10.0 candidate)
+## Weighted sample policies (0.9.2 candidate)
 
 `singleton_mode="stata_compat"` remains the default; use
 `HDFEConfig(singleton_mode="unified")` for linear models/sessions or

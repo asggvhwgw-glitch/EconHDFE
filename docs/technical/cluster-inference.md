@@ -82,9 +82,9 @@ its slope block is replaced by the separately clipped slope block
 (`reghdfe_fix_psd`). Collinear omitted columns do not participate, and the
 zero-variance `_cons` posted by IV-PPML is appended afterwards. The repair is
 thus independent of user units and of every internal solver scaling or
-conditioning basis. Up to 0.10.0 the clip used reported (or internal) units,
+conditioning basis. Before 0.9.2 the clip used reported (or internal) units,
 which can differ from reghdfe by orders of magnitude when regressor scales
-differ; see the 0.10.1 changelog. Under `singleton_mode="stata_compat"` the
+differ; see the 0.9.2 changelog. Under `singleton_mode="stata_compat"` the
 scale is reghdfe's unweighted stdev of the stored rows, so a compact
 frequency-weighted fit and its expanded copy can clip differently. Under
 `"unified"` with fweights the scale is the frequency-weighted stdev

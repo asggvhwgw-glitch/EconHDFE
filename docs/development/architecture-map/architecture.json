@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "econhdfe",
-  "version": "0.10.1",
+  "version": "0.9.2",
   "evidence": {
     "topology": "Python AST import analysis; package __init__ re-export imports excluded from aggregated dependency counts.",
     "execution_flows": "Explicit semantic overlays reviewed against estimator orchestration modules; not presented as import edges."
@@ -6394,7 +6394,7 @@
     },
     {
       "name": "compatibility",
-      "files": 36,
+      "files": 35,
       "python_files": 0,
       "markdown_files": 0
     }
