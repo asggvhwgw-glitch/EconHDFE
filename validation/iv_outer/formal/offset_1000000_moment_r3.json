@@ -1,0 +1,150 @@
+{
+  "status": "ok",
+  "seconds": 3.2818225999999413,
+  "iterations": 6,
+  "nobs": 1000000,
+  "coefficients": [
+    0.09901891356361354,
+    0.22038759655517481,
+    0.23555249368582953
+  ],
+  "vcov": [
+    [
+      7.590729408753808e-07,
+      -1.7058637948066779e-07,
+      0.0
+    ],
+    [
+      -1.7058637948066779e-07,
+      1.1451027473153954e-06,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0
+    ]
+  ],
+  "deviance": 1137238.3904052668,
+  "absorb_iterations": 36,
+  "outer": {
+    "solver": "moment",
+    "target": "exact_additive_moments",
+    "exact_identification": true,
+    "moment_error": 2.2011487866975243e-13,
+    "raw_moment_error": 2.2011487866975243e-13,
+    "step_error": 1.5088663738317124e-13,
+    "inner_tolerance": 1e-10,
+    "line_search_backtracks": 0,
+    "inner_refinements": 1,
+    "projections": 7,
+    "linear_solves": 7,
+    "linear_backends": {
+      "sufficient_statistics": 7
+    },
+    "max_accepted_forcing": 0.0011870230552238497,
+    "history": [
+      {
+        "iteration": 1,
+        "moment_error": 0.3091792876218738,
+        "step_error": 1.4614768310994988,
+        "step": 1.0,
+        "backtracks": 0,
+        "merit_before": 33.03016894413253,
+        "merit_after": 4.263388369420634,
+        "directional_derivative": -66.06033882389069,
+        "forcing": 1.186846440797712e-05,
+        "inner_tolerance": 0.0001,
+        "linear_backend": "sufficient_statistics",
+        "instrument_rcond": 0.9999183070666189,
+        "slope_rcond": 0.7886250655308364
+      },
+      {
+        "iteration": 2,
+        "moment_error": 0.19042391858010205,
+        "step_error": 0.09902214268713283,
+        "step": 1.0,
+        "backtracks": 0,
+        "merit_before": 4.263388369420634,
+        "merit_after": 0.004602032939899545,
+        "directional_derivative": -8.526776793286423,
+        "forcing": 5.40731941190157e-06,
+        "inner_tolerance": 0.0001,
+        "linear_backend": "sufficient_statistics",
+        "instrument_rcond": 0.9999258022886649,
+        "slope_rcond": 0.7914016920556425
+      },
+      {
+        "iteration": 3,
+        "moment_error": 0.020425754082238304,
+        "step_error": 0.013411959226386619,
+        "step": 1.0,
+        "backtracks": 0,
+        "merit_before": 0.004602032939899545,
+        "merit_after": 8.15579824515818e-08,
+        "directional_derivative": -0.009204065979883092,
+        "forcing": 9.993895166868603e-06,
+        "inner_tolerance": 0.0001,
+        "linear_backend": "sufficient_statistics",
+        "instrument_rcond": 0.9990632749455116,
+        "slope_rcond": 0.7911855467123994
+      },
+      {
+        "iteration": 4,
+        "moment_error": 0.0003153333399346906,
+        "step_error": 0.00018992625139371526,
+        "step": 1.0,
+        "backtracks": 0,
+        "merit_before": 8.15579824515818e-08,
+        "merit_after": 1.180484411190784e-13,
+        "directional_derivative": -1.6311581971305364e-07,
+        "forcing": 0.0011870230552238497,
+        "inner_tolerance": 0.0001,
+        "linear_backend": "sufficient_statistics",
+        "instrument_rcond": 0.9990173054220507,
+        "slope_rcond": 0.7911732028832538
+      },
+      {
+        "iteration": 5,
+        "moment_error": 4.793104432755544e-07,
+        "step_error": 3.326254366346587e-07,
+        "step": 1.0,
+        "backtracks": 0,
+        "merit_before": 1.1804844111907842e-13,
+        "merit_after": 2.4759760504415737e-26,
+        "directional_derivative": -2.360968819407146e-13,
+        "forcing": 5.179798169120232e-09,
+        "inner_tolerance": 3.153333399346906e-06,
+        "linear_backend": "sufficient_statistics",
+        "instrument_rcond": 0.9990171774014813,
+        "slope_rcond": 0.7911731970124988
+      }
+    ],
+    "timings": {
+      "projection": 0.8972871729999952,
+      "linear_solve": 1.1593364180000663,
+      "moments": 0.13482406200023433,
+      "line_search": 0.1053743399997984,
+      "total": 2.6172109999999975
+    },
+    "global_guarantee": "conditional_inexact_newton",
+    "final_state_consistent": true
+  },
+  "raw_moments": null,
+  "outer_seconds": 2.627771487000018,
+  "legacy_linear_seconds": 0,
+  "legacy_linear_calls": 0,
+  "case": "offset",
+  "n": 1000000,
+  "mode": "moment",
+  "threads": 4,
+  "seed": 20261028,
+  "data_sha256": "0a85b59e270b165cd0564ee4e44640a56aeaca525df4962036fc1e92b0e412be",
+  "warmup_seconds": 0.5519268850000572,
+  "peak_rss_mb": 615.79296875,
+  "rss_highwater_before_fit_mb": 332.9296875,
+  "python": "3.13.5 (main, Jul 15 2026, 20:25:40) [GCC 14.2.0]",
+  "numpy": "2.3.5",
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+  "cpu_count": 5
+}

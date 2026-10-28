@@ -1,0 +1,150 @@
+{
+  "status": "ok",
+  "seconds": 11.126439711000103,
+  "iterations": 6,
+  "nobs": 1000000,
+  "coefficients": [
+    0.10077795543855021,
+    0.22008809135714544,
+    0.21709586116765403
+  ],
+  "vcov": [
+    [
+      8.280620698438829e-07,
+      -1.8458789129586592e-07,
+      0.0
+    ],
+    [
+      -1.8458789129586592e-07,
+      1.2494888947539104e-06,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0
+    ]
+  ],
+  "deviance": 1129736.6489593654,
+  "absorb_iterations": 14,
+  "outer": {
+    "solver": "moment",
+    "target": "legacy_projected_iv_equation",
+    "exact_identification": false,
+    "moment_error": 5.2847819822259726e-11,
+    "raw_moment_error": 0.0004222421562951428,
+    "step_error": 3.373364705800657e-11,
+    "inner_tolerance": 1e-10,
+    "line_search_backtracks": 0,
+    "inner_refinements": 1,
+    "projections": 7,
+    "linear_solves": 7,
+    "linear_backends": {
+      "stable": 7
+    },
+    "max_accepted_forcing": 0.006647198181107825,
+    "history": [
+      {
+        "iteration": 1,
+        "moment_error": 0.2824607154167325,
+        "step_error": 1.3974321347308298,
+        "step": 1.0,
+        "backtracks": 0,
+        "merit_before": 33.604853277523944,
+        "merit_after": 4.912063209350277,
+        "directional_derivative": -67.20970857048043,
+        "forcing": 2.2157028341881956e-07,
+        "inner_tolerance": 0.0001,
+        "linear_backend": "stable",
+        "instrument_rcond": NaN,
+        "slope_rcond": NaN
+      },
+      {
+        "iteration": 2,
+        "moment_error": 0.14703130919923696,
+        "step_error": 0.0882255100031569,
+        "step": 1.0,
+        "backtracks": 0,
+        "merit_before": 4.9120473060663095,
+        "merit_after": 0.0055864103482909785,
+        "directional_derivative": -9.8240946659238,
+        "forcing": 7.694847360260906e-08,
+        "inner_tolerance": 0.0001,
+        "linear_backend": "stable",
+        "instrument_rcond": NaN,
+        "slope_rcond": NaN
+      },
+      {
+        "iteration": 3,
+        "moment_error": 0.013162285702414424,
+        "step_error": 0.009748996964440704,
+        "step": 1.0,
+        "backtracks": 0,
+        "merit_before": 0.005586410348419805,
+        "merit_after": 5.3573008255957265e-08,
+        "directional_derivative": -0.011172777739511815,
+        "forcing": 2.2021831162979986e-05,
+        "inner_tolerance": 0.0001,
+        "linear_backend": "stable",
+        "instrument_rcond": NaN,
+        "slope_rcond": NaN
+      },
+      {
+        "iteration": 4,
+        "moment_error": 0.000134506054524691,
+        "step_error": 8.936301424194221e-05,
+        "step": 1.0,
+        "backtracks": 0,
+        "merit_before": 5.357300825596931e-08,
+        "merit_after": 2.277946665566988e-16,
+        "directional_derivative": -1.0714571333322499e-07,
+        "forcing": 2.413098255110272e-05,
+        "inner_tolerance": 0.0001,
+        "linear_backend": "stable",
+        "instrument_rcond": NaN,
+        "slope_rcond": NaN
+      },
+      {
+        "iteration": 5,
+        "moment_error": 1.5217006357017335e-08,
+        "step_error": 8.989870303245152e-09,
+        "step": 1.0,
+        "backtracks": 0,
+        "merit_before": 2.2779466848927294e-16,
+        "merit_after": 1.006515130612094e-20,
+        "directional_derivative": -4.562001849630528e-16,
+        "forcing": 0.006647198181107825,
+        "inner_tolerance": 1.34506054524691e-06,
+        "linear_backend": "stable",
+        "instrument_rcond": NaN,
+        "slope_rcond": NaN
+      }
+    ],
+    "timings": {
+      "projection": 5.109302260000277,
+      "linear_solve": 2.577710956999681,
+      "moments": 0.1706863029996839,
+      "line_search": 0.08633177999990949,
+      "total": 8.483232117999933
+    },
+    "global_guarantee": "none_frozen_instrument_local_safeguard",
+    "final_state_consistent": true
+  },
+  "raw_moments": null,
+  "outer_seconds": 8.496081772000025,
+  "legacy_linear_seconds": 0,
+  "legacy_linear_calls": 0,
+  "case": "many_instruments",
+  "n": 1000000,
+  "mode": "moment_stable",
+  "threads": 4,
+  "seed": 20261028,
+  "data_sha256": "a42807a6c8c679323a2e90d9b990a4bed854622cadc46bac4d2f802867a823b0",
+  "warmup_seconds": 1.4818291310000404,
+  "peak_rss_mb": 1162.8359375,
+  "rss_highwater_before_fit_mb": 444.33203125,
+  "python": "3.13.5 (main, Jul 15 2026, 20:25:40) [GCC 14.2.0]",
+  "numpy": "2.3.5",
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+  "cpu_count": 5
+}

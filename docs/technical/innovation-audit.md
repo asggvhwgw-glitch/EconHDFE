@@ -99,3 +99,16 @@ A new item may be added to `innovation-registry.json` only when all of the follo
 Technical manuscripts are **not** wheel payload. Runtime users should not pay installation-size cost for audit artifacts.
 
 If a contribution is later shown to be established prior art, the registry must be corrected in a subsequent release. Historical manuscripts remain for provenance, but the current audit must no longer advertise novelty.
+
+
+## 0.10.1.dev0 outer-estimator review
+
+The opt-in IV-Poisson outer solver combines established inexact Newton forcing,
+Armijo backtracking, weighted FWL, sufficient statistics and conditioned small
+linear algebra. It is classified as **established numerical adaptation /
+engineering optimization**, not an originality claim or a new statistical
+estimator. Its correction of Poisson-deviance globalization and its distinction
+between exact and overidentified equations are documented in
+`ivppml/outer-moment-estimator.md`. No new innovation-registry entry is added;
+the overidentified frozen-instrument search is not presented as a global
+convergence theorem.

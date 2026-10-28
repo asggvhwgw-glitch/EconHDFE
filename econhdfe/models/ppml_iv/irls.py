@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import math
 import numpy as np
 from ...errors import ShapeError, ConvergenceError, DivergenceError, NumericalError
@@ -26,6 +26,8 @@ class IVIRLSState:
     residual: np.ndarray
     projected_X: np.ndarray
     irls_w: np.ndarray
+    outer_diagnostics: dict = field(default_factory=dict)
+    linear_result: object = None
 
 
 def fit_iv_irls(
@@ -42,7 +44,11 @@ def fit_iv_irls(
     initial_eta=None,
     detect_mu=False,
 ) -> IVIRLSState:
-    """IRLS-IV core for the additive moment E[q(y-mu)] = 0."""
+    """IRLS-IV core; legacy by default, with opt-in moment globalization."""
+    if config.outer_solver == "moment":
+        from .outer import fit_moment_irls
+        return fit_moment_irls(y, exog, endog, excluded, plan, true_w, offset,
+                               config, projector=projector, initial_eta=initial_eta)
     y = np.asarray(y, dtype=np.float64)
     C = np.asarray(exog, dtype=np.float64)
     E = np.asarray(endog, dtype=np.float64)

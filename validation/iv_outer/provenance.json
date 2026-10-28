@@ -1,0 +1,15 @@
+{
+  "base_commit": "2ab8cddd9a6e367291f3152591e09c1270418148",
+  "ci_run_id": 40478222473,
+  "ci_artifact_id": 12720269934,
+  "ci_zip_sha256": "2ca164d421c787f8c76758c24079a06800f0709d4f0c50be0e4500c1a93c2682",
+  "package_source_verified_byte_identical": true,
+  "code_sha256": {
+    "econhdfe/iv/step.py": "df89cd9a1855dcd38b1b859e5f27a4a9dced79a09b9c6796bcbcd2172c82733c",
+    "econhdfe/models/ppml_iv/outer.py": "9d34111ca3aab0c9294d1bea3a8de6698cbcc690be952d79645ac4eb78fb2d1e",
+    "econhdfe/models/ppml_iv/irls.py": "63b0f7097094282421768e2066a0b836bdb6dcbe53d8ea8eb5f5832319454c76",
+    "econhdfe/models/ppml_iv/estimator.py": "0fd0aa1b23aede12623a236d263f50dfbcfebdb185c13319db538a32f5029fe6",
+    "econhdfe/models/ppml_iv/config.py": "0110e464ad069d68d345a6a366b75c3df907e85fad6a29a7958b7270557c0d3e",
+    "benchmarks/ivppml_outer.py": "7f312f60e42651497b8f35bc44f1e863c2b43984050ffd3f39c555ac2cb9c1cc"
+  }
+}

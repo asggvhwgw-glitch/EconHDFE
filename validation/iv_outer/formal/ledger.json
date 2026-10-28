@@ -1,0 +1,282 @@
+[
+  {
+    "name": "crossed3_1000000_legacy_r1",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 7.350101614999971,
+    "iterations": 8,
+    "rss": 866.3125
+  },
+  {
+    "name": "crossed3_1000000_moment_r1",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 4.659515902999942,
+    "iterations": 6,
+    "rss": 704.7265625
+  },
+  {
+    "name": "crossed3_1000000_moment_r2",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 4.6326526960000365,
+    "iterations": 6,
+    "rss": 675.98046875
+  },
+  {
+    "name": "crossed3_1000000_legacy_r2",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 7.123154958999976,
+    "iterations": 8,
+    "rss": 753.125
+  },
+  {
+    "name": "crossed3_1000000_legacy_r3",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 6.9756093910000345,
+    "iterations": 8,
+    "rss": 722.671875
+  },
+  {
+    "name": "crossed3_1000000_moment_r3",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 4.866160435999973,
+    "iterations": 6,
+    "rss": 676.0625
+  },
+  {
+    "name": "overidentified_1000000_legacy_r1",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 5.0213320219999105,
+    "iterations": 7,
+    "rss": 868.375
+  },
+  {
+    "name": "overidentified_1000000_moment_r1",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 3.0611743069999875,
+    "iterations": 6,
+    "rss": 715.453125
+  },
+  {
+    "name": "overidentified_1000000_moment_r2",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 3.5281738119999773,
+    "iterations": 6,
+    "rss": 715.4375
+  },
+  {
+    "name": "overidentified_1000000_legacy_r2",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 5.440396580000083,
+    "iterations": 7,
+    "rss": 835.95703125
+  },
+  {
+    "name": "overidentified_1000000_legacy_r3",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 5.423955562999936,
+    "iterations": 7,
+    "rss": 835.91015625
+  },
+  {
+    "name": "overidentified_1000000_moment_r3",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 3.22689049600001,
+    "iterations": 6,
+    "rss": 715.390625
+  },
+  {
+    "name": "many_instruments_1000000_legacy_r1",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 15.543350505000035,
+    "iterations": 6,
+    "rss": 1243.28515625
+  },
+  {
+    "name": "many_instruments_1000000_moment_r1",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 9.471559744000047,
+    "iterations": 6,
+    "rss": 1094.71484375
+  },
+  {
+    "name": "many_instruments_1000000_moment_r2",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 10.441110941000034,
+    "iterations": 6,
+    "rss": 1094.7890625
+  },
+  {
+    "name": "many_instruments_1000000_legacy_r2",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 13.962596589999976,
+    "iterations": 6,
+    "rss": 1246.73046875
+  },
+  {
+    "name": "many_instruments_1000000_legacy_r3",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 12.691820658999973,
+    "iterations": 6,
+    "rss": 1235.7265625
+  },
+  {
+    "name": "many_instruments_1000000_moment_r3",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 9.380842223000059,
+    "iterations": 6,
+    "rss": 1094.83984375
+  },
+  {
+    "name": "offset_1000000_legacy_r1",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 5.2030146299998705,
+    "iterations": 10,
+    "rss": 732.796875
+  },
+  {
+    "name": "offset_1000000_moment_r1",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 3.362267019000001,
+    "iterations": 6,
+    "rss": 615.73046875
+  },
+  {
+    "name": "offset_1000000_moment_r2",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 3.5146618079998007,
+    "iterations": 6,
+    "rss": 615.859375
+  },
+  {
+    "name": "offset_1000000_legacy_r2",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 5.261479677000125,
+    "iterations": 10,
+    "rss": 722.41015625
+  },
+  {
+    "name": "offset_1000000_legacy_r3",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 4.823137877000136,
+    "iterations": 10,
+    "rss": 722.35546875
+  },
+  {
+    "name": "offset_1000000_moment_r3",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 3.2818225999999413,
+    "iterations": 6,
+    "rss": 615.79296875
+  },
+  {
+    "name": "crossed3_5000000_legacy_r1",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 35.94932338600006,
+    "iterations": 6,
+    "rss": 2398.90234375
+  },
+  {
+    "name": "crossed3_5000000_moment_r1",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 31.42778916899988,
+    "iterations": 6,
+    "rss": 2124.39453125
+  },
+  {
+    "name": "crossed3_5000000_moment_r2",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 33.77465318199984,
+    "iterations": 6,
+    "rss": 2124.49609375
+  },
+  {
+    "name": "crossed3_5000000_legacy_r2",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 44.7600202860001,
+    "iterations": 6,
+    "rss": 2399.9765625
+  },
+  {
+    "name": "crossed3_5000000_legacy_r3",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 43.40094765799995,
+    "iterations": 6,
+    "rss": 2402.80859375
+  },
+  {
+    "name": "crossed3_5000000_moment_r3",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 40.736001060000035,
+    "iterations": 7,
+    "rss": 2049.15625
+  },
+  {
+    "name": "weak_1000000_legacy_r1",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 8.845233278000023,
+    "iterations": 11,
+    "rss": 734.6875
+  },
+  {
+    "name": "weak_1000000_moment_r1",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 4.551054123000085,
+    "iterations": 6,
+    "rss": 675.984375
+  },
+  {
+    "name": "many_instruments_1000000_moment_stable_r1",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 11.486242364999953,
+    "iterations": 6,
+    "rss": 1162.64453125
+  },
+  {
+    "name": "many_instruments_1000000_moment_stable_r2",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 10.970161963999999,
+    "iterations": 6,
+    "rss": 1162.50390625
+  },
+  {
+    "name": "many_instruments_1000000_moment_stable_r3",
+    "returncode": 0,
+    "status": "ok",
+    "seconds": 11.126439711000103,
+    "iterations": 6,
+    "rss": 1162.8359375
+  }
+]

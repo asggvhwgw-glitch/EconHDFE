@@ -20,10 +20,19 @@ class IVPPMLConfig(PPMLConfig):
     standardize: bool = False
     max_step_halving: int = 2
     step_halving_memory: float = 0.9
+    # Opt-in outer algorithm; the legacy estimator remains the default.
+    outer_solver: str = "legacy"
+    outer_linear_solver: str = "auto"
+    outer_chunk_rows: int = 65536
+    outer_gram_rcond: float = 1e-8
+    outer_max_backtracks: int = 20
+    outer_armijo: float = 1e-4
+    outer_forcing: float = 0.25
+    outer_record_history: bool = True
 
     def __post_init__(self):
         if self.separation is None:
-            self.separation = ("fe",) if self.singleton_mode == "unified" else ("fe", "simplex", "relu")
+            self.separation = ("fe",) if (self.singleton_mode == "unified" or self.outer_solver == "moment") else ("fe", "simplex", "relu")
 
     def validate(self) -> None:
         PPMLConfig.validate(self)
@@ -36,3 +45,19 @@ class IVPPMLConfig(PPMLConfig):
             raise SpecificationError("max_step_halving must be a nonnegative integer")
         if not 0.0 <= self.step_halving_memory < 1.0:
             raise SpecificationError("step_halving_memory must lie in [0, 1)")
+
+        if self.outer_solver not in {"legacy", "moment"}:
+            raise SpecificationError("outer_solver must be legacy/moment")
+        if self.outer_linear_solver not in {"auto", "stable"}:
+            raise SpecificationError("outer_linear_solver must be auto/stable")
+        if self.outer_solver == "moment" and any(m != "fe" for m in self.separation):
+            raise SpecificationError("moment outer solver permits FE separation only; PPML regressor separation is not an IV existence test")
+        for name in ("outer_chunk_rows", "outer_max_backtracks"):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, Integral) or value < 1:
+                raise SpecificationError(f"{name} must be a positive integer")
+        for name in ("outer_gram_rcond", "outer_armijo", "outer_forcing"):
+            if not 0.0 < getattr(self, name) < 1.0:
+                raise SpecificationError(f"{name} must lie in (0, 1)")
+        if not isinstance(self.outer_record_history, bool):
+            raise SpecificationError("outer_record_history must be boolean")

@@ -215,3 +215,39 @@ Grouped/individual FE unified mode is explicitly unsupported. This version
 retains all statistical rows in the work sample; no extra computational
 elimination should be inferred from the policy name. Compare sample, N, DF and
 VCE, not only coefficients, when checking modes or frequency expansion.
+
+
+## Opt-in IV-Poisson moment outer solver (0.10.1.dev0)
+
+```python
+cfg = IVPPMLConfig(
+    outer_solver="moment",       # legacy remains the default
+    engine="optimized",
+    singleton_mode="unified",   # sample policy is a separate choice
+    tolerance=1e-9,
+    target_inner_tol=1e-10,
+    outer_linear_solver="auto", # conditioned chunked stats; stable fallback
+    outer_chunk_rows=65536,
+)
+r = ivppmlhdfe(..., config=cfg)
+print(r.diagnostics["outer"])
+```
+
+The new mode defaults to FE-only separation and rejects ordinary PPML regressor
+separation and `mu` threshold deletion. It does not certify existence for IV
+models. Do not use `Poisson deviance falls` as its acceptance/convergence test.
+For exact identification inspect `moment_error` and `step_error`; for
+ overidentification `raw_moment_error` may legitimately be nonzero. The tested
+criterion is the existing projected-IV estimating equation, not all raw moments
+or an arbitrarily selected GMM objective. Do not claim unconditional global or
+quadratic convergence for the overidentified path.
+
+`outer_linear_solver="stable"` is a diagnostic ablation. Ambiguous Gram rank or
+conditioning automatically uses this tall-design solver in auto mode. Chunk
+size bounds the new linear-step scratch arrays, not all estimator memory.
+`outer_record_history=False` suppresses per-iteration history. New mode supports
+dense designs with categorical-intercept FE; it rejects BlockDesign routing.
+Never silently switch an unsupported design to a different estimator.
+
+Read `docs/technical/ivppml/outer-moment-estimator.md` before changing the
+statistical target, inference residual, sample policy or globalization rule.

@@ -66,3 +66,13 @@ econhdfe-report benchmark --output econhdfe-benchmark-report.md
 ## Output discipline
 
 For normal empirical work, return the requested estimates and publication-relevant diagnostics, not internal solver telemetry. Surface additional numerical/structural diagnostics when they materially affect identification, interpretation, convergence, reproducibility, or when the user asks for them.
+
+
+### IV-Poisson outer solver candidate
+
+For explicit nonlinear outer-solver development or testing, use the opt-in
+`IVPPMLConfig(outer_solver="moment")` documented in `references/configuration.md`
+and `docs/technical/ivppml/outer-moment-estimator.md`. Preserve the legacy default,
+separate FE/backend choice from outer-solver choice, and use
+`validation/iv_outer/README.md` for the executed scope and reproduction. Never
+report Poisson-deviance stability as an IV moment convergence certificate.

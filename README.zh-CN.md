@@ -1,5 +1,15 @@
 # econhdfe
 
+## IV-Poisson 外层估计器候选（0.10.1.dev0）
+
+通过 `IVPPMLConfig(outer_solver="moment", engine="optimized")` 显式启用新的
+矩条件外层求解器；默认仍为 `outer_solver="legacy"`，不改变 FE 算法。
+新模式使用分块充分统计量 IV 步、矩残差收敛证书和安全步长搜索。
+过度识别时保留原有 projected-IV 估计方程，**不偷偷更换为另一种 GMM 估计量**。
+当前仅覆盖 dense 解释变量和分类截距 FE；不支持的结构化路径明确报错。
+参见[理论及使用说明](docs/technical/ivppml/outer-moment-estimator.md)与
+[复现证据和验证边界](validation/iv_outer/README.md)。这不是正式发布或标签。
+
 ## 加权样本双模式（0.10.0 候选）
 
 默认保留 `singleton_mode="stata_compat"`。线性估计器及 session 使用

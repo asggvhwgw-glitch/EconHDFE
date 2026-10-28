@@ -1,0 +1,150 @@
+{
+  "status": "ok",
+  "seconds": 33.77465318199984,
+  "iterations": 6,
+  "nobs": 5000000,
+  "coefficients": [
+    0.099724805467329,
+    0.21994901343074744,
+    0.23929397701260038
+  ],
+  "vcov": [
+    [
+      1.6260549256497834e-07,
+      -3.70177503322779e-08,
+      0.0
+    ],
+    [
+      -3.70177503322779e-08,
+      2.4555788335590644e-07,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0
+    ]
+  ],
+  "deviance": 5659612.073187176,
+  "absorb_iterations": 14,
+  "outer": {
+    "solver": "moment",
+    "target": "exact_additive_moments",
+    "exact_identification": true,
+    "moment_error": 1.9149410904530105e-10,
+    "raw_moment_error": 1.9149410904530105e-10,
+    "step_error": 1.0934011386561432e-10,
+    "inner_tolerance": 1e-10,
+    "line_search_backtracks": 0,
+    "inner_refinements": 1,
+    "projections": 7,
+    "linear_solves": 7,
+    "linear_backends": {
+      "sufficient_statistics": 7
+    },
+    "max_accepted_forcing": 0.007045382996111137,
+    "history": [
+      {
+        "iteration": 1,
+        "moment_error": 0.318879325156532,
+        "step_error": 1.5324897900897296,
+        "step": 1.0,
+        "backtracks": 0,
+        "merit_before": 165.9619048911503,
+        "merit_after": 26.749631140859538,
+        "directional_derivative": -331.923821851726,
+        "forcing": 2.540287247744724e-07,
+        "inner_tolerance": 0.0001,
+        "linear_backend": "sufficient_statistics",
+        "instrument_rcond": 0.9992116591413415,
+        "slope_rcond": 0.8243598789284032
+      },
+      {
+        "iteration": 2,
+        "moment_error": 0.17847355650680494,
+        "step_error": 0.08901080020009461,
+        "step": 1.0,
+        "backtracks": 0,
+        "merit_before": 26.74963114085954,
+        "merit_after": 0.03193484867303011,
+        "directional_derivative": -53.49926258991013,
+        "forcing": 8.219665576585357e-08,
+        "inner_tolerance": 0.0001,
+        "linear_backend": "sufficient_statistics",
+        "instrument_rcond": 0.9994781786077247,
+        "slope_rcond": 0.817087206395557
+      },
+      {
+        "iteration": 3,
+        "moment_error": 0.0182356928635577,
+        "step_error": 0.010841482785146682,
+        "step": 1.0,
+        "backtracks": 0,
+        "merit_before": 0.031934848673030106,
+        "merit_after": 3.1488043078763386e-07,
+        "directional_derivative": -0.06386941824405366,
+        "forcing": 2.4047396752674458e-05,
+        "inner_tolerance": 0.0001,
+        "linear_backend": "sufficient_statistics",
+        "instrument_rcond": 0.9988517746884945,
+        "slope_rcond": 0.8171928180495381
+      },
+      {
+        "iteration": 4,
+        "moment_error": 0.000251625048271257,
+        "step_error": 0.00014097757381183898,
+        "step": 1.0,
+        "backtracks": 0,
+        "merit_before": 3.148804307876338e-07,
+        "merit_after": 2.576862265975366e-15,
+        "directional_derivative": -6.297579943171944e-07,
+        "forcing": 3.221406644940749e-05,
+        "inner_tolerance": 0.0001,
+        "linear_backend": "sufficient_statistics",
+        "instrument_rcond": 0.9988169932225007,
+        "slope_rcond": 0.8171994417670508
+      },
+      {
+        "iteration": 5,
+        "moment_error": 5.226036308441474e-08,
+        "step_error": 2.8563553549611655e-08,
+        "step": 1.0,
+        "backtracks": 0,
+        "merit_before": 2.5768622659753656e-15,
+        "merit_after": 1.2790831299371512e-19,
+        "directional_derivative": -5.160827991236344e-15,
+        "forcing": 0.007045382996111137,
+        "inner_tolerance": 2.51625048271257e-06,
+        "linear_backend": "sufficient_statistics",
+        "instrument_rcond": 0.9988169282095966,
+        "slope_rcond": 0.8171994606741356
+      }
+    ],
+    "timings": {
+      "projection": 16.639417581000316,
+      "linear_solve": 5.481926754999904,
+      "moments": 1.017195528000002,
+      "line_search": 0.40862265700002354,
+      "total": 25.239946248000024
+    },
+    "global_guarantee": "conditional_inexact_newton",
+    "final_state_consistent": true
+  },
+  "raw_moments": null,
+  "outer_seconds": 25.297802176000005,
+  "legacy_linear_seconds": 0,
+  "legacy_linear_calls": 0,
+  "case": "crossed3",
+  "n": 5000000,
+  "mode": "moment",
+  "threads": 4,
+  "seed": 20261028,
+  "data_sha256": "b2bcfa3398ecffb3ba5499cbae7f74353aeeb9d179915adf0fab5b039b970485",
+  "warmup_seconds": 0.5659979020001629,
+  "peak_rss_mb": 2124.49609375,
+  "rss_highwater_before_fit_mb": 607.21484375,
+  "python": "3.13.5 (main, Jul 15 2026, 20:25:40) [GCC 14.2.0]",
+  "numpy": "2.3.5",
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+  "cpu_count": 5
+}

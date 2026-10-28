@@ -107,6 +107,9 @@ def _fit_iv_irls_block(
     y, C: BlockDesign, E: BlockDesign, I: BlockDesign, plan: FEPlan,
     true_w, offset, config: IVPPMLConfig, *, projector, initial_eta=None, detect_mu=False,
 ):
+    if config.outer_solver != "legacy":
+        from ...errors import SpecificationError
+        raise SpecificationError("moment outer solver currently requires the dense categorical-FE path; structured BlockDesign is not certified", code="specification.iv_outer_structured")
     y = np.asarray(y, dtype=np.float64)
     w0 = np.asarray(true_w, dtype=np.float64)
     offset = np.asarray(offset, dtype=np.float64)

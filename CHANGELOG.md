@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.10.1.dev0 — IV-Poisson outer estimator development candidate
+
+- Add opt-in `IVPPMLConfig(outer_solver="moment")`; retain the legacy default.
+- Use additive-IV moment residuals, inexact-Newton forcing checks and safeguarded
+  trial steps instead of Poisson deviance as a merit function. Exactly identified
+  models have a conditional Newton interpretation; overidentified models retain
+  the iterated projected-IV estimating equation, not a new GMM/CUE estimator.
+- Add chunked, equilibrated sufficient-statistic IV steps with a small SVD and
+  explicit tall-design fallback. Reuse residualized designs across outer steps.
+- Keep coefficients, fitted means and inference at the same certified point;
+  remove the unverified final coefficient-only update on the new path.
+- Keep ordinary PPML, linear IV, FE kernels and legacy IV-Poisson unchanged.
+  New mode supports dense categorical-intercept FE only and rejects unsupported
+  BlockDesign routing and non-certified PPML regressor-separation methods.
+- Include independent full-dummy references, frequency replication, failure-path
+  tests, repeated 1M/5M benchmarks and an explicit theory/performance boundary.
+- This is a source development candidate, not a release/tag or a new licensed
+  Stata/cross-platform certification. See `validation/iv_outer/README.md`.
+
 ## 0.10.0 — weighted sample-policy development candidate
 
 - Add explicit `stata_compat` (default) and frequency-invariant `unified`

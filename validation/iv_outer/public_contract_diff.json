@@ -1,0 +1,218 @@
+[
+  {
+    "id": "ec07fc55f35ea104",
+    "kind": "changed",
+    "new": [
+      {
+        "default": "1e-08",
+        "name": "tolerance"
+      },
+      {
+        "default": "1e-09",
+        "name": "target_inner_tol"
+      },
+      {
+        "default": "0.0001",
+        "name": "start_inner_tol"
+      },
+      {
+        "default": "10000",
+        "name": "max_iter"
+      },
+      {
+        "default": "1",
+        "name": "min_ok"
+      },
+      {
+        "default": "False",
+        "name": "standardize"
+      },
+      {
+        "default": "True",
+        "name": "fast_partial"
+      },
+      {
+        "default": "True",
+        "name": "fast_solver"
+      },
+      {
+        "default": "None",
+        "name": "separation"
+      },
+      {
+        "default": "1e-06",
+        "name": "mu_tol"
+      },
+      {
+        "default": "1e-12",
+        "name": "simplex_tol"
+      },
+      {
+        "default": "1000",
+        "name": "simplex_max_iter"
+      },
+      {
+        "default": "0.0001",
+        "name": "relu_tol"
+      },
+      {
+        "default": "1e-08",
+        "name": "relu_zero_tol"
+      },
+      {
+        "default": "100",
+        "name": "relu_max_iter"
+      },
+      {
+        "default": "'replica'",
+        "name": "engine"
+      },
+      {
+        "default": "'pairwise'",
+        "name": "dof_method"
+      },
+      {
+        "default": "'stata_compat'",
+        "name": "singleton_mode"
+      },
+      {
+        "default": "True",
+        "name": "drop_singletons"
+      },
+      {
+        "default": "2",
+        "name": "max_step_halving"
+      },
+      {
+        "default": "0.9",
+        "name": "step_halving_memory"
+      },
+      {
+        "default": "'legacy'",
+        "name": "outer_solver"
+      },
+      {
+        "default": "'auto'",
+        "name": "outer_linear_solver"
+      },
+      {
+        "default": "65536",
+        "name": "outer_chunk_rows"
+      },
+      {
+        "default": "1e-08",
+        "name": "outer_gram_rcond"
+      },
+      {
+        "default": "20",
+        "name": "outer_max_backtracks"
+      },
+      {
+        "default": "0.0001",
+        "name": "outer_armijo"
+      },
+      {
+        "default": "0.25",
+        "name": "outer_forcing"
+      },
+      {
+        "default": "True",
+        "name": "outer_record_history"
+      }
+    ],
+    "old": [
+      {
+        "default": "1e-08",
+        "name": "tolerance"
+      },
+      {
+        "default": "1e-09",
+        "name": "target_inner_tol"
+      },
+      {
+        "default": "0.0001",
+        "name": "start_inner_tol"
+      },
+      {
+        "default": "10000",
+        "name": "max_iter"
+      },
+      {
+        "default": "1",
+        "name": "min_ok"
+      },
+      {
+        "default": "False",
+        "name": "standardize"
+      },
+      {
+        "default": "True",
+        "name": "fast_partial"
+      },
+      {
+        "default": "True",
+        "name": "fast_solver"
+      },
+      {
+        "default": "None",
+        "name": "separation"
+      },
+      {
+        "default": "1e-06",
+        "name": "mu_tol"
+      },
+      {
+        "default": "1e-12",
+        "name": "simplex_tol"
+      },
+      {
+        "default": "1000",
+        "name": "simplex_max_iter"
+      },
+      {
+        "default": "0.0001",
+        "name": "relu_tol"
+      },
+      {
+        "default": "1e-08",
+        "name": "relu_zero_tol"
+      },
+      {
+        "default": "100",
+        "name": "relu_max_iter"
+      },
+      {
+        "default": "'replica'",
+        "name": "engine"
+      },
+      {
+        "default": "'pairwise'",
+        "name": "dof_method"
+      },
+      {
+        "default": "'stata_compat'",
+        "name": "singleton_mode"
+      },
+      {
+        "default": "True",
+        "name": "drop_singletons"
+      },
+      {
+        "default": "2",
+        "name": "max_step_halving"
+      },
+      {
+        "default": "0.9",
+        "name": "step_halving_memory"
+      }
+    ],
+    "path": "exported_dataclass_schemas.IVPPMLConfig"
+  },
+  {
+    "id": "42e02483f5fb33df",
+    "kind": "changed",
+    "new": "(tolerance: 'float' = 1e-08, target_inner_tol: 'float' = 1e-09, start_inner_tol: 'float' = 0.0001, max_iter: 'int' = 10000, min_ok: 'int' = 1, standardize: 'bool' = False, fast_partial: 'bool' = True, fast_solver: 'bool' = True, separation: 'tuple[str, ...] | None' = None, mu_tol: 'float' = 1e-06, simplex_tol: 'float' = 1e-12, simplex_max_iter: 'int' = 1000, relu_tol: 'float' = 0.0001, relu_zero_tol: 'float' = 1e-08, relu_max_iter: 'int' = 100, engine: 'str' = 'replica', dof_method: 'str' = 'pairwise', singleton_mode: 'str' = 'stata_compat', drop_singletons: 'bool' = True, max_step_halving: 'int' = 2, step_halving_memory: 'float' = 0.9, outer_solver: 'str' = 'legacy', outer_linear_solver: 'str' = 'auto', outer_chunk_rows: 'int' = 65536, outer_gram_rcond: 'float' = 1e-08, outer_max_backtracks: 'int' = 20, outer_armijo: 'float' = 0.0001, outer_forcing: 'float' = 0.25, outer_record_history: 'bool' = True) -> None",
+    "old": "(tolerance: 'float' = 1e-08, target_inner_tol: 'float' = 1e-09, start_inner_tol: 'float' = 0.0001, max_iter: 'int' = 10000, min_ok: 'int' = 1, standardize: 'bool' = False, fast_partial: 'bool' = True, fast_solver: 'bool' = True, separation: 'tuple[str, ...] | None' = None, mu_tol: 'float' = 1e-06, simplex_tol: 'float' = 1e-12, simplex_max_iter: 'int' = 1000, relu_tol: 'float' = 0.0001, relu_zero_tol: 'float' = 1e-08, relu_max_iter: 'int' = 100, engine: 'str' = 'replica', dof_method: 'str' = 'pairwise', singleton_mode: 'str' = 'stata_compat', drop_singletons: 'bool' = True, max_step_halving: 'int' = 2, step_halving_memory: 'float' = 0.9) -> None",
+    "path": "signatures.IVPPMLConfig"
+  }
+]

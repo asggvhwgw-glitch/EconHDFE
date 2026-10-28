@@ -1,0 +1,48 @@
+{
+  "status": "ok",
+  "seconds": 5.2030146299998705,
+  "iterations": 10,
+  "nobs": 1000000,
+  "coefficients": [
+    0.09901891356361474,
+    0.22038759655517426,
+    0.23555249368583517
+  ],
+  "vcov": [
+    [
+      7.590729408753879e-07,
+      -1.705863794806837e-07,
+      0.0
+    ],
+    [
+      -1.705863794806837e-07,
+      1.1451027473154122e-06,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0
+    ]
+  ],
+  "deviance": 1137238.3904052747,
+  "absorb_iterations": 59,
+  "outer": {},
+  "raw_moments": null,
+  "outer_seconds": 4.173043540000094,
+  "legacy_linear_seconds": 2.3877528059999804,
+  "legacy_linear_calls": 10,
+  "case": "offset",
+  "n": 1000000,
+  "mode": "legacy",
+  "threads": 4,
+  "seed": 20261028,
+  "data_sha256": "0a85b59e270b165cd0564ee4e44640a56aeaca525df4962036fc1e92b0e412be",
+  "warmup_seconds": 1.7230965379999361,
+  "peak_rss_mb": 732.796875,
+  "rss_highwater_before_fit_mb": 354.484375,
+  "python": "3.13.5 (main, Jul 15 2026, 20:25:40) [GCC 14.2.0]",
+  "numpy": "2.3.5",
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+  "cpu_count": 5
+}

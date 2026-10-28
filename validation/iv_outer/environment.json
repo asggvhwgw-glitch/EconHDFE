@@ -1,0 +1,12 @@
+{
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+  "cpu_models": [
+    "AMD EPYC 9V74 80-Core Processor"
+  ],
+  "logical_cpu_count": 5,
+  "cpu_quota": "400000 100000",
+  "memory_limit_bytes": 4294967296,
+  "timing_policy": "Sequential fresh subprocesses; OpenBLAS/OMP=1, Numba=4, estimator ExecutionConfig.threads=4; 100000-row warmup excluded; full fit/inference included.",
+  "benchmark_implementation_base": "main@2ab8cddd9a6e367291f3152591e09c1270418148",
+  "language_backend": "Python orchestration, native NumPy/BLAS/LAPACK, Numba compiled loops; no new Rust extension"
+}

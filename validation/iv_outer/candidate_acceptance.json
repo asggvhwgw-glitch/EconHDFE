@@ -1,0 +1,18 @@
+{
+  "valid": true,
+  "release_ready": false,
+  "mode": "candidate",
+  "code_fingerprint_sha256": "c16e898ffe9a8fecec7bc50fea355be2d24f61d8463c9eb5c6a85784c3a979ba",
+  "unpassed": [
+    "isolated_build",
+    "support_matrix",
+    "dependency_floor",
+    "reference_claims",
+    "final_artifacts"
+  ],
+  "identity_pending": [
+    "source_commit missing; a local code digest is not a Git commit",
+    "artifact directory required for final release"
+  ],
+  "problems": []
+}

@@ -201,27 +201,39 @@ def fit_arrays(
         sample_idx = np.flatnonzero(sample)
         separation[sample_idx[state.separated]] = True
 
-    # Final exact weighted HDFE + 2SLS solve for inference.
-    irls_w = np.maximum(w1 * state.mu, 1e-20)
-    z = state.eta - off1 - 1.0
-    pos = y1 > 0
-    z[pos] += y1[pos] / state.mu[pos]
-    block = np.empty((len(y1), 1 + Xs.shape[1] + Is.shape[1]), dtype=np.float64)
-    block[:, 0] = z
-    block[:, 1:1 + Xs.shape[1]] = Xs
-    if Is.shape[1]:
-        block[:, 1 + Xs.shape[1]:] = Is
-    block, _ = projector.residualize(block, irls_w, tol=config.target_inner_tol, return_info=True, copy=False)
-    z_dm = block[:, 0]
-    X_dm = block[:, 1:1 + Xs.shape[1]]
-    if kc and Is.shape[1]:
-        Z_dm = np.column_stack([X_dm[:, :kc], block[:, 1 + Xs.shape[1]:]])
-    elif kc:
-        Z_dm = X_dm[:, :kc]
+    if config.outer_solver == "moment":
+        # Reuse a certified system at the accepted eta/mu.  Do NOT take the
+        # historical unchecked last beta-only Newton update.
+        irls_w = state.irls_w
+        X_dm, Z_dm = state.X_dm, state.Z_dm
+        solved = state.linear_result
+        beta = scaling.unscale_coef(state.beta)
+        inference_residual = state.residual
+        projected_X = state.projected_X
     else:
-        Z_dm = block[:, 1 + Xs.shape[1]:]
-    solved = weighted_2sls(z_dm, X_dm, Z_dm, weights=irls_w)
-    beta = scaling.unscale_coef(solved.beta)
+        # Final exact weighted HDFE + 2SLS solve for inference.
+        irls_w = np.maximum(w1 * state.mu, 1e-20)
+        z = state.eta - off1 - 1.0
+        pos = y1 > 0
+        z[pos] += y1[pos] / state.mu[pos]
+        block = np.empty((len(y1), 1 + Xs.shape[1] + Is.shape[1]), dtype=np.float64)
+        block[:, 0] = z
+        block[:, 1:1 + Xs.shape[1]] = Xs
+        if Is.shape[1]:
+            block[:, 1 + Xs.shape[1]:] = Is
+        block, _ = projector.residualize(block, irls_w, tol=config.target_inner_tol, return_info=True, copy=False)
+        z_dm = block[:, 0]
+        X_dm = block[:, 1:1 + Xs.shape[1]]
+        if kc and Is.shape[1]:
+            Z_dm = np.column_stack([X_dm[:, :kc], block[:, 1 + Xs.shape[1]:]])
+        elif kc:
+            Z_dm = X_dm[:, :kc]
+        else:
+            Z_dm = block[:, 1 + Xs.shape[1]:]
+        solved = weighted_2sls(z_dm, X_dm, Z_dm, weights=irls_w)
+        beta = scaling.unscale_coef(solved.beta)
+        inference_residual = solved.residuals
+        projected_X = solved.projected_X
 
     cls = None
     if clusters is not None:
@@ -232,7 +244,7 @@ def fit_arrays(
     dof = p1.dof_info(clusters=cls, method=config.dof_method)
     effective_n = float(np.sum(w1)) if weight_kind == "fweight" else float(len(y1))
     Vstd = ivppml_vcov(
-        solved.projected_X, X_dm, solved.residuals, irls_w,
+        projected_X, X_dm, inference_residual, irls_w,
         kind=vce, clusters=cls, effective_n=effective_n,
         base_weights=w1, weight_kind=weight_kind, bread=solved.bread, repair_psd=False,
     )
@@ -297,6 +309,7 @@ def fit_arrays(
             "vce_requested": vce,
             "rank": solved.rank,
             "warm_started": initial_eta is not None,
+            "outer": state.outer_diagnostics,
         },
         df_resid=(min([max(len(np.unique(c)) - 1, 0) for c in cls]) if cls else max(effective_n - len(coef) - int(dof.df_absorbed), 0.0)),
         vce=normalize_ivppml_vce(vce),

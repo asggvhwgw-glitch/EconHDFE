@@ -1,0 +1,92 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EconHDFE IV-PPML 外层估计器重写 · 2026-10-28</title>
+<style>
+:root{--ink:#172b3a;--muted:#566574;--accent:#185b72;--line:#dbe4eb;--paper:#fff;--wash:#f3f7fa}
+*{box-sizing:border-box}body{margin:0;background:var(--wash);color:var(--ink);font:16px/1.85 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+main{max-width:1060px;margin:30px auto;background:var(--paper);padding:48px 56px;border-top:7px solid var(--accent)}h1{font-size:32px;line-height:1.35;margin:0 0 10px}h2{font-size:23px;margin-top:38px;border-top:1px solid var(--line);padding-top:22px}h3{font-size:18px;margin-bottom:4px}p{margin:10px 0 14px}.kicker,.meta{color:var(--muted);font-size:13px}.kicker{letter-spacing:.12em}.lead{font-size:18px}.callout{border-left:4px solid var(--accent);padding:10px 18px;background:var(--wash);margin:22px 0}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:25px 0}.card{border:1px solid var(--line);padding:14px}.card strong{display:block;font-size:26px;color:var(--accent)}.card span{font-size:13px;color:var(--muted)}.tablewrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px;margin:14px 0}th{text-align:left;background:var(--wash)}th,td{padding:11px 12px;border-bottom:1px solid var(--line)}td:not(:first-child){font-variant-numeric:tabular-nums;white-space:nowrap}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f4f7fa;padding:18px;font:13px/1.75 ui-monospace,SFMono-Regular,Consolas,monospace}.eq{font-size:15px;line-height:2}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.92em}a{color:var(--accent)}footer{margin-top:36px;color:var(--muted);font-size:12px}@media(max-width:700px){main{padding:26px 20px;margin:0}.cards{grid-template-columns:repeat(2,1fr)}h1{font-size:27px}}
+</style><main>
+<div class="kicker">ECONHDFE · NUMERICAL DEVELOPMENT REPORT</div>
+<h1>IV-PPML 外层估计器重写</h1>
+<p class="meta">2026-10-28 · 0.10.1.dev0 开发候选 · 基线 main@2ab8cddd9a6e367291f3152591e09c1270418148</p>
+<p class="lead">新增可安装的 <code>outer_solver="moment"</code>，纠正以 Poisson 偏差判断 IV 收敛的问题，并用分块充分统计量减少每轮加权 IV 求解成本。原有默认路径保留，FE 吸收器本身不改写。</p>
+<div class="cards"><div class="card"><strong>561</strong><span>全套测试通过；1 项跳过</span></div><div class="card"><strong>36</strong><span>新增专项测试；安装后再次通过</span></div><div class="card"><strong>500 万</strong><span>最大重复性能测试样本</span></div><div class="card"><strong>1.29–1.68×</strong><span>五组重复基准的完整估计加速</span></div></div>
+<div class="callout"><strong>状态：</strong>这是可复现的开发候选，不是已完成跨平台认证的正式版本。没有推送、合并、发布或创建标签。默认仍为 <code>legacy</code>；新模式需显式启用。不存在“任意数据都更快”或“任意 IV 模型都全局收敛”的承诺。</div>
+<h2>1. 已实现的内容</h2>
+<p>新增 <code>econhdfe/models/ppml_iv/outer.py</code> 和 <code>econhdfe/iv/step.py</code>。前者负责矩方程、方向验证、步长和停止；后者负责可回退的加权 IV 线性步。<code>irls.py</code> 只增加显式分派，旧循环保留。<code>estimator.py</code> 在新路径上复用已认证的最终状态，不再追加未经验证的“只更新 β、不更新 η/μ”的最后一步。</p>
+<p>每轮使用增量工作响应 <code>(y−μ)/μ</code>，而不是反复从水平值重新拼装全部求解状态。上一轮 residualized X/Z 可在新权重下继续残差化；变化的工作响应必须重新设置。每个线搜索试探只计算指数、工具变量矩与 FE 分组矩，不再次调用 FE 投影或 2SLS。</p>
+<p>当前支持 dense 解释变量/工具变量和分类截距 FE。结构化 <code>BlockDesign</code> 路径明确拒绝新模式，不静默切回另一种算法。新模式默认仅启用 FE 零组清理，不把普通 PPML 的解释变量 separation 判据当成一般 IV 存在性判据。</p>
+<h2>2. 理论纠正：必须区分三件事</h2>
+<h3>Poisson 似然不是一般 IV 矩方程的目标函数</h3>
+<p>设 <code>η=o+Xβ+Dα</code>、<code>μ=exp(η)</code>，用户权重为 W₀，Newton 权重为 W=W₀diag(μ)。加性 IV 条件使用工具变量矩，而不是普通 Poisson 的解释变量 score。因而正确的 IV 更新可以增加 Poisson deviance。[1]</p>
+<p>一个解析反例：<code>y=(3,1,2), x=(−1,0,1), z=(0,−1,1)</code>，初始截距为 log 2、斜率为 0。IV Newton 方向为 <code>Δα=0, Δβ=1/2</code>，但负 Poisson 对数似然沿该方向的导数为 <code>+1/2</code>。其 IV 解为 <code>β=log((7+√69)/10)</code>。专项测试同时验证解析解、矩残差归零和似然上升，说明拒绝此类更新不是普遍正确的做法。</p>
+<h3>恰好识别：有明确的 Newton 方程</h3>
+<pre class="eq">X̃ = M_W X,  Z̃ = M_W Z
+G = Z̃′WZ̃,  C = Z̃′WX̃,  ν = Z̃′W₀(y−μ)
+Δβ = (C′G⁻¹C)⁻¹ C′G⁻¹ν
+
+恰好识别且 C 非奇异时：Δβ = C⁻¹ν
+连同 FE 更新：Q′WA Δθ = Q′W₀(y−μ)，Q=[D,Z]。</pre>
+<p>这就是 <code>F(θ)=Q′W₀[y−exp(o+Aθ)]=0</code> 的 Newton 方程。新实现直接检验真实的线性化矩残差，不仅用一个经验性的 FE 容差代替它。</p>
+<h3>过度识别：保留原有估计方程，不偷偷更换估计量</h3>
+<pre class="eq">Ψ(θ) = [ D′W₀(y−μ) ; C′G⁻¹ Z̃′W₀(y−μ) ] = 0。</pre>
+<p>此时不能要求所有原始样本矩都为零。本版保留上述 projected-IV 固定点方程；每次试探固定当前有效工具变量，下一轮重新构造后再验证收敛。它不等于固定权重 GMM，也不等于连续更新 GMM 的完整梯度。有效工具变量对参数的导数没有包含在方向中，所以不能把它称作 Ψ 的完整 Newton 方法，也不能宣称过度识别模式具有一般全局或二次收敛保证。存在多个根时，改变初始化和步长规则仍可能选择不同的根。</p>
+<h2>3. 能保证什么，不能保证什么</h2>
+<p>恰好识别时，固定正缩放 S，记 <code>f=SF</code>、<code>φ=½‖f‖²</code>。对计算方向 d，程序检查 <code>e=f+J_f d</code>，要求 <code>‖e‖≤γ‖f‖</code>，默认 γ=0.25。于是：</p>
+<pre class="eq">φ′(0) = f′(e−f) ≤ −(1−γ)‖f‖² &lt; 0。</pre>
+<p>这是可证明的下降方向条件。在可微性和精确算术下，足够短的 Armijo 步长存在。进一步的全局收敛需要适当水平集、识别后的非奇异性和 Jacobian 正则性等条件；超线性/二次局部速度还需要更强的 forcing 衰减条件。[2][3] 实现有有限的回退次数和浮点精度下限，因此不承诺无条件终止或任意精度二次收敛。</p>
+<p>新模式返回成功时，同时通过当前标准化估计方程残差、相对 predictor/系数修正量和最终内层精度检查。方向证书失败时先提高内层精度，再尝试稳定 IV 求解；仍不满足即显式失败。试探均值溢出/下溢时拒绝该步，不靠截断 η 或强制均值下限改变问题。过度识别模式只保证当前步的冻结目标下降及返回点的重新认证，不把二者扩大为全局定理。</p>
+<p>推断使用同一返回点的 β、η、μ、bread 和结构残差。它保持已有 robust/cluster 及频数权重约定，经过独立全 dummy sandwich 对照；这不是新的弱 IV 有效推断、多 incidental parameter 渐近理论或无偏性证明。</p>
+<h2>4. 性能结果：完整估计，不只计核心循环</h2>
+<p>Linux x86_64，AMD EPYC 9V74，容器 CPU 配额 4 核、内存上限 4 GiB。每个模式使用新进程；计时前进行 10 万行同类预热。数据生成、首次 JIT、哈希和序列化不计入；样本处理、FE 投影、外层迭代及 robust 推断全部计入。两组采用相同 FE 后端、线程策略、tolerance=10⁻⁹、target_inner_tol=10⁻¹⁰ 和完全一致的数据哈希。</p>
+<p>以下是每组各三次运行的耗时中位数。共执行 35 次正式运行，包含额外压力测试和消融测试；没有按速度筛掉运行。</p>
+<div class="tablewrap"><table><thead><tr><th>场景</th><th>N</th><th>旧版 / 秒</th><th>新版 / 秒</th><th>整体加速</th><th>迭代数 旧→新</th></tr></thead><tbody><tr><td>三维交叉 FE，恰好识别</td><td>1,000,000</td><td>7.123</td><td>4.660</td><td>1.53×</td><td>8 → 6</td></tr>
+<tr><td>两维 FE，过度识别</td><td>1,000,000</td><td>5.424</td><td>3.227</td><td>1.68×</td><td>7 → 6</td></tr>
+<tr><td>三维 FE，9 个工具变量（含外生项）</td><td>1,000,000</td><td>13.963</td><td>9.472</td><td>1.47×</td><td>6 → 6</td></tr>
+<tr><td>两维 FE，offset + 非均匀权重</td><td>1,000,000</td><td>5.203</td><td>3.362</td><td>1.55×</td><td>10 → 6</td></tr>
+<tr><td>三维交叉 FE，恰好识别</td><td>5,000,000</td><td>43.401</td><td>33.775</td><td>1.29×</td><td>6 → 6–7</td></tr></tbody></table></div>
+<p>500 万行有明显运行波动：legacy: 35.95–44.76 秒；moment: 31.43–40.74 秒。新版某次需要 7 轮而不是 6 轮，因此不能把中位数收益理解为每次运行必定提速。较弱第一阶段的一次压力测试从 8.85 秒降至 4.55 秒；因为只有一次，不用于稳定加速幅度的结论，也不代表弱 IV 推断认证。</p>
+<h3>进程峰值内存</h3>
+<div class="tablewrap"><table><thead><tr><th>场景</th><th>N</th><th>旧版 / MiB</th><th>新版 / MiB</th><th>下降</th></tr></thead><tbody><tr><td>三维交叉 FE，恰好识别</td><td>1,000,000</td><td>753.1</td><td>676.1</td><td>10.2%</td></tr>
+<tr><td>两维 FE，过度识别</td><td>1,000,000</td><td>836.0</td><td>715.4</td><td>14.4%</td></tr>
+<tr><td>三维 FE，9 个工具变量（含外生项）</td><td>1,000,000</td><td>1243.3</td><td>1094.8</td><td>11.9%</td></tr>
+<tr><td>两维 FE，offset + 非均匀权重</td><td>1,000,000</td><td>722.4</td><td>615.8</td><td>14.8%</td></tr>
+<tr><td>三维交叉 FE，恰好识别</td><td>5,000,000</td><td>2400.0</td><td>2124.4</td><td>11.5%</td></tr></tbody></table></div>
+<p>上述数值是新进程的高水位 RSS 中位数，不是纯算法分配量。<code>memory_budget_mb</code> 是投影器规划预算，不是全进程 RSS 硬限制。</p>
+<h3>消融：速度来自哪里</h3>
+<p>在百万行、三维 FE、9 个工具变量的同一新外层内，将 tall-design 稳定线性求解替换为 guarded sufficient statistics，线性求解累计中位数由 <strong>2.595 秒降至 0.946 秒，快 2.74 倍</strong>；完整估计由 11.126 秒降至 9.472 秒，快 1.17 倍。这把线性核收益与初始化、收敛规则等外层变化分开。</p>
+<p>新模式该场景的 FE 投影中位数约 5.495 秒；矩检查约 0.183 秒，步长搜索约 0.092 秒。剩余主要瓶颈不是 Python 的外层控制语句。本轮没有新增 Rust 扩展：大计算已由 BLAS/LAPACK、NumPy 和 Numba 执行。是否进一步用 Rust 融合归约/拷贝，应由后续剖析决定，而不是以语言替换代替算法优化。</p>
+<h3>复杂度和内存边界</h3>
+<pre class="eq">每次 fast IV 线性步：O(N(L²+LK)+L³+LK²)
+额外矩阵工作区：O(b(K+L)+L²+LK+K²)，另加 N 维残差输出。</pre>
+<p>K 为非 FE 解释变量数，L 为非 FE 工具变量数，b 为分块行数，默认 65,536。该界不包含已有设计矩阵、FE 工作区或最终推断存储，也不适用于回退到稳定 tall-design 求解的分支。Gram 条件数筛查与小型 SVD 是数值保护，不是任意精度的系数前向误差界。</p>
+<h2>5. 正确性与回归检查</h2>
+<p><strong>完整项目：</strong>561 passed、1 skipped、4 个原有 omitted-variable warnings；<strong>新增专项：</strong>36 passed；<strong>安装后：</strong>从 wheel 安装到独立目标目录，在源码目录之外再次运行同样 36 项测试，全部通过。wheel 与 sdist 已通过本地非隔离构建。</p>
+<p>专项覆盖显式 dummy 根方程与 sandwich、恰好/过度识别和一至三维 FE、加权缩放、频数复制、cluster 推断、offset/exposure、变更规格的 warm start、数值回退、反例、失败路径和实际触发回溯的初值。独立根方程参照使用 SciPy root，而非把旧求解器当作唯一真值。</p>
+<p>正式基准中，新旧样本掩码完全一致。包括全部重复及消融，系数最大绝对差为 <strong>1.178e-12</strong>，协方差最大绝对差为 <strong>2.048e-16</strong>；均值的最大缩放差 <code>|μ_new−μ_old|/(1+|μ_old|)</code> 为 <strong>2.408e-10</strong>。新外层全部返回的标准化估计方程残差不超过 1.915×10⁻¹⁰，低于测试所用 10⁻⁹ 阈值。</p>
+<p>这些 DGP 用于数值与性能验证，不是关于内生性校正、一致性或一般数据分布的 Monte Carlo 证明。未运行新的持牌 Stata 对照、Windows/macOS、依赖下界、GPU 或 Rust 构建矩阵；不会拿基线的历史 CI 结果冒充新候选的认证。</p>
+<h2>6. 使用与交付内容</h2>
+<pre>from econhdfe import IVPPMLConfig, ExecutionConfig, ivppmlhdfe
+
+cfg = IVPPMLConfig(
+    outer_solver=&quot;moment&quot;,       # 显式启用；默认仍是 legacy
+    outer_linear_solver=&quot;auto&quot;,  # 分块充分统计量 + 数值回退
+    singleton_mode=&quot;unified&quot;,    # 样本政策与外层算法分开选择
+    engine=&quot;optimized&quot;,          # 两组基准使用同一个 FE 后端
+    tolerance=1e-9,
+    target_inner_tol=1e-10,
+)
+result = ivppmlhdfe(
+    y=y, exog=C, endog=E, instruments=Z_excluded,
+    absorb=[firm, year], config=cfg, vce=&quot;robust&quot;,
+    execution_config=ExecutionConfig(threads=4),
+)
+print(result.diagnostics[&quot;outer&quot;])
+</pre>
+<p>完整交付包含源码、可安装 wheel/sdist、相对主分支的 patch、36 项新测试、五组重复性能数据、35 次运行的 JSON/日志、同机复现脚本、理论说明和本报告。大型逐观测 .npz 输出已用于校验，但未装进交付包；可用同一固定种子脚本重建。<code>validation/iv_outer/summary.json</code> 给出逐项误差和性能判定，<code>provenance.json</code> 记录基线 CI artifact 与代码哈希。</p>
+<p>默认兼容路径保持不变。正式启用新模式之前，应保留对目标数据的并行结果核对，特别是近分离、接近识别失效、多根和未覆盖的 FE/结构化设计。算法更可靠地拒绝错误收敛，不等于它能创造不存在的有限 IV 解。</p>
+<h2>参考文献与归属</h2>
+<p>[1] Stata 官方：<a href="https://www.stata.com/features/overview/poisson-regression-with-endogenous-variables/">Poisson regression with endogenous variables</a>。加性与乘性误差及 GMM 需要明确区分。</p>
+<p>[2] Eisenstat &amp; Walker (1996), <a href="https://epubs.siam.org/doi/10.1137/0917003">Choosing the Forcing Terms in an Inexact Newton Method</a>，SIAM J. Scientific Computing 17(1): 16–32。</p>
+<p>[3] Eisenstat &amp; Walker (1994), <a href="https://epubs.siam.org/doi/abs/10.1137/0804022">Globally Convergent Inexact Newton Methods</a>，SIAM J. Optimization 4(2): 393–422。</p>
+<p>本开发属于成熟数值方法的适配、理论边界纠正和性能工程，不宣称发明新的 IV 估计量或取得未经文献审计的算法优先权。</p>
+<footer>证据范围截至本次本地执行。0.10.1.dev0 为未发布的开发候选；candidate acceptance 有效，但 release_ready=false。</footer></main></html>

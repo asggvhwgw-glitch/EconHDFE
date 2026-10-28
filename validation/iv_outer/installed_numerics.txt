@@ -1,0 +1,4 @@
+Installed version: 0.10.1.dev0
+Imported path: /mnt/data/iv_outer_install/econhdfe/__init__.py
+....................................                                     [100%]
+36 passed in 7.61s

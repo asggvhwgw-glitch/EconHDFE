@@ -1,0 +1,27 @@
+........................................................................ [ 12%]
+........................................................................ [ 25%]
+........................................................................ [ 38%]
+........................................................................ [ 51%]
+........................................................................ [ 64%]
+........................................................................ [ 76%]
+........................................................................ [ 89%]
+.......................................s..................               [100%]
+=============================== warnings summary ===============================
+tests/behavior/test_collinearity.py::test_ols_order_preserving_composite_collinearity
+  /mnt/data/econhdfe_iv_outer_work/econhdfe/planner/scheduler.py:342: OmittedVariableWarning: 2 requested column(s) omitted for collinearity/absorption: xsum (linear_combination), xdup (duplicate_or_scaled)
+    result = function(*bound.args, **bound.kwargs)
+
+tests/behavior/test_collinearity.py::test_iv_drops_absorbed_and_duplicate_excluded_instruments
+  /mnt/data/econhdfe_iv_outer_work/econhdfe/planner/scheduler.py:342: OmittedVariableWarning: 8 requested column(s) omitted for collinearity/absorption: year[1] (absorbed_by_fe), year[2] (absorbed_by_fe), year[3] (absorbed_by_fe), year[4] (absorbed_by_fe), year[5] (absorbed_by_fe), year[6] (absorbed_by_fe), year[7] (absorbed_by_fe), zdup (duplicate_or_scaled)
+    result = function(*bound.args, **bound.kwargs)
+
+tests/behavior/test_structural_omissions.py::test_public_structural_collinearity_toggle_preserves_estimates
+  /mnt/data/econhdfe_iv_outer_work/econhdfe/planner/scheduler.py:342: OmittedVariableWarning: 7 requested column(s) omitted for collinearity/absorption: year[1] (absorbed_by_fe), year[2] (absorbed_by_fe), year[3] (absorbed_by_fe), year[4] (absorbed_by_fe), year[5] (absorbed_by_fe), year[6] (absorbed_by_fe), year[7] (absorbed_by_fe)
+    result = function(*bound.args, **bound.kwargs)
+
+tests/behavior/test_structural_omissions.py::test_public_structural_collinearity_toggle_preserves_estimates
+  /mnt/data/econhdfe_iv_outer_work/econhdfe/planner/scheduler.py:342: OmittedVariableWarning: 7 requested column(s) omitted for collinearity/absorption: year[1] (absorbed_or_zero), year[2] (absorbed_or_zero), year[3] (absorbed_or_zero), year[4] (absorbed_or_zero), year[5] (absorbed_or_zero), year[6] (absorbed_or_zero), year[7] (absorbed_or_zero)
+    result = function(*bound.args, **bound.kwargs)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+561 passed, 1 skipped, 4 warnings in 29.68s

@@ -1,0 +1,1337 @@
+/opt/pyvenv/lib/python3.13/site-packages/setuptools/config/_apply_pyprojecttoml.py:82: SetuptoolsDeprecationWarning: `project.license` as a TOML table is deprecated
+!!
+
+        ********************************************************************************
+        Please use a simple string containing a SPDX expression for `project.license`. You can also use `project.license-files`. (Both options available on setuptools>=77.0.0).
+
+        By 2027-Feb-18, you need to update your project and remove deprecated calls
+        or your builds will no longer be supported.
+
+        See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license for details.
+        ********************************************************************************
+
+!!
+  corresp(dist, value, root_dir)
+/opt/pyvenv/lib/python3.13/site-packages/setuptools/config/_apply_pyprojecttoml.py:55: SetuptoolsDeprecationWarning: 'tool.setuptools.license-files' is deprecated in favor of 'project.license-files' (available on setuptools>=77.0.0).
+!!
+
+        ********************************************************************************
+
+        By 2027-Feb-18, you need to update your project and remove deprecated calls
+        or your builds will no longer be supported.
+
+        See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license-files for details.
+        ********************************************************************************
+
+!!
+  _apply_tool_table(dist, config, filename)
+/opt/pyvenv/lib/python3.13/site-packages/setuptools/config/_apply_pyprojecttoml.py:61: SetuptoolsDeprecationWarning: License classifiers are deprecated.
+!!
+
+        ********************************************************************************
+        Please consider removing the following classifiers in favor of a SPDX license expression:
+
+        License :: OSI Approved :: BSD License
+
+        See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license for details.
+        ********************************************************************************
+
+!!
+  dist._finalize_license_expression()
+/opt/pyvenv/lib/python3.13/site-packages/setuptools/dist.py:765: SetuptoolsDeprecationWarning: License classifiers are deprecated.
+!!
+
+        ********************************************************************************
+        Please consider removing the following classifiers in favor of a SPDX license expression:
+
+        License :: OSI Approved :: BSD License
+
+        See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license for details.
+        ********************************************************************************
+
+!!
+  self._finalize_license_expression()
+running bdist_wheel
+running build
+running build_py
+creating build/lib/econhdfe
+copying econhdfe/collinearity.py -> build/lib/econhdfe
+copying econhdfe/factorvars.py -> build/lib/econhdfe
+copying econhdfe/support_reports.py -> build/lib/econhdfe
+copying econhdfe/__init__.py -> build/lib/econhdfe
+copying econhdfe/results.py -> build/lib/econhdfe
+copying econhdfe/errors.py -> build/lib/econhdfe
+copying econhdfe/design_structure.py -> build/lib/econhdfe
+copying econhdfe/prediction_api.py -> build/lib/econhdfe
+copying econhdfe/reporting.py -> build/lib/econhdfe
+copying econhdfe/api.py -> build/lib/econhdfe
+copying econhdfe/config.py -> build/lib/econhdfe
+copying econhdfe/design.py -> build/lib/econhdfe
+copying econhdfe/postestimation.py -> build/lib/econhdfe
+copying econhdfe/design_specs.py -> build/lib/econhdfe
+copying econhdfe/pipeline.py -> build/lib/econhdfe
+copying econhdfe/prediction.py -> build/lib/econhdfe
+copying econhdfe/sessions.py -> build/lib/econhdfe
+creating build/lib/econhdfe/effects
+copying econhdfe/effects/__init__.py -> build/lib/econhdfe/effects
+copying econhdfe/effects/topology.py -> build/lib/econhdfe/effects
+copying econhdfe/effects/results.py -> build/lib/econhdfe/effects
+copying econhdfe/effects/recover.py -> build/lib/econhdfe/effects
+copying econhdfe/effects/diagnostics.py -> build/lib/econhdfe/effects
+copying econhdfe/effects/adapters.py -> build/lib/econhdfe/effects
+copying econhdfe/effects/prediction.py -> build/lib/econhdfe/effects
+creating build/lib/econhdfe/templates
+copying econhdfe/templates/__init__.py -> build/lib/econhdfe/templates
+creating build/lib/econhdfe/frontend
+copying econhdfe/frontend/roles.py -> build/lib/econhdfe/frontend
+copying econhdfe/frontend/__init__.py -> build/lib/econhdfe/frontend
+copying econhdfe/frontend/columns.py -> build/lib/econhdfe/frontend
+copying econhdfe/frontend/report.py -> build/lib/econhdfe/frontend
+copying econhdfe/frontend/validate.py -> build/lib/econhdfe/frontend
+creating build/lib/econhdfe/models
+copying econhdfe/models/__init__.py -> build/lib/econhdfe/models
+copying econhdfe/models/ols_bootstrap.py -> build/lib/econhdfe/models
+copying econhdfe/models/ols.py -> build/lib/econhdfe/models
+copying econhdfe/models/linear.py -> build/lib/econhdfe/models
+copying econhdfe/models/poisson.py -> build/lib/econhdfe/models
+creating build/lib/econhdfe/inference
+copying econhdfe/inference/__init__.py -> build/lib/econhdfe/inference
+creating build/lib/econhdfe/planner
+copying econhdfe/planner/resources.py -> build/lib/econhdfe/planner
+copying econhdfe/planner/scheduler.py -> build/lib/econhdfe/planner
+copying econhdfe/planner/__init__.py -> build/lib/econhdfe/planner
+copying econhdfe/planner/contracts.py -> build/lib/econhdfe/planner
+copying econhdfe/planner/calibration.py -> build/lib/econhdfe/planner
+copying econhdfe/planner/core.py -> build/lib/econhdfe/planner
+copying econhdfe/planner/report.py -> build/lib/econhdfe/planner
+creating build/lib/econhdfe/resampling
+copying econhdfe/resampling/__init__.py -> build/lib/econhdfe/resampling
+copying econhdfe/resampling/results.py -> build/lib/econhdfe/resampling
+copying econhdfe/resampling/engine.py -> build/lib/econhdfe/resampling
+copying econhdfe/resampling/sampling.py -> build/lib/econhdfe/resampling
+creating build/lib/econhdfe/iv
+copying econhdfe/iv/solve.py -> build/lib/econhdfe/iv
+copying econhdfe/iv/moments.py -> build/lib/econhdfe/iv
+copying econhdfe/iv/__init__.py -> build/lib/econhdfe/iv
+copying econhdfe/iv/step.py -> build/lib/econhdfe/iv
+copying econhdfe/iv/design.py -> build/lib/econhdfe/iv
+creating build/lib/econhdfe/compute
+copying econhdfe/compute/stable_linalg.py -> build/lib/econhdfe/compute
+copying econhdfe/compute/block_design.py -> build/lib/econhdfe/compute
+copying econhdfe/compute/weights.py -> build/lib/econhdfe/compute
+copying econhdfe/compute/context.py -> build/lib/econhdfe/compute
+copying econhdfe/compute/kernels.py -> build/lib/econhdfe/compute
+copying econhdfe/compute/design_ops.py -> build/lib/econhdfe/compute
+copying econhdfe/compute/__init__.py -> build/lib/econhdfe/compute
+copying econhdfe/compute/vcov.py -> build/lib/econhdfe/compute
+copying econhdfe/compute/cache_accounting.py -> build/lib/econhdfe/compute
+copying econhdfe/compute/design_plan.py -> build/lib/econhdfe/compute
+copying econhdfe/compute/encoding.py -> build/lib/econhdfe/compute
+copying econhdfe/compute/wls.py -> build/lib/econhdfe/compute
+copying econhdfe/compute/linalg.py -> build/lib/econhdfe/compute
+copying econhdfe/compute/partitioned_lstsq.py -> build/lib/econhdfe/compute
+copying econhdfe/compute/clusters.py -> build/lib/econhdfe/compute
+copying econhdfe/compute/execution.py -> build/lib/econhdfe/compute
+copying econhdfe/compute/backend.py -> build/lib/econhdfe/compute
+creating build/lib/econhdfe/hdfe
+copying econhdfe/hdfe/factorvars.py -> build/lib/econhdfe/hdfe
+copying econhdfe/hdfe/specs.py -> build/lib/econhdfe/hdfe
+copying econhdfe/hdfe/codes.py -> build/lib/econhdfe/hdfe
+copying econhdfe/hdfe/two_way.py -> build/lib/econhdfe/hdfe
+copying econhdfe/hdfe/plan.py -> build/lib/econhdfe/hdfe
+copying econhdfe/hdfe/__init__.py -> build/lib/econhdfe/hdfe
+copying econhdfe/hdfe/sample.py -> build/lib/econhdfe/hdfe
+copying econhdfe/hdfe/structure.py -> build/lib/econhdfe/hdfe
+copying econhdfe/hdfe/weighted_projection.py -> build/lib/econhdfe/hdfe
+copying econhdfe/hdfe/projection.py -> build/lib/econhdfe/hdfe
+copying econhdfe/hdfe/workspace.py -> build/lib/econhdfe/hdfe
+copying econhdfe/hdfe/group_individual.py -> build/lib/econhdfe/hdfe
+copying econhdfe/hdfe/absorber.py -> build/lib/econhdfe/hdfe
+copying econhdfe/hdfe/absorb_spec.py -> build/lib/econhdfe/hdfe
+copying econhdfe/hdfe/numerical_core.py -> build/lib/econhdfe/hdfe
+copying econhdfe/hdfe/rank.py -> build/lib/econhdfe/hdfe
+copying econhdfe/hdfe/block_projection.py -> build/lib/econhdfe/hdfe
+copying econhdfe/hdfe/dof.py -> build/lib/econhdfe/hdfe
+copying econhdfe/hdfe/within_backend.py -> build/lib/econhdfe/hdfe
+creating build/lib/econhdfe/data
+copying econhdfe/data/dataset.py -> build/lib/econhdfe/data
+copying econhdfe/data/persistent.py -> build/lib/econhdfe/data
+copying econhdfe/data/__init__.py -> build/lib/econhdfe/data
+copying econhdfe/data/sample.py -> build/lib/econhdfe/data
+copying econhdfe/data/planner.py -> build/lib/econhdfe/data
+copying econhdfe/data/encoding.py -> build/lib/econhdfe/data
+copying econhdfe/data/source.py -> build/lib/econhdfe/data
+creating build/lib/econhdfe/models/ppml_iv
+copying econhdfe/models/ppml_iv/irls.py -> build/lib/econhdfe/models/ppml_iv
+copying econhdfe/models/ppml_iv/estimator.py -> build/lib/econhdfe/models/ppml_iv
+copying econhdfe/models/ppml_iv/heterogeneous.py -> build/lib/econhdfe/models/ppml_iv
+copying econhdfe/models/ppml_iv/__init__.py -> build/lib/econhdfe/models/ppml_iv
+copying econhdfe/models/ppml_iv/bias.py -> build/lib/econhdfe/models/ppml_iv
+copying econhdfe/models/ppml_iv/results.py -> build/lib/econhdfe/models/ppml_iv
+copying econhdfe/models/ppml_iv/outer.py -> build/lib/econhdfe/models/ppml_iv
+copying econhdfe/models/ppml_iv/api.py -> build/lib/econhdfe/models/ppml_iv
+copying econhdfe/models/ppml_iv/config.py -> build/lib/econhdfe/models/ppml_iv
+copying econhdfe/models/ppml_iv/standardize.py -> build/lib/econhdfe/models/ppml_iv
+copying econhdfe/models/ppml_iv/vce.py -> build/lib/econhdfe/models/ppml_iv
+copying econhdfe/models/ppml_iv/bootstrap.py -> build/lib/econhdfe/models/ppml_iv
+creating build/lib/econhdfe/models/ppml
+copying econhdfe/models/ppml/irls.py -> build/lib/econhdfe/models/ppml
+copying econhdfe/models/ppml/estimator.py -> build/lib/econhdfe/models/ppml
+copying econhdfe/models/ppml/heterogeneous.py -> build/lib/econhdfe/models/ppml
+copying econhdfe/models/ppml/__init__.py -> build/lib/econhdfe/models/ppml
+copying econhdfe/models/ppml/results.py -> build/lib/econhdfe/models/ppml
+copying econhdfe/models/ppml/separation_simplex.py -> build/lib/econhdfe/models/ppml
+copying econhdfe/models/ppml/separation_relu.py -> build/lib/econhdfe/models/ppml
+copying econhdfe/models/ppml/api.py -> build/lib/econhdfe/models/ppml
+copying econhdfe/models/ppml/config.py -> build/lib/econhdfe/models/ppml
+copying econhdfe/models/ppml/standardize.py -> build/lib/econhdfe/models/ppml
+copying econhdfe/models/ppml/separation.py -> build/lib/econhdfe/models/ppml
+copying econhdfe/models/ppml/execution.py -> build/lib/econhdfe/models/ppml
+copying econhdfe/models/ppml/vce.py -> build/lib/econhdfe/models/ppml
+creating build/lib/econhdfe/models/linear_iv
+copying econhdfe/models/linear_iv/solve.py -> build/lib/econhdfe/models/linear_iv
+copying econhdfe/models/linear_iv/stable_inference.py -> build/lib/econhdfe/models/linear_iv
+copying econhdfe/models/linear_iv/__init__.py -> build/lib/econhdfe/models/linear_iv
+copying econhdfe/models/linear_iv/stages.py -> build/lib/econhdfe/models/linear_iv
+copying econhdfe/models/linear_iv/stock_yogo.py -> build/lib/econhdfe/models/linear_iv
+copying econhdfe/models/linear_iv/api.py -> build/lib/econhdfe/models/linear_iv
+copying econhdfe/models/linear_iv/diagnostics.py -> build/lib/econhdfe/models/linear_iv
+copying econhdfe/models/linear_iv/absorption.py -> build/lib/econhdfe/models/linear_iv
+copying econhdfe/models/linear_iv/estimators.py -> build/lib/econhdfe/models/linear_iv
+creating build/lib/econhdfe/inference/cluster
+copying econhdfe/inference/cluster/__init__.py -> build/lib/econhdfe/inference/cluster
+copying econhdfe/inference/cluster/results.py -> build/lib/econhdfe/inference/cluster
+copying econhdfe/inference/cluster/wild.py -> build/lib/econhdfe/inference/cluster
+copying econhdfe/inference/cluster/diagnostics.py -> build/lib/econhdfe/inference/cluster
+running egg_info
+creating econhdfe.egg-info
+writing econhdfe.egg-info/PKG-INFO
+writing dependency_links to econhdfe.egg-info/dependency_links.txt
+writing entry points to econhdfe.egg-info/entry_points.txt
+writing requirements to econhdfe.egg-info/requires.txt
+writing top-level names to econhdfe.egg-info/top_level.txt
+writing manifest file 'econhdfe.egg-info/SOURCES.txt'
+reading manifest file 'econhdfe.egg-info/SOURCES.txt'
+reading manifest template 'MANIFEST.in'
+no previously-included directories found matching '.git'
+no previously-included directories found matching 'build'
+no previously-included directories found matching 'dist'
+warning: no previously-included files matching '__pycache__' found anywhere in distribution
+warning: no previously-included files matching '*.py[cod]' found anywhere in distribution
+warning: no previously-included files matching '*.nbc' found anywhere in distribution
+warning: no previously-included files matching '*.nbi' found anywhere in distribution
+warning: no previously-included files matching '*.aux' found anywhere in distribution
+warning: no previously-included files matching '*.out' found anywhere in distribution
+warning: no previously-included files matching '.coverage' found anywhere in distribution
+adding license file 'LICENSE'
+writing manifest file 'econhdfe.egg-info/SOURCES.txt'
+copying econhdfe/templates/error-report-template.md -> build/lib/econhdfe/templates
+copying econhdfe/templates/benchmark-report-template.md -> build/lib/econhdfe/templates
+copying econhdfe/templates/benchmark-report-template.md -> build/lib/econhdfe/templates
+copying econhdfe/templates/error-report-template.md -> build/lib/econhdfe/templates
+installing to build/bdist.linux-x86_64/wheel
+running install
+running install_lib
+creating build/bdist.linux-x86_64/wheel
+creating build/bdist.linux-x86_64/wheel/econhdfe
+copying build/lib/econhdfe/collinearity.py -> build/bdist.linux-x86_64/wheel/./econhdfe
+copying build/lib/econhdfe/factorvars.py -> build/bdist.linux-x86_64/wheel/./econhdfe
+creating build/bdist.linux-x86_64/wheel/econhdfe/effects
+copying build/lib/econhdfe/effects/__init__.py -> build/bdist.linux-x86_64/wheel/./econhdfe/effects
+copying build/lib/econhdfe/effects/topology.py -> build/bdist.linux-x86_64/wheel/./econhdfe/effects
+copying build/lib/econhdfe/effects/results.py -> build/bdist.linux-x86_64/wheel/./econhdfe/effects
+copying build/lib/econhdfe/effects/recover.py -> build/bdist.linux-x86_64/wheel/./econhdfe/effects
+copying build/lib/econhdfe/effects/diagnostics.py -> build/bdist.linux-x86_64/wheel/./econhdfe/effects
+copying build/lib/econhdfe/effects/adapters.py -> build/bdist.linux-x86_64/wheel/./econhdfe/effects
+copying build/lib/econhdfe/effects/prediction.py -> build/bdist.linux-x86_64/wheel/./econhdfe/effects
+copying build/lib/econhdfe/support_reports.py -> build/bdist.linux-x86_64/wheel/./econhdfe
+creating build/bdist.linux-x86_64/wheel/econhdfe/templates
+copying build/lib/econhdfe/templates/__init__.py -> build/bdist.linux-x86_64/wheel/./econhdfe/templates
+copying build/lib/econhdfe/templates/error-report-template.md -> build/bdist.linux-x86_64/wheel/./econhdfe/templates
+copying build/lib/econhdfe/templates/benchmark-report-template.md -> build/bdist.linux-x86_64/wheel/./econhdfe/templates
+copying build/lib/econhdfe/__init__.py -> build/bdist.linux-x86_64/wheel/./econhdfe
+creating build/bdist.linux-x86_64/wheel/econhdfe/frontend
+copying build/lib/econhdfe/frontend/roles.py -> build/bdist.linux-x86_64/wheel/./econhdfe/frontend
+copying build/lib/econhdfe/frontend/__init__.py -> build/bdist.linux-x86_64/wheel/./econhdfe/frontend
+copying build/lib/econhdfe/frontend/columns.py -> build/bdist.linux-x86_64/wheel/./econhdfe/frontend
+copying build/lib/econhdfe/frontend/report.py -> build/bdist.linux-x86_64/wheel/./econhdfe/frontend
+copying build/lib/econhdfe/frontend/validate.py -> build/bdist.linux-x86_64/wheel/./econhdfe/frontend
+copying build/lib/econhdfe/results.py -> build/bdist.linux-x86_64/wheel/./econhdfe
+copying build/lib/econhdfe/errors.py -> build/bdist.linux-x86_64/wheel/./econhdfe
+copying build/lib/econhdfe/design_structure.py -> build/bdist.linux-x86_64/wheel/./econhdfe
+creating build/bdist.linux-x86_64/wheel/econhdfe/models
+creating build/bdist.linux-x86_64/wheel/econhdfe/models/ppml_iv
+copying build/lib/econhdfe/models/ppml_iv/irls.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/ppml_iv
+copying build/lib/econhdfe/models/ppml_iv/estimator.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/ppml_iv
+copying build/lib/econhdfe/models/ppml_iv/heterogeneous.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/ppml_iv
+copying build/lib/econhdfe/models/ppml_iv/__init__.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/ppml_iv
+copying build/lib/econhdfe/models/ppml_iv/bias.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/ppml_iv
+copying build/lib/econhdfe/models/ppml_iv/results.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/ppml_iv
+copying build/lib/econhdfe/models/ppml_iv/outer.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/ppml_iv
+copying build/lib/econhdfe/models/ppml_iv/api.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/ppml_iv
+copying build/lib/econhdfe/models/ppml_iv/config.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/ppml_iv
+copying build/lib/econhdfe/models/ppml_iv/standardize.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/ppml_iv
+copying build/lib/econhdfe/models/ppml_iv/vce.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/ppml_iv
+copying build/lib/econhdfe/models/ppml_iv/bootstrap.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/ppml_iv
+creating build/bdist.linux-x86_64/wheel/econhdfe/models/ppml
+copying build/lib/econhdfe/models/ppml/irls.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/ppml
+copying build/lib/econhdfe/models/ppml/estimator.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/ppml
+copying build/lib/econhdfe/models/ppml/heterogeneous.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/ppml
+copying build/lib/econhdfe/models/ppml/__init__.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/ppml
+copying build/lib/econhdfe/models/ppml/results.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/ppml
+copying build/lib/econhdfe/models/ppml/separation_simplex.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/ppml
+copying build/lib/econhdfe/models/ppml/separation_relu.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/ppml
+copying build/lib/econhdfe/models/ppml/api.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/ppml
+copying build/lib/econhdfe/models/ppml/config.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/ppml
+copying build/lib/econhdfe/models/ppml/standardize.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/ppml
+copying build/lib/econhdfe/models/ppml/separation.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/ppml
+copying build/lib/econhdfe/models/ppml/execution.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/ppml
+copying build/lib/econhdfe/models/ppml/vce.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/ppml
+copying build/lib/econhdfe/models/__init__.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models
+copying build/lib/econhdfe/models/ols_bootstrap.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models
+copying build/lib/econhdfe/models/ols.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models
+copying build/lib/econhdfe/models/linear.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models
+copying build/lib/econhdfe/models/poisson.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models
+creating build/bdist.linux-x86_64/wheel/econhdfe/models/linear_iv
+copying build/lib/econhdfe/models/linear_iv/solve.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/linear_iv
+copying build/lib/econhdfe/models/linear_iv/stable_inference.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/linear_iv
+copying build/lib/econhdfe/models/linear_iv/__init__.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/linear_iv
+copying build/lib/econhdfe/models/linear_iv/stages.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/linear_iv
+copying build/lib/econhdfe/models/linear_iv/stock_yogo.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/linear_iv
+copying build/lib/econhdfe/models/linear_iv/api.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/linear_iv
+copying build/lib/econhdfe/models/linear_iv/diagnostics.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/linear_iv
+copying build/lib/econhdfe/models/linear_iv/absorption.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/linear_iv
+copying build/lib/econhdfe/models/linear_iv/estimators.py -> build/bdist.linux-x86_64/wheel/./econhdfe/models/linear_iv
+creating build/bdist.linux-x86_64/wheel/econhdfe/inference
+copying build/lib/econhdfe/inference/__init__.py -> build/bdist.linux-x86_64/wheel/./econhdfe/inference
+creating build/bdist.linux-x86_64/wheel/econhdfe/inference/cluster
+copying build/lib/econhdfe/inference/cluster/__init__.py -> build/bdist.linux-x86_64/wheel/./econhdfe/inference/cluster
+copying build/lib/econhdfe/inference/cluster/results.py -> build/bdist.linux-x86_64/wheel/./econhdfe/inference/cluster
+copying build/lib/econhdfe/inference/cluster/wild.py -> build/bdist.linux-x86_64/wheel/./econhdfe/inference/cluster
+copying build/lib/econhdfe/inference/cluster/diagnostics.py -> build/bdist.linux-x86_64/wheel/./econhdfe/inference/cluster
+copying build/lib/econhdfe/prediction_api.py -> build/bdist.linux-x86_64/wheel/./econhdfe
+creating build/bdist.linux-x86_64/wheel/econhdfe/planner
+copying build/lib/econhdfe/planner/resources.py -> build/bdist.linux-x86_64/wheel/./econhdfe/planner
+copying build/lib/econhdfe/planner/scheduler.py -> build/bdist.linux-x86_64/wheel/./econhdfe/planner
+copying build/lib/econhdfe/planner/__init__.py -> build/bdist.linux-x86_64/wheel/./econhdfe/planner
+copying build/lib/econhdfe/planner/contracts.py -> build/bdist.linux-x86_64/wheel/./econhdfe/planner
+copying build/lib/econhdfe/planner/calibration.py -> build/bdist.linux-x86_64/wheel/./econhdfe/planner
+copying build/lib/econhdfe/planner/core.py -> build/bdist.linux-x86_64/wheel/./econhdfe/planner
+copying build/lib/econhdfe/planner/report.py -> build/bdist.linux-x86_64/wheel/./econhdfe/planner
+creating build/bdist.linux-x86_64/wheel/econhdfe/resampling
+copying build/lib/econhdfe/resampling/__init__.py -> build/bdist.linux-x86_64/wheel/./econhdfe/resampling
+copying build/lib/econhdfe/resampling/results.py -> build/bdist.linux-x86_64/wheel/./econhdfe/resampling
+copying build/lib/econhdfe/resampling/engine.py -> build/bdist.linux-x86_64/wheel/./econhdfe/resampling
+copying build/lib/econhdfe/resampling/sampling.py -> build/bdist.linux-x86_64/wheel/./econhdfe/resampling
+copying build/lib/econhdfe/reporting.py -> build/bdist.linux-x86_64/wheel/./econhdfe
+creating build/bdist.linux-x86_64/wheel/econhdfe/iv
+copying build/lib/econhdfe/iv/solve.py -> build/bdist.linux-x86_64/wheel/./econhdfe/iv
+copying build/lib/econhdfe/iv/moments.py -> build/bdist.linux-x86_64/wheel/./econhdfe/iv
+copying build/lib/econhdfe/iv/__init__.py -> build/bdist.linux-x86_64/wheel/./econhdfe/iv
+copying build/lib/econhdfe/iv/step.py -> build/bdist.linux-x86_64/wheel/./econhdfe/iv
+copying build/lib/econhdfe/iv/design.py -> build/bdist.linux-x86_64/wheel/./econhdfe/iv
+copying build/lib/econhdfe/api.py -> build/bdist.linux-x86_64/wheel/./econhdfe
+copying build/lib/econhdfe/config.py -> build/bdist.linux-x86_64/wheel/./econhdfe
+copying build/lib/econhdfe/design.py -> build/bdist.linux-x86_64/wheel/./econhdfe
+copying build/lib/econhdfe/postestimation.py -> build/bdist.linux-x86_64/wheel/./econhdfe
+copying build/lib/econhdfe/design_specs.py -> build/bdist.linux-x86_64/wheel/./econhdfe
+creating build/bdist.linux-x86_64/wheel/econhdfe/compute
+copying build/lib/econhdfe/compute/stable_linalg.py -> build/bdist.linux-x86_64/wheel/./econhdfe/compute
+copying build/lib/econhdfe/compute/block_design.py -> build/bdist.linux-x86_64/wheel/./econhdfe/compute
+copying build/lib/econhdfe/compute/weights.py -> build/bdist.linux-x86_64/wheel/./econhdfe/compute
+copying build/lib/econhdfe/compute/context.py -> build/bdist.linux-x86_64/wheel/./econhdfe/compute
+copying build/lib/econhdfe/compute/kernels.py -> build/bdist.linux-x86_64/wheel/./econhdfe/compute
+copying build/lib/econhdfe/compute/design_ops.py -> build/bdist.linux-x86_64/wheel/./econhdfe/compute
+copying build/lib/econhdfe/compute/__init__.py -> build/bdist.linux-x86_64/wheel/./econhdfe/compute
+copying build/lib/econhdfe/compute/vcov.py -> build/bdist.linux-x86_64/wheel/./econhdfe/compute
+copying build/lib/econhdfe/compute/cache_accounting.py -> build/bdist.linux-x86_64/wheel/./econhdfe/compute
+copying build/lib/econhdfe/compute/design_plan.py -> build/bdist.linux-x86_64/wheel/./econhdfe/compute
+copying build/lib/econhdfe/compute/encoding.py -> build/bdist.linux-x86_64/wheel/./econhdfe/compute
+copying build/lib/econhdfe/compute/wls.py -> build/bdist.linux-x86_64/wheel/./econhdfe/compute
+copying build/lib/econhdfe/compute/linalg.py -> build/bdist.linux-x86_64/wheel/./econhdfe/compute
+copying build/lib/econhdfe/compute/partitioned_lstsq.py -> build/bdist.linux-x86_64/wheel/./econhdfe/compute
+copying build/lib/econhdfe/compute/clusters.py -> build/bdist.linux-x86_64/wheel/./econhdfe/compute
+copying build/lib/econhdfe/compute/execution.py -> build/bdist.linux-x86_64/wheel/./econhdfe/compute
+copying build/lib/econhdfe/compute/backend.py -> build/bdist.linux-x86_64/wheel/./econhdfe/compute
+creating build/bdist.linux-x86_64/wheel/econhdfe/hdfe
+copying build/lib/econhdfe/hdfe/factorvars.py -> build/bdist.linux-x86_64/wheel/./econhdfe/hdfe
+copying build/lib/econhdfe/hdfe/specs.py -> build/bdist.linux-x86_64/wheel/./econhdfe/hdfe
+copying build/lib/econhdfe/hdfe/codes.py -> build/bdist.linux-x86_64/wheel/./econhdfe/hdfe
+copying build/lib/econhdfe/hdfe/two_way.py -> build/bdist.linux-x86_64/wheel/./econhdfe/hdfe
+copying build/lib/econhdfe/hdfe/plan.py -> build/bdist.linux-x86_64/wheel/./econhdfe/hdfe
+copying build/lib/econhdfe/hdfe/__init__.py -> build/bdist.linux-x86_64/wheel/./econhdfe/hdfe
+copying build/lib/econhdfe/hdfe/sample.py -> build/bdist.linux-x86_64/wheel/./econhdfe/hdfe
+copying build/lib/econhdfe/hdfe/structure.py -> build/bdist.linux-x86_64/wheel/./econhdfe/hdfe
+copying build/lib/econhdfe/hdfe/weighted_projection.py -> build/bdist.linux-x86_64/wheel/./econhdfe/hdfe
+copying build/lib/econhdfe/hdfe/projection.py -> build/bdist.linux-x86_64/wheel/./econhdfe/hdfe
+copying build/lib/econhdfe/hdfe/workspace.py -> build/bdist.linux-x86_64/wheel/./econhdfe/hdfe
+copying build/lib/econhdfe/hdfe/group_individual.py -> build/bdist.linux-x86_64/wheel/./econhdfe/hdfe
+copying build/lib/econhdfe/hdfe/absorber.py -> build/bdist.linux-x86_64/wheel/./econhdfe/hdfe
+copying build/lib/econhdfe/hdfe/absorb_spec.py -> build/bdist.linux-x86_64/wheel/./econhdfe/hdfe
+copying build/lib/econhdfe/hdfe/numerical_core.py -> build/bdist.linux-x86_64/wheel/./econhdfe/hdfe
+copying build/lib/econhdfe/hdfe/rank.py -> build/bdist.linux-x86_64/wheel/./econhdfe/hdfe
+copying build/lib/econhdfe/hdfe/block_projection.py -> build/bdist.linux-x86_64/wheel/./econhdfe/hdfe
+copying build/lib/econhdfe/hdfe/dof.py -> build/bdist.linux-x86_64/wheel/./econhdfe/hdfe
+copying build/lib/econhdfe/hdfe/within_backend.py -> build/bdist.linux-x86_64/wheel/./econhdfe/hdfe
+copying build/lib/econhdfe/pipeline.py -> build/bdist.linux-x86_64/wheel/./econhdfe
+creating build/bdist.linux-x86_64/wheel/econhdfe/data
+copying build/lib/econhdfe/data/dataset.py -> build/bdist.linux-x86_64/wheel/./econhdfe/data
+copying build/lib/econhdfe/data/persistent.py -> build/bdist.linux-x86_64/wheel/./econhdfe/data
+copying build/lib/econhdfe/data/__init__.py -> build/bdist.linux-x86_64/wheel/./econhdfe/data
+copying build/lib/econhdfe/data/sample.py -> build/bdist.linux-x86_64/wheel/./econhdfe/data
+copying build/lib/econhdfe/data/planner.py -> build/bdist.linux-x86_64/wheel/./econhdfe/data
+copying build/lib/econhdfe/data/encoding.py -> build/bdist.linux-x86_64/wheel/./econhdfe/data
+copying build/lib/econhdfe/data/source.py -> build/bdist.linux-x86_64/wheel/./econhdfe/data
+copying build/lib/econhdfe/prediction.py -> build/bdist.linux-x86_64/wheel/./econhdfe
+copying build/lib/econhdfe/sessions.py -> build/bdist.linux-x86_64/wheel/./econhdfe
+running install_egg_info
+Copying econhdfe.egg-info to build/bdist.linux-x86_64/wheel/./econhdfe-0.10.1.dev0-py3.13.egg-info
+running install_scripts
+creating build/bdist.linux-x86_64/wheel/econhdfe-0.10.1.dev0.dist-info/WHEEL
+creating '/mnt/data/iv_outer_dist/.tmp-pykgd5rp/econhdfe-0.10.1.dev0-py3-none-any.whl' and adding 'build/bdist.linux-x86_64/wheel' to it
+adding 'econhdfe/__init__.py'
+adding 'econhdfe/api.py'
+adding 'econhdfe/collinearity.py'
+adding 'econhdfe/config.py'
+adding 'econhdfe/design.py'
+adding 'econhdfe/design_specs.py'
+adding 'econhdfe/design_structure.py'
+adding 'econhdfe/errors.py'
+adding 'econhdfe/factorvars.py'
+adding 'econhdfe/pipeline.py'
+adding 'econhdfe/postestimation.py'
+adding 'econhdfe/prediction.py'
+adding 'econhdfe/prediction_api.py'
+adding 'econhdfe/reporting.py'
+adding 'econhdfe/results.py'
+adding 'econhdfe/sessions.py'
+adding 'econhdfe/support_reports.py'
+adding 'econhdfe/compute/__init__.py'
+adding 'econhdfe/compute/backend.py'
+adding 'econhdfe/compute/block_design.py'
+adding 'econhdfe/compute/cache_accounting.py'
+adding 'econhdfe/compute/clusters.py'
+adding 'econhdfe/compute/context.py'
+adding 'econhdfe/compute/design_ops.py'
+adding 'econhdfe/compute/design_plan.py'
+adding 'econhdfe/compute/encoding.py'
+adding 'econhdfe/compute/execution.py'
+adding 'econhdfe/compute/kernels.py'
+adding 'econhdfe/compute/linalg.py'
+adding 'econhdfe/compute/partitioned_lstsq.py'
+adding 'econhdfe/compute/stable_linalg.py'
+adding 'econhdfe/compute/vcov.py'
+adding 'econhdfe/compute/weights.py'
+adding 'econhdfe/compute/wls.py'
+adding 'econhdfe/data/__init__.py'
+adding 'econhdfe/data/dataset.py'
+adding 'econhdfe/data/encoding.py'
+adding 'econhdfe/data/persistent.py'
+adding 'econhdfe/data/planner.py'
+adding 'econhdfe/data/sample.py'
+adding 'econhdfe/data/source.py'
+adding 'econhdfe/effects/__init__.py'
+adding 'econhdfe/effects/adapters.py'
+adding 'econhdfe/effects/diagnostics.py'
+adding 'econhdfe/effects/prediction.py'
+adding 'econhdfe/effects/recover.py'
+adding 'econhdfe/effects/results.py'
+adding 'econhdfe/effects/topology.py'
+adding 'econhdfe/frontend/__init__.py'
+adding 'econhdfe/frontend/columns.py'
+adding 'econhdfe/frontend/report.py'
+adding 'econhdfe/frontend/roles.py'
+adding 'econhdfe/frontend/validate.py'
+adding 'econhdfe/hdfe/__init__.py'
+adding 'econhdfe/hdfe/absorb_spec.py'
+adding 'econhdfe/hdfe/absorber.py'
+adding 'econhdfe/hdfe/block_projection.py'
+adding 'econhdfe/hdfe/codes.py'
+adding 'econhdfe/hdfe/dof.py'
+adding 'econhdfe/hdfe/factorvars.py'
+adding 'econhdfe/hdfe/group_individual.py'
+adding 'econhdfe/hdfe/numerical_core.py'
+adding 'econhdfe/hdfe/plan.py'
+adding 'econhdfe/hdfe/projection.py'
+adding 'econhdfe/hdfe/rank.py'
+adding 'econhdfe/hdfe/sample.py'
+adding 'econhdfe/hdfe/specs.py'
+adding 'econhdfe/hdfe/structure.py'
+adding 'econhdfe/hdfe/two_way.py'
+adding 'econhdfe/hdfe/weighted_projection.py'
+adding 'econhdfe/hdfe/within_backend.py'
+adding 'econhdfe/hdfe/workspace.py'
+adding 'econhdfe/inference/__init__.py'
+adding 'econhdfe/inference/cluster/__init__.py'
+adding 'econhdfe/inference/cluster/diagnostics.py'
+adding 'econhdfe/inference/cluster/results.py'
+adding 'econhdfe/inference/cluster/wild.py'
+adding 'econhdfe/iv/__init__.py'
+adding 'econhdfe/iv/design.py'
+adding 'econhdfe/iv/moments.py'
+adding 'econhdfe/iv/solve.py'
+adding 'econhdfe/iv/step.py'
+adding 'econhdfe/models/__init__.py'
+adding 'econhdfe/models/linear.py'
+adding 'econhdfe/models/ols.py'
+adding 'econhdfe/models/ols_bootstrap.py'
+adding 'econhdfe/models/poisson.py'
+adding 'econhdfe/models/linear_iv/__init__.py'
+adding 'econhdfe/models/linear_iv/absorption.py'
+adding 'econhdfe/models/linear_iv/api.py'
+adding 'econhdfe/models/linear_iv/diagnostics.py'
+adding 'econhdfe/models/linear_iv/estimators.py'
+adding 'econhdfe/models/linear_iv/solve.py'
+adding 'econhdfe/models/linear_iv/stable_inference.py'
+adding 'econhdfe/models/linear_iv/stages.py'
+adding 'econhdfe/models/linear_iv/stock_yogo.py'
+adding 'econhdfe/models/ppml/__init__.py'
+adding 'econhdfe/models/ppml/api.py'
+adding 'econhdfe/models/ppml/config.py'
+adding 'econhdfe/models/ppml/estimator.py'
+adding 'econhdfe/models/ppml/execution.py'
+adding 'econhdfe/models/ppml/heterogeneous.py'
+adding 'econhdfe/models/ppml/irls.py'
+adding 'econhdfe/models/ppml/results.py'
+adding 'econhdfe/models/ppml/separation.py'
+adding 'econhdfe/models/ppml/separation_relu.py'
+adding 'econhdfe/models/ppml/separation_simplex.py'
+adding 'econhdfe/models/ppml/standardize.py'
+adding 'econhdfe/models/ppml/vce.py'
+adding 'econhdfe/models/ppml_iv/__init__.py'
+adding 'econhdfe/models/ppml_iv/api.py'
+adding 'econhdfe/models/ppml_iv/bias.py'
+adding 'econhdfe/models/ppml_iv/bootstrap.py'
+adding 'econhdfe/models/ppml_iv/config.py'
+adding 'econhdfe/models/ppml_iv/estimator.py'
+adding 'econhdfe/models/ppml_iv/heterogeneous.py'
+adding 'econhdfe/models/ppml_iv/irls.py'
+adding 'econhdfe/models/ppml_iv/outer.py'
+adding 'econhdfe/models/ppml_iv/results.py'
+adding 'econhdfe/models/ppml_iv/standardize.py'
+adding 'econhdfe/models/ppml_iv/vce.py'
+adding 'econhdfe/planner/__init__.py'
+adding 'econhdfe/planner/calibration.py'
+adding 'econhdfe/planner/contracts.py'
+adding 'econhdfe/planner/core.py'
+adding 'econhdfe/planner/report.py'
+adding 'econhdfe/planner/resources.py'
+adding 'econhdfe/planner/scheduler.py'
+adding 'econhdfe/resampling/__init__.py'
+adding 'econhdfe/resampling/engine.py'
+adding 'econhdfe/resampling/results.py'
+adding 'econhdfe/resampling/sampling.py'
+adding 'econhdfe/templates/__init__.py'
+adding 'econhdfe/templates/benchmark-report-template.md'
+adding 'econhdfe/templates/error-report-template.md'
+adding 'econhdfe-0.10.1.dev0.dist-info/licenses/LICENSE'
+adding 'econhdfe-0.10.1.dev0.dist-info/METADATA'
+adding 'econhdfe-0.10.1.dev0.dist-info/WHEEL'
+adding 'econhdfe-0.10.1.dev0.dist-info/entry_points.txt'
+adding 'econhdfe-0.10.1.dev0.dist-info/top_level.txt'
+adding 'econhdfe-0.10.1.dev0.dist-info/RECORD'
+removing build/bdist.linux-x86_64/wheel
+/opt/pyvenv/lib/python3.13/site-packages/setuptools/config/_apply_pyprojecttoml.py:82: SetuptoolsDeprecationWarning: `project.license` as a TOML table is deprecated
+!!
+
+        ********************************************************************************
+        Please use a simple string containing a SPDX expression for `project.license`. You can also use `project.license-files`. (Both options available on setuptools>=77.0.0).
+
+        By 2027-Feb-18, you need to update your project and remove deprecated calls
+        or your builds will no longer be supported.
+
+        See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license for details.
+        ********************************************************************************
+
+!!
+  corresp(dist, value, root_dir)
+/opt/pyvenv/lib/python3.13/site-packages/setuptools/config/_apply_pyprojecttoml.py:55: SetuptoolsDeprecationWarning: 'tool.setuptools.license-files' is deprecated in favor of 'project.license-files' (available on setuptools>=77.0.0).
+!!
+
+        ********************************************************************************
+
+        By 2027-Feb-18, you need to update your project and remove deprecated calls
+        or your builds will no longer be supported.
+
+        See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license-files for details.
+        ********************************************************************************
+
+!!
+  _apply_tool_table(dist, config, filename)
+/opt/pyvenv/lib/python3.13/site-packages/setuptools/config/_apply_pyprojecttoml.py:61: SetuptoolsDeprecationWarning: License classifiers are deprecated.
+!!
+
+        ********************************************************************************
+        Please consider removing the following classifiers in favor of a SPDX license expression:
+
+        License :: OSI Approved :: BSD License
+
+        See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license for details.
+        ********************************************************************************
+
+!!
+  dist._finalize_license_expression()
+/opt/pyvenv/lib/python3.13/site-packages/setuptools/dist.py:765: SetuptoolsDeprecationWarning: License classifiers are deprecated.
+!!
+
+        ********************************************************************************
+        Please consider removing the following classifiers in favor of a SPDX license expression:
+
+        License :: OSI Approved :: BSD License
+
+        See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license for details.
+        ********************************************************************************
+
+!!
+  self._finalize_license_expression()
+WHEEL: econhdfe-0.10.1.dev0-py3-none-any.whl
+running sdist
+running egg_info
+writing econhdfe.egg-info/PKG-INFO
+writing dependency_links to econhdfe.egg-info/dependency_links.txt
+writing entry points to econhdfe.egg-info/entry_points.txt
+writing requirements to econhdfe.egg-info/requires.txt
+writing top-level names to econhdfe.egg-info/top_level.txt
+reading manifest file 'econhdfe.egg-info/SOURCES.txt'
+reading manifest template 'MANIFEST.in'
+no previously-included directories found matching '.git'
+no previously-included directories found matching 'build'
+no previously-included directories found matching 'dist'
+warning: no previously-included files matching '__pycache__' found anywhere in distribution
+warning: no previously-included files matching '*.py[cod]' found anywhere in distribution
+warning: no previously-included files matching '*.nbc' found anywhere in distribution
+warning: no previously-included files matching '*.nbi' found anywhere in distribution
+warning: no previously-included files matching '*.aux' found anywhere in distribution
+warning: no previously-included files matching '*.out' found anywhere in distribution
+warning: no previously-included files matching '.coverage' found anywhere in distribution
+adding license file 'LICENSE'
+writing manifest file 'econhdfe.egg-info/SOURCES.txt'
+running check
+creating econhdfe-0.10.1.dev0
+creating econhdfe-0.10.1.dev0/.github
+creating econhdfe-0.10.1.dev0/.github/workflows
+creating econhdfe-0.10.1.dev0/benchmarks
+creating econhdfe-0.10.1.dev0/benchmarks/data
+creating econhdfe-0.10.1.dev0/benchmarks/effects/v060_pre_release
+creating econhdfe-0.10.1.dev0/benchmarks/hdfe
+creating econhdfe-0.10.1.dev0/benchmarks/planner
+creating econhdfe-0.10.1.dev0/benchmarks/planner/final_calibration
+creating econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+creating econhdfe-0.10.1.dev0/benchmarks/ppml
+creating econhdfe-0.10.1.dev0/benchmarks/real_world
+creating econhdfe-0.10.1.dev0/benchmarks/real_world/2026-09-12
+creating econhdfe-0.10.1.dev0/benchmarks/release/v061_correctness
+creating econhdfe-0.10.1.dev0/benchmarks/repeated
+creating econhdfe-0.10.1.dev0/benchmarks/resampling
+creating econhdfe-0.10.1.dev0/compatibility
+creating econhdfe-0.10.1.dev0/compatibility/baselines
+creating econhdfe-0.10.1.dev0/docs
+creating econhdfe-0.10.1.dev0/docs/development
+creating econhdfe-0.10.1.dev0/docs/development/architecture-map
+creating econhdfe-0.10.1.dev0/docs/development/history
+creating econhdfe-0.10.1.dev0/docs/legacy
+creating econhdfe-0.10.1.dev0/docs/release
+creating econhdfe-0.10.1.dev0/docs/release/evidence
+creating econhdfe-0.10.1.dev0/docs/release/evidence/0.6.3
+creating econhdfe-0.10.1.dev0/docs/release/evidence/0.6.4/development
+creating econhdfe-0.10.1.dev0/docs/release/evidence/0.6.5/test-redesign
+creating econhdfe-0.10.1.dev0/docs/release/evidence/0.7.0.dev0/prediction
+creating econhdfe-0.10.1.dev0/docs/release/history
+creating econhdfe-0.10.1.dev0/docs/technical
+creating econhdfe-0.10.1.dev0/docs/technical/hdfe
+creating econhdfe-0.10.1.dev0/docs/technical/hdfe/exact-multiway-dof
+creating econhdfe-0.10.1.dev0/docs/technical/hdfe/numerical-residual-core
+creating econhdfe-0.10.1.dev0/docs/technical/hdfe/solver
+creating econhdfe-0.10.1.dev0/docs/technical/history
+creating econhdfe-0.10.1.dev0/docs/technical/ivppml
+creating econhdfe-0.10.1.dev0/docs/technical/structural-design
+creating econhdfe-0.10.1.dev0/econhdfe
+creating econhdfe-0.10.1.dev0/econhdfe.egg-info
+creating econhdfe-0.10.1.dev0/econhdfe/compute
+creating econhdfe-0.10.1.dev0/econhdfe/data
+creating econhdfe-0.10.1.dev0/econhdfe/effects
+creating econhdfe-0.10.1.dev0/econhdfe/frontend
+creating econhdfe-0.10.1.dev0/econhdfe/hdfe
+creating econhdfe-0.10.1.dev0/econhdfe/inference
+creating econhdfe-0.10.1.dev0/econhdfe/inference/cluster
+creating econhdfe-0.10.1.dev0/econhdfe/iv
+creating econhdfe-0.10.1.dev0/econhdfe/models
+creating econhdfe-0.10.1.dev0/econhdfe/models/linear_iv
+creating econhdfe-0.10.1.dev0/econhdfe/models/ppml
+creating econhdfe-0.10.1.dev0/econhdfe/models/ppml_iv
+creating econhdfe-0.10.1.dev0/econhdfe/planner
+creating econhdfe-0.10.1.dev0/econhdfe/resampling
+creating econhdfe-0.10.1.dev0/econhdfe/templates
+creating econhdfe-0.10.1.dev0/scripts
+creating econhdfe-0.10.1.dev0/skills/econhdfe
+creating econhdfe-0.10.1.dev0/skills/econhdfe/agents
+creating econhdfe-0.10.1.dev0/skills/econhdfe/references
+creating econhdfe-0.10.1.dev0/skills/econhdfe/scripts
+creating econhdfe-0.10.1.dev0/tests
+creating econhdfe-0.10.1.dev0/tests/behavior
+creating econhdfe-0.10.1.dev0/tests/contracts
+creating econhdfe-0.10.1.dev0/tests/numerics
+creating econhdfe-0.10.1.dev0/tests/tooling
+creating econhdfe-0.10.1.dev0/validation
+creating econhdfe-0.10.1.dev0/validation/fixtures
+creating econhdfe-0.10.1.dev0/validation/iv_outer
+creating econhdfe-0.10.1.dev0/validation/iv_outer/formal
+creating econhdfe-0.10.1.dev0/validation/ivppml
+creating econhdfe-0.10.1.dev0/validation/ivppml/fixtures
+creating econhdfe-0.10.1.dev0/validation/ivppml/stata
+creating econhdfe-0.10.1.dev0/validation/ppml
+creating econhdfe-0.10.1.dev0/validation/ppml/fixtures
+creating econhdfe-0.10.1.dev0/validation/ppml/stata
+creating econhdfe-0.10.1.dev0/validation/singleton_policy
+creating econhdfe-0.10.1.dev0/validation/stata
+copying files to econhdfe-0.10.1.dev0...
+copying .gitattributes -> econhdfe-0.10.1.dev0
+copying .gitignore -> econhdfe-0.10.1.dev0
+copying CHANGELOG.md -> econhdfe-0.10.1.dev0
+copying CONTRIBUTING.md -> econhdfe-0.10.1.dev0
+copying LICENSE -> econhdfe-0.10.1.dev0
+copying MANIFEST.in -> econhdfe-0.10.1.dev0
+copying NOTICE.md -> econhdfe-0.10.1.dev0
+copying README.md -> econhdfe-0.10.1.dev0
+copying README.zh-CN.md -> econhdfe-0.10.1.dev0
+copying SECURITY.md -> econhdfe-0.10.1.dev0
+copying TODO.md -> econhdfe-0.10.1.dev0
+copying pyproject.toml -> econhdfe-0.10.1.dev0
+copying setup.cfg -> econhdfe-0.10.1.dev0
+copying .github/constraints-min.txt -> econhdfe-0.10.1.dev0/.github
+copying .github/workflows/ci.yml -> econhdfe-0.10.1.dev0/.github/workflows
+copying .github/workflows/contrib-fastsandwich.yml -> econhdfe-0.10.1.dev0/.github/workflows
+copying .github/workflows/hyperfe-prototype.yml -> econhdfe-0.10.1.dev0/.github/workflows
+copying .github/workflows/lean.yml -> econhdfe-0.10.1.dev0/.github/workflows
+copying .github/workflows/manuscript-pdfs.yml -> econhdfe-0.10.1.dev0/.github/workflows
+copying .github/workflows/release-v0.6.3.yml -> econhdfe-0.10.1.dev0/.github/workflows
+copying .github/workflows/within-native.yml -> econhdfe-0.10.1.dev0/.github/workflows
+copying benchmarks/README.md -> econhdfe-0.10.1.dev0/benchmarks
+copying benchmarks/bench_10m_complex_eventstudy.py -> econhdfe-0.10.1.dev0/benchmarks
+copying benchmarks/bench_10m_complex_eventstudy_result.json -> econhdfe-0.10.1.dev0/benchmarks
+copying benchmarks/bench_10m_complex_eventstudy_v080.json -> econhdfe-0.10.1.dev0/benchmarks
+copying benchmarks/bench_10m_multife.py -> econhdfe-0.10.1.dev0/benchmarks
+copying benchmarks/bench_collinearity.py -> econhdfe-0.10.1.dev0/benchmarks
+copying benchmarks/bench_cpu_projection.py -> econhdfe-0.10.1.dev0/benchmarks
+copying benchmarks/bench_dependency_dag.py -> econhdfe-0.10.1.dev0/benchmarks
+copying benchmarks/bench_group_individual.py -> econhdfe-0.10.1.dev0/benchmarks
+copying benchmarks/bench_interaction_fe.py -> econhdfe-0.10.1.dev0/benchmarks
+copying benchmarks/bench_iv.py -> econhdfe-0.10.1.dev0/benchmarks
+copying benchmarks/bench_million.py -> econhdfe-0.10.1.dev0/benchmarks
+copying benchmarks/bench_slope_million.py -> econhdfe-0.10.1.dev0/benchmarks
+copying benchmarks/bench_structural_collinearity.py -> econhdfe-0.10.1.dev0/benchmarks
+copying benchmarks/bench_v03.py -> econhdfe-0.10.1.dev0/benchmarks
+copying benchmarks/heterogeneous_spec_models.json -> econhdfe-0.10.1.dev0/benchmarks
+copying benchmarks/heterogeneous_spec_models.py -> econhdfe-0.10.1.dev0/benchmarks
+copying benchmarks/heterogeneous_spec_models_96k.json -> econhdfe-0.10.1.dev0/benchmarks
+copying benchmarks/ivppml_outer.py -> econhdfe-0.10.1.dev0/benchmarks
+copying benchmarks/run_ivppml_outer_suite.py -> econhdfe-0.10.1.dev0/benchmarks
+copying benchmarks/singleton_policy_million.py -> econhdfe-0.10.1.dev0/benchmarks
+copying benchmarks/stable_linalg_workspace.py -> econhdfe-0.10.1.dev0/benchmarks
+copying benchmarks/summarize_ivppml_outer.py -> econhdfe-0.10.1.dev0/benchmarks
+copying benchmarks/data/README.md -> econhdfe-0.10.1.dev0/benchmarks/data
+copying benchmarks/data/bench_persistent_session.py -> econhdfe-0.10.1.dev0/benchmarks/data
+copying benchmarks/data/bench_repeated_patterns.py -> econhdfe-0.10.1.dev0/benchmarks/data
+copying benchmarks/data/bench_repeated_workflow.py -> econhdfe-0.10.1.dev0/benchmarks/data
+copying benchmarks/data/bench_repeated_workflow_rss.py -> econhdfe-0.10.1.dev0/benchmarks/data
+copying benchmarks/data/identifier_encoding.json -> econhdfe-0.10.1.dev0/benchmarks/data
+copying benchmarks/data/identifier_encoding.py -> econhdfe-0.10.1.dev0/benchmarks/data
+copying benchmarks/data/ingestion_projection.json -> econhdfe-0.10.1.dev0/benchmarks/data
+copying benchmarks/data/ingestion_projection.py -> econhdfe-0.10.1.dev0/benchmarks/data
+copying benchmarks/data/ingestion_projection_stata.json -> econhdfe-0.10.1.dev0/benchmarks/data
+copying benchmarks/data/ingestion_projection_stata.py -> econhdfe-0.10.1.dev0/benchmarks/data
+copying benchmarks/data/persistent_session_resume.json -> econhdfe-0.10.1.dev0/benchmarks/data
+copying benchmarks/data/persistent_session_resume_metadata.json -> econhdfe-0.10.1.dev0/benchmarks/data
+copying benchmarks/data/persistent_session_resume_strict.json -> econhdfe-0.10.1.dev0/benchmarks/data
+copying benchmarks/data/repeated_patterns_encoded_dataset.json -> econhdfe-0.10.1.dev0/benchmarks/data
+copying benchmarks/data/repeated_workflow_encoded_dataset.json -> econhdfe-0.10.1.dev0/benchmarks/data
+copying benchmarks/data/repeated_workflow_rss.json -> econhdfe-0.10.1.dev0/benchmarks/data
+copying benchmarks/effects/v060_pre_release/effects_recovery.json -> econhdfe-0.10.1.dev0/benchmarks/effects/v060_pre_release
+copying benchmarks/effects/v060_pre_release/summary.json -> econhdfe-0.10.1.dev0/benchmarks/effects/v060_pre_release
+copying benchmarks/effects/v060_pre_release/v050_round1.json -> econhdfe-0.10.1.dev0/benchmarks/effects/v060_pre_release
+copying benchmarks/effects/v060_pre_release/v050_round2.json -> econhdfe-0.10.1.dev0/benchmarks/effects/v060_pre_release
+copying benchmarks/effects/v060_pre_release/v050_round3.json -> econhdfe-0.10.1.dev0/benchmarks/effects/v060_pre_release
+copying benchmarks/effects/v060_pre_release/v060_round1.json -> econhdfe-0.10.1.dev0/benchmarks/effects/v060_pre_release
+copying benchmarks/effects/v060_pre_release/v060_round2.json -> econhdfe-0.10.1.dev0/benchmarks/effects/v060_pre_release
+copying benchmarks/effects/v060_pre_release/v060_round3.json -> econhdfe-0.10.1.dev0/benchmarks/effects/v060_pre_release
+copying benchmarks/hdfe/exact_rank.json -> econhdfe-0.10.1.dev0/benchmarks/hdfe
+copying benchmarks/hdfe/solver_v044_integration.json -> econhdfe-0.10.1.dev0/benchmarks/hdfe
+copying benchmarks/hdfe/within_native_20261026.json -> econhdfe-0.10.1.dev0/benchmarks/hdfe
+copying benchmarks/hdfe/within_native_certification_20261027.json -> econhdfe-0.10.1.dev0/benchmarks/hdfe
+copying benchmarks/hdfe/within_native_certification_cpu_rounding_20261027.json -> econhdfe-0.10.1.dev0/benchmarks/hdfe
+copying benchmarks/hdfe/within_native_macos_090_20261026.json -> econhdfe-0.10.1.dev0/benchmarks/hdfe
+copying benchmarks/hdfe/within_native_macos_091_5m_20261026.json -> econhdfe-0.10.1.dev0/benchmarks/hdfe
+copying benchmarks/planner/heterogeneous_spec_planner_checkpoint.json -> econhdfe-0.10.1.dev0/benchmarks/planner
+copying benchmarks/planner/planner_developer_report_example.md -> econhdfe-0.10.1.dev0/benchmarks/planner
+copying benchmarks/planner/planner_overhead.json -> econhdfe-0.10.1.dev0/benchmarks/planner
+copying benchmarks/planner/planner_overhead.py -> econhdfe-0.10.1.dev0/benchmarks/planner
+copying benchmarks/planner/representation_operator_mix.json -> econhdfe-0.10.1.dev0/benchmarks/planner
+copying benchmarks/planner/representation_operator_mix.py -> econhdfe-0.10.1.dev0/benchmarks/planner
+copying benchmarks/planner/thread_calibration.json -> econhdfe-0.10.1.dev0/benchmarks/planner
+copying benchmarks/planner/thread_calibration.py -> econhdfe-0.10.1.dev0/benchmarks/planner
+copying benchmarks/planner/final_calibration/model_parity_baseline.json -> econhdfe-0.10.1.dev0/benchmarks/planner/final_calibration
+copying benchmarks/planner/final_calibration/model_parity_current.json -> econhdfe-0.10.1.dev0/benchmarks/planner/final_calibration
+copying benchmarks/planner/final_calibration/summary.json -> econhdfe-0.10.1.dev0/benchmarks/planner/final_calibration
+copying benchmarks/planner/post_architecture/README.md -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/complex_b1.json -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/complex_b2.json -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/complex_b3.json -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/complex_c1.json -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/complex_c2.json -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/complex_c3.json -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/hdfe_baseline_t1.json -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/hdfe_baseline_t2.json -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/hdfe_baseline_t4.json -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/hdfe_current_auto.json -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/hdfe_current_t1.json -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/hdfe_current_t2.json -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/hdfe_current_t4.json -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/hdfe_stress.py -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/hetero_b1_72k.json -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/hetero_b2_72k.json -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/hetero_b3_72k.json -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/hetero_c1_72k.json -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/hetero_c2_72k.json -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/hetero_c3_72k.json -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/legacy_expected_check.json -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/model_baseline_checkpoint3.json -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/model_consistency.py -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/model_planner_checkpoint1.json -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/planner_overhead_fresh.json -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/representation_operator_mix_fresh.json -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/v050_vs_v04102_same_host.json -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/planner/post_architecture/validation_summary.json -> econhdfe-0.10.1.dev0/benchmarks/planner/post_architecture
+copying benchmarks/ppml/bench_partitioned_border_scaling.py -> econhdfe-0.10.1.dev0/benchmarks/ppml
+copying benchmarks/ppml/bench_partitioned_shared.py -> econhdfe-0.10.1.dev0/benchmarks/ppml
+copying benchmarks/ppml/bench_ppml.py -> econhdfe-0.10.1.dev0/benchmarks/ppml
+copying benchmarks/ppml/gravity_144k.json -> econhdfe-0.10.1.dev0/benchmarks/ppml
+copying benchmarks/ppml/hierarchy_240k.json -> econhdfe-0.10.1.dev0/benchmarks/ppml
+copying benchmarks/ppml/integrated_gravity_144k.json -> econhdfe-0.10.1.dev0/benchmarks/ppml
+copying benchmarks/ppml/integrated_hierarchy_240k.json -> econhdfe-0.10.1.dev0/benchmarks/ppml
+copying benchmarks/ppml/integrated_two_way_1m.json -> econhdfe-0.10.1.dev0/benchmarks/ppml
+copying benchmarks/ppml/integrated_two_way_200k.json -> econhdfe-0.10.1.dev0/benchmarks/ppml
+copying benchmarks/ppml/optimized_round_gravity_144k.json -> econhdfe-0.10.1.dev0/benchmarks/ppml
+copying benchmarks/ppml/optimized_round_hierarchy_240k.json -> econhdfe-0.10.1.dev0/benchmarks/ppml
+copying benchmarks/ppml/optimized_round_kernel_stability_10m.json -> econhdfe-0.10.1.dev0/benchmarks/ppml
+copying benchmarks/ppml/optimized_round_two_way_10m.json -> econhdfe-0.10.1.dev0/benchmarks/ppml
+copying benchmarks/ppml/optimized_round_two_way_1m.json -> econhdfe-0.10.1.dev0/benchmarks/ppml
+copying benchmarks/ppml/optimized_round_two_way_5m.json -> econhdfe-0.10.1.dev0/benchmarks/ppml
+copying benchmarks/ppml/optimized_round_vce_5m.json -> econhdfe-0.10.1.dev0/benchmarks/ppml
+copying benchmarks/ppml/optimized_round_warm_start_300k.json -> econhdfe-0.10.1.dev0/benchmarks/ppml
+copying benchmarks/ppml/partitioned_border_scaling_hardened.json -> econhdfe-0.10.1.dev0/benchmarks/ppml
+copying benchmarks/ppml/partitioned_shared_114_experimental.json -> econhdfe-0.10.1.dev0/benchmarks/ppml
+copying benchmarks/ppml/partitioned_shared_114_hardened.json -> econhdfe-0.10.1.dev0/benchmarks/ppml
+copying benchmarks/ppml/two_way_1m.json -> econhdfe-0.10.1.dev0/benchmarks/ppml
+copying benchmarks/ppml/two_way_200k.json -> econhdfe-0.10.1.dev0/benchmarks/ppml
+copying benchmarks/ppml/v045_execution_fix_synthetic.json -> econhdfe-0.10.1.dev0/benchmarks/ppml
+copying benchmarks/real_world/BENCHMARK_REPORT_TEMPLATE.md -> econhdfe-0.10.1.dev0/benchmarks/real_world
+copying benchmarks/real_world/2026-09-12/README.md -> econhdfe-0.10.1.dev0/benchmarks/real_world/2026-09-12
+copying benchmarks/real_world/2026-09-12/benchmark_complete_table_20260912.md -> econhdfe-0.10.1.dev0/benchmarks/real_world/2026-09-12
+copying benchmarks/real_world/2026-09-12/mobility_ppml_speedup_diagnosis_20260912.md -> econhdfe-0.10.1.dev0/benchmarks/real_world/2026-09-12
+copying benchmarks/real_world/2026-09-12/provenance.json -> econhdfe-0.10.1.dev0/benchmarks/real_world/2026-09-12
+copying benchmarks/release/v061_correctness/same_host_dense_probe.json -> econhdfe-0.10.1.dev0/benchmarks/release/v061_correctness
+copying benchmarks/repeated/repeated_spec_v041.json -> econhdfe-0.10.1.dev0/benchmarks/repeated
+copying benchmarks/resampling/README.md -> econhdfe-0.10.1.dev0/benchmarks/resampling
+copying benchmarks/resampling/wild_bootstrap_scores.py -> econhdfe-0.10.1.dev0/benchmarks/resampling
+copying benchmarks/resampling/wild_bootstrap_scores_1m_20261027.json -> econhdfe-0.10.1.dev0/benchmarks/resampling
+copying compatibility/APPROVED_CHANGES.json -> econhdfe-0.10.1.dev0/compatibility
+copying compatibility/baselines/econhdfe-0.10.0.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.10.1.dev0.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.4.10.1.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.4.10.2.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.4.10.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.4.2.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.4.3.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.4.4.1.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.4.4.2.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.4.4.3.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.4.4.4.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.4.4.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.4.5.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.4.6.1.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.4.6.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.4.7.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.4.8.1.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.4.8.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.4.9.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.5.0.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.6.0.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.6.1.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.6.2.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.6.3.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.6.4.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.6.5.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.7.0.dev0.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.7.0.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.8.0.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.8.1.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.8.3.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.8.4.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.8.5.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.9.0.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying compatibility/baselines/econhdfe-0.9.1.json -> econhdfe-0.10.1.dev0/compatibility/baselines
+copying docs/README.md -> econhdfe-0.10.1.dev0/docs
+copying docs/development/ERROR_REPORT_TEMPLATE.md -> econhdfe-0.10.1.dev0/docs/development
+copying docs/development/PLANNER_REPORT_TEMPLATE.md -> econhdfe-0.10.1.dev0/docs/development
+copying docs/development/architecture-review-0.7.md -> econhdfe-0.10.1.dev0/docs/development
+copying docs/development/architecture.md -> econhdfe-0.10.1.dev0/docs/development
+copying docs/development/benchmarks.md -> econhdfe-0.10.1.dev0/docs/development
+copying docs/development/data-layer.md -> econhdfe-0.10.1.dev0/docs/development
+copying docs/development/economic-module-map.md -> econhdfe-0.10.1.dev0/docs/development
+copying docs/development/execution-planner.md -> econhdfe-0.10.1.dev0/docs/development
+copying docs/development/external-validation.md -> econhdfe-0.10.1.dev0/docs/development
+copying docs/development/iv-conditioned-solve.md -> econhdfe-0.10.1.dev0/docs/development
+copying docs/development/iv-correctness-closeout.md -> econhdfe-0.10.1.dev0/docs/development
+copying docs/development/iv-parity-correction-20261020.md -> econhdfe-0.10.1.dev0/docs/development
+copying docs/development/iv-performance-reuse.md -> econhdfe-0.10.1.dev0/docs/development
+copying docs/development/iv-staged-diagnostics.md -> econhdfe-0.10.1.dev0/docs/development
+copying docs/development/postestimation-0.7.md -> econhdfe-0.10.1.dev0/docs/development
+copying docs/development/statistical-parity.md -> econhdfe-0.10.1.dev0/docs/development
+copying docs/development/test-environment.md -> econhdfe-0.10.1.dev0/docs/development
+copying docs/development/test-status.md -> econhdfe-0.10.1.dev0/docs/development
+copying docs/development/testing.md -> econhdfe-0.10.1.dev0/docs/development
+copying docs/development/upstream-references.md -> econhdfe-0.10.1.dev0/docs/development
+copying docs/development/architecture-map/architecture.html -> econhdfe-0.10.1.dev0/docs/development/architecture-map
+copying docs/development/architecture-map/architecture.json -> econhdfe-0.10.1.dev0/docs/development/architecture-map
+copying docs/development/architecture-map/architecture.md -> econhdfe-0.10.1.dev0/docs/development/architecture-map
+copying docs/development/history/DATA_LAYER_CHECKPOINT.md -> econhdfe-0.10.1.dev0/docs/development/history
+copying docs/development/history/DEVELOPMENT_CLOSEOUT.md -> econhdfe-0.10.1.dev0/docs/development/history
+copying docs/development/history/FE_RECOVERY_SCAFFOLD.md -> econhdfe-0.10.1.dev0/docs/development/history
+copying docs/development/history/PLANNER_CHECKPOINT.md -> econhdfe-0.10.1.dev0/docs/development/history
+copying docs/development/history/PLANNER_FINAL_CALIBRATION.md -> econhdfe-0.10.1.dev0/docs/development/history
+copying docs/development/history/POST_ARCHITECTURE_VALIDATION.md -> econhdfe-0.10.1.dev0/docs/development/history
+copying docs/development/history/README.md -> econhdfe-0.10.1.dev0/docs/development/history
+copying docs/development/history/data-layer-phase1-checkpoint.md -> econhdfe-0.10.1.dev0/docs/development/history
+copying docs/development/history/data-layer-phase2-checkpoint.md -> econhdfe-0.10.1.dev0/docs/development/history
+copying docs/development/history/data-layer-phase3-checkpoint.md -> econhdfe-0.10.1.dev0/docs/development/history
+copying docs/development/history/maintenance-0.6.4.md -> econhdfe-0.10.1.dev0/docs/development/history
+copying docs/development/history/test-migration-0.6.5.md -> econhdfe-0.10.1.dev0/docs/development/history
+copying docs/development/history/test-status-0.6.3.md -> econhdfe-0.10.1.dev0/docs/development/history
+copying docs/legacy/LEGACY_PYREGHDFE_README.md -> econhdfe-0.10.1.dev0/docs/legacy
+copying docs/legacy/PPML_ARCHITECTURE.md -> econhdfe-0.10.1.dev0/docs/legacy
+copying docs/legacy/PPML_BENCHMARKS.md -> econhdfe-0.10.1.dev0/docs/legacy
+copying docs/legacy/PPML_TEST_STATUS.md -> econhdfe-0.10.1.dev0/docs/legacy
+copying docs/legacy/PPML_UPSTREAM_REFERENCES.md -> econhdfe-0.10.1.dev0/docs/legacy
+copying docs/release/acceptance.md -> econhdfe-0.10.1.dev0/docs/release
+copying docs/release/checklist.md -> econhdfe-0.10.1.dev0/docs/release
+copying docs/release/execution.json -> econhdfe-0.10.1.dev0/docs/release
+copying docs/release/maintenance.json -> econhdfe-0.10.1.dev0/docs/release
+copying docs/release/manifest.md -> econhdfe-0.10.1.dev0/docs/release
+copying docs/release/migration.md -> econhdfe-0.10.1.dev0/docs/release
+copying docs/release/notes-0.7.0.md -> econhdfe-0.10.1.dev0/docs/release
+copying docs/release/performance-0.6.1.md -> econhdfe-0.10.1.dev0/docs/release
+copying docs/release/performance-0.6.2.md -> econhdfe-0.10.1.dev0/docs/release
+copying docs/release/performance-0.6.3.md -> econhdfe-0.10.1.dev0/docs/release
+copying docs/release/performance-release.md -> econhdfe-0.10.1.dev0/docs/release
+copying docs/release/publishing.md -> econhdfe-0.10.1.dev0/docs/release
+copying docs/release/versioning.md -> econhdfe-0.10.1.dev0/docs/release
+copying docs/release/evidence/0.8.5-local-regression.txt -> econhdfe-0.10.1.dev0/docs/release/evidence
+copying docs/release/evidence/0.6.3/benchmark-summary.json -> econhdfe-0.10.1.dev0/docs/release/evidence/0.6.3
+copying docs/release/evidence/0.6.3/environment.json -> econhdfe-0.10.1.dev0/docs/release/evidence/0.6.3
+copying docs/release/evidence/0.6.3/installed-numerics.xml -> econhdfe-0.10.1.dev0/docs/release/evidence/0.6.3
+copying docs/release/evidence/0.6.3/limitations.json -> econhdfe-0.10.1.dev0/docs/release/evidence/0.6.3
+copying docs/release/evidence/0.6.3/local-regression.xml -> econhdfe-0.10.1.dev0/docs/release/evidence/0.6.3
+copying docs/release/evidence/0.6.3/targeted.xml -> econhdfe-0.10.1.dev0/docs/release/evidence/0.6.3
+copying docs/release/evidence/0.6.3/temporary-allocations.json -> econhdfe-0.10.1.dev0/docs/release/evidence/0.6.3
+copying docs/release/evidence/0.6.3/validation-summary.json -> econhdfe-0.10.1.dev0/docs/release/evidence/0.6.3
+copying docs/release/evidence/0.6.4/development/environment.json -> econhdfe-0.10.1.dev0/docs/release/evidence/0.6.4/development
+copying docs/release/evidence/0.6.4/development/installed-tests.xml -> econhdfe-0.10.1.dev0/docs/release/evidence/0.6.4/development
+copying docs/release/evidence/0.6.4/development/performance.json -> econhdfe-0.10.1.dev0/docs/release/evidence/0.6.4/development
+copying docs/release/evidence/0.6.4/development/provenance.json -> econhdfe-0.10.1.dev0/docs/release/evidence/0.6.4/development
+copying docs/release/evidence/0.6.4/development/source-tests.xml -> econhdfe-0.10.1.dev0/docs/release/evidence/0.6.4/development
+copying docs/release/evidence/0.6.5/test-redesign/core-tests.xml -> econhdfe-0.10.1.dev0/docs/release/evidence/0.6.5/test-redesign
+copying docs/release/evidence/0.6.5/test-redesign/environment.json -> econhdfe-0.10.1.dev0/docs/release/evidence/0.6.5/test-redesign
+copying docs/release/evidence/0.6.5/test-redesign/full-tests.xml -> econhdfe-0.10.1.dev0/docs/release/evidence/0.6.5/test-redesign
+copying docs/release/evidence/0.6.5/test-redesign/installed-tests.xml -> econhdfe-0.10.1.dev0/docs/release/evidence/0.6.5/test-redesign
+copying docs/release/evidence/0.6.5/test-redesign/local-validation.json -> econhdfe-0.10.1.dev0/docs/release/evidence/0.6.5/test-redesign
+copying docs/release/evidence/0.7.0.dev0/prediction/README.md -> econhdfe-0.10.1.dev0/docs/release/evidence/0.7.0.dev0/prediction
+copying docs/release/evidence/0.7.0.dev0/prediction/benchmark.json -> econhdfe-0.10.1.dev0/docs/release/evidence/0.7.0.dev0/prediction
+copying docs/release/evidence/0.7.0.dev0/prediction/benchmark_prediction.py -> econhdfe-0.10.1.dev0/docs/release/evidence/0.7.0.dev0/prediction
+copying docs/release/evidence/0.7.0.dev0/prediction/environment.json -> econhdfe-0.10.1.dev0/docs/release/evidence/0.7.0.dev0/prediction
+copying docs/release/evidence/0.7.0.dev0/prediction/full.xml -> econhdfe-0.10.1.dev0/docs/release/evidence/0.7.0.dev0/prediction
+copying docs/release/evidence/0.7.0.dev0/prediction/installed.xml -> econhdfe-0.10.1.dev0/docs/release/evidence/0.7.0.dev0/prediction
+copying docs/release/evidence/0.7.0.dev0/prediction/validation.json -> econhdfe-0.10.1.dev0/docs/release/evidence/0.7.0.dev0/prediction
+copying docs/release/history/README.md -> econhdfe-0.10.1.dev0/docs/release/history
+copying docs/release/history/RELEASE_CLOSEOUT.md -> econhdfe-0.10.1.dev0/docs/release/history
+copying docs/release/history/manifest-0.6.1.md -> econhdfe-0.10.1.dev0/docs/release/history
+copying docs/release/history/v0.5.0-0.4.10.2-forward-port-audit.md -> econhdfe-0.10.1.dev0/docs/release/history
+copying docs/technical/README.md -> econhdfe-0.10.1.dev0/docs/technical
+copying docs/technical/cluster-inference.md -> econhdfe-0.10.1.dev0/docs/technical
+copying docs/technical/formal-verification.md -> econhdfe-0.10.1.dev0/docs/technical
+copying docs/technical/heterogeneous-specification-optimization.md -> econhdfe-0.10.1.dev0/docs/technical
+copying docs/technical/identified-fixed-effects.md -> econhdfe-0.10.1.dev0/docs/technical
+copying docs/technical/innovation-audit.md -> econhdfe-0.10.1.dev0/docs/technical
+copying docs/technical/innovation-registry.json -> econhdfe-0.10.1.dev0/docs/technical
+copying docs/technical/overview.md -> econhdfe-0.10.1.dev0/docs/technical
+copying docs/technical/partitioned-wls.md -> econhdfe-0.10.1.dev0/docs/technical
+copying docs/technical/performance-architecture.md -> econhdfe-0.10.1.dev0/docs/technical
+copying docs/technical/hdfe/README.md -> econhdfe-0.10.1.dev0/docs/technical/hdfe
+copying docs/technical/hdfe/rank-backends.md -> econhdfe-0.10.1.dev0/docs/technical/hdfe
+copying docs/technical/hdfe/singleton-policies.md -> econhdfe-0.10.1.dev0/docs/technical/hdfe
+copying docs/technical/hdfe/exact-multiway-dof/README.md -> econhdfe-0.10.1.dev0/docs/technical/hdfe/exact-multiway-dof
+copying docs/technical/hdfe/exact-multiway-dof/exact_multiway_hdfe_dof.pdf -> econhdfe-0.10.1.dev0/docs/technical/hdfe/exact-multiway-dof
+copying docs/technical/hdfe/exact-multiway-dof/exact_multiway_hdfe_dof.tex -> econhdfe-0.10.1.dev0/docs/technical/hdfe/exact-multiway-dof
+copying docs/technical/hdfe/numerical-residual-core/README.md -> econhdfe-0.10.1.dev0/docs/technical/hdfe/numerical-residual-core
+copying docs/technical/hdfe/numerical-residual-core/exact_multiway_hdfe_residual_core.pdf -> econhdfe-0.10.1.dev0/docs/technical/hdfe/numerical-residual-core
+copying docs/technical/hdfe/numerical-residual-core/exact_multiway_hdfe_residual_core.tex -> econhdfe-0.10.1.dev0/docs/technical/hdfe/numerical-residual-core
+copying docs/technical/hdfe/solver/benchmarks.md -> econhdfe-0.10.1.dev0/docs/technical/hdfe/solver
+copying docs/technical/hdfe/solver/design.md -> econhdfe-0.10.1.dev0/docs/technical/hdfe/solver
+copying docs/technical/hdfe/solver/hypergraph-local-coarse-prototype.md -> econhdfe-0.10.1.dev0/docs/technical/hdfe/solver
+copying docs/technical/hdfe/solver/solver-v0.4.4.md -> econhdfe-0.10.1.dev0/docs/technical/hdfe/solver
+copying docs/technical/hdfe/solver/within-native-validation.md -> econhdfe-0.10.1.dev0/docs/technical/hdfe/solver
+copying docs/technical/hdfe/solver/within-native.md -> econhdfe-0.10.1.dev0/docs/technical/hdfe/solver
+copying docs/technical/history/README.md -> econhdfe-0.10.1.dev0/docs/technical/history
+copying docs/technical/history/mathematical-review-0.6.1.md -> econhdfe-0.10.1.dev0/docs/technical/history
+copying docs/technical/history/nonlinear-and-resource-review-0.6.2.md -> econhdfe-0.10.1.dev0/docs/technical/history
+copying docs/technical/ivppml/outer-moment-estimator.md -> econhdfe-0.10.1.dev0/docs/technical/ivppml
+copying docs/technical/structural-design/README.md -> econhdfe-0.10.1.dev0/docs/technical/structural-design
+copying docs/technical/structural-design/exact_partition_refinement_hdfe_design.pdf -> econhdfe-0.10.1.dev0/docs/technical/structural-design
+copying docs/technical/structural-design/exact_partition_refinement_hdfe_design.tex -> econhdfe-0.10.1.dev0/docs/technical/structural-design
+copying econhdfe/__init__.py -> econhdfe-0.10.1.dev0/econhdfe
+copying econhdfe/api.py -> econhdfe-0.10.1.dev0/econhdfe
+copying econhdfe/collinearity.py -> econhdfe-0.10.1.dev0/econhdfe
+copying econhdfe/config.py -> econhdfe-0.10.1.dev0/econhdfe
+copying econhdfe/design.py -> econhdfe-0.10.1.dev0/econhdfe
+copying econhdfe/design_specs.py -> econhdfe-0.10.1.dev0/econhdfe
+copying econhdfe/design_structure.py -> econhdfe-0.10.1.dev0/econhdfe
+copying econhdfe/errors.py -> econhdfe-0.10.1.dev0/econhdfe
+copying econhdfe/factorvars.py -> econhdfe-0.10.1.dev0/econhdfe
+copying econhdfe/pipeline.py -> econhdfe-0.10.1.dev0/econhdfe
+copying econhdfe/postestimation.py -> econhdfe-0.10.1.dev0/econhdfe
+copying econhdfe/prediction.py -> econhdfe-0.10.1.dev0/econhdfe
+copying econhdfe/prediction_api.py -> econhdfe-0.10.1.dev0/econhdfe
+copying econhdfe/reporting.py -> econhdfe-0.10.1.dev0/econhdfe
+copying econhdfe/results.py -> econhdfe-0.10.1.dev0/econhdfe
+copying econhdfe/sessions.py -> econhdfe-0.10.1.dev0/econhdfe
+copying econhdfe/support_reports.py -> econhdfe-0.10.1.dev0/econhdfe
+copying econhdfe.egg-info/PKG-INFO -> econhdfe-0.10.1.dev0/econhdfe.egg-info
+copying econhdfe.egg-info/SOURCES.txt -> econhdfe-0.10.1.dev0/econhdfe.egg-info
+copying econhdfe.egg-info/dependency_links.txt -> econhdfe-0.10.1.dev0/econhdfe.egg-info
+copying econhdfe.egg-info/entry_points.txt -> econhdfe-0.10.1.dev0/econhdfe.egg-info
+copying econhdfe.egg-info/requires.txt -> econhdfe-0.10.1.dev0/econhdfe.egg-info
+copying econhdfe.egg-info/top_level.txt -> econhdfe-0.10.1.dev0/econhdfe.egg-info
+copying econhdfe/compute/__init__.py -> econhdfe-0.10.1.dev0/econhdfe/compute
+copying econhdfe/compute/backend.py -> econhdfe-0.10.1.dev0/econhdfe/compute
+copying econhdfe/compute/block_design.py -> econhdfe-0.10.1.dev0/econhdfe/compute
+copying econhdfe/compute/cache_accounting.py -> econhdfe-0.10.1.dev0/econhdfe/compute
+copying econhdfe/compute/clusters.py -> econhdfe-0.10.1.dev0/econhdfe/compute
+copying econhdfe/compute/context.py -> econhdfe-0.10.1.dev0/econhdfe/compute
+copying econhdfe/compute/design_ops.py -> econhdfe-0.10.1.dev0/econhdfe/compute
+copying econhdfe/compute/design_plan.py -> econhdfe-0.10.1.dev0/econhdfe/compute
+copying econhdfe/compute/encoding.py -> econhdfe-0.10.1.dev0/econhdfe/compute
+copying econhdfe/compute/execution.py -> econhdfe-0.10.1.dev0/econhdfe/compute
+copying econhdfe/compute/kernels.py -> econhdfe-0.10.1.dev0/econhdfe/compute
+copying econhdfe/compute/linalg.py -> econhdfe-0.10.1.dev0/econhdfe/compute
+copying econhdfe/compute/partitioned_lstsq.py -> econhdfe-0.10.1.dev0/econhdfe/compute
+copying econhdfe/compute/stable_linalg.py -> econhdfe-0.10.1.dev0/econhdfe/compute
+copying econhdfe/compute/vcov.py -> econhdfe-0.10.1.dev0/econhdfe/compute
+copying econhdfe/compute/weights.py -> econhdfe-0.10.1.dev0/econhdfe/compute
+copying econhdfe/compute/wls.py -> econhdfe-0.10.1.dev0/econhdfe/compute
+copying econhdfe/data/__init__.py -> econhdfe-0.10.1.dev0/econhdfe/data
+copying econhdfe/data/dataset.py -> econhdfe-0.10.1.dev0/econhdfe/data
+copying econhdfe/data/encoding.py -> econhdfe-0.10.1.dev0/econhdfe/data
+copying econhdfe/data/persistent.py -> econhdfe-0.10.1.dev0/econhdfe/data
+copying econhdfe/data/planner.py -> econhdfe-0.10.1.dev0/econhdfe/data
+copying econhdfe/data/sample.py -> econhdfe-0.10.1.dev0/econhdfe/data
+copying econhdfe/data/source.py -> econhdfe-0.10.1.dev0/econhdfe/data
+copying econhdfe/effects/__init__.py -> econhdfe-0.10.1.dev0/econhdfe/effects
+copying econhdfe/effects/adapters.py -> econhdfe-0.10.1.dev0/econhdfe/effects
+copying econhdfe/effects/diagnostics.py -> econhdfe-0.10.1.dev0/econhdfe/effects
+copying econhdfe/effects/prediction.py -> econhdfe-0.10.1.dev0/econhdfe/effects
+copying econhdfe/effects/recover.py -> econhdfe-0.10.1.dev0/econhdfe/effects
+copying econhdfe/effects/results.py -> econhdfe-0.10.1.dev0/econhdfe/effects
+copying econhdfe/effects/topology.py -> econhdfe-0.10.1.dev0/econhdfe/effects
+copying econhdfe/frontend/__init__.py -> econhdfe-0.10.1.dev0/econhdfe/frontend
+copying econhdfe/frontend/columns.py -> econhdfe-0.10.1.dev0/econhdfe/frontend
+copying econhdfe/frontend/report.py -> econhdfe-0.10.1.dev0/econhdfe/frontend
+copying econhdfe/frontend/roles.py -> econhdfe-0.10.1.dev0/econhdfe/frontend
+copying econhdfe/frontend/validate.py -> econhdfe-0.10.1.dev0/econhdfe/frontend
+copying econhdfe/hdfe/__init__.py -> econhdfe-0.10.1.dev0/econhdfe/hdfe
+copying econhdfe/hdfe/absorb_spec.py -> econhdfe-0.10.1.dev0/econhdfe/hdfe
+copying econhdfe/hdfe/absorber.py -> econhdfe-0.10.1.dev0/econhdfe/hdfe
+copying econhdfe/hdfe/block_projection.py -> econhdfe-0.10.1.dev0/econhdfe/hdfe
+copying econhdfe/hdfe/codes.py -> econhdfe-0.10.1.dev0/econhdfe/hdfe
+copying econhdfe/hdfe/dof.py -> econhdfe-0.10.1.dev0/econhdfe/hdfe
+copying econhdfe/hdfe/factorvars.py -> econhdfe-0.10.1.dev0/econhdfe/hdfe
+copying econhdfe/hdfe/group_individual.py -> econhdfe-0.10.1.dev0/econhdfe/hdfe
+copying econhdfe/hdfe/numerical_core.py -> econhdfe-0.10.1.dev0/econhdfe/hdfe
+copying econhdfe/hdfe/plan.py -> econhdfe-0.10.1.dev0/econhdfe/hdfe
+copying econhdfe/hdfe/projection.py -> econhdfe-0.10.1.dev0/econhdfe/hdfe
+copying econhdfe/hdfe/rank.py -> econhdfe-0.10.1.dev0/econhdfe/hdfe
+copying econhdfe/hdfe/sample.py -> econhdfe-0.10.1.dev0/econhdfe/hdfe
+copying econhdfe/hdfe/specs.py -> econhdfe-0.10.1.dev0/econhdfe/hdfe
+copying econhdfe/hdfe/structure.py -> econhdfe-0.10.1.dev0/econhdfe/hdfe
+copying econhdfe/hdfe/two_way.py -> econhdfe-0.10.1.dev0/econhdfe/hdfe
+copying econhdfe/hdfe/weighted_projection.py -> econhdfe-0.10.1.dev0/econhdfe/hdfe
+copying econhdfe/hdfe/within_backend.py -> econhdfe-0.10.1.dev0/econhdfe/hdfe
+copying econhdfe/hdfe/workspace.py -> econhdfe-0.10.1.dev0/econhdfe/hdfe
+copying econhdfe/inference/__init__.py -> econhdfe-0.10.1.dev0/econhdfe/inference
+copying econhdfe/inference/cluster/__init__.py -> econhdfe-0.10.1.dev0/econhdfe/inference/cluster
+copying econhdfe/inference/cluster/diagnostics.py -> econhdfe-0.10.1.dev0/econhdfe/inference/cluster
+copying econhdfe/inference/cluster/results.py -> econhdfe-0.10.1.dev0/econhdfe/inference/cluster
+copying econhdfe/inference/cluster/wild.py -> econhdfe-0.10.1.dev0/econhdfe/inference/cluster
+copying econhdfe/iv/__init__.py -> econhdfe-0.10.1.dev0/econhdfe/iv
+copying econhdfe/iv/design.py -> econhdfe-0.10.1.dev0/econhdfe/iv
+copying econhdfe/iv/moments.py -> econhdfe-0.10.1.dev0/econhdfe/iv
+copying econhdfe/iv/solve.py -> econhdfe-0.10.1.dev0/econhdfe/iv
+copying econhdfe/iv/step.py -> econhdfe-0.10.1.dev0/econhdfe/iv
+copying econhdfe/models/__init__.py -> econhdfe-0.10.1.dev0/econhdfe/models
+copying econhdfe/models/linear.py -> econhdfe-0.10.1.dev0/econhdfe/models
+copying econhdfe/models/ols.py -> econhdfe-0.10.1.dev0/econhdfe/models
+copying econhdfe/models/ols_bootstrap.py -> econhdfe-0.10.1.dev0/econhdfe/models
+copying econhdfe/models/poisson.py -> econhdfe-0.10.1.dev0/econhdfe/models
+copying econhdfe/models/linear_iv/__init__.py -> econhdfe-0.10.1.dev0/econhdfe/models/linear_iv
+copying econhdfe/models/linear_iv/absorption.py -> econhdfe-0.10.1.dev0/econhdfe/models/linear_iv
+copying econhdfe/models/linear_iv/api.py -> econhdfe-0.10.1.dev0/econhdfe/models/linear_iv
+copying econhdfe/models/linear_iv/diagnostics.py -> econhdfe-0.10.1.dev0/econhdfe/models/linear_iv
+copying econhdfe/models/linear_iv/estimators.py -> econhdfe-0.10.1.dev0/econhdfe/models/linear_iv
+copying econhdfe/models/linear_iv/solve.py -> econhdfe-0.10.1.dev0/econhdfe/models/linear_iv
+copying econhdfe/models/linear_iv/stable_inference.py -> econhdfe-0.10.1.dev0/econhdfe/models/linear_iv
+copying econhdfe/models/linear_iv/stages.py -> econhdfe-0.10.1.dev0/econhdfe/models/linear_iv
+copying econhdfe/models/linear_iv/stock_yogo.py -> econhdfe-0.10.1.dev0/econhdfe/models/linear_iv
+copying econhdfe/models/ppml/__init__.py -> econhdfe-0.10.1.dev0/econhdfe/models/ppml
+copying econhdfe/models/ppml/api.py -> econhdfe-0.10.1.dev0/econhdfe/models/ppml
+copying econhdfe/models/ppml/config.py -> econhdfe-0.10.1.dev0/econhdfe/models/ppml
+copying econhdfe/models/ppml/estimator.py -> econhdfe-0.10.1.dev0/econhdfe/models/ppml
+copying econhdfe/models/ppml/execution.py -> econhdfe-0.10.1.dev0/econhdfe/models/ppml
+copying econhdfe/models/ppml/heterogeneous.py -> econhdfe-0.10.1.dev0/econhdfe/models/ppml
+copying econhdfe/models/ppml/irls.py -> econhdfe-0.10.1.dev0/econhdfe/models/ppml
+copying econhdfe/models/ppml/results.py -> econhdfe-0.10.1.dev0/econhdfe/models/ppml
+copying econhdfe/models/ppml/separation.py -> econhdfe-0.10.1.dev0/econhdfe/models/ppml
+copying econhdfe/models/ppml/separation_relu.py -> econhdfe-0.10.1.dev0/econhdfe/models/ppml
+copying econhdfe/models/ppml/separation_simplex.py -> econhdfe-0.10.1.dev0/econhdfe/models/ppml
+copying econhdfe/models/ppml/standardize.py -> econhdfe-0.10.1.dev0/econhdfe/models/ppml
+copying econhdfe/models/ppml/vce.py -> econhdfe-0.10.1.dev0/econhdfe/models/ppml
+copying econhdfe/models/ppml_iv/__init__.py -> econhdfe-0.10.1.dev0/econhdfe/models/ppml_iv
+copying econhdfe/models/ppml_iv/api.py -> econhdfe-0.10.1.dev0/econhdfe/models/ppml_iv
+copying econhdfe/models/ppml_iv/bias.py -> econhdfe-0.10.1.dev0/econhdfe/models/ppml_iv
+copying econhdfe/models/ppml_iv/bootstrap.py -> econhdfe-0.10.1.dev0/econhdfe/models/ppml_iv
+copying econhdfe/models/ppml_iv/config.py -> econhdfe-0.10.1.dev0/econhdfe/models/ppml_iv
+copying econhdfe/models/ppml_iv/estimator.py -> econhdfe-0.10.1.dev0/econhdfe/models/ppml_iv
+copying econhdfe/models/ppml_iv/heterogeneous.py -> econhdfe-0.10.1.dev0/econhdfe/models/ppml_iv
+copying econhdfe/models/ppml_iv/irls.py -> econhdfe-0.10.1.dev0/econhdfe/models/ppml_iv
+copying econhdfe/models/ppml_iv/outer.py -> econhdfe-0.10.1.dev0/econhdfe/models/ppml_iv
+copying econhdfe/models/ppml_iv/results.py -> econhdfe-0.10.1.dev0/econhdfe/models/ppml_iv
+copying econhdfe/models/ppml_iv/standardize.py -> econhdfe-0.10.1.dev0/econhdfe/models/ppml_iv
+copying econhdfe/models/ppml_iv/vce.py -> econhdfe-0.10.1.dev0/econhdfe/models/ppml_iv
+copying econhdfe/planner/__init__.py -> econhdfe-0.10.1.dev0/econhdfe/planner
+copying econhdfe/planner/calibration.py -> econhdfe-0.10.1.dev0/econhdfe/planner
+copying econhdfe/planner/contracts.py -> econhdfe-0.10.1.dev0/econhdfe/planner
+copying econhdfe/planner/core.py -> econhdfe-0.10.1.dev0/econhdfe/planner
+copying econhdfe/planner/report.py -> econhdfe-0.10.1.dev0/econhdfe/planner
+copying econhdfe/planner/resources.py -> econhdfe-0.10.1.dev0/econhdfe/planner
+copying econhdfe/planner/scheduler.py -> econhdfe-0.10.1.dev0/econhdfe/planner
+copying econhdfe/resampling/__init__.py -> econhdfe-0.10.1.dev0/econhdfe/resampling
+copying econhdfe/resampling/engine.py -> econhdfe-0.10.1.dev0/econhdfe/resampling
+copying econhdfe/resampling/results.py -> econhdfe-0.10.1.dev0/econhdfe/resampling
+copying econhdfe/resampling/sampling.py -> econhdfe-0.10.1.dev0/econhdfe/resampling
+copying econhdfe/templates/__init__.py -> econhdfe-0.10.1.dev0/econhdfe/templates
+copying econhdfe/templates/benchmark-report-template.md -> econhdfe-0.10.1.dev0/econhdfe/templates
+copying econhdfe/templates/error-report-template.md -> econhdfe-0.10.1.dev0/econhdfe/templates
+copying scripts/assemble_release.py -> econhdfe-0.10.1.dev0/scripts
+copying scripts/benchmark_release_local.py -> econhdfe-0.10.1.dev0/scripts
+copying scripts/build_release.sh -> econhdfe-0.10.1.dev0/scripts
+copying scripts/compatibility.py -> econhdfe-0.10.1.dev0/scripts
+copying scripts/generate_architecture_map.py -> econhdfe-0.10.1.dev0/scripts
+copying scripts/planner_report.py -> econhdfe-0.10.1.dev0/scripts
+copying scripts/release_acceptance.py -> econhdfe-0.10.1.dev0/scripts
+copying scripts/release_maintenance.py -> econhdfe-0.10.1.dev0/scripts
+copying scripts/run_external_matrix.sh -> econhdfe-0.10.1.dev0/scripts
+copying scripts/run_local_validation.sh -> econhdfe-0.10.1.dev0/scripts
+copying scripts/run_tests.py -> econhdfe-0.10.1.dev0/scripts
+copying scripts/skill_validation.py -> econhdfe-0.10.1.dev0/scripts
+copying scripts/smoke_cluster_inference.py -> econhdfe-0.10.1.dev0/scripts
+copying scripts/smoke_fe_recovery.py -> econhdfe-0.10.1.dev0/scripts
+copying scripts/smoke_install.py -> econhdfe-0.10.1.dev0/scripts
+copying scripts/smoke_support_reports.py -> econhdfe-0.10.1.dev0/scripts
+copying scripts/technical_innovation.py -> econhdfe-0.10.1.dev0/scripts
+copying scripts/verify_clean_install.py -> econhdfe-0.10.1.dev0/scripts
+copying scripts/verify_installed_numerics.py -> econhdfe-0.10.1.dev0/scripts
+copying scripts/verify_release.py -> econhdfe-0.10.1.dev0/scripts
+copying scripts/verify_wheel_install.py -> econhdfe-0.10.1.dev0/scripts
+copying scripts/version.py -> econhdfe-0.10.1.dev0/scripts
+copying skills/econhdfe/SKILL.md -> econhdfe-0.10.1.dev0/skills/econhdfe
+copying skills/econhdfe/agents/openai.yaml -> econhdfe-0.10.1.dev0/skills/econhdfe/agents
+copying skills/econhdfe/references/advanced-validation.md -> econhdfe-0.10.1.dev0/skills/econhdfe/references
+copying skills/econhdfe/references/architecture-visualization.md -> econhdfe-0.10.1.dev0/skills/econhdfe/references
+copying skills/econhdfe/references/benchmark-report-template.md -> econhdfe-0.10.1.dev0/skills/econhdfe/references
+copying skills/econhdfe/references/benchmarking.md -> econhdfe-0.10.1.dev0/skills/econhdfe/references
+copying skills/econhdfe/references/configuration.md -> econhdfe-0.10.1.dev0/skills/econhdfe/references
+copying skills/econhdfe/references/developer-guide.md -> econhdfe-0.10.1.dev0/skills/econhdfe/references
+copying skills/econhdfe/references/empirical-research.md -> econhdfe-0.10.1.dev0/skills/econhdfe/references
+copying skills/econhdfe/references/error-report-template.md -> econhdfe-0.10.1.dev0/skills/econhdfe/references
+copying skills/econhdfe/references/installation.md -> econhdfe-0.10.1.dev0/skills/econhdfe/references
+copying skills/econhdfe/references/planner-feedback.md -> econhdfe-0.10.1.dev0/skills/econhdfe/references
+copying skills/econhdfe/references/planner-report-template.md -> econhdfe-0.10.1.dev0/skills/econhdfe/references
+copying skills/econhdfe/scripts/architecture_map.py -> econhdfe-0.10.1.dev0/skills/econhdfe/scripts
+copying skills/econhdfe/scripts/check_environment.py -> econhdfe-0.10.1.dev0/skills/econhdfe/scripts
+copying skills/econhdfe/scripts/planner_report.py -> econhdfe-0.10.1.dev0/skills/econhdfe/scripts
+copying skills/econhdfe/scripts/smoke_test.py -> econhdfe-0.10.1.dev0/skills/econhdfe/scripts
+copying tests/conftest.py -> econhdfe-0.10.1.dev0/tests
+copying tests/behavior/test_absorb_semantics.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_adaptive_resource_scope.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_allocation_admission.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_cg_resource_execution.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_cluster_inference.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_collinearity.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_data_layer.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_dependency_omissions.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_effects_adapters.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_effects_diagnostics.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_effects_recovery.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_execution_planner.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_fit_degrees_of_freedom.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_fit_statistics.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_group_individual.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_inference_semantics.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_iv_stages.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_ivppml.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_ivppml_spj.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_linear_admission.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_linear_models.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_linear_resource_policy.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_linear_scheduler.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_memory_reservations.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_nonlinear_cache_eviction.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_nonlinear_resource_policy.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_nonlinear_scheduler.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_poisson_multiway_scaling.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_postestimation.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_ppml.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_ppml_structured.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_prediction.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_projection_admission.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_resampling_memory_plan.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_resampling_scheduler.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_resource_scheduler.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_runtime_resource_policy.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_sample_semantics.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_session_cache_eviction.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_sessions.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_singleton_policy.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_singleton_upstream.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_structural_omissions.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_thread_saturation_policy.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_user_omissions.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/behavior/test_weights_and_effects.py -> econhdfe-0.10.1.dev0/tests/behavior
+copying tests/contracts/test_absorb_syntax.py -> econhdfe-0.10.1.dev0/tests/contracts
+copying tests/contracts/test_configuration.py -> econhdfe-0.10.1.dev0/tests/contracts
+copying tests/contracts/test_factor_variables.py -> econhdfe-0.10.1.dev0/tests/contracts
+copying tests/contracts/test_frontend_errors.py -> econhdfe-0.10.1.dev0/tests/contracts
+copying tests/contracts/test_ppml_api.py -> econhdfe-0.10.1.dev0/tests/contracts
+copying tests/contracts/test_public_workflows.py -> econhdfe-0.10.1.dev0/tests/contracts
+copying tests/contracts/test_support_privacy.py -> econhdfe-0.10.1.dev0/tests/contracts
+copying tests/contracts/test_support_reports.py -> econhdfe-0.10.1.dev0/tests/contracts
+copying tests/numerics/test_cg_execution.py -> econhdfe-0.10.1.dev0/tests/numerics
+copying tests/numerics/test_cg_parallel_fusion.py -> econhdfe-0.10.1.dev0/tests/numerics
+copying tests/numerics/test_cg_scale_contract.py -> econhdfe-0.10.1.dev0/tests/numerics
+copying tests/numerics/test_conditioned_absorption.py -> econhdfe-0.10.1.dev0/tests/numerics
+copying tests/numerics/test_estimator_oracles.py -> econhdfe-0.10.1.dev0/tests/numerics
+copying tests/numerics/test_exact_multiway.py -> econhdfe-0.10.1.dev0/tests/numerics
+copying tests/numerics/test_exact_oracles.py -> econhdfe-0.10.1.dev0/tests/numerics
+copying tests/numerics/test_fe_canonicalization.py -> econhdfe-0.10.1.dev0/tests/numerics
+copying tests/numerics/test_hdfe_cg_guards.py -> econhdfe-0.10.1.dev0/tests/numerics
+copying tests/numerics/test_inference_boundaries.py -> econhdfe-0.10.1.dev0/tests/numerics
+copying tests/numerics/test_iv_conditioned_solve.py -> econhdfe-0.10.1.dev0/tests/numerics
+copying tests/numerics/test_iv_correctness_closeout.py -> econhdfe-0.10.1.dev0/tests/numerics
+copying tests/numerics/test_iv_hdfe_inference_reference.py -> econhdfe-0.10.1.dev0/tests/numerics
+copying tests/numerics/test_iv_outer_moment.py -> econhdfe-0.10.1.dev0/tests/numerics
+copying tests/numerics/test_iv_primitives.py -> econhdfe-0.10.1.dev0/tests/numerics
+copying tests/numerics/test_iv_refinement_boundaries.py -> econhdfe-0.10.1.dev0/tests/numerics
+copying tests/numerics/test_native_rank_budget.py -> econhdfe-0.10.1.dev0/tests/numerics
+copying tests/numerics/test_nonlinear_oracles.py -> econhdfe-0.10.1.dev0/tests/numerics
+copying tests/numerics/test_prediction_oracles.py -> econhdfe-0.10.1.dev0/tests/numerics
+copying tests/numerics/test_projection_scalar_widths.py -> econhdfe-0.10.1.dev0/tests/numerics
+copying tests/numerics/test_sample_peeling.py -> econhdfe-0.10.1.dev0/tests/numerics
+copying tests/numerics/test_separation_corpus.py -> econhdfe-0.10.1.dev0/tests/numerics
+copying tests/numerics/test_stable_linalg.py -> econhdfe-0.10.1.dev0/tests/numerics
+copying tests/numerics/test_weighted_reductions.py -> econhdfe-0.10.1.dev0/tests/numerics
+copying tests/numerics/test_wild_score_bootstrap.py -> econhdfe-0.10.1.dev0/tests/numerics
+copying tests/tooling/test_architecture_map.py -> econhdfe-0.10.1.dev0/tests/tooling
+copying tests/tooling/test_compatibility.py -> econhdfe-0.10.1.dev0/tests/tooling
+copying tests/tooling/test_current_release_contract.py -> econhdfe-0.10.1.dev0/tests/tooling
+copying tests/tooling/test_dependency_contract.py -> econhdfe-0.10.1.dev0/tests/tooling
+copying tests/tooling/test_execution_acceptance.py -> econhdfe-0.10.1.dev0/tests/tooling
+copying tests/tooling/test_release_artifacts.py -> econhdfe-0.10.1.dev0/tests/tooling
+copying tests/tooling/test_test_layout.py -> econhdfe-0.10.1.dev0/tests/tooling
+copying tests/tooling/test_versioning_policy.py -> econhdfe-0.10.1.dev0/tests/tooling
+copying validation/README.md -> econhdfe-0.10.1.dev0/validation
+copying validation/compare_golden.py -> econhdfe-0.10.1.dev0/validation
+copying validation/make_fixture.py -> econhdfe-0.10.1.dev0/validation
+copying validation/fixtures/golden_data.csv -> econhdfe-0.10.1.dev0/validation/fixtures
+copying validation/fixtures/golden_group_individual.csv -> econhdfe-0.10.1.dev0/validation/fixtures
+copying validation/iv_outer/README.md -> econhdfe-0.10.1.dev0/validation/iv_outer
+copying validation/iv_outer/environment.json -> econhdfe-0.10.1.dev0/validation/iv_outer
+copying validation/iv_outer/pilot_legacy.json -> econhdfe-0.10.1.dev0/validation/iv_outer
+copying validation/iv_outer/pilot_legacy_warmed.json -> econhdfe-0.10.1.dev0/validation/iv_outer
+copying validation/iv_outer/pilot_moment.json -> econhdfe-0.10.1.dev0/validation/iv_outer
+copying validation/iv_outer/provenance.json -> econhdfe-0.10.1.dev0/validation/iv_outer
+copying validation/iv_outer/public_contract_diff.json -> econhdfe-0.10.1.dev0/validation/iv_outer
+copying validation/iv_outer/summary.json -> econhdfe-0.10.1.dev0/validation/iv_outer
+copying validation/iv_outer/formal/DONE -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/crossed3_1000000_legacy_r1.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/crossed3_1000000_legacy_r2.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/crossed3_1000000_legacy_r3.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/crossed3_1000000_moment_r1.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/crossed3_1000000_moment_r2.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/crossed3_1000000_moment_r3.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/crossed3_5000000_legacy_r1.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/crossed3_5000000_legacy_r2.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/crossed3_5000000_legacy_r3.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/crossed3_5000000_moment_r1.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/crossed3_5000000_moment_r2.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/crossed3_5000000_moment_r3.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/ledger.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/many_instruments_1000000_legacy_r1.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/many_instruments_1000000_legacy_r2.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/many_instruments_1000000_legacy_r3.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/many_instruments_1000000_moment_r1.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/many_instruments_1000000_moment_r2.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/many_instruments_1000000_moment_r3.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/many_instruments_1000000_moment_stable_r1.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/many_instruments_1000000_moment_stable_r2.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/many_instruments_1000000_moment_stable_r3.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/offset_1000000_legacy_r1.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/offset_1000000_legacy_r2.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/offset_1000000_legacy_r3.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/offset_1000000_moment_r1.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/offset_1000000_moment_r2.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/offset_1000000_moment_r3.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/overidentified_1000000_legacy_r1.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/overidentified_1000000_legacy_r2.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/overidentified_1000000_legacy_r3.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/overidentified_1000000_moment_r1.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/overidentified_1000000_moment_r2.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/overidentified_1000000_moment_r3.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/weak_1000000_legacy_r1.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/iv_outer/formal/weak_1000000_moment_r1.json -> econhdfe-0.10.1.dev0/validation/iv_outer/formal
+copying validation/ivppml/README.md -> econhdfe-0.10.1.dev0/validation/ivppml
+copying validation/ivppml/compare_golden.py -> econhdfe-0.10.1.dev0/validation/ivppml
+copying validation/ivppml/generate_feature_fixture.py -> econhdfe-0.10.1.dev0/validation/ivppml
+copying validation/ivppml/python_expected.csv -> econhdfe-0.10.1.dev0/validation/ivppml
+copying validation/ivppml/python_expected_vcov.csv -> econhdfe-0.10.1.dev0/validation/ivppml
+copying validation/ivppml/validate_official_corpus.py -> econhdfe-0.10.1.dev0/validation/ivppml
+copying validation/ivppml/fixtures/ivppml_feature_fixture.csv -> econhdfe-0.10.1.dev0/validation/ivppml/fixtures
+copying validation/ivppml/fixtures/ivppml_feature_fixture.dta -> econhdfe-0.10.1.dev0/validation/ivppml/fixtures
+copying validation/ivppml/stata/generate_golden.do -> econhdfe-0.10.1.dev0/validation/ivppml/stata
+copying validation/ivppml/stata/generate_official_corpus_golden.do -> econhdfe-0.10.1.dev0/validation/ivppml/stata
+copying validation/ppml/README.md -> econhdfe-0.10.1.dev0/validation/ppml
+copying validation/ppml/compare_golden.py -> econhdfe-0.10.1.dev0/validation/ppml
+copying validation/ppml/generate_fixture.py -> econhdfe-0.10.1.dev0/validation/ppml
+copying validation/ppml/python_expected.csv -> econhdfe-0.10.1.dev0/validation/ppml
+copying validation/ppml/validate_separation_suite.py -> econhdfe-0.10.1.dev0/validation/ppml
+copying validation/ppml/fixtures/ppml_fixture.csv -> econhdfe-0.10.1.dev0/validation/ppml/fixtures
+copying validation/ppml/fixtures/ppml_fixture.dta -> econhdfe-0.10.1.dev0/validation/ppml/fixtures
+copying validation/ppml/fixtures/separation_primer.dta -> econhdfe-0.10.1.dev0/validation/ppml/fixtures
+copying validation/ppml/stata/generate_golden.do -> econhdfe-0.10.1.dev0/validation/ppml/stata
+copying validation/singleton_policy/README.md -> econhdfe-0.10.1.dev0/validation/singleton_policy
+copying validation/singleton_policy/acceptance-main-20261027.md -> econhdfe-0.10.1.dev0/validation/singleton_policy
+copying validation/singleton_policy/local_checks.json -> econhdfe-0.10.1.dev0/validation/singleton_policy
+copying validation/singleton_policy/million.json -> econhdfe-0.10.1.dev0/validation/singleton_policy
+copying validation/singleton_policy/upstream.json -> econhdfe-0.10.1.dev0/validation/singleton_policy
+copying validation/stata/generate_golden.do -> econhdfe-0.10.1.dev0/validation/stata
+copying econhdfe.egg-info/SOURCES.txt -> econhdfe-0.10.1.dev0/econhdfe.egg-info
+Writing econhdfe-0.10.1.dev0/setup.cfg
+Creating tar archive
+removing 'econhdfe-0.10.1.dev0' (and everything under it)
+SDIST: econhdfe-0.10.1.dev0.tar.gz

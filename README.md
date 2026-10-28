@@ -1,5 +1,17 @@
 # econhdfe
 
+## IV-Poisson outer-estimator candidate (0.10.1.dev0)
+
+Use `IVPPMLConfig(outer_solver="moment", engine="optimized")` to select the
+experimental moment-certified nonlinear outer solver. The default remains
+`outer_solver="legacy"`; FE algorithms are unchanged. The new mode uses a
+bounded-workspace IV step and verifies current estimating equations rather
+than Poisson-deviance convergence. Overidentified models preserve the existing
+projected-IV estimating equation, **not** a different GMM objective. Dense
+categorical FE are supported; unsupported structured designs fail explicitly.
+See [theory and usage](docs/technical/ivppml/outer-moment-estimator.md) and
+[reproducible evidence and limitations](validation/iv_outer/README.md).
+
 ## Weighted sample policies (0.10.0 candidate)
 
 `singleton_mode="stata_compat"` remains the default; use

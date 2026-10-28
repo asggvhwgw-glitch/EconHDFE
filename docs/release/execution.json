@@ -1,69 +1,104 @@
 {
   "schema_version": 1,
-  "release_version": "0.10.0",
+  "release_version": "0.10.1.dev0",
   "fingerprint_scope": "runtime-validation-v1",
-  "code_fingerprint_sha256": "84e6b7d0244b18b8cfaf2c78c2dbce587fc329a7341b74c6477c0b738770c0a8",
+  "code_fingerprint_sha256": "c16e898ffe9a8fecec7bc50fea355be2d24f61d8463c9eb5c6a85784c3a979ba",
   "source_commit": null,
   "checks": {
     "local_regression": {
-      "execution_status": "not_run",
-      "reason": "Not executed for this release.",
-      "environment": {},
-      "executed_at": null,
-      "code_fingerprint_sha256": null,
-      "evidence": []
+      "execution_status": "passed",
+      "reason": "561 full-suite passes, one skip; 36 new numerical tests passed.",
+      "environment": {
+        "os": "Linux-6.18.55-x86_64-with-glibc2.41",
+        "python": "3.13.5",
+        "scope": "Linux x86_64; preinstalled dependencies; clean target wheel install, not isolated dependency environment"
+      },
+      "executed_at": "2026-10-28T11:58:37.588107+00:00",
+      "code_fingerprint_sha256": "c16e898ffe9a8fecec7bc50fea355be2d24f61d8463c9eb5c6a85784c3a979ba",
+      "evidence": [
+        {
+          "path": "validation/iv_outer/tests_full_final.txt",
+          "sha256": "fb8d9dcfbc8cd30e82fc66c58e12a759e62ca9ce32a46d7276566f50882bf0e1"
+        },
+        {
+          "path": "validation/iv_outer/tests_new_final.txt",
+          "sha256": "052cf75d258d4e4c7a0a15cf164eae92e3c72469df8908216b0eef46fbf65494"
+        }
+      ]
     },
     "installed_numerics": {
-      "execution_status": "not_run",
-      "reason": "Not executed for this release.",
-      "environment": {},
-      "executed_at": null,
-      "code_fingerprint_sha256": null,
-      "evidence": []
+      "execution_status": "passed",
+      "reason": "36 new tests run outside the source directory against the installed wheel.",
+      "environment": {
+        "os": "Linux-6.18.55-x86_64-with-glibc2.41",
+        "python": "3.13.5",
+        "scope": "Linux x86_64; preinstalled dependencies; clean target wheel install, not isolated dependency environment"
+      },
+      "executed_at": "2026-10-28T11:58:37.588213+00:00",
+      "code_fingerprint_sha256": "c16e898ffe9a8fecec7bc50fea355be2d24f61d8463c9eb5c6a85784c3a979ba",
+      "evidence": [
+        {
+          "path": "validation/iv_outer/installed_numerics.txt",
+          "sha256": "75b19ef017c4f7b8e755501e4e9c4a9810e2b89e66da51650255a2b8c3f5f02e"
+        }
+      ]
     },
     "isolated_build": {
-      "execution_status": "not_run",
-      "reason": "Not executed for this release.",
+      "execution_status": "blocked",
+      "reason": "Offline non-isolated setuptools wheel/sdist builds succeeded; no isolated dependency-resolution build was run.",
       "environment": {},
       "executed_at": null,
       "code_fingerprint_sha256": null,
       "evidence": []
     },
     "clean_install": {
-      "execution_status": "not_run",
-      "reason": "Not executed for this release.",
-      "environment": {},
-      "executed_at": null,
-      "code_fingerprint_sha256": null,
-      "evidence": []
+      "execution_status": "passed",
+      "reason": "Fresh pip target install with no prior target package; shared preinstalled dependencies. Import location verified.",
+      "environment": {
+        "os": "Linux-6.18.55-x86_64-with-glibc2.41",
+        "python": "3.13.5",
+        "scope": "Linux x86_64; preinstalled dependencies; clean target wheel install, not isolated dependency environment"
+      },
+      "executed_at": "2026-10-28T11:58:37.588233+00:00",
+      "code_fingerprint_sha256": "c16e898ffe9a8fecec7bc50fea355be2d24f61d8463c9eb5c6a85784c3a979ba",
+      "evidence": [
+        {
+          "path": "validation/iv_outer/install.txt",
+          "sha256": "cdf9792b49591dba89f0c4dd5e334a63416111a831b325482196b47fe6f209c2"
+        },
+        {
+          "path": "validation/iv_outer/installed_numerics.txt",
+          "sha256": "75b19ef017c4f7b8e755501e4e9c4a9810e2b89e66da51650255a2b8c3f5f02e"
+        }
+      ]
     },
     "support_matrix": {
-      "execution_status": "not_run",
-      "reason": "Not executed for this release.",
+      "execution_status": "blocked",
+      "reason": "No candidate-specific Windows/macOS or multi-Python CI run; historical main CI is not candidate evidence.",
       "environment": {},
       "executed_at": null,
       "code_fingerprint_sha256": null,
       "evidence": []
     },
     "dependency_floor": {
-      "execution_status": "not_run",
-      "reason": "Not executed for this release.",
+      "execution_status": "blocked",
+      "reason": "No minimum-supported-dependency environment was executed for this candidate.",
       "environment": {},
       "executed_at": null,
       "code_fingerprint_sha256": null,
       "evidence": []
     },
     "reference_claims": {
-      "execution_status": "not_run",
-      "reason": "Not executed for this release.",
+      "execution_status": "blocked",
+      "reason": "Independent explicit-dummy/scipy references passed, but no new licensed Stata certification or universal nonlinear-IV existence theorem.",
       "environment": {},
       "executed_at": null,
       "code_fingerprint_sha256": null,
       "evidence": []
     },
     "final_artifacts": {
-      "execution_status": "not_run",
-      "reason": "Not executed for this release.",
+      "execution_status": "blocked",
+      "reason": "Local development artifacts only; no published release or source commit for the candidate. Detached hashes accompany the delivery.",
       "environment": {},
       "executed_at": null,
       "code_fingerprint_sha256": null,

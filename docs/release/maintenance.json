@@ -1,81 +1,81 @@
 {
   "schema_version": 1,
-  "release_version": "0.10.0",
-  "previous_version": "0.9.1",
+  "release_version": "0.10.1.dev0",
+  "previous_version": "0.10.0",
   "checks": {
     "frontend_api": {
-      "status": "changed",
-      "evidence": "Config singleton_mode defaults to stata_compat; plain PPML adds weight_type. Full/alias/reusable/structured entry points reviewed and tested in tests/behavior/test_singleton_policy.py.",
+      "status": "reviewed",
+      "evidence": "Reviewed existing public entry points; only opt-in IVPPMLConfig additions. New snapshot/approvals retain immutable 0.10.0 history.",
       "description": "Public call signatures, exports, aliases, CLI/front-end validation and compatibility."
     },
     "backend_compute": {
-      "status": "changed",
-      "evidence": "Independent Numba queue with frequency-unit predicate and exact positive support. No new absorber or computational rank elimination. tests/numerics/test_sample_peeling.py and million.json.",
+      "status": "reviewed",
+      "evidence": "econhdfe/iv/step.py and models/ppml_iv/outer.py; FE kernels, ordinary PPML and linear IV are unchanged. See theory note.",
       "description": "Solver/compute/cache/backend contracts, numerical defaults and resource controls."
     },
     "errors": {
-      "status": "changed",
-      "evidence": "Fail closed for unknown policy, unsupported unified group/individual semantics and unsafe IV-PPML separation/mu choices; typed frequency validation precedes pruning.",
+      "status": "reviewed",
+      "evidence": "Reviewed forcing, line-search, exhausted-iteration and unsupported-BlockDesign explicit errors; no silent fallback to a different target.",
       "description": "Structured exception classes, codes, stages, suggestions and public error boundaries."
     },
     "public_contract": {
-      "status": "changed",
-      "evidence": "Eight intentional additive/default-sentinel contract changes recorded against immutable 0.9.1. New 0.10.0 snapshot; no historical snapshot overwrite.",
+      "status": "reviewed",
+      "evidence": "compatibility/baselines/econhdfe-0.10.1.dev0.json; compatibility/APPROVED_CHANGES.json documents additive opt-in controls.",
       "description": "Public exports/signatures, result/config schemas and stable structured-error compatibility."
     },
     "skill": {
-      "status": "changed",
-      "evidence": "skills/econhdfe/references/configuration.md documents selection, typed Poisson weights, deletion boundaries and IV-specific restrictions.",
+      "status": "reviewed",
+      "evidence": "skills/econhdfe/references/configuration.md and SKILL.md explain modern/legacy target, diagnostics and unsupported scope.",
       "description": "Agent skill commands, examples, decision rules and newly exposed controls."
     },
     "linked_modules": {
       "status": "reviewed",
-      "evidence": "Linear direct/session paths, dense/block Poisson paths and shared VCE all propagate policy and original user weight kind. Numeric peeler owns no estimator-specific routing.",
+      "evidence": "IRLS dispatch, estimator final inference state, stable IV fallback and heterogeneous routing reviewed together.",
       "description": "Cross-module imports, shared schemas, adapters, compatibility shims and downstream consumers."
     },
     "results_reporting": {
-      "status": "changed",
-      "evidence": "Unified Poisson disjoint physical-row deletion reasons; frequency N/DF/robust meat; explicit statistical/work counts with computational_elimination=False. Legacy initial combined reporting preserved.",
+      "status": "reviewed",
+      "evidence": "New diagnostics[outer]; modern epsilon is equation residual. Returned beta/eta/mu/inference are at the same accepted point.",
       "description": "Result fields, publication output, diagnostics metadata and serialization-facing schemas."
     },
     "config_defaults": {
-      "status": "changed",
-      "evidence": "Compatibility remains default. IVPPMLConfig separation None resolves to old tuple in compatibility, fe only in unified. Unsafe explicit combinations rejected.",
+      "status": "reviewed",
+      "evidence": "outer_solver=legacy remains default; new mode has FE-only separation. Sample policy is an independent choice.",
       "description": "Config objects, defaults, deprecations, aliases and backwards-compatible behavior."
     },
     "cache_state": {
-      "status": "changed",
-      "evidence": "Policy partitions in-memory session FE keys, with compatibility key preserved. Persistent cache already fingerprints full configs; targeted memory/disk separation test passes.",
+      "status": "reviewed",
+      "evidence": "Persistent X/Z FWL residualization reused with changing weights; warm starts projected onto current specification. No shared caches mutated.",
       "description": "Reusable state/cache invalidation, fingerprints, lifecycle semantics and stale-state hazards."
     },
     "tests_validation": {
       "status": "reviewed",
-      "evidence": "Baseline 468 passed; candidate full suite 509 passed including 41 new targeted tests. Independent brute-force, dense moment-root/sandwich, frequency expansion and four million-record peeling checks. See validation/singleton_policy/local_checks.json.",
+      "evidence": "Independent references and failure tests reviewed in tests/numerics/test_iv_outer_moment.py; execution outcomes tracked separately in validation/iv_outer.",
       "description": "Regression tests, install smoke tests, golden/parity coverage and failure-path tests."
     },
     "performance": {
       "status": "reviewed",
-      "evidence": "Four actual million-record four-FE sample-peeling checks pass; counts and single-run scope timings in validation/singleton_policy/million.json. No end-to-end estimator speedup claim.",
+      "evidence": "Repeated 1M/5M full-estimator protocol and stage attribution reviewed; see validation/iv_outer/formal and environment.json. No universal multiplier.",
       "description": "Representative benchmark/resource regressions for code paths materially changed by the release."
     },
     "docs_migration": {
-      "status": "changed",
-      "evidence": "README English/Chinese, changelog, weighted policy technical note, economic module map, skill configuration and generated maps updated. Scope limitations explicit.",
+      "status": "reviewed",
+      "evidence": "README, Chinese README, CHANGELOG, theory note and validation/iv_outer/README.md describe the opt-in candidate and boundaries.",
       "description": "README/architecture/changelog/migration/versioning documentation and user-visible examples."
     },
     "packaging_dependencies": {
       "status": "reviewed",
-      "evidence": "No dependency or Python-support changes. New hdfe/sample.py is inside existing econhdfe package discovery. Local offline build/smoke is recorded in local_checks.json; remote matrix results remain separate.",
+      "evidence": "No new runtime dependency or native extension; standard wheel/sdist build reviewed. Execution evidence tracked separately.",
       "description": "Python/dependency matrix, optional extras, wheel/source contents and build metadata."
     },
     "external_validation": {
       "status": "reviewed",
-      "evidence": "No licensed Stata executable. Version/header/blob source audit in upstream.json is not golden numerical parity. Cross-platform/reference certification deferred explicitly, not marked executed.",
+      "evidence": "Explicitly reviewed as deferred: no new licensed Stata, cross-platform, dependency-floor or Rust certification; not a formal release.",
       "description": "Licensed/reference-environment parity gates and explicitly deferred external certification."
     },
     "release_artifacts": {
-      "status": "not_applicable",
-      "evidence": "User requested a PR, not publication. Candidate version 0.10.0 only, no tag or release; execution acceptance reset/pending. Local builds are validation artifacts, not an authorized release.",
+      "status": "reviewed",
+      "evidence": "Development candidate only; builds/hashes recorded separately. No publishing or tag; reviewed does not imply execution passed.",
       "description": "Version consistency, source/wheel parity, hashes, clean install and reproducible bundle contents."
     }
   }

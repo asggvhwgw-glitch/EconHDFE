@@ -1,0 +1,19 @@
+{
+  "new_tests": {
+    "passed": 36,
+    "skipped": 0,
+    "seconds": 2.04
+  },
+  "full_suite": {
+    "passed": 561,
+    "skipped": 1,
+    "warnings": 4,
+    "seconds": 29.68
+  },
+  "installed_numerics": {
+    "passed": 36,
+    "seconds": 7.61
+  },
+  "benchmark_runs": 35,
+  "empirical_benchmark_gate_passed": true
+}

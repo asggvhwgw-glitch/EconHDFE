@@ -1,0 +1,150 @@
+{
+  "status": "ok",
+  "seconds": 3.22689049600001,
+  "iterations": 6,
+  "nobs": 1000000,
+  "coefficients": [
+    0.09824558830203753,
+    0.22021454001653495,
+    0.23268811862371316
+  ],
+  "vcov": [
+    [
+      8.167343783449114e-07,
+      -1.8342052783842518e-07,
+      0.0
+    ],
+    [
+      -1.8342052783842518e-07,
+      1.234466695417289e-06,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0
+    ]
+  ],
+  "deviance": 1135541.4537539037,
+  "absorb_iterations": 34,
+  "outer": {
+    "solver": "moment",
+    "target": "legacy_projected_iv_equation",
+    "exact_identification": false,
+    "moment_error": 1.794573794983549e-16,
+    "raw_moment_error": 0.000497859606112562,
+    "step_error": 1.6394708030968758e-16,
+    "inner_tolerance": 1e-10,
+    "line_search_backtracks": 0,
+    "inner_refinements": 0,
+    "projections": 6,
+    "linear_solves": 6,
+    "linear_backends": {
+      "sufficient_statistics": 6
+    },
+    "max_accepted_forcing": 0.0032068142101799283,
+    "history": [
+      {
+        "iteration": 1,
+        "moment_error": 0.2992914224651406,
+        "step_error": 1.3471481190688452,
+        "step": 1.0,
+        "backtracks": 0,
+        "merit_before": 33.33484291414117,
+        "merit_after": 4.261931656680298,
+        "directional_derivative": -66.66875430184729,
+        "forcing": 0.0032068142101799283,
+        "inner_tolerance": 0.0001,
+        "linear_backend": "sufficient_statistics",
+        "instrument_rcond": 0.9947902273511333,
+        "slope_rcond": 0.7905896900078553
+      },
+      {
+        "iteration": 2,
+        "moment_error": 0.11926580766308799,
+        "step_error": 0.08398754721407767,
+        "step": 1.0,
+        "backtracks": 0,
+        "merit_before": 4.261917389772277,
+        "merit_after": 0.0043267323133699,
+        "directional_derivative": -8.523834787218277,
+        "forcing": 1.6408503367551346e-06,
+        "inner_tolerance": 0.0001,
+        "linear_backend": "sufficient_statistics",
+        "instrument_rcond": 0.9953552597512414,
+        "slope_rcond": 0.793086992763292
+      },
+      {
+        "iteration": 3,
+        "moment_error": 0.009202891307356388,
+        "step_error": 0.008297672727932161,
+        "step": 1.0,
+        "backtracks": 0,
+        "merit_before": 0.004326732314123835,
+        "merit_after": 2.8142242858720628e-08,
+        "directional_derivative": -0.008653464630257231,
+        "forcing": 2.911419746449477e-06,
+        "inner_tolerance": 0.0001,
+        "linear_backend": "sufficient_statistics",
+        "instrument_rcond": 0.9953870600201079,
+        "slope_rcond": 0.7931901567048213
+      },
+      {
+        "iteration": 4,
+        "moment_error": 6.736324169398423e-05,
+        "step_error": 6.15737149905271e-05,
+        "step": 1.0,
+        "backtracks": 0,
+        "merit_before": 2.8142242858165653e-08,
+        "merit_after": 3.048911943517062e-17,
+        "directional_derivative": -5.628448581586684e-08,
+        "forcing": 3.513190517230021e-06,
+        "inner_tolerance": 9.202891307356388e-05,
+        "linear_backend": "sufficient_statistics",
+        "instrument_rcond": 0.9953895673809611,
+        "slope_rcond": 0.7931911896517615
+      },
+      {
+        "iteration": 5,
+        "moment_error": 3.6665871330769015e-09,
+        "step_error": 3.742273958199447e-09,
+        "step": 1.0,
+        "backtracks": 0,
+        "merit_before": 3.0489119680805334e-17,
+        "merit_after": 1.1729192483638718e-30,
+        "directional_derivative": -6.097823937681102e-17,
+        "forcing": 1.9128316128394734e-07,
+        "inner_tolerance": 6.736324169398423e-07,
+        "linear_backend": "sufficient_statistics",
+        "instrument_rcond": 0.9953895871819494,
+        "slope_rcond": 0.7931911609427735
+      }
+    ],
+    "timings": {
+      "projection": 1.101429655999823,
+      "linear_solve": 0.6041473290000567,
+      "moments": 0.12438984999994318,
+      "line_search": 0.10041544899991095,
+      "total": 2.2487809949999473
+    },
+    "global_guarantee": "none_frozen_instrument_local_safeguard",
+    "final_state_consistent": true
+  },
+  "raw_moments": null,
+  "outer_seconds": 2.2593816659999675,
+  "legacy_linear_seconds": 0,
+  "legacy_linear_calls": 0,
+  "case": "overidentified",
+  "n": 1000000,
+  "mode": "moment",
+  "threads": 4,
+  "seed": 20261028,
+  "data_sha256": "49b3c32fae343a957ead4a0152b192fd49c6a1655fbaff162808ad33d4f778d3",
+  "warmup_seconds": 0.5828074359999391,
+  "peak_rss_mb": 715.390625,
+  "rss_highwater_before_fit_mb": 354.50390625,
+  "python": "3.13.5 (main, Jul 15 2026, 20:25:40) [GCC 14.2.0]",
+  "numpy": "2.3.5",
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+  "cpu_count": 5
+}
