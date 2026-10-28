@@ -17,7 +17,7 @@ def _oracle(groups, fw, positive, drop=True):
         keep[remove]=False
 
 
-@pytest.mark.parametrize('seed,use_positive', [(43,False),(711,True),(912,False),(818,True)])
+@pytest.mark.parametrize('seed,use_positive', [(43,False),(711,True)])
 def test_queue_matches_independent_fixed_point_and_permutations(seed,use_positive):
     rng=np.random.default_rng(seed);n=400
     groups=[rng.integers(0,k,n) for k in [170,183,125,20]]

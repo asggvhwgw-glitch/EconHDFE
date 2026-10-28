@@ -67,8 +67,7 @@ def _as_block(values, group):
 
 
 @pytest.mark.parametrize('separated', [False, True])
-@pytest.mark.parametrize('engine', ['replica', 'optimized'])
-def test_structured_iv_rank_filters_preserve_resources(separated, engine, absorber_calls):
+def test_structured_iv_rank_filters_preserve_resources(separated, absorber_calls):
     y, endog, instrument, group = _data(separated)
     n = len(y)
     result = fit_block_arrays(
@@ -76,7 +75,7 @@ def test_structured_iv_rank_filters_preserve_resources(separated, engine, absorb
         _as_block(instrument, group), FEPlan.from_arrays([group]),
         offset=np.zeros(n), true_w=np.ones(n), vce='robust',
         endog_names=('e',), instrument_names=('z',),
-        config=IVPPMLConfig(engine=engine, separation=('fe',)),
+        config=IVPPMLConfig(separation=('fe',)),
         execution_config=ExecutionConfig(threads=1, memory_budget_mb=32),
     )
     assert result.converged

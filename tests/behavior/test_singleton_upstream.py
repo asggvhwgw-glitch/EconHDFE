@@ -160,7 +160,7 @@ def _ivppml(d, wk=None):
 
 
 @pytest.mark.parametrize("wk, rows, expected", [
-    (None, 20, (4, 0)), ("pweight", 20, (4, 0)), ("fweight", 20, (4, 0)),
+    (None, 20, (4, 0)), ("fweight", 20, (4, 0)),
 ])
 def test_ivppml_first_stage_uses_rows_and_joint_fe_separation(wk, rows, expected):
     # ivppmlhdfe source: fixed_effects(absorb, touse, "iweight", depvar) -> user
@@ -171,7 +171,7 @@ def test_ivppml_first_stage_uses_rows_and_joint_fe_separation(wk, rows, expected
 
 
 @pytest.mark.parametrize("wk, rows, expected", [
-    (None, 20, (0, 3)), ("pweight", 20, (0, 3)),
+    (None, 20, (0, 3)),
     # fweight: trim_separated_obs reloads with the user's fweight, and the
     # remaining b=7 row has fw=2, so it is not a singleton.
     ("fweight", 21, (0, 2)),

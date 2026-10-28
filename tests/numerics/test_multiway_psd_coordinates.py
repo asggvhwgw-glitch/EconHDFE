@@ -52,14 +52,14 @@ def _repaired(result, X):
     return eig[0] <= 1e-12 * eig[-1]
 
 
-@pytest.mark.parametrize("seed", sorted(REGHDFE_SLOPE_V))
-def test_ols_multiway_repair_matches_reghdfe(seed):
-    df = _data(seed)
-    r = econhdfe.olshdfe(df, y="y", x=["x1", "x2", "x3"], absorb=["fe"], cluster=["c1", "c2"], vce="cluster")
-    ref = np.asarray(REGHDFE_SLOPE_V[seed])
-    assert _repaired(r, df[["x1", "x2", "x3"]])
-    assert np.max(np.abs(r.vcov - ref)) / np.max(np.abs(ref)) <= 1e-6
-    np.testing.assert_allclose(r.stderr, np.sqrt(np.diag(ref)), rtol=1e-6)
+def test_ols_multiway_repair_matches_reghdfe():
+    for seed, ref in REGHDFE_SLOPE_V.items():
+        df = _data(seed)
+        r = econhdfe.olshdfe(df, y="y", x=["x1", "x2", "x3"], absorb=["fe"], cluster=["c1", "c2"], vce="cluster")
+        ref = np.asarray(ref)
+        assert _repaired(r, df[["x1", "x2", "x3"]])
+        assert np.max(np.abs(r.vcov - ref)) / np.max(np.abs(ref)) <= 1e-6
+        np.testing.assert_allclose(r.stderr, np.sqrt(np.diag(ref)), rtol=1e-6)
 
 
 def test_finalize_without_rescaling_is_the_cgm_clip_and_constant_branch_follows_reghdfe():
@@ -80,14 +80,6 @@ def test_finalize_without_rescaling_is_the_cgm_clip_and_constant_branch_follows_
             expected[:3, :3] = _fix_psd(W[:3, :3])
         np.testing.assert_allclose(got * np.outer(np.r_[s[:3], 1.0], np.r_[s[:3], 1.0]), expected,
                                    rtol=1e-12, atol=1e-12 * np.abs(expected).max())
-
-
-def _scaled_pair(fit, column, factor=1000.0):
-    df = _data(11)
-    base = fit(df)
-    scaled_df = df.copy()
-    scaled_df[column] = scaled_df[column] * factor
-    return base, fit(scaled_df)
 
 
 def _ols(df, mode="stata_compat", **kw):
@@ -116,26 +108,19 @@ def _ivppml(df, mode="stata_compat", **kw):
     (_ols, ["x1", "x2", "x3"]), (_iv, ["x2", "x3", "x1"]),
     (_ppml, ["x1", "x2", "x3"]), (_ivppml, ["x2", "x3", "x1"]),
 ], ids=["ols", "iv", "ppml", "ivppml"])
-def test_multiway_repair_is_invariant_to_regressor_units(fit, columns):
-    base, scaled = _scaled_pair(fit, "x2")
+def test_multiway_repair_is_invariant_to_units_and_frequency_storage(fit, columns):
+    """Rescaling a regressor rescales the repaired VCE; unified fweights clip like expanded rows."""
     k = len(columns)
-    V0, V1 = np.asarray(base.vcov)[:k, :k], np.asarray(scaled.vcov)[:k, :k]
-    assert _repaired(base, _data(11)[columns])
-    unit = np.array([1000.0 if c == "x2" else 1.0 for c in columns])
-    np.testing.assert_allclose(V1 * np.outer(unit, unit), V0, rtol=1e-10, atol=0)
-
-
-@pytest.mark.parametrize("fit,columns", [
-    (_ols, ["x1", "x2", "x3"]), (_iv, ["x2", "x3", "x1"]),
-    (_ppml, ["x1", "x2", "x3"]), (_ivppml, ["x2", "x3", "x1"]),
-], ids=["ols", "iv", "ppml", "ivppml"])
-def test_unified_frequency_weights_repair_like_expanded_rows(fit, columns):
-    """Unified fweight fits clip in the coordinates of the expanded data."""
     df = _data(11)
+    base = fit(df)
+    assert _repaired(base, df[columns])
+    scaled_df = df.assign(x2=1000.0 * df.x2)
+    unit = np.array([1000.0 if c == "x2" else 1.0 for c in columns])
+    np.testing.assert_allclose(np.asarray(fit(scaled_df).vcov)[:k, :k] * np.outer(unit, unit),
+                               np.asarray(base.vcov)[:k, :k], rtol=1e-10, atol=0)
     df["fw"] = np.random.default_rng(3).integers(1, 4, len(df)).astype(float)
     expanded = df.loc[df.index.repeat(df.fw.astype(int))].reset_index(drop=True)
     compact = fit(df, "unified", weights="fw", weight_type="fw")
     full = fit(expanded, "unified")
-    k = len(columns)
     assert _repaired(full, expanded[columns])
     np.testing.assert_allclose(np.asarray(compact.vcov)[:k, :k], np.asarray(full.vcov)[:k, :k], rtol=1e-10, atol=0)
