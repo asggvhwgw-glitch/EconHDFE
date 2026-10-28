@@ -42,6 +42,11 @@ class PPMLConfig:
         """Separation methods to run, in the order given."""
         return tuple(self.separation)
 
+    @property
+    def separation_engine(self) -> str:
+        """Engine for separation auxiliary solves; native within serves estimation only."""
+        return "replica" if self.engine == "within" else self.engine
+
     def validate(self) -> None:
         validate_singleton_mode(self.singleton_mode)
         if not isinstance(self.separation, (tuple, list)):

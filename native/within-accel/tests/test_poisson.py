@@ -106,8 +106,8 @@ def test_estimator_matches_independent_dummy_moments(kind, standardize):
     compare(native, fit(kind, d, cfg=config(kind, "replica", standardize=standardize)))
     resources = native.diagnostics["projection_resources"]
     assert resources["backend"] == resources["method"] == "within"
-    assert resources["native"]["weight_generation"] >= native.iterations
-    assert resources["native"]["nobs"] == native.nobs
+    assert resources["within"]["weight_generation"] >= native.iterations
+    assert resources["within"]["nobs"] == native.nobs
 
 
 @pytest.mark.parametrize("kind", ["ppml", "ivppml"])
@@ -148,13 +148,13 @@ def test_positive_weight_updates_and_zero_support_roundtrip():
         assert_allclose(out[w > 0], expected[w > 0], atol=2e-8, rtol=2e-8)
         if state == 0:
             saved = p._absorber
-            generation = p.resource_info["native"]["weight_generation"]
+            generation = p.resource_info["within"]["weight_generation"]
         elif state in (1, 3):
             assert p._absorber is saved
-            assert p.resource_info["native"]["weight_generation"] > generation
+            assert p.resource_info["within"]["weight_generation"] > generation
         else:
             assert p.resource_info["backend"] == "generic"
-            assert p.resource_info["native"] is None
+            assert "within" not in p.resource_info
     # One-shot FEPlan entry must honor the same opt-in engine.
     assert_allclose(plan.residualize(A, original_w, tol=1e-12, engine="within")[0],
                     out, atol=2e-8, rtol=2e-8)
@@ -172,40 +172,45 @@ def test_advanced_separation_rebuilds_the_native_sample(kind):
     assert_array_equal(native.sample_mask, ~separated)
     resources = native.diagnostics["projection_resources"]
     assert resources["backend"] == "within"
-    assert resources["native"]["nobs"] == int((~separated).sum())
+    assert resources["within"]["nobs"] == int((~separated).sum())
     # Separation retains the existing replica solvers, not the native positive-weight solver.
     assert all("within" not in s for s in native.diagnostics["separation_solvers"].values())
 
 
-@pytest.mark.parametrize("kind,stage", [("ppml", "rank"), ("ivppml", "irls"),
-                                       ("ppml", "final"), ("ivppml", "final")])
+@pytest.mark.parametrize("kind", ["ppml", "ivppml"])
+@pytest.mark.parametrize("stage", ["rank", "irls", "final"])
 def test_uncertified_inner_solve_never_becomes_a_successful_estimate(monkeypatch, kind, stage):
+    module = importlib.import_module(f"econhdfe.models.{'ppml' if kind == 'ppml' else 'ppml_iv'}.estimator")
+    attr = "fit_irls" if kind == "ppml" else "fit_iv_irls"
+    solve = getattr(module, attr)
+    state = ["rank"]
+    def track(*args, **kwargs):
+        state[0] = "irls"
+        result = solve(*args, **kwargs)
+        state[0] = "final"
+        return result
+    monkeypatch.setattr(module, attr, track)
     old = WithinFEAbsorber.residualize
-    calls = 0
-    final = False
-    if stage == "final":
-        name = "ppml" if kind == "ppml" else "ppml_iv"
-        module = importlib.import_module(f"econhdfe.models.{name}.estimator")
-        attr = "fit_irls" if kind == "ppml" else "fit_iv_irls"
-        solve = getattr(module, attr)
-        def mark_final(*args, **kwargs):
-            nonlocal final
-            result = solve(*args, **kwargs)
-            final = True
-            return result
-        monkeypatch.setattr(module, attr, mark_final)
     def fail(self, data, **kwargs):
-        nonlocal calls
         out, info = old(self, data, **kwargs)
-        calls += 1
-        trigger = final if stage == "final" else calls == (1 if stage == "rank" else 2)
-        if trigger:
+        if state[0] == stage:
             info.converged = False
             info.max_update = 1.
         return out, info
     monkeypatch.setattr(WithinFEAbsorber, "residualize", fail)
-    with pytest.raises(ConvergenceError, match="weighted FE projection"):
+    with pytest.raises(ConvergenceError, match="weighted FE projection") as err:
         fit(kind, fixture())
+    assert (err.value.code, err.value.stage) == ("convergence.hdfe", "hdfe")
+
+
+def test_explicit_within_method_outside_the_engine_keeps_returning_info():
+    rng = np.random.default_rng(29)
+    groups = [rng.integers(L, size=4000, dtype=np.int32) for L in (200, 150, 75)]
+    A = rng.normal(size=(4000, 3))
+    w = np.exp(rng.normal(scale=.3, size=4000))
+    p = WeightedFEProjector(groups, engine="replica", method="within", max_iter=1, absorb_threads=1)
+    _, info = p.residualize(A, w, tol=1e-12, return_info=True)
+    assert p.resource_info["backend"] == "within" and not info.converged
 
 
 @pytest.mark.parametrize("kind", ["ppml", "ivppml"])
@@ -235,7 +240,7 @@ def test_reusable_dataframe_warm_start_updates_weights(kind):
     fresh = cls(frame, absorb=("g0", "g1", "g2"), config=config(kind),
                 execution_config=ExecutionConfig(threads=1, memory_budget_mb=128)).fit("y", **args)
     compare(b, fresh)
-    assert b.diagnostics["projection_resources"]["native"]["weight_generation"] > a.diagnostics["projection_resources"]["native"]["weight_generation"]
+    assert b.diagnostics["projection_resources"]["within"]["weight_generation"] > a.diagnostics["projection_resources"]["within"]["weight_generation"]
 
 
 def test_iv_frequency_weights_match_replicated_observations():

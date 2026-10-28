@@ -2652,6 +2652,14 @@
       "source_module": "econhdfe.hdfe.weighted_projection",
       "source_path": "econhdfe/hdfe/weighted_projection.py",
       "source_group": "hdfe",
+      "target_module": "econhdfe.hdfe.absorber",
+      "target_group": "hdfe",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.hdfe.weighted_projection",
+      "source_path": "econhdfe/hdfe/weighted_projection.py",
+      "source_group": "hdfe",
       "target_module": "econhdfe.hdfe.factory",
       "target_group": "hdfe",
       "reexport_surface": false

@@ -74,7 +74,7 @@ def run(kind, data, engine, execution):
     resources = result.diagnostics["projection_resources"]
     if engine == "within":
         assert resources["backend"] == "within"
-        assert resources["native"]["weight_generation"] >= result.iterations
+        assert resources["within"]["weight_generation"] >= result.iterations
     return result, dict(engine=engine, seconds=elapsed, iterations=result.iterations,
                         config=asdict(cfg), resources=resources)
 

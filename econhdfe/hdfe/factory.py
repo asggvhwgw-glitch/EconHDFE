@@ -57,6 +57,20 @@ def build_absorber(kind, groups, *, weights, tol, max_iter=_DEFAULT, absorb_thre
     return builder(groups, weights, tol, max_iter, absorb_threads, memory_budget_mb, options)
 
 
+def projection_route(engine, method):
+    """``(method, certified)`` requested by a weighted projector.
+
+    ``engine='within'`` is the PPML-family opt-in for native within: MAP
+    requests use it, and every solve on that engine, including the exact LSMR
+    fallback for zero-weight levels, must return a finite converged
+    certificate. Explicit method requests on other engines keep returning
+    their info unchecked.
+    """
+    if engine == "within":
+        return ("within" if method == "map" else method), True
+    return method, False
+
+
 def projection_kind(method, *, engine, ngroups, weights=None):
     """``(kind, generic method)`` for FEPlan and WeightedFEProjector.
 

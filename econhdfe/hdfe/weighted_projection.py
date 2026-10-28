@@ -3,13 +3,14 @@ from __future__ import annotations
 from dataclasses import replace
 import numpy as np
 
-from .factory import build_absorber, projection_kind
+from .absorber import HDFEConvergenceError
+from .factory import build_absorber, projection_kind, projection_route
 from .projection import resolve_threads
 from .protocol import ReweightableAbsorber
 from .workspace import absorption_build_cost
 from ..planner import scheduler
 from ..compute.execution import _plan_workspace
-from ..errors import SpecificationError, ConvergenceError
+from ..errors import SpecificationError
 
 
 class WeightedFEProjector:
@@ -33,9 +34,7 @@ class WeightedFEProjector:
     ):
         self.groups = tuple(np.asarray(g, dtype=np.int32) for g in groups)
         self.engine = str(engine)
-        # PPML-family APIs share this entry, including block-local projectors.
-        # Preserve an explicit LSMR request (e.g. a separation auxiliary solve).
-        self.method = "within" if self.engine == "within" and method == "map" else str(method)
+        self.method, self.certified = projection_route(self.engine, str(method))
         self.max_iter = int(max_iter)
         self.absorb_threads_requested = absorb_threads
         self.projection_memory_budget_mb = float(projection_memory_budget_mb)
@@ -117,23 +116,9 @@ class WeightedFEProjector:
                         matrix[:, lo:hi], copy=False, return_info=True,
                         absorb_threads=plan.threads,
                     )
-                    # IRLS, rank filters and final VCE callers may discard info.
-                    # An opt-in native solve (or its zero-support LSMR route)
-                    # must never turn an uncertified projection into an estimate.
-                    if self.method == "within" and (
-                        not info.converged or not np.isfinite(info.max_update)
-                    ):
-                        raise ConvergenceError(
-                            "within weighted FE projection failed to converge",
-                            code="convergence.hdfe", stage="absorption",
-                            details={"backend": self._active_kind,
-                                     "iterations": int(info.iterations),
-                                     "max_update": float(info.max_update),
-                                     "criterion": str(info.criterion),
-                                     "tolerance": float(tol),
-                                     "max_iter": self.max_iter,
-                                     "rhs_start": lo, "rhs_stop": hi},
-                        )
+                    # Rank filters, IRLS and final VCE callers may discard info.
+                    if self.certified and not (info.converged and np.isfinite(info.max_update)):
+                        raise HDFEConvergenceError(info, context="Certified weighted FE projection")
                     matrix[:, lo:hi] = projected
                     infos.append(info)
             output = matrix[:, 0] if one_dim else matrix
@@ -158,5 +143,5 @@ class WeightedFEProjector:
             "backend": self._active_kind,
             "projection_backend": None if absorber is None else str(getattr(absorber, "projection_backend", getattr(absorber, "method", "unknown"))),
             "index_bytes": None if absorber is None else int(getattr(absorber, "index_bytes", 0)),
-            "native": getattr(absorber, "resource_info", None) if self._active_kind == "within" else None,
+            **({} if absorber is None else absorber.absorb_info_extras()),
         }

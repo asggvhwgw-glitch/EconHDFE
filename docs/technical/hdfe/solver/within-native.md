@@ -155,7 +155,8 @@ is changed, and no automatic native selection or speed guarantee is implied.
 PPML with no FEs has nothing to absorb; IV-PPML's existing noabsorb convention
 uses one constant FE and therefore invokes the requested absorber.
 
-The shared `WeightedFEProjector` resolves this engine to `method="within"`.
+`hdfe.factory.projection_route` resolves this engine once, in the shared
+`WeightedFEProjector` constructor, to `method="within"` with certified solves.
 It covers rank checks, every IRLS weighted projection, post-separation sample
 rebuilds and final high-accuracy inference projection. Block-local projectors
 and the one-shot `FEPlan.residualize` entry honor the same selection. Original
@@ -171,23 +172,26 @@ weight update. Cross-IRLS factorization/Krylov recycling is not implemented.
 Existing fast-partial, inner tolerance scheduling, standardization, step control
 and warm-start semantics remain at the estimator layer.
 
-Separation is deliberately separate: `detect_separation` locally copies the
-config with `engine="replica"`; it never changes the caller's config. Simplex
+Separation is deliberately separate: `detect_separation` runs on
+`config.separation_engine`, which is `"replica"` for `engine="within"`. Simplex
 and ReLU therefore keep the established auxiliary solvers, including exact
 zero weights. A shared projector directly given zero weights uses its separate
 LSMR cache; it can return to its native cache after strictly positive weights
 resume. This is not a zero-weight native implementation or a changed sample rule.
 
-Selected native weighted projections (and their zero-support LSMR path) raise
-`ConvergenceError(code="convergence.hdfe")` for unsuccessful/nonfinite inner
-certificates. This check occurs before rank filtering, an IRLS update or final
+Every solve on the `engine="within"` projector (including its zero-support
+LSMR path) raises `HDFEConvergenceError` (`code="convergence.hdfe"`,
+`stage="hdfe"`) for unsuccessful/nonfinite inner certificates. An explicit
+`method="within"` request on another engine keeps returning `AbsorbInfo`
+unchecked, as before. This check occurs before rank filtering, an IRLS update or final
 covariance construction can consume a failed result, even when the caller
 would discard `AbsorbInfo`. The raw `WithinFEAbsorber` information-returning
 contract is unchanged. Missing native extensions fail explicitly instead of
 silently changing the requested estimation backend.
 
 For dense fits, inspect `result.diagnostics["projection_resources"]`: `backend`
-and `method` identify selection, and `native` contains route, original-row and
+and `method` identify selection, and `within` (the absorber's
+`absorb_info_extras()`) contains route, original-row and
 cell counts, `weight_generation` and certification-fallback counts. Block fits
 report the corresponding entries per component. Counters on a reused model
 are lifetime counters, not timings or a per-fit iteration count. Inner backward
@@ -218,6 +222,8 @@ this corpus; zero outcomes and separation are covered by the smaller tests.
 The JSON includes inputs/source/binary hashes and all timings. One repetition
 establishes accuracy for this corpus, not a stable acceleration factor; request
 at least three alternating repetitions for same-machine performance study.
+The native CI workflow runs this audit at 100,000 rows on pull requests and at
+one million rows on manual dispatch.
 
 ## Validation
 
