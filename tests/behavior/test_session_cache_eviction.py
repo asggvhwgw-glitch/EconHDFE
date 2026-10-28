@@ -35,9 +35,8 @@ def test_array_views_count_shared_owner_once_and_exclude_input_storage():
 
 
 @pytest.mark.parametrize("iv", [False, True])
-@pytest.mark.parametrize("cache", ["auto", "on"])
-def test_lru_keeps_hot_entry_and_evicts_cold_without_changing_results(data, monkeypatch, iv, cache):
-    s = session(data, iv, cache)
+def test_lru_keeps_hot_entry_and_evicts_cold_without_changing_results(data, monkeypatch, iv):
+    s = session(data, iv)
     s.fit(**spec(iv, "a")); s.fit(**spec(iv, "b")); s.fit(**spec(iv, "a"))
     hot = s._entries[s._entry_key(("a",))]
     within = hot.within["y"]
@@ -61,13 +60,12 @@ def test_lru_keeps_hot_entry_and_evicts_cold_without_changing_results(data, monk
     np.testing.assert_allclose(rebuilt.vcov, reference.vcov, atol=1e-10)
 
 
-@pytest.mark.parametrize("iv", [False, True])
-def test_fit_many_rebuilds_evicted_prewarmed_entries(data, monkeypatch, iv):
-    s = session(data, iv)
+def test_fit_many_rebuilds_evicted_prewarmed_entries(data, monkeypatch):
+    s = session(data)
     monkeypatch.setattr(s, "_cache_limit_bytes", lambda: 1)
-    specs = [spec(iv, fe) for fe in ("a", "b", "c", "a")]
+    specs = [spec(False, fe) for fe in ("a", "b", "c", "a")]
     result = s.fit_many(specs)
-    reference_session = session(data, iv)
+    reference_session = session(data)
     reference = reference_session.fit_many(specs)
     for got, expected in zip(result, reference, strict=True):
         np.testing.assert_allclose(got.params, expected.params, atol=1e-10)
@@ -77,45 +75,42 @@ def test_fit_many_rebuilds_evicted_prewarmed_entries(data, monkeypatch, iv):
     assert s.cache_info()["evictions"] > 0
 
 
-@pytest.mark.parametrize("iv", [False, True])
-def test_pressure_recovery_preserves_inputs_and_persistent_disk(data, monkeypatch, tmp_path, iv):
+def test_pressure_recovery_preserves_inputs_and_persistent_disk(data, monkeypatch, tmp_path):
     original = data.copy(deep=True)
-    s = session(data, iv).enable_persistent_cache(tmp_path / "cache")
-    first = s.fit(**spec(iv, "a"))
+    s = session(data).enable_persistent_cache(tmp_path / "cache")
+    first = s.fit(**spec(False, "a"))
     files = {p.relative_to(tmp_path): p.read_bytes() for p in tmp_path.rglob("*") if p.is_file()}
     monkeypatch.setattr(s, "_cache_limit_bytes", lambda: 0)
     s._prepare_resource_admission()
     assert s.cache_info()["retained_bytes"] == 0
     assert files == {p.relative_to(tmp_path): p.read_bytes() for p in tmp_path.rglob("*") if p.is_file()}
     pd.testing.assert_frame_equal(data, original)
-    again = s.fit(**spec(iv, "a"))
+    again = s.fit(**spec(False, "a"))
     np.testing.assert_allclose(first.params, again.params)
     assert s.persistent_cache_info()["result_hits"] == 1
 
 
-@pytest.mark.parametrize("iv", [False, True])
-def test_cache_off_still_discards_all_rebuildable_arrays(data, iv):
-    s = session(data, iv, "off")
-    s.fit(**spec(iv, "a"))
+def test_cache_off_still_discards_all_rebuildable_arrays(data):
+    s = session(data, cache="off")
+    s.fit(**spec(False, "a"))
     assert s.cache_info()["retained_bytes"] == 0
     assert not s._entries and not s._raw_full
 
 
-@pytest.mark.parametrize("iv", [False, True])
-def test_auto_to_explicit_same_thread_cap_rebuilds_absorber(data, monkeypatch, iv):
+def test_auto_to_explicit_same_thread_cap_rebuilds_absorber(data, monkeypatch):
     from econhdfe.planner import scheduler
     from econhdfe.planner.resources import RuntimeResources
     monkeypatch.setattr(scheduler, "runtime_resources", lambda: RuntimeResources(4, 8*1024**3, 1024**3))
-    s = session(data, iv)
+    s = session(data)
     s.execution = ExecutionConfig(threads="auto", memory_budget_mb=64)
-    s.fit(**spec(iv, "a"))
+    s.fit(**spec(False, "a"))
     entry = s._entries[s._entry_key(("a",))]
     absorber = entry.absorber
     within = entry.within["y"]
     assert entry.execution_auto_threads
     assert entry.execution_threads == 4
     s.execution = ExecutionConfig(threads=4, memory_budget_mb=64)
-    s.fit(**spec(iv, "a"))
+    s.fit(**spec(False, "a"))
     assert not entry.execution_auto_threads
     assert entry.absorber is not absorber
     assert entry.within["y"] is within

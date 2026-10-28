@@ -127,27 +127,18 @@ def scale_sample():
     return y,X,[g]
 
 
-def test_regression_column_scaling_must_not_delete_independent_regressor():
+def test_regression_column_scaling_keeps_regressor_and_is_equivariant():
     y,X,g=scale_sample()
     ref=e.olshdfe(y=y,x=X,absorb=g,vce='robust',drop_singletons=False)
     got=e.olshdfe(y=y,x=X*[1.,1e8],absorb=g,vce='robust',drop_singletons=False)
     assert got.names==ref.names,'Changing a measurement unit deleted an independent variable'
     np.testing.assert_allclose(got.params*[1.,1e8],ref.params,rtol=1e-7)
-
-
-def test_regression_covariance_must_be_scale_equivariant():
-    y,X,g=scale_sample()
-    ref=e.olshdfe(y=y,x=X,absorb=g,vce='robust',drop_singletons=False)
-    got=e.olshdfe(y=y,x=X*[1.,4e7],absorb=g,vce='robust',drop_singletons=False)
-    np.testing.assert_allclose(got.stderr*[1.,4e7],ref.stderr,rtol=1e-6)
+    np.testing.assert_allclose(got.stderr*[1.,1e8],ref.stderr,rtol=1e-6)
 
 
 def test_regression_fe_recovery_must_reject_nonfinite_inputs():
-    case = 'weights_inf'
-    a=np.array([0,0,1,1,2,2]);b=np.array([0,1,0,1,0,1]);target=np.array([1.,2,2,3,3,4]);kw={}
-    if case=='target_nan':target[0]=np.nan
-    else:
-        w=np.ones(6);w[0]=np.nan if case=='weights_nan' else np.inf;kw['weights']=w
-    try:got=recover_fixed_effects(target,[a,b],**kw)
+    a=np.array([0,0,1,1,2,2]);b=np.array([0,1,0,1,0,1]);target=np.array([1.,2,2,3,3,4])
+    w=np.ones(6);w[0]=np.inf
+    try:got=recover_fixed_effects(target,[a,b],weights=w)
     except (e.InputError,ValueError):return
-    pytest.fail(f'{case}: invalid input returned a result with converged={got.diagnostics.converged}')
+    pytest.fail(f'infinite weight returned a result with converged={got.diagnostics.converged}')

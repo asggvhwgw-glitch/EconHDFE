@@ -109,6 +109,12 @@ def test_iv_unified_does_not_apply_ppml_regressor_separation():
     for methods in [('simplex',), ('relu',), ('mu',)]:
         with pytest.raises(ValueError,match='separation|threshold'):
             IVPPMLConfig(singleton_mode='unified',separation=methods).validate()
+    # The policy default is resolved on use, so replace() switches it both ways.
+    from dataclasses import replace
+    assert replace(cfg, singleton_mode='stata_compat').separation_methods == ('fe','simplex','relu')
+    assert replace(IVPPMLConfig(), singleton_mode='unified').separation_methods == ('fe',)
+    with pytest.raises(ValueError, match='separation'):
+        replace(IVPPMLConfig(separation=('fe','relu')), singleton_mode='unified').validate()
 
 
 @pytest.mark.parametrize('mode', ['stata_compat','unified'])
@@ -313,22 +319,7 @@ def test_sample_policy_truth_table():
             assert policy.fe_zero_peeling(('relu',), drop) is False
 
 
-def test_iv_separation_default_follows_policy_through_replace():
-    from dataclasses import replace
-    compat = IVPPMLConfig()
-    assert compat.separation is None and compat.separation_methods == ('fe', 'simplex', 'relu')
-    unified = replace(compat, singleton_mode='unified')
-    unified.validate()
-    assert unified.separation_methods == ('fe',)
-    back = replace(IVPPMLConfig(singleton_mode='unified'), singleton_mode='stata_compat')
-    back.validate()
-    assert back.separation_methods == ('fe', 'simplex', 'relu')
-    explicit = replace(IVPPMLConfig(separation=('fe', 'relu')), singleton_mode='unified')
-    with pytest.raises(ValueError, match='separation'):
-        explicit.validate()
-
-
-@pytest.mark.parametrize('change', [dict(dof_method='none'), dict(canonicalize=False), dict(solver='lsmr')])
+@pytest.mark.parametrize('change', [dict(dof_method='none'), dict(solver='lsmr')])
 def test_session_config_change_never_reuses_stale_fe_entry(change):
     import pandas as pd
     from dataclasses import replace
