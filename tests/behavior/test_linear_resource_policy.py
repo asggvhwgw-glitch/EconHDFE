@@ -9,7 +9,7 @@ from econhdfe import (
 )
 from econhdfe.errors import ConvergenceError
 from econhdfe.hdfe.absorber import HDFEConvergenceError
-import econhdfe.pipeline as pipeline
+import econhdfe.hdfe.factory as factory
 import econhdfe.sessions as sessions
 
 
@@ -37,12 +37,12 @@ def specification(iv, *, block=False):
 
 @pytest.mark.parametrize("iv", [False, True])
 def test_group_only_forwards_projection_resources(data, monkeypatch, iv):
-    original = pipeline.HDFEAbsorber
+    original = factory.HDFEAbsorber
     seen = []
     def capture(*args, **kwargs):
         seen.append(kwargs)
         return original(*args, **kwargs)
-    monkeypatch.setattr(pipeline, "HDFEAbsorber", capture)
+    monkeypatch.setattr(factory, "HDFEAbsorber", capture)
     fit = ivhdfe if iv else olshdfe
     result = fit(data, **specification(iv), group="id", projection_backend="fused",
                  execution_config=ExecutionConfig(threads=2, memory_budget_mb=32),

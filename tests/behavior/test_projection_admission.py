@@ -8,6 +8,7 @@ from econhdfe.compute.block_design import BlockDesign, DenseDesignBlock
 from econhdfe.errors import SpecificationError
 from econhdfe.hdfe.block_projection import BlockWeightedFEProjector
 from econhdfe.hdfe.plan import FEPlan
+from econhdfe.hdfe import weighted_projection
 from econhdfe.hdfe.weighted_projection import WeightedFEProjector
 from econhdfe.planner import scheduler
 
@@ -25,7 +26,8 @@ def deny(nbytes, label=""):
 def test_build_admission_precedes_index_construction(monkeypatch, engine, groups):
     projector = WeightedFEProjector(groups, engine=engine)
     monkeypatch.setattr(scheduler, "reserve_memory", deny)
-    monkeypatch.setattr(projector, "_build", lambda *a: pytest.fail("build preceded admission"))
+    monkeypatch.setattr(weighted_projection, "build_absorber",
+                        lambda *a, **k: pytest.fail("build preceded admission"))
     with pytest.raises(SpecificationError) as err:
         projector.prepare(np.ones(12), tol=1e-8)
     assert err.value.code == "resource.memory"
@@ -102,14 +104,13 @@ def test_weighted_projection_numeric_result_with_real_reservations(engine):
 
 def test_weighted_pool_shrinks_to_unreserved_memory(monkeypatch):
     from types import SimpleNamespace
-    from econhdfe.hdfe.workspace import _absorption_workspace_cost
 
     groups = [np.arange(60) % 5]
     weights = np.ones(60)
     data = np.random.default_rng(5).normal(size=(60, 4))
     projector = WeightedFEProjector(groups, engine="reference", absorb_threads=1)
     absorber = projector.prepare(weights, tol=1e-10)
-    _, per_column = _absorption_workspace_cost(absorber)
+    _, per_column = absorber.workspace_cost()
     original = absorber.residualize
     widths = []
 

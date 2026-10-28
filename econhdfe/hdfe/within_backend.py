@@ -45,7 +45,6 @@ class WithinFEAbsorber:
         if not np.isfinite(self.projection_memory_budget_mb) or self.projection_memory_budget_mb <= 0:
             raise SpecificationError("within memory budget must be finite and positive")
         self.method = "within"
-        self.backend = "numpy"
         self.transform = "structured_native"
         self.acceleration = "none"
         self.preconditioner = "within_adaptive"
@@ -84,6 +83,18 @@ class WithinFEAbsorber:
     @property
     def supports_fe_orthogonality_certificate(self):
         return False
+
+    @property
+    def supports_projection_shortcut(self):
+        return type(self) is WithinFEAbsorber
+
+    supports_wild_cluster_test = False
+
+    def pending_cost(self):
+        return 0
+
+    def absorb_info_extras(self):
+        return {"within": self.resource_info}
 
     def workspace_cost(self):
         # Own arrays + conservative observation/coefficient work estimate.

@@ -54,6 +54,7 @@ from .pipeline import (
     residualize_blocks,
     residualize_in_basis,
     standard_dof,
+    weak_basis_eligible,
 )
 from .results import RegressionResult
 from .prediction import SampleExclusionState, named_design_state
@@ -919,7 +920,8 @@ class OLSHDFESession(_LinearHDFESessionBase):
         return self._stack_columns(entry, columns)
 
     def _basis(self, entry, X, *, gram=None):
-        if len(entry.fe.groups) > 1 and entry.solver_selection["resolved"] in {"map", "within"}:
+        fe = entry.fe
+        if weak_basis_eligible(fe.groups, fe.slopes, fe.intercepts, method=entry.solver_selection["resolved"]):
             return _absorption_basis(X, entry.weights, rank_tolerance=self.collinear_tol, gram=gram)
         return None
 

@@ -6,7 +6,8 @@ from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import LinearOperator, cg
 from .absorber import AbsorbInfo
 from .projection import (
-    build_group_index, group_sums_indexed_weighted, resolve_threads, numba_thread_limit,
+    build_group_index, estimate_index_bytes, group_sums_indexed_weighted, resolve_threads,
+    numba_thread_limit,
 )
 
 
@@ -169,6 +170,35 @@ class TwoWayFEAbsorber:
         """
         self.absorb_threads = resolve_threads(absorb_threads, nobs=self.nobs)
         return self
+
+    # Re-projecting an already-within design can report false nonconvergence
+    # (the PCG denominator is a near-zero Schur RHS). Keep the legacy wild
+    # bootstrap route until this solver has a reliable final certificate.
+    supports_projection_shortcut = False
+    supports_fe_orthogonality_certificate = False
+    supports_wild_cluster_test = True
+
+    def _pending_index_bytes(self):
+        if self.absorb_threads > 1 and self._left_index is None:
+            return estimate_index_bytes(self.nobs, [self.n_left, self.n_right])
+        return 0
+
+    def workspace_cost(self):
+        # Includes the lazy group indexes and bounded coefficient-space PCG
+        # arrays/advanced-indexing temporaries, not an N x FE dummy matrix.
+        arrays = {}
+        for a in (self.weights, self.left, self.right, self.denom_left, self.denom_right,
+                  self._diag, self._precond_diag, self.keep_right):
+            arrays[id(a)] = a.nbytes
+        fixed = int(self.index_bytes) + sum(arrays.values()) + self._pending_index_bytes()
+        per_col = 8 * (int(self.nobs) + 4 * self.n_left + 20 * self.n_right)
+        return int(fixed), max(1, int(per_col))
+
+    def pending_cost(self):
+        return self._pending_index_bytes()
+
+    def absorb_info_extras(self):
+        return {}
 
     def update_weights(self, weights, *, tol=None):
         """Update WLS weights while preserving the bipartite graph topology."""

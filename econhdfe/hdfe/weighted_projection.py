@@ -3,12 +3,10 @@ from __future__ import annotations
 from dataclasses import replace
 import numpy as np
 
-from .absorber import HDFEAbsorber
-from .two_way import TwoWayFEAbsorber
+from .factory import build_absorber, projection_kind
 from .projection import resolve_threads
-from .workspace import (
-    _absorption_workspace_cost, _absorption_build_cost, _absorption_pending_cost,
-)
+from .protocol import ReweightableAbsorber
+from .workspace import absorption_build_cost
 from ..planner import scheduler
 from ..compute.execution import _plan_workspace
 from ..errors import SpecificationError
@@ -44,59 +42,29 @@ class WeightedFEProjector:
         # that removes an entire FE level. Keep separate compiled variants so
         # zero-weight simplex projections never poison the positive-weight IRLS
         # fast path.
-        self._absorbers: dict[str, object] = {}
+        self._absorbers: dict[str, ReweightableAbsorber] = {}
         self._active_kind: str | None = None
-
-    def _kind(self, weights) -> str:
-        if self.method == "within":
-            return "within" if np.all(np.asarray(weights) > 0) else "generic"
-        if (
-            self.engine == "optimized"
-            and len(self.groups) == 2
-            and self.method != "lsmr"
-            and np.all(np.asarray(weights, dtype=np.float64) > 0)
-        ):
-            return "twoway"
-        return "generic"
-
-    def _build(self, weights, tol, kind: str):
-        if kind == "within":
-            from .within_backend import WithinFEAbsorber
-            return WithinFEAbsorber(
-                self.groups, weights=weights, tol=tol, max_iter=self.max_iter,
-                absorb_threads=self.absorb_threads_requested,
-                projection_memory_budget_mb=self.projection_memory_budget_mb,
-            )
-        if kind == "twoway":
-            out = TwoWayFEAbsorber(self.groups, weights=weights, tol=tol, max_iter=self.max_iter)
-            out._configure_execution(absorb_threads=self.absorb_threads_requested)
-            return out
-        return HDFEAbsorber(
-            self.groups,
-            weights=weights,
-            tol=tol,
-            max_iter=self.max_iter,
-            method="lsmr" if self.method == "within" else self.method,
-            transform="symmetric",
-            acceleration="cg" if self.method == "map" else "none",
-            projection_backend="auto",
-            absorb_threads=self.absorb_threads_requested,
-            projection_memory_budget_mb=self.projection_memory_budget_mb,
-        )
 
     def prepare(self, weights, *, tol):
         """Bind one numerical weight state and return the compiled absorber."""
         w = np.asarray(weights, dtype=np.float64)
-        kind = self._kind(w)
+        kind, solver = projection_kind(self.method, engine=self.engine, ngroups=len(self.groups), weights=w)
         absorber = self._absorbers.get(kind)
         if absorber is None:
             # Probe only at an unreserved planning boundary; construction below
             # may use the cached decision while holding its memory claim.
             resolve_threads(self.absorb_threads_requested, nobs=len(w))
             with scheduler.reserve_memory(
-                _absorption_build_cost(self.groups, kind), label="weighted_fe_build",
+                absorption_build_cost(self.groups, kind), label="weighted_fe_build",
             ):
-                absorber = self._build(w, tol, kind)
+                absorber = build_absorber(
+                    kind, self.groups, weights=w, tol=tol, max_iter=self.max_iter,
+                    absorb_threads=self.absorb_threads_requested,
+                    memory_budget_mb=self.projection_memory_budget_mb,
+                    method=solver, transform="symmetric",
+                    acceleration="cg" if self.method == "map" else "none",
+                    projection_backend="auto",
+                )
             self._absorbers[kind] = absorber
         else:
             absorber.update_weights(w, tol=tol)
@@ -112,14 +80,14 @@ class WeightedFEProjector:
         with scheduler.reserve_memory(matrix.nbytes if copy else 0, label="weighted_fe_output"):
             if copy:
                 matrix = matrix.copy()
-            resident, per_column = _absorption_workspace_cost(absorber)
+            resident, per_column = absorber.workspace_cost()
             plan = _plan_workspace(
                 nobs=absorber.nobs, ncols=matrix.shape[1], pool_size="auto",
                 memory_budget_mb=self.projection_memory_budget_mb,
                 requested_threads=self.absorb_threads_requested,
                 bytes_per_column=per_column, resident_solver_bytes=resident,
             )
-            pending = _absorption_pending_cost(absorber)
+            pending = absorber.pending_cost()
             allocation = scheduler.current_allocation()
             if allocation is not None:
                 # Output reservations stay live through this loop. Planning

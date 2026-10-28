@@ -5,6 +5,7 @@ import pytest
 from econhdfe import ExecutionConfig
 from econhdfe.errors import SpecificationError
 from econhdfe import pipeline
+from econhdfe.hdfe import factory
 from econhdfe.planner import scheduler
 from econhdfe.planner.resources import RuntimeResources
 
@@ -44,8 +45,9 @@ def _group(individual=True, incidence='auto'):
 def test_rejects_before_fe_constructor(host, monkeypatch, kind):
     def forbidden(*a, **k):
         pytest.fail('constructor entered before memory admission')
-    for name in ('HDFEAbsorber', 'TwoWayFEAbsorber', 'GroupIndividualAbsorber'):
-        monkeypatch.setattr(pipeline, name, forbidden)
+    for module, name in ((factory, 'HDFEAbsorber'), (factory, 'TwoWayFEAbsorber'),
+                         (pipeline, 'GroupIndividualAbsorber')):
+        monkeypatch.setattr(module, name, forbidden)
     with scheduler.execution_scope(ExecutionConfig(threads=1, memory_budget_mb=32)):
         host['rss'] = 32*MIB-1
         with pytest.raises(SpecificationError) as error:

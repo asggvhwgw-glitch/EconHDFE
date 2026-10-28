@@ -13,6 +13,7 @@ from ..pipeline import (
     design_collinearity_metadata, check_collinearity_mode, resolve_method, resolve_acceleration,
     standard_dof, make_standard_absorber, check_absorption, cluster_arrays, masked_array,
     absorb_metadata, block_absorb_metadata, conditioning_info, resolve_pool_size,
+    weak_basis_eligible,
 )
 from .linear import (
     StageClock, config_precedence, reporting_options, prepare_standard_sample,
@@ -308,10 +309,8 @@ def olshdfe(
         _check_allocation_headroom(len(y1) * (X1.shape[1] + 1) * 8)
         block = np.column_stack([y1, X1])
         basis = None
-        conditioning_eligible = (
-            backend == "numpy" and method_resolved in {"map", "within"}
-            and all(intercepts) and all(s is None for s in slopes)
-            and len(groups) > 1
+        conditioning_eligible = weak_basis_eligible(
+            groups, slopes, intercepts, method=method_resolved, backend=backend,
         )
         if conditioning_eligible:
             raw_gram = _weighted_gram(X1, w1)

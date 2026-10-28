@@ -458,6 +458,22 @@ class GroupIndividualAbsorber:
             theta, istop, itn, normr = sol[0], int(sol[1]), int(sol[2]), float(sol[3])
         return theta, istop in {0, 1, 2, 4, 5}, itn, normr
 
+    supports_projection_shortcut = False
+    supports_fe_orthogonality_certificate = False
+    supports_wild_cluster_test = False
+
+    def workspace_cost(self):
+        # Only weights and two pooled RHS vectors are inventoried; incidence
+        # and operator state are not.
+        fixed = 0 if self.weights is None else self.weights.nbytes
+        return int(fixed), max(1, 16 * int(self.nobs))
+
+    def pending_cost(self):
+        return 0
+
+    def absorb_info_extras(self):
+        return {}
+
     def residualize(self, data, *, copy=True, return_info=False):
         a = np.asarray(data, dtype=np.float64)
         one_dim = a.ndim == 1

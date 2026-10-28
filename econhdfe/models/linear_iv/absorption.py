@@ -6,6 +6,7 @@ from time import perf_counter
 import numpy as np
 import scipy.linalg as la
 from ...hdfe.absorber import AbsorbInfo
+from ...hdfe.protocol import capability
 
 
 _WEAK_DIRECTION_RATIO = 1e-3
@@ -123,7 +124,7 @@ def refine_iv_control_absorption(absorber, original_controls, within_controls, *
                 "timings": timings}
     if k < 2 or not getattr(absorber, "groups", ()):
         return controls, None, metadata
-    if not getattr(absorber, "supports_fe_orthogonality_certificate", False):
+    if not capability(absorber, "supports_fe_orthogonality_certificate"):
         metadata["reason"] = "unsupported_absorption_certificate"
         return controls, None, metadata
     started = perf_counter()
