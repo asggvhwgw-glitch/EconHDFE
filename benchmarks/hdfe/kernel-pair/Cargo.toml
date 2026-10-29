@@ -1,0 +1,18 @@
+[package]
+name = "hdfe-kernel-pair-benchmark"
+version = "0.0.1"
+edition = "2024"
+rust-version = "1.85"
+publish = false
+
+[dependencies]
+fereg-core = { git = "https://github.com/leoliu0/fereg", rev = "0fa59e3b539addbddaee8bd71acd031c497166a0" }
+within = { git = "https://github.com/py-econometrics/within", rev = "fc44282cea6124f5f18bb142908605a656d35a7c" }
+ndarray = "0.17"
+rayon = "1.12"
+serde_json = "1"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
