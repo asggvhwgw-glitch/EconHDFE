@@ -179,16 +179,17 @@ impl NativeDualSolver {
     fn certified(&mut self, original: &[f64], r: usize, tol: f64, max_iter: usize,
                  attempts: &mut Vec<Value>) -> Res<Projected> {
         let gate = tol.max(128.0*f64::EPSILON);
+        let mut inner_tol = (tol*0.1).max(1e-15);
         let mut source = original.to_vec();
         let mut total = vec![0usize; r];
         // At most one residual-replacement correction per kernel attempt.
         for correction in 0..2 {
             let t = Instant::now();
-            let out = match self.project(&source, r, (tol*0.1).max(1e-15), max_iter) {
+            let out = match self.project(&source, r, inner_tol, max_iter) {
                 Ok(v) => v,
                 Err(e) => {
                     attempts.push(json!({"backend":self.selected, "correction":correction,
-                        "seconds":t.elapsed().as_secs_f64(), "error":e}));
+                        "inner_tolerance":inner_tol,"seconds":t.elapsed().as_secs_f64(), "error":e}));
                     return Err(e);
                 }
             };
@@ -198,10 +199,16 @@ impl NativeDualSolver {
             let cert = self.certificate(&out.residual, r);
             let valid = out.converged.iter().all(|v| *v) && cert.iter().all(|v| v.is_finite() && *v <= gate);
             attempts.push(json!({"backend":self.selected,"correction":correction,
-                "seconds":seconds,"certificate_seconds":check.elapsed().as_secs_f64(),
+                "inner_tolerance":inner_tol,"seconds":seconds,"certificate_seconds":check.elapsed().as_secs_f64(),
                 "iterations":out.iterations,"converged":out.converged,"certificate":cert,"accepted":valid}));
             if valid { return Ok(Projected { residual:out.residual, iterations:total, converged:out.converged }); }
             if !out.converged.iter().all(|v| *v) || out.residual.iter().any(|v| !v.is_finite()) { break; }
+            // The core's residual norm is not our maximum group-mean norm.
+            // Repeating the same tolerance can leave sparse groups above the gate.
+            // Tighten only the corrective solve, never the independent acceptance gate.
+            let worst = cert.iter().copied().fold(0.0_f64, f64::max);
+            let shrink = (gate / worst).min(0.1) * 0.1;
+            inner_tol = (inner_tol * shrink).max(1e-15);
             source = out.residual;
         }
         Err("independent weighted group-mean certificate did not pass".into())
