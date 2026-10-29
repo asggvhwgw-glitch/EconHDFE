@@ -1,0 +1,121 @@
+name: Direct FE kernel crossovers
+on:
+  push:
+    branches: [bench/fereg-within-topologies-20261029]
+    paths:
+      - benchmarks/hdfe/kernel-pair/**
+      - benchmarks/hdfe/native_router_bench.py
+      - .github/workflows/fereg-kernel-crossovers.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: hdfe-core-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  direct-rust:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CARGO_BUILD_JOBS: '2'
+      RAYON_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: benchmarks/hdfe/kernel-pair
+      - name: Compile both pinned Rust cores
+        run: |
+          cargo build --release --manifest-path benchmarks/hdfe/kernel-pair/Cargo.toml
+          lscpu | grep -E 'Model name|CPU\(s\)|Core\(s\)'
+          free -h
+      - name: Run identical DGP low-level absorption comparisons
+        shell: bash
+        run: |
+          mkdir -p results
+          set +e
+          b=benchmarks/hdfe/kernel-pair/target/release/hdfe-kernel-pair-benchmark
+          for case in one_big two_big three_big weak_links hub repeated_cells reweight; do
+            for n in 120000 1000000; do
+              for rhs in 2 8; do
+                for method in fereg within; do
+                  echo "BEGIN $case $n $rhs $method" | tee -a results/status.txt
+                  timeout 180s "$b" "$case" "$method" "$n" "$rhs" 3 2 | tee -a results/raw.jsonl
+                  echo "EXIT_STATUS $case $n $rhs $method ${PIPESTATUS[0]}" | tee -a results/status.txt
+                done
+              done
+            done
+          done
+          for case in one_big two_big three_big weak_links repeated_cells; do
+            for method in fereg within; do
+              echo "BEGIN $case 5000000 2 $method" | tee -a results/status.txt
+              timeout 180s "$b" "$case" "$method" 5000000 2 2 2 | tee -a results/raw.jsonl
+              echo "EXIT_STATUS $case 5000000 2 $method ${PIPESTATUS[0]}" | tee -a results/status.txt
+            done
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rust-direct-crossovers-${{ github.run_id }}
+          path: results
+          if-no-files-found: warn
+  native-router:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CARGO_BUILD_JOBS: '2'
+      RAYON_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '1'
+      NUMBA_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: native/within-accel
+      - name: Build installed EconHDFE native extension
+        run: |
+          python -m pip install 'numpy>=1.26,<3' 'within_py==0.4.0'
+          python -m pip wheel --no-deps ./native/within-accel -w wheelhouse
+          python -m pip install wheelhouse/*.whl
+          lscpu | grep -E 'Model name|CPU\(s\)|Core\(s\)'
+      - name: Compare plain/compressed/auto routes with base within kernel
+        shell: bash
+        run: |
+          mkdir -p results
+          set +e
+          for case in one_big two_big three_big weak_links hub repeated_cells reweight; do
+            for n in 120000 1000000; do
+              for rhs in 2 8; do
+                for method in within native_plain native_auto; do
+                  timeout 180s python benchmarks/hdfe/native_router_bench.py \
+                    --case "$case" --rows "$n" --rhs "$rhs" --method "$method" \
+                    --reps 3 --threads 2 | tee -a results/raw.jsonl
+                  echo "EXIT_STATUS $case $n $rhs $method ${PIPESTATUS[0]}" | tee -a results/status.txt
+                done
+              done
+            done
+          done
+          for case in one_big two_big three_big weak_links repeated_cells; do
+            for method in within native_plain native_auto; do
+              timeout 210s python benchmarks/hdfe/native_router_bench.py \
+                --case "$case" --rows 5000000 --rhs 2 --method "$method" \
+                --reps 2 --threads 2 | tee -a results/raw.jsonl
+              echo "EXIT_STATUS $case 5000000 2 $method ${PIPESTATUS[0]}" | tee -a results/status.txt
+            done
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-router-crossovers-${{ github.run_id }}
+          path: results
+          if-no-files-found: warn
