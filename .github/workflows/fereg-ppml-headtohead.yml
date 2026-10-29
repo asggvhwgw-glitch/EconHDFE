@@ -1,0 +1,84 @@
+name: fereg versus EconHDFE PPML topology audit
+on:
+  push:
+    branches: [bench/fereg-within-topologies-20261029]
+    paths:
+      - benchmarks/hdfe/ppml_headtohead.py
+      - .github/workflows/fereg-ppml-headtohead.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: hdfe-ppml-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  compile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@stable
+      - run: python -m pip install --upgrade pip maturin
+      - name: Build exact source revisions
+        run: |
+          mkdir -p wheelhouse
+          python -m pip wheel --no-deps -w wheelhouse \
+            'fereg @ git+https://github.com/leoliu0/fereg.git@0fa59e3b539addbddaee8bd71acd031c497166a0#subdirectory=python'
+          python -m pip wheel --no-deps -w wheelhouse ./native/within-accel
+          ls -lh wheelhouse
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ppml-pinned-wheels
+          path: wheelhouse/*.whl
+          if-no-files-found: error
+  compare:
+    needs: compile
+    strategy:
+      fail-fast: false
+      matrix:
+        case: [one_big, two_big, three_big, weak_links, repeated_cells]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      RAYON_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '1'
+      NUMBA_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: ppml-pinned-wheels
+          path: wheelhouse
+      - name: Install EconHDFE and comparison kernels
+        run: |
+          python -m pip install -e .
+          python -m pip install wheelhouse/*.whl
+          python -m pip check
+          lscpu | grep -E 'Model name|CPU\(s\)|Core\(s\)'
+      - name: Compare complete PPML calls with matching coefficients
+        shell: bash
+        run: |
+          mkdir -p results
+          set +e
+          for n in 120000 1000000; do
+            timeout 600s python benchmarks/hdfe/ppml_headtohead.py \
+              --case "${{ matrix.case }}" --rows "$n" --threads 2 --repeat 2 \
+              | tee -a results/raw.jsonl
+            echo "EXIT_STATUS ${{ matrix.case }} $n ${PIPESTATUS[0]}" | tee -a results/status.txt
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ppml-${{ matrix.case }}-${{ github.run_id }}
+          path: results/
+          if-no-files-found: warn
