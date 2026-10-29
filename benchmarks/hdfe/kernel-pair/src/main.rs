@@ -146,7 +146,7 @@ fn run_fereg(d:&Dataset,repeat:usize,weighted:bool,threads:usize)->Result<Value,
     }).collect::<Vec<_>>();
     let initial=if weighted { Some(d.w0.as_slice()) }else{None};
     let t_pool=Instant::now();
-    let result=with_pool(threads,|pool|->Result<Value,Box<dyn std::error::Error>>{
+    let result=with_pool(threads,|pool|->Result<Value,fereg_core::error::RfError>{
         let pool_seconds=t_pool.elapsed().as_secs_f64();
         let t0=Instant::now();
         let mut solver=FeSolver::new(&terms,initial,d.n,SolverConfig::default(),pool,&ctx)?;
@@ -199,9 +199,9 @@ fn run_within(d:&Dataset,repeat:usize,weighted:bool,threads:usize)->Result<Value
     let yrefs=ys.iter().map(|v|v.as_slice()).collect::<Vec<_>>();
     let opts=within::LsmrOptions {tol:1e-10,maxiter:6000,..Default::default()};
     let pool=rayon::ThreadPoolBuilder::new().num_threads(threads).build()?;
-    let result=pool.install(||->Result<Value,Box<dyn std::error::Error>>{
+    let result=pool.install(||->Result<Value,String>{
         let t0=Instant::now();
-        let design=within::Design::from_categories(a.view())?;
+        let design=within::Design::from_categories(a.view()).map_err(|e|e.to_string())?;
         let setup=t0.elapsed().as_secs_f64();
         let mut rounds=Vec::new();
         let mut resident:Option<within::Solver<'_>>=None;
@@ -209,11 +209,11 @@ fn run_within(d:&Dataset,repeat:usize,weighted:bool,threads:usize)->Result<Value
             let w=if weighted {weights(d,round)}else{vec![1.0;d.n]};
             let t0=Instant::now();
             if round==0 || weighted {
-                resident=Some(within::Solver::new(&design,if weighted{Some(w.as_slice())}else{None},None::<&within::PreconditionerConfig>)?);
+                resident=Some(within::Solver::new(&design,if weighted{Some(w.as_slice())}else{None},None::<&within::PreconditionerConfig>).map_err(|e|e.to_string())?);
             }
             let update=t0.elapsed().as_secs_f64();
             let t1=Instant::now();
-            let out=resident.as_ref().unwrap().solve_batch(&yrefs,Some(&opts))?;
+            let out=resident.as_ref().unwrap().solve_batch(&yrefs,Some(&opts)).map_err(|e|e.to_string())?;
             let elapsed=t1.elapsed().as_secs_f64();
             let mut resid=vec![0.0;d.n*d.rhs];
             for c in 0..d.rhs{
@@ -230,7 +230,7 @@ fn run_within(d:&Dataset,repeat:usize,weighted:bool,threads:usize)->Result<Value
         }
         Ok(json!({"setup_s":setup,"marshal_s":0.0,"pool_s":0.0,
             "rounds":rounds,"peak_rss_mb":mem_hwm()}))
-    })?;
+    }).map_err(std::io::Error::other)?;
     Ok(result)
 }
 fn main()->Result<(),Box<dyn std::error::Error>>{
