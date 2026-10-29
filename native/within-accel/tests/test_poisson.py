@@ -172,13 +172,12 @@ def test_advanced_separation_rebuilds_the_native_sample(kind):
     # silently reintroduced merely to trigger the native lifecycle check.
     results = []
     for engine in ("within", "replica"):
-        cfg = config(kind, engine, separation=("fe", "simplex", "relu"))
         if kind == "ivppml":
             with pytest.warns(RuntimeWarning, match="do not certify existence of IV moments"):
-                result = fit(kind, d, engine, cfg=cfg)
+                cfg = config(kind, engine, separation=("fe", "simplex", "relu"))
         else:
-            result = fit(kind, d, engine, cfg=cfg)
-        results.append(result)
+            cfg = config(kind, engine, separation=("fe", "simplex", "relu"))
+        results.append(fit(kind, d, engine, cfg=cfg))
     native, replica = results
     compare(native, replica)
     assert_array_equal(native.sample_mask, ~separated)

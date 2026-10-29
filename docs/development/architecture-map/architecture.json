@@ -992,7 +992,7 @@
     {
       "source": "ppml",
       "target": "contracts",
-      "count": 15,
+      "count": 18,
       "examples": [
         "econhdfe.models.ppml.api → econhdfe.errors",
         "econhdfe.models.ppml.api → econhdfe.config",
@@ -4084,6 +4084,14 @@
       "reexport_surface": false
     },
     {
+      "source_module": "econhdfe.models.ppml.estimator",
+      "source_path": "econhdfe/models/ppml/estimator.py",
+      "source_group": "ppml",
+      "target_module": "econhdfe.config",
+      "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
       "source_module": "econhdfe.models.ppml.execution",
       "source_path": "econhdfe/models/ppml/execution.py",
       "source_group": "ppml",
@@ -4280,6 +4288,14 @@
       "source_path": "econhdfe/models/ppml/heterogeneous.py",
       "source_group": "ppml",
       "target_module": "econhdfe.reporting",
+      "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ppml.heterogeneous",
+      "source_path": "econhdfe/models/ppml/heterogeneous.py",
+      "source_group": "ppml",
+      "target_module": "econhdfe.config",
       "target_group": "contracts",
       "reexport_surface": false
     },
@@ -4544,6 +4560,14 @@
       "source_path": "econhdfe/models/ppml/vce.py",
       "source_group": "ppml",
       "target_module": "econhdfe.errors",
+      "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ppml.vce",
+      "source_path": "econhdfe/models/ppml/vce.py",
+      "source_group": "ppml",
+      "target_module": "econhdfe.config",
       "target_group": "contracts",
       "reexport_surface": false
     },

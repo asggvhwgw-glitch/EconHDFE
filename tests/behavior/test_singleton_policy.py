@@ -311,7 +311,6 @@ def test_sample_policy_truth_table():
         assert policy.requires_positive_user_weights is u and policy.slope_only_eligibility is u
         assert policy.disjoint_reasons is u and policy.allows_group_individual is (not u)
         assert policy.profile == ('frequency-invariant-v1' if u else 'stata-source-20261027')
-        assert policy.iv_default_separation == ('fe',)
         assert policy.initial_frequency_count('fweight') is u
         assert policy.initial_frequency_count('pweight') is False
         assert policy.psd_frequency_scale('fweight') is u

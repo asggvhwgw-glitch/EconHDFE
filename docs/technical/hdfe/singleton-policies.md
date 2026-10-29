@@ -135,10 +135,9 @@ Frequency-robust meat is `sum(f_i psi_i psi_i')`, not
 `sum(f_i^2 psi_i psi_i')`; clustered scores are aggregated as
 `sum_{i in c} f_i psi_i` before their outer product. Plain PPML now forwards
 both frequency effective N and the `1/sqrt(f_i)` robust-score adjustment to the
-existing covariance layer. The IV-PPML finite-sample convention is unchanged
-(N/(N-1) for robust; subset G/(G-1) for clustering). Unified mode does not
-silently replace these estimator-specific VCE conventions with one universal
-formula. Dense/structured, pooled/reusable, and compressed/expanded paths are
+existing covariance layer. From 0.9.4 IV-PPML and default PPML share
+one finite-sample convention (N/(N-1) for robust; one G_min/(G_min-1) on the
+combined meat for clustering), and unified mode keeps it. Dense/structured, pooled/reusable, and compressed/expanded paths are
 covered by tests, including an independent dense moment-root/sandwich oracle.
 
 ## Validation and unsupported input

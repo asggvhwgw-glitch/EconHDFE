@@ -38,6 +38,7 @@ from .execution import resolve_execution
 from .vce import MODEL_VCE_KINDS, ppml_covariance_dof, ppml_covariance_diagnostics
 from ...reporting import cluster_counts as _cluster_counts, fe_names_from_metadata
 from scipy.special import gammaln
+from ...config import PPML_SMALL_SAMPLE_DEFAULT
 
 
 def _component_layout(design: BlockDesign, plan: FEPlan):
@@ -345,34 +346,27 @@ def fit_irls_block(
     )
 
 
-def final_wls_block(
-    y, X: BlockDesign, plan: FEPlan, true_w, offset, state: IRLSState, config: PPMLConfig,
-    *, structure, projector: BlockWeightedFEProjector | None = None,
+def final_projection_block(
+    X: BlockDesign, plan: FEPlan, true_w, state: IRLSState, config: PPMLConfig,
+    *, projector: BlockWeightedFEProjector | None = None,
 ):
-    """Final high-accuracy PPML WLS in block-native representation."""
-    y = np.asarray(y, dtype=np.float64)
-    tw = np.asarray(true_w, dtype=np.float64)
-    off = np.asarray(offset, dtype=np.float64)
+    """X projected at the accepted state's weights, for inference only.
+
+    The reported coefficients are the accepted IRLS state's; another weighted
+    solve would move beta alone by a Newton step (see the dense estimator).
+    """
     if projector is None:
-        projector = BlockWeightedFEProjector.from_design(
-            X, plan, engine=config.engine, method="map"
-        )
-    wfinal = tw * state.mu
-    z = state.eta - off - 1.0
-    pos = y > 0
-    z = np.asarray(z, dtype=np.float64).copy()
-    z[pos] += y[pos] / state.mu[pos]
-    projected = projector.residualize_response_design(z, X, wfinal, tol=config.target_inner_tol)
-    resid = np.empty(X.nobs, dtype=np.float64)
-    beta = _block_weighted_solve(
-        projected.response, projected.design, wfinal, fast=False, resid_out=resid
+        projector = BlockWeightedFEProjector.from_design(X, plan, engine=config.engine, method="map")
+    wfinal = np.asarray(true_w, dtype=np.float64) * state.mu
+    projected = projector.residualize_response_design(
+        np.zeros(X.nobs), X, wfinal, tol=config.target_inner_tol,
     )
-    return beta, projected.response, projected.design, wfinal
+    return projected.design
 
 
 def ppml_vcov_block(
     X_tilde: BlockDesign, y, mu, true_w, *, kind="robust", clusters=None,
-    df_absorbed=0, nested_adj=0, weight_kind="none", small_sample="asymptotic",
+    df_absorbed=0, nested_adj=0, weight_kind="none", small_sample=PPML_SMALL_SAMPLE_DEFAULT,
 ):
     """PPML model/robust/cluster VCE on an exact BlockDesign."""
     y = np.asarray(y, dtype=np.float64)
@@ -419,7 +413,7 @@ def fit_block_arrays(
     clusters,
     names,
     config: PPMLConfig,
-    small_sample="asymptotic",
+    small_sample=PPML_SMALL_SAMPLE_DEFAULT,
     warm_start=None,
     execution_config=None,
 ) -> PPMLResult:
@@ -543,11 +537,8 @@ def fit_block_arrays(
             )
         sep0.by_method["mu"] = int(np.sum(mu_sep))
 
-    beta_std, _, Xt, _ = final_wls_block(
-        ystd, Bstd, ps_solver, ws, offs, state, config,
-        structure=None, projector=projector,
-    )
-    beta = standardizer.unscale_coef(beta_std)
+    Xt = final_projection_block(Bstd, ps_solver, ws, state, config, projector=projector)
+    beta = standardizer.unscale_coef(state.beta)
 
     cls_s = poisson_clusters(clusters, sample, vce)
     dof = ps_requested.dof_info(clusters=cls_s, method=config.dof_method)
@@ -646,7 +637,7 @@ def fit_structured_dataframe(
     vce="robust",
     clusters=None,
     config: PPMLConfig | None = None,
-    small_sample="asymptotic",
+    small_sample=PPML_SMALL_SAMPLE_DEFAULT,
     execution_config=None,
     structural_collinearity: bool = True,
     omit=None,

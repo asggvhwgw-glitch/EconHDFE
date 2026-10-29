@@ -55,11 +55,6 @@ class SamplePolicy:
         """Initial FE-zero clearing; compatibility couples it to singleton dropping."""
         return "fe" in methods and (self.unified or drop_singletons)
 
-    @property
-    def iv_default_separation(self) -> tuple[str, ...]:
-        """IV-PPML separation when unset: PPML regressor separation is not an IV existence test."""
-        return ("fe",)
-
 
 @dataclass(slots=True, frozen=True)
 class HDFEConfig:
@@ -95,6 +90,11 @@ class HDFEConfig:
             raise SpecificationError("dof_method must be exact/pairwise/firstpair/none")
 
 
+# Ordinary PPML finite-sample convention when none is configured; internal
+# callers default to this name, so the default is stated once.
+PPML_SMALL_SAMPLE_DEFAULT = "asymptotic"
+
+
 @dataclass(slots=True, frozen=True)
 class InferenceConfig:
     """Inference/reporting controls shared across estimator families.
@@ -127,7 +127,7 @@ class InferenceConfig:
     diagnostics: str = "off"  # off | publication | full
     iv_advanced_statistics: bool = True
     ivppml_misspecification_robust: bool = False
-    ppml_small_sample: str = "asymptotic"
+    ppml_small_sample: str = PPML_SMALL_SAMPLE_DEFAULT
 
     def validate(self) -> None:
         if not 0 < self.confidence_level < 1:

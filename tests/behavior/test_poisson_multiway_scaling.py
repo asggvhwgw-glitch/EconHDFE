@@ -76,14 +76,10 @@ def _oracle(result, family):
     for sign, codes in ((1, cg), (1, ch), (-1, cg*8+ch)):
         levels = np.unique(codes)
         sums = np.vstack([scores[codes == v].sum(axis=0) for v in levels])
-        correction = len(levels)/(len(levels)-1) if family == 'ivppml' else 1
-        meat += sign * correction * (sums.T @ sums)
-    raw = bread @ meat @ bread
-    if family == 'ppml':
-        assert result.df_absorbed == 0  # Both FEs nested in cluster dimensions.
-        # Ordinary PPML's default is upstream's asymptotic factor, independent
-        # of absorbed/nested FE counts. Residual corrections remain opt-in.
-        raw *= 8/7
+        meat += sign * (sums.T @ sums)
+    # Both Poisson families scale the combined CGM meat once by G_min/(G_min-1)
+    # (G_min = 8), independently of absorbed/nested FE counts.
+    raw = bread @ meat @ bread * (8/7)
     # Unified mode: the stdev of the frequency-expanded original regressors.
     n = fw.sum()
     s = np.sqrt(((fw[:, None] * X**2).sum(0) - (fw @ X)**2 / n) / (n - 1))

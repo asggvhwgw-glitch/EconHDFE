@@ -83,7 +83,7 @@ flowchart TB
   n_planner -->|"2 imports"| n_contracts
   n_planner -->|"1 imports"| n_interface
   n_ppml -->|"23 imports"| n_compute
-  n_ppml -->|"15 imports"| n_contracts
+  n_ppml -->|"18 imports"| n_contracts
   n_ppml -->|"2 imports"| n_frontend
   n_ppml -->|"14 imports"| n_hdfe
   n_ppml -->|"2 imports"| n_interface
@@ -280,7 +280,7 @@ Files/modules: 17. econhdfe/compute/__init__.py, econhdfe/compute/backend.py, ec
 | Execution planner | Shared contracts | 2 | `econhdfe.planner.scheduler → econhdfe.config`<br>`econhdfe.planner.scheduler → econhdfe.errors` |
 | Execution planner | Public interface & orchestration | 1 | `econhdfe.planner.report → econhdfe` |
 | PPML model | Compute/runtime kernels | 23 | `econhdfe.models.ppml.api → econhdfe.compute.context`<br>`econhdfe.models.ppml.api → econhdfe.compute.wls`<br>`econhdfe.models.ppml.estimator → econhdfe.compute.context`<br>`econhdfe.models.ppml.estimator → econhdfe.compute.linalg`<br>`econhdfe.models.ppml.estimator → econhdfe.compute.vcov` |
-| PPML model | Shared contracts | 15 | `econhdfe.models.ppml.api → econhdfe.errors`<br>`econhdfe.models.ppml.api → econhdfe.config`<br>`econhdfe.models.ppml.config → econhdfe.errors`<br>`econhdfe.models.ppml.config → econhdfe.config`<br>`econhdfe.models.ppml.estimator → econhdfe.errors` |
+| PPML model | Shared contracts | 18 | `econhdfe.models.ppml.api → econhdfe.errors`<br>`econhdfe.models.ppml.api → econhdfe.config`<br>`econhdfe.models.ppml.config → econhdfe.errors`<br>`econhdfe.models.ppml.config → econhdfe.config`<br>`econhdfe.models.ppml.estimator → econhdfe.errors` |
 | PPML model | Frontend validation | 2 | `econhdfe.models.ppml.api → econhdfe.frontend.validate`<br>`econhdfe.models.ppml.api → econhdfe.frontend.roles` |
 | PPML model | HDFE infrastructure | 14 | `econhdfe.models.ppml.api → econhdfe.hdfe.plan`<br>`econhdfe.models.ppml.estimator → econhdfe.hdfe.plan`<br>`econhdfe.models.ppml.execution → econhdfe.hdfe.plan`<br>`econhdfe.models.ppml.execution → econhdfe.hdfe.weighted_projection`<br>`econhdfe.models.ppml.heterogeneous → econhdfe.hdfe.block_projection` |
 | PPML model | Public interface & orchestration | 2 | `econhdfe.models.ppml.api → econhdfe.design`<br>`econhdfe.models.ppml.heterogeneous → econhdfe.design` |

@@ -160,7 +160,8 @@ Standard one-/multi-way CRV1 is part of estimator covariance. For OLS, IV, PPML 
 For ordinary PPML, `InferenceConfig(ppml_small_sample="asymptotic")` is the
 default: robust VCE uses `N/(N-1)` and cluster VCE uses `G/(G-1)`, where
 `G` is the minimum cluster count across the requested dimensions,
-matching the current ppmlhdfe source convention. Choose `"residual"` explicitly
+matching the current ppmlhdfe source convention; IV-PPML always uses this
+convention. Choose `"residual"` explicitly
 to retain the earlier `N/(N-K)` robust factor and the residual-DF/nesting
 cluster factor. Frequency weights use frequency N. The choice changes VCE,
 not coefficients or sample selection, and does not implement incidental-parameter

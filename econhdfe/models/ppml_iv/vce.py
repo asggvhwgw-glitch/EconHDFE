@@ -3,7 +3,7 @@ import numpy as np
 from ...errors import InferenceError
 from ...compute.clusters import normalize_vce_clusters
 from ...compute.stable_linalg import equilibrated_gram_inverse
-from ...compute.vcov import cluster_subset_meats_xe, sandwich_vcov_xe, normalize_vce, IID_VCE_KINDS
+from ...compute.vcov import sandwich_vcov_xe, normalize_vce, IID_VCE_KINDS
 from ...compute.weights import frequency_score_scale
 
 
@@ -30,43 +30,33 @@ def ivppml_vcov(
     Xhat, X_dm, residual, irls_w, *, kind="robust", clusters=None,
     effective_n=None, base_weights=None, weight_kind="none", bread=None,
 ):
-    """IV-PPML sandwich covariance matching the upstream score convention.
+    """IV-PPML sandwich covariance with the Poisson-family finite-sample factors.
 
     Scores use first-stage fitted regressors ``Xhat`` and the IRLS residual
-    multiplier ``irls_w * residual``.  Robust uses N/(N-1); cluster paths use
-    G/(G-1) for every CGM subset, as in ``ivppmlhdfe``. Multiway-cluster
-    results are unrepaired; see ``finalize_cluster_vcov``.
+    multiplier ``irls_w * residual``. Robust uses N/(N-1); clustered uses
+    G_min/(G_min-1) on the combined CGM meat, as PPML and the linear
+    estimators do. Multiway-cluster results are unrepaired; see
+    ``finalize_cluster_vcov``.
     """
     Xhat = np.asarray(Xhat, dtype=np.float64)
-    X_dm = np.asarray(X_dm, dtype=np.float64)
     residual = np.asarray(residual, dtype=np.float64)
     irls_w = np.asarray(irls_w, dtype=np.float64)
     n = len(residual)
-    n_eff = float(n if effective_n is None else effective_n)
     bread = _bread(Xhat, X_dm, irls_w) if bread is None else np.asarray(bread, dtype=np.float64)
     kind0 = normalize_ivppml_vce(kind)
-    score_scalar = irls_w * residual
-
-    if kind0 in _ROBUST_VCE_KINDS:
-        # Frequency weights represent physical replication: the robust meat
-        # contains one power of the user weight (the shared frequency score
-        # scale), whereas probability weights keep the squared-score convention.
-        weight_kind = str(weight_kind).lower()
-        if weight_kind == "fweight" and base_weights is None:
-            raise InferenceError("fweight robust VCE requires base_weights", code="inference.missing_base_weights")
-        # k_total=1 gives ivppmlhdfe's N/(N-1) robust correction.
-        V = sandwich_vcov_xe(
-            Xhat, score_scalar, bread, kind="robust", k_total=1, effective_n=n_eff,
-            score_scale=frequency_score_scale(weight_kind, base_weights, "robust"),
-        )
-        return (V + V.T) / 2.0
-
-    if kind0 != "cluster":
-        raise InferenceError("IV-PPML currently supports robust or cluster VCE", code="inference.unsupported_vce")
-    clusters = normalize_vce_clusters(clusters, nobs=n)
-    V = np.zeros_like(bread)
-    for sign, meat, g, _ in cluster_subset_meats_xe(Xhat, score_scalar, clusters):
-        V += sign * (g / (g - 1.0)) * (bread @ meat @ bread)
+    weight_kind = str(weight_kind).lower()
+    if weight_kind == "fweight" and base_weights is None and kind0 == "robust":
+        raise InferenceError("fweight robust VCE requires base_weights", code="inference.missing_base_weights")
+    # Frequency weights represent physical replication: the robust meat
+    # contains one power of the user weight (the shared frequency score
+    # scale), whereas probability weights keep the squared-score convention.
+    # k_total=1 makes the robust factor N/(N-1) and the cluster factor G/(G-1).
+    V = sandwich_vcov_xe(
+        Xhat, irls_w * residual, bread, kind=kind0, k_total=1,
+        clusters=normalize_vce_clusters(clusters, nobs=n) if kind0 == "cluster" else None,
+        effective_n=float(n if effective_n is None else effective_n),
+        score_scale=frequency_score_scale(weight_kind, base_weights, kind0),
+    )
     return (V + V.T) / 2.0
 
 

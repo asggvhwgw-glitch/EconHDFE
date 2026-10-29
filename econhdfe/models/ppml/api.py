@@ -221,7 +221,7 @@ def _ppmlhdfe_arrays(
     result = fit_arrays(
         y, X, plan, offset=off, true_w=w, weight_kind=weight_kind, vce=vce,
         clusters=cluster, names=names, config=config, warm_start=warm_start,
-        small_sample="asymptotic" if inference_config is None else inference_config.ppml_small_sample,
+        small_sample=(InferenceConfig() if inference_config is None else inference_config).ppml_small_sample,
         execution_config=execution_config, execution_context=context,
     )
     return _finish_result(result, inference_config, execution_config, t0)

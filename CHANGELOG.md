@@ -2,73 +2,74 @@
 
 ## 0.9.4 — unreleased candidate
 
-Statistical-audit follow-up to the 0.9.3 candidate in PR #38. Existing snapshots
-remain immutable; this candidate adds `InferenceConfig.ppml_small_sample`.
+Patch on 0.9.2. Adds `InferenceConfig.ivppml_misspecification_robust` and
+`InferenceConfig.ppml_small_sample`. Where an upstream convention was
+inconsistent or numerically unsafe, the package uses one correct convention
+across PPML and IV-PPML instead of reproducing it.
 
+### Outcome units and reported state
+
+- **Correctness (outcome units).** Poisson PML slopes do not depend on the
+  units of `y`, but IRLS safeguards were absolute (initial-mean floor,
+  deviance-change floor, step-halving floor, `|eta| > 30` divergence bound,
+  the former 1e-3 floor on the PPML outcome scale). Rescaling `y` could stop
+  early with wrong slopes, fail to converge or report a false divergence.
+  Every PPML/IV-PPML path (dense, structured, standardized or not, weighted,
+  with offset) now iterates on `y / mean(y)` with no absolute floor; the IV
+  `|eta|` bound is dropped and the exploding-slope check kept.
+- IV-PPML keeps the solver units through the final projection, standard
+  VCE, EE and J (`final_working_system`), and reports user units only at the
+  end (`in_user_units`); the IRLS state is never mutated.
+- **Same point.** PPML and IV-PPML report the coefficients of the accepted
+  IRLS state, at which `eta` and `mu` are evaluated. The former extra
+  weighted solve moved the coefficients alone by one Newton step; inference
+  now projects only `X` at the final weights. Differences are at the
+  convergence tolerance.
+- Preserve the generated PPML constant when user columns span an intercept;
+  unit restoration, model Wald and covariance repair use its actual index.
+
+### Samples and identification
+
+- IV-PPML defaults to FE-zero separation in both sample modes: ordinary PPML
+  regressor separation is not an existence test for IV moments and removed
+  rows with a unique finite IV root. Explicitly requested legacy
+  simplex/ReLU/mu methods warn once when the config is created (compatibility
+  mode) and are rejected by `validate` in unified mode. The policy-level
+  `SamplePolicy.iv_default_separation` hook is removed.
 - Reject numerical loss of IV identification before a roundoff-sized fitted
-  regressor can be normalized into an apparently identified direction. Dense
-  and block 2SLS share the rejection contract; this is not a weak-IV test.
-- IV-PPML now defaults to FE-zero separation only in both sample modes.
-  Explicit simplex/ReLU/mu legacy selection warns in compatibility mode and
-  remains rejected in unified mode. Ordinary PPML separation is unchanged.
-- Every PPML standardization mode uses a positive weighted outcome mean with
-  no absolute lower bound. Default standardized PPML no longer falsely
-  converges to different slopes when tiny outcomes cross the former SD floor.
-- Preserve the generated PPML constant when user columns already span an
-  intercept. Unit restoration, model Wald and covariance repair use the actual
-  constant index; a redundant user constant/dummy can be omitted instead.
-- Replace the structured 2SLS normal-Gram coefficient solve with bounded QR
-  compression, avoiding false rank loss and coefficient error in a verified
-  near-collinear self-instrumentation example. Dense relevance checks reuse
-  the first-stage projection in original regressor norm coordinates.
-- IV-PPML keeps normalized outcome units through final projection, covariance,
-  EE and J. It returns the jointly accepted IRLS coefficient/mean state;
-  an inference-only extra solve cannot overwrite the coefficient. Tiny user
-  units no longer trigger a different final weighted regression.
-- Complete the multiway covariance with a Schur-complement bound for the
-  constant after separate slope clipping. The full matrix is PSD to numerical
-  precision while the repaired slope block is preserved. This intentionally
-  differs from upstream full-matrix-then-slope replacement. Persistent linear
-  result caches are invalidated (`linear-session-result-7`).
-- Ordinary PPML defaults to the upstream asymptotic finite-sample factors:
-  `N/(N-1)` robust and `G_min/(G_min-1)` clustered. Set
-  `InferenceConfig(ppml_small_sample="residual")` for the previous residual-DF
-  convention. Diagnostics report the convention and multiplier actually used;
-  model-based Poisson covariance is unchanged.
-- Add analytical counterexamples, outcome-unit metamorphic checks, explicit
-  dummy/root/sandwich references and full-covariance contrast tests. Clarify
-  valid-moment versus misspecified EE inference, weak identification, many-FE
-  bias and the absence of fresh licensed-Stata execution. See
-  [the audit closeout](docs/development/statistical-audit-closeout.md).
+  regressor is normalized into an apparent direction (dense and structured
+  2SLS share the contract; not a weak-IV test). Structured 2SLS uses bounded
+  streaming QR (`compute.partitioned_lstsq.merge_qr_factor`,
+  `qr_row_workspace`) instead of normal equations.
+
+### Inference
+
+- **PPML finite-sample factors** default to `N/(N-1)` robust and
+  `G_min/(G_min-1)` cluster, matching ppmlhdfe 2.3.0 exactly (Stata 18 check);
+  the former residual-DF factors overstated SEs with many absorbed FEs.
+  `InferenceConfig(ppml_small_sample="residual")` keeps them explicitly.
+- **IV-PPML cluster factor** now uses the same single `G_min/(G_min-1)` on the
+  combined CGM meat as PPML and the linear estimators, instead of a separate
+  per-subset `G/(G-1)`. One-way clustering is unchanged.
+- IV-PPML diagnostics report `overidentification` (Hansen J on the additive
+  moments `Z' w0 (y - mu)`, equal to the orthogonalized moment Wald
+  statistic). `overid_test` moves to the outcome-agnostic `econhdfe.iv.moments`.
+- Opt-in `InferenceConfig(ivppml_misspecification_robust=True)`: overidentified
+  IV-PPML uses the estimating-equation sandwich (stacked M-estimator,
+  including first-stage re-estimation), valid when the overidentifying
+  moments fail; it agrees with the default under correct specification and
+  exact identification.
+- Multiway covariance PSD repair keeps the separately clipped slope block and
+  completes the constant block with a Schur-complement bound, so the full
+  matrix is PSD; upstream slope-block insertion can leave it indefinite.
+  Persistent linear result caches are invalidated (`linear-session-result-7`).
+
+See [the audit closeout](docs/development/statistical-audit-closeout.md).
 
 ## 0.9.3 — unreleased candidate
 
-Historical first candidate; the 0.9.4 section supersedes its incomplete
-outcome-unit claims and final-state behavior below.
-
-Patch on 0.9.2 (adds one opt-in `InferenceConfig` field).
-
-### IV-PPML outcome-unit invariance and overidentification inference
-
-- **Correctness (IV-PPML IRLS).** Poisson PML slopes do not depend on the units
-  of `y`, but the IRLS safeguards were absolute (initial-mean floor, deviance
-  change floor, step-halving floor, `|eta| > 30` divergence bound). Rescaling
-  `y` could stop early with wrong slopes, fail to converge or report a false
-  divergence. Dense and structured IV-PPML now iterate on `y / mean(y)` and
-  return `mu`, `eta` and the deviance in user units; the `|eta|` bound is
-  dropped (a wide finite predictor range is a valid fit, as in PPML), the
-  exploding-slope check stays. PPML with `standardize=False` rescales the
-  outcome the same way; the default standardized PPML path is unchanged.
-- IV-PPML diagnostics report `overidentification` (Hansen J on the additive
-  moments `Z' w0 (y - mu)` with the chosen robust/cluster covariance, as for
-  linear IV). `overid_test` moves to the outcome-agnostic `econhdfe.iv.moments`.
-- Opt-in `InferenceConfig(ivppml_misspecification_robust=True)`: overidentified
-  IV-PPML uses the estimating-equation sandwich, which adds the first-stage
-  re-estimation terms that the `ivppmlhdfe` sandwich omits when the
-  overidentifying moments fail. It equals the stacked M-estimator sandwich and
-  agrees asymptotically with the default under correct specification and at
-  a solved root under exact identification. Structured DataFrame specifications use the dense path when
-  it is requested. The default covariance is unchanged.
+Intermediate candidate on this branch; only its immutable contract snapshot
+remains. Its changes are included, and corrected where needed, in 0.9.4.
 
 ## 0.9.2 — unreleased candidate
 

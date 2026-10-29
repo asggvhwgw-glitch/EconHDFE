@@ -113,9 +113,10 @@ these upstream versions must not be treated as interchangeable.
 The Poisson regression reference uses explicit weighted FE dummy projection and
 independently aggregated cluster scores. It covers a genuinely indefinite
 CGM covariance, frequency-weight expansion, standardization on/off, and
-dense/block PPML and IV-PPML paths. IV-PPML keeps its per-subset G/(G-1)
-correction. From 0.9.4, ordinary PPML defaults to `N/(N-1)` robust and
-`G_min/(G_min-1)` cluster factors, matching the ppmlhdfe asymptotic convention.
+dense/block PPML and IV-PPML paths. From 0.9.4, both Poisson families default
+to `N/(N-1)` robust and one `G_min/(G_min-1)` factor on the combined CGM
+cluster meat; for ordinary PPML this matches the ppmlhdfe asymptotic
+convention.
 `InferenceConfig(ppml_small_sample="residual")` explicitly retains the earlier
 N, absorbed-DF and nesting correction. Changing either finite-sample factor
 or PSD completion does not resolve few-cluster or growing-FE asymptotic bias.

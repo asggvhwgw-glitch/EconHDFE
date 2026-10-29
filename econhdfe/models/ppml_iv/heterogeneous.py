@@ -15,7 +15,7 @@ from scipy.special import gammaln
 
 from ...collinearity import resolve_collinearity
 from ...compute.block_design import BlockDesign, align_dense_to_blocks, hstack_block_designs, same_row_partition
-from ...compute.vcov import block_cluster_subset_meats_xe, regressor_scale
+from ...compute.vcov import block_cluster_meat_xe, regressor_scale
 from ...compute.weights import frequency_score_scale, normalize_weight_type
 from ...compute.clusters import normalize_vce_clusters
 from ...compute.stable_linalg import equilibrated_gram_inverse
@@ -281,10 +281,10 @@ def _ivppml_vcov_block(
     if kind0 != "cluster":
         raise ValueError("structured IV-PPML supports robust or cluster VCE")
     clusters = normalize_vce_clusters(clusters, nobs=len(residual))
-    V = np.zeros_like(bread)
-    for sign, Sz, g, _ in block_cluster_subset_meats_xe(Z, score, clusters):
-        meat = gamma.T @ Sz @ gamma
-        V += sign * (g / (g - 1.0)) * (bread @ meat @ bread)
+    # Same convention as the dense path: G_min/(G_min-1) on the combined meat.
+    Sz, g = block_cluster_meat_xe(Z, score, clusters)
+    meat = (g / (g - 1.0)) * (gamma.T @ Sz @ gamma)
+    V = bread @ meat @ bread
     return (V + V.T) / 2.0
 
 

@@ -187,9 +187,11 @@ SE, entirely because of these conventions. The residual correction is not
 universally statistically wrong; it was wrong to imply it reproduced the
 current ppmlhdfe convention without qualification.
 
-IV-PPML retains its distinct upstream per-subset `G/(G-1)` cluster
-corrections. Do not substitute ordinary PPML's common minimum-cluster factor
-for that implementation.
+IV-PPML uses the same convention: `N/(N-1)` robust and one
+`G_min/(G_min-1)` factor on the combined CGM meat, as PPML and the linear
+estimators do. Its earlier per-subset `G/(G-1)` factors were a second,
+package-internal convention for the same Poisson score sandwich; they were
+unified rather than kept for upstream similarity.
 
 ## 6. EE, moment tests and growing fixed effects
 

@@ -5,6 +5,7 @@ from ...compute.clusters import normalize_vce_clusters
 from ...compute.weights import frequency_score_scale
 from ...compute.stable_linalg import equilibrated_gram_inverse
 from ...errors import SpecificationError
+from ...config import PPML_SMALL_SAMPLE_DEFAULT
 
 
 # PPML VCE names served by the model-based inverse Hessian.
@@ -57,7 +58,7 @@ def _bread_streamed(X, w, *, chunk_rows=250_000):
 
 def ppml_vcov(
     X_tilde, y, mu, true_w, *, kind="robust", clusters=None,
-    df_absorbed=0, nested_adj=0, weight_kind="none", small_sample="asymptotic",
+    df_absorbed=0, nested_adj=0, weight_kind="none", small_sample=PPML_SMALL_SAMPLE_DEFAULT,
 ):
     """PPML sandwich covariance without materializing a full score matrix."""
     X = np.asarray(X_tilde, dtype=np.float64)

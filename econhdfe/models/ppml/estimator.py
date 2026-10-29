@@ -10,7 +10,7 @@ from scipy.stats import chi2 as chi2_dist
 from .config import PPMLConfig
 from ...hdfe.plan import FEPlan
 from .irls import fit_irls
-from ...compute.linalg import independent_columns, weighted_lstsq
+from ...compute.linalg import independent_columns
 from .results import PPMLResult
 from .separation import detect_separation, initial_sample_selection, sample_policy_diagnostics
 from .standardize import Standardization
@@ -21,6 +21,7 @@ from ..poisson import (
 from .vce import ppml_vcov, ppml_covariance_diagnostics, MODEL_VCE_KINDS
 from .execution import resolve_execution, get_projector
 from ...reporting import cluster_counts as _cluster_counts, fe_names_from_metadata
+from ...config import PPML_SMALL_SAMPLE_DEFAULT
 
 
 def _filter_columns(X, names, plan: FEPlan, weights, tol, *, engine="replica", projector=None,
@@ -85,7 +86,7 @@ def fit_arrays(
     clusters,
     names,
     config: PPMLConfig,
-    small_sample="asymptotic",
+    small_sample=PPML_SMALL_SAMPLE_DEFAULT,
     warm_start=None,
     execution_config: ExecutionConfig | None = None,
     execution_context: ExecutionContext | None = None,
@@ -234,25 +235,14 @@ def fit_arrays(
             )
         sep0.by_method["mu"] = int(np.sum(mu_sep))
 
-    # Final high-accuracy weighted solve. Reuse the IRLS block as workspace and
-    # the same compiled FE projector whenever the sample did not change.
+    # Report the accepted IRLS state: beta, eta and mu are one point. Another
+    # weighted solve here would move beta alone by a Newton step. Inference
+    # needs only X projected at the final weights, with the same projector.
     wfinal = ws * state.mu
-    z = state.eta - offs - 1.0
-    pos = ystd > 0
-    z[pos] += ystd[pos] / state.mu[pos]
-    block = state.transformed
-    if block is None or block.shape != (len(ystd), Xstd.shape[1] + 1):
-        block = np.empty((len(ystd), Xstd.shape[1] + 1), dtype=np.float64)
-    block[:, 0] = z
-    if Xstd.shape[1]:
-        block[:, 1:] = Xstd
-    if projector is not None:
-        block, _ = projector.residualize(
-            block, wfinal, tol=config.target_inner_tol, return_info=True, copy=False
-        )
-    zt, Xt = block[:, 0], block[:, 1:]
-    beta_std, _ = weighted_lstsq(Xt, zt, wfinal, fast=False)
-    beta = standardizer.unscale_coef(beta_std)
+    Xt = np.array(Xstd, dtype=np.float64)
+    if projector is not None and Xt.shape[1]:
+        Xt, _ = projector.residualize(Xt, wfinal, tol=config.target_inner_tol, return_info=True, copy=False)
+    beta = standardizer.unscale_coef(state.beta)
     constant_index = len(beta)-1 if has_intercept else None
     if constant_index is not None:
         beta[constant_index] += math.log(standardizer.y_scale)
