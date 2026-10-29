@@ -36,7 +36,7 @@ from ..ppml.execution import resolve_execution
 from ..ppml.heterogeneous import detect_separation_block
 from ..ppml.separation import initial_sample_selection, sample_policy_diagnostics
 from .config import IVPPMLConfig
-from .irls import fit_in_normalized_outcome_units, restore_outcome_units
+from .irls import fit_in_normalized_outcome_units, final_working_system, in_user_units
 from .results import IVPPMLResult
 from .standardize import IVPPMLStandardization
 
@@ -373,13 +373,8 @@ def fit_block_arrays(
         sample_idx = np.flatnonzero(sample)
         separation[sample_idx[state.separated]] = True
 
-    # Match the dense closeout: all projection and covariance work remains
-    # in the normalized outcome units used by IRLS.
-    y_unit = y1 / state.outcome_scale
-    irls_w = np.maximum(w1 * state.mu, 1e-20)
-    z = state.eta - off1 - 1.0
-    pos = y_unit > 0
-    z[pos] += y_unit[pos] / state.mu[pos]
+    # Final projection supplies inference at the accepted state, in solver units.
+    irls_w, z, weighted_residual = final_working_system(state, y1, w1, off1)
     projected = projector.residualize_response_design(z, combined, irls_w, tol=config.target_inner_tol)
     Cdm, Edm, Idm = _slice_roles(projected.design, Cs.ncols, Es.ncols)
     Xdm = hstack_block_designs(Cdm, Edm)
@@ -391,7 +386,7 @@ def fit_block_arrays(
     dof = p1.dof_info(clusters=cls, method=config.dof_method)
     effective_n = float(np.sum(w1)) if weight_kind == "fweight" else float(len(y1))
     Vstd = _ivppml_vcov_block(
-        Xdm, Zdm, solved.first_stage, w1 * (y_unit - state.mu) / irls_w, irls_w, kind=vce, clusters=cls,
+        Xdm, Zdm, solved.first_stage, weighted_residual / irls_w, irls_w, kind=vce, clusters=cls,
         effective_n=effective_n, base_weights=w1, weight_kind=weight_kind, bread=solved.bread,
     )
     Xraw = hstack_block_designs(C1, E1)
@@ -401,29 +396,28 @@ def fit_block_arrays(
             Xraw, frequency_weights=w1 if config.sample_policy.psd_frequency_scale(weight_kind) else None),
     )
 
-    restore_outcome_units(state)
-
+    mu, eta, deviance = in_user_units(state)
     mean_x = Xraw.t_matvec(irls_w) / float(np.sum(irls_w))
-    b_cons = float(np.average(state.eta - off1, weights=irls_w) - mean_x @ beta)
+    b_cons = float(np.average(eta - off1, weights=irls_w) - mean_x @ beta)
     names = tuple(exog_names) + tuple(endog_names) + ("_cons",)
     coef = np.r_[beta, b_cons]
     Vfull = np.zeros((len(coef), len(coef)), dtype=np.float64)
     Vfull[:-1, :-1] = V
     sefull = np.r_[se, 0.0]
 
-    ll = float(np.sum(w1 * (y1 * state.eta - state.mu - gammaln(y1 + 1.0))))
-    residual_struct = y1 - state.mu
+    ll = float(np.sum(w1 * (y1 * eta - mu - gammaln(y1 + 1.0))))
+    residual_struct = y1 - mu
     Qraw = hstack_block_designs(C1, I1)
     moments = Qraw.t_matvec(w1 * residual_struct) / len(y1)
     full_mu = np.full(n, np.nan); full_eta = np.full(n, np.nan)
-    full_mu[sample] = state.mu; full_eta[sample] = state.eta
+    full_mu[sample] = mu; full_eta[sample] = eta
     sep_by_method = dict(sep.by_method)
     if num_sep_mu:
         sep_by_method["mu"] = num_sep_mu
 
     n_singletons = int(np.sum(initial.singletons)) + (int(np.sum(sep.singletons)) if config.sample_policy.disjoint_reasons else 0)
     return IVPPMLResult(
-        coef, Vfull, sefull, names, True, state.iterations, state.deviance, ll,
+        coef, Vfull, sefull, names, True, state.iterations, deviance, ll,
         int(round(effective_n)), int(np.sum(separation)), sample, separation,
         full_mu, full_eta, int(dof.df_absorbed), tuple(exog_names), tuple(endog_names),
         tuple(instrument_names), moments,

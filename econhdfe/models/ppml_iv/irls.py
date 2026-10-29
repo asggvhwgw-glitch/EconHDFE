@@ -12,6 +12,7 @@ from .config import IVPPMLConfig
 
 @dataclass(slots=True)
 class IVIRLSState:
+    """Accepted IRLS state, entirely in the solver's units of ``y / outcome_scale``."""
     beta: np.ndarray
     mu: np.ndarray
     eta: np.ndarray
@@ -31,12 +32,12 @@ class IVIRLSState:
 
 
 def fit_in_normalized_outcome_units(iterate, y, true_w, initial_eta, *args, **kwargs):
-    """Run IV-PPML on ``y / outcome_scale`` and retain normalized state.
+    """Run IV-PPML on ``y / outcome_scale``; the returned state stays in those units.
 
     The iteration's safeguards are absolute (see ``outcome_scale``); without
     this, rescaling ``y`` changes convergence and can fail or stop early.
-    Final projection, scores and covariance must use these same normalized
-    units. Only the public result is restored to user units, after inference.
+    Closeouts take the final system from ``final_working_system`` and report
+    through ``in_user_units``; neither modifies the state.
     """
     y = np.asarray(y, dtype=np.float64)
     scale = outcome_scale(y, true_w)
@@ -47,11 +48,25 @@ def fit_in_normalized_outcome_units(iterate, y, true_w, initial_eta, *args, **kw
     return state
 
 
-def restore_outcome_units(state):
-    """Restore public mean/index/deviance after all numerical work is done."""
-    state.mu *= state.outcome_scale
-    state.eta += math.log(state.outcome_scale)
-    state.deviance *= state.outcome_scale
+def final_working_system(state, y, true_w, offset):
+    """``(weights, working_response, w0 (y - mu))`` at the accepted state, solver units.
+
+    Final projection, scores, covariance, EE and J all use this system:
+    flooring the IRLS weights in user units would change their relative
+    values merely because the outcome is quoted in smaller units.
+    """
+    y = np.asarray(y, dtype=np.float64) / state.outcome_scale
+    weights = np.maximum(true_w * state.mu, 1e-20)
+    z = state.eta - offset - 1.0
+    pos = y > 0
+    z[pos] += y[pos] / state.mu[pos]
+    return weights, z, true_w * (y - state.mu)
+
+
+def in_user_units(state):
+    """``(mu, eta, deviance)`` in the user's outcome units, for reporting only."""
+    return (state.mu * state.outcome_scale, state.eta + math.log(state.outcome_scale),
+            state.deviance * state.outcome_scale)
 
 
 def fit_iv_irls(y, exog, endog, excluded, plan: FEPlan, true_w, offset, config: IVPPMLConfig,

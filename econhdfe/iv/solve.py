@@ -6,7 +6,7 @@ import scipy.linalg as la
 
 from ..compute.wls import as_2d, weighted_arrays
 from ..compute.stable_linalg import equilibrated_lstsq
-from ..compute.partitioned_lstsq import _merge_augmented_qr, _augmented_qr_workspace
+from ..compute.partitioned_lstsq import merge_qr_factor, qr_row_workspace
 from ..errors import UnderidentifiedError, NumericalError
 
 
@@ -137,7 +137,7 @@ def _compress_block_iv(y, X, Z, w, chunk):
             block[:, zb.columns] = (zb.values[lo:hi] * sw) / zscale[zb.columns]
             block[:, l + xb.columns] = (xb.values[lo:hi] * sw) / xscale[xb.columns]
             block[:, -1] = y[rows] * sw[:, 0]
-            R = _merge_augmented_qr(R, block)
+            R = merge_qr_factor(R, block)
     if R is None:
         R = np.empty((0, width))
     return R[:, -1], R[:, l:l + k], R[:, :l], xscale, zscale
@@ -156,7 +156,7 @@ def weighted_2sls_block(y, X, Z, *, weights=None) -> BlockWeighted2SLSResult:
     w = np.ones(X.nobs, dtype=np.float64) if weights is None else np.asarray(weights, dtype=np.float64)
     if w.shape != (X.nobs,):
         raise ValueError("weights must have one value per observation")
-    chunk, workspace = _augmented_qr_workspace(
+    chunk, workspace = qr_row_workspace(
         X.nobs, X.ncols + Z.ncols + 1,
         max((len(b.rows) for b in X.blocks), default=1),
         label="block_iv_orthogonal_solve",
