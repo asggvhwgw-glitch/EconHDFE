@@ -5,7 +5,7 @@ is repeated at least twice to construct that oracle; these tests are therefore
 NOT a replacement for fully unique-row or genuine AKM benchmarks.
 """
 from __future__ import annotations
-import argparse, gc, json, os, platform, resource, time
+import argparse, gc, json, platform, resource, time
 from pathlib import Path
 import numpy as np
 
@@ -38,6 +38,8 @@ def corpus(case, n, rhs, seed=20261029):
                                 rng.integers(16, size=cells)])
     unique = np.repeat(base, repeat, axis=0)
     codes = np.repeat(unique, 2, axis=0).astype(np.uint32)
+    # Both adapters get the same dense labels, as required by the legacy kernel.
+    codes = np.column_stack([np.unique(col, return_inverse=True)[1] for col in codes.T]).astype(np.uint32)
     w = np.repeat(np.exp(rng.normal(scale=.5, size=u)), 2)
     error = rng.normal(size=(u, rhs))
     truth = np.empty((n, rhs))
@@ -46,7 +48,6 @@ def corpus(case, n, rhs, seed=20261029):
     y = truth.copy()
     for col in codes.T:
         y += rng.normal(scale=.5, size=(int(col.max())+1, rhs))[col]
-    # Shuffle pairs (not individual members), preserving the exact weighted oracle.
     pair_order = rng.permutation(u)
     order = np.column_stack([2*pair_order, 2*pair_order+1]).ravel()
     return codes[order], y[order], w[order], truth[order]
@@ -58,7 +59,6 @@ def execute(case, n, rhs, repeat, threads, methods):
     codes, y, w, truth = corpus(case, n, rhs)
     n = len(y)
     records = []
-    reference = None
     for method in methods:
         gc.collect()
         t0 = time.perf_counter()
@@ -71,8 +71,7 @@ def execute(case, n, rhs, repeat, threads, methods):
         for step in range(repeat):
             wi = w if case != 'reweight' else w*np.repeat(np.exp(.12*np.sin(np.arange(n//2)*(.031+.007*step))), 2)
             t0 = time.perf_counter()
-            if step > 0 and case == 'reweight': s.update_weights(wi)
-            elif step == 0 and case == 'reweight': s.update_weights(wi)
+            if case == 'reweight': s.update_weights(wi)
             update = time.perf_counter()-t0
             t0 = time.perf_counter()
             if method == 'legacy_auto':

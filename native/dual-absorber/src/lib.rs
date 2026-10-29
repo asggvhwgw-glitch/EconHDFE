@@ -299,7 +299,7 @@ impl NativeDualSolver {
         let mut groups: Vec<Vec<u32>> = a.columns().into_iter().map(|c| c.iter().copied().collect()).collect();
         let raw_w = weights.map(|w| w.as_array().iter().copied().collect::<Vec<_>>());
         let requested = backend.to_string();
-        py.detach(move || {
+        py.detach(move || -> Res<Self> {
             let levels: Vec<usize> = groups.iter_mut().map(|c| compact(c)).collect();
             let w = crate::weights(raw_w.as_deref(), n)?;
             let mass = masses(&groups, &levels, &w);
