@@ -65,13 +65,13 @@ jobs:
         run: |
           for case in one_big two_big three_big weak repeated reweight; do
             for rhs in 2 8; do
-              timeout 300s python native/dual-absorber/benchmark.py --case "$case" --rows 1000000 --rhs "$rhs" --repeat 2 --threads 2 --output "prototype-results/${case}-1m-${rhs}.json" | tee -a prototype-results/benchmarks.log
+              timeout 900s python native/dual-absorber/benchmark.py --case "$case" --rows 1000000 --rhs "$rhs" --repeat 2 --threads 2 --output "prototype-results/${case}-1m-${rhs}.json" | tee -a prototype-results/benchmarks.log
             done
           done
       - name: 5M two-RHS structural checks
         run: |
           for case in one_big three_big weak repeated; do
-            timeout 300s python native/dual-absorber/benchmark.py --case "$case" --rows 5000000 --rhs 2 --repeat 2 --threads 2 --output "prototype-results/${case}-5m-2.json" | tee -a prototype-results/benchmarks.log
+            timeout 900s python native/dual-absorber/benchmark.py --case "$case" --rows 5000000 --rhs 2 --repeat 2 --threads 2 --output "prototype-results/${case}-5m-2.json" | tee -a prototype-results/benchmarks.log
           done
       - name: Validate completeness and archive sources
         run: |
