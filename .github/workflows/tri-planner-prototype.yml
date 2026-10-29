@@ -1,0 +1,79 @@
+name: Three-route planner prototype
+on:
+  push:
+    branches: [feat/tri-route-planner-v02-20261029]
+    paths:
+      - native/solver-planner/src/**
+      - native/solver-planner/tests/**
+      - native/solver-planner/fixtures.py
+      - native/solver-planner/benchmark.py
+      - native/solver-planner/pyproject.toml
+      - .github/workflows/tri-planner-prototype.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+concurrency:
+  group: tri-planner-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_TARGET_DIR: ${{ github.workspace }}/.tri-target
+      RAYON_NUM_THREADS: '2'
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '1'
+      NUMBA_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            .tri-target
+          key: tri-planner-${{ runner.os }}-${{ hashFiles('native/dual-absorber/Cargo.toml', 'native/within-accel/Cargo.toml') }}
+      - name: Build independent native wheels
+        run: |
+          mkdir -p planner-results wheelhouse
+          git rev-parse HEAD > planner-results/source-sha.txt
+          lscpu > planner-results/cpu.txt
+          python -m pip install numpy pytest maturin setuptools wheel
+          python -m pip wheel --no-deps ./native/dual-absorber -w wheelhouse 2>&1 | tee planner-results/build-dual.log
+          python -m pip wheel --no-deps ./native/within-accel -w wheelhouse 2>&1 | tee planner-results/build-legacy.log
+          python -m pip install wheelhouse/*.whl
+          python -m pip install --no-build-isolation -e ./native/solver-planner
+          python -m pip freeze > planner-results/environment.txt
+      - name: Independent SVD, state, failure, and common IRLS tests
+        run: |
+          python -m pytest native/solver-planner/tests -q --junitxml=planner-results/tests.xml 2>&1 | tee planner-results/tests.log
+      - name: Full-row measured selection smoke and forward oracle
+        run: |
+          for case in unique_three repeated; do
+            python native/solver-planner/benchmark.py --case "$case" --rows 100000 --rhs 8 --method planned --rounds 2 --output "planner-results/${case}.json"
+          done
+          python - <<'PY'
+          import json,xml.etree.ElementTree as ET
+          suites=list(ET.parse('planner-results/tests.xml').getroot().iter('testsuite'))
+          assert sum(int(s.get('tests',0)) for s in suites)>=41
+          assert all(int(s.get('failures',0))==0 and int(s.get('errors',0))==0 for s in suites)
+          for name in ['unique_three','repeated']:
+              r=json.load(open(f'planner-results/{name}.json'))
+              assert r['valid'] and len(r['rounds'])==2
+          print('PLANNER_VALIDATION_OK')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tri-planner-validation-${{ github.run_id }}
+          path: planner-results/
+          if-no-files-found: error
