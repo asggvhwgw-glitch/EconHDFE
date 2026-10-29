@@ -6378,9 +6378,9 @@
     },
     {
       "name": "benchmarks",
-      "files": 125,
-      "python_files": 31,
-      "markdown_files": 9
+      "files": 145,
+      "python_files": 41,
+      "markdown_files": 13
     },
     {
       "name": "docs",
