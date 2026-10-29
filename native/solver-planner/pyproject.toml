@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "econhdfe-solver-planner"
+version = "0.2.0a1"
+description = "Experimental measured three-route FE planner; no production estimator changes"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.26", "econhdfe-dual-prototype==0.1.0a1", "econhdfe-within==0.1.0a2"]
+license = "BSD-3-Clause"
+
+[tool.setuptools.packages.find]
+where = ["src"]
