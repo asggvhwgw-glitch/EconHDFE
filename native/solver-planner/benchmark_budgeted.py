@@ -19,7 +19,7 @@ def run(a):
     t=perf_counter()
     if a.method=='legacy': obj=_LegacyAuto(g,w,a.threads,1<<30)
     elif a.method=='v02': obj=PlannedAbsorber(g,weights=w,threads=a.threads,scratch_bytes=1<<30,workload='reweight' if a.reweight else 'fixed',allow_fallback=False)
-    else: obj=BudgetedAbsorber(g,weights=w,threads=a.threads,scratch_bytes=1<<30,expected_calls=a.calls,workload='reweight' if a.reweight else 'fixed',allow_fallback=False,max_probe_seconds=a.budget,probe_max_iter=a.cap,max_overhead_fraction=a.overhead,exploration_fraction=a.explore)
+    else: obj=BudgetedAbsorber(g,weights=w,threads=a.threads,scratch_bytes=1<<30,expected_calls=a.calls,workload='reweight' if a.reweight else 'fixed',allow_fallback=False,max_probe_seconds=a.budget,probe_max_iter=a.cap,max_overhead_fraction=a.overhead,exploration_fraction=a.explore,probe_rhs=a.pilot_rhs)
     constructor=perf_counter()-t; rounds=[]
     try:
         for j in range(a.calls):
@@ -37,7 +37,7 @@ def run(a):
             if not accepted:break
     finally:
         if hasattr(obj,'close'):obj.close()
-    return dict(case=a.case,n=n,rhs=a.rhs,seed=a.seed,reference=ref,method=a.method,horizon=a.calls,reweight=a.reweight,constructor_seconds=constructor,rounds=rounds,total_seconds=constructor+sum(x['seconds'] for x in rounds),peak_parent_rss_mb=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024,peak_child_rss_mb=resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss/1024,memory_scope='separate process HWM, not simultaneous combined RSS',valid=len(rounds)==a.calls and all(x['valid'] for x in rounds),threads=a.threads,python=platform.python_version(),budget=a.budget,probe_cap=a.cap,max_overhead_fraction=a.overhead,exploration_fraction=a.explore)
+    return dict(case=a.case,n=n,rhs=a.rhs,seed=a.seed,reference=ref,method=a.method,horizon=a.calls,reweight=a.reweight,constructor_seconds=constructor,rounds=rounds,total_seconds=constructor+sum(x['seconds'] for x in rounds),peak_parent_rss_mb=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024,peak_child_rss_mb=resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss/1024,memory_scope='separate process HWM, not simultaneous combined RSS',valid=len(rounds)==a.calls and all(x['valid'] for x in rounds),threads=a.threads,python=platform.python_version(),budget=a.budget,probe_cap=a.cap,max_overhead_fraction=a.overhead,exploration_fraction=a.explore,probe_rhs=a.pilot_rhs)
 
 def main():
     p=argparse.ArgumentParser()
@@ -48,6 +48,7 @@ def main():
     p.add_argument('--reweight',action='store_true');p.add_argument('--budget',type=float,default=3.)
     p.add_argument('--cap',type=int,default=128);p.add_argument('--overhead',type=float,default=.5)
     p.add_argument('--explore',type=float,default=.1)
+    p.add_argument('--pilot-rhs',type=int,default=1)
     p.add_argument('--out',required=True);a=p.parse_args()
     result=run(a);Path(a.out).write_text(json.dumps(result,indent=2,allow_nan=False))
     plan=result['rounds'][-1]['info'].get('plan',{})
