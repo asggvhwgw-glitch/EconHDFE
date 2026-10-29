@@ -85,7 +85,7 @@ def generate(n: int, case: str, seed: int):
         g = int(codes[:, j].max()) + 1
         effects = rng.normal(scale=0.4 / (j + 1) ** 0.5, size=g)
         y += effects[codes[:, j]]
-    w = np.exp(np.clip(rng.normal(scale=0.6, size=n), -2.0, 2.0))
+    w = np.exp(np.clip(rng.normal(scale=0.6, size=n), -2.0, 2.0)) if case == "reweight" else np.ones(n)
     return codes, np.ascontiguousarray(x), np.ascontiguousarray(y), np.ascontiguousarray(w)
 
 
