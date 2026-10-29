@@ -1,0 +1,1608 @@
+{
+  "schema_version": 1,
+  "expected_replicates": 1,
+  "repeat_consistency_assessment": "single_trial_not_assessable",
+  "counts": {
+    "worker_cases": 1,
+    "worker_statuses": {
+      "passed": 1
+    },
+    "recorded_calls": 2,
+    "represented_call_outcomes": 2,
+    "call_statuses": {
+      "passed": 2
+    }
+  },
+  "max_forward_error": 5.576735790579497e-13,
+  "rows": [
+    {
+      "family": "rigidity_grid",
+      "backend": "fereg",
+      "size": 320,
+      "diagnostics": true,
+      "mode": "cold",
+      "replicates": [
+        0
+      ],
+      "replicates_complete": true,
+      "statuses": {
+        "passed": 1
+      },
+      "controls": {
+        "n": 1,
+        "consistent": true,
+        "values": [
+          {
+            "family": "rigidity_grid",
+            "size": 320,
+            "backend": "fereg",
+            "diagnostics": true,
+            "calls": [
+              "cold",
+              "warm"
+            ],
+            "rhs": 2,
+            "seed": 20261029,
+            "threads": 2,
+            "tol": 1e-10,
+            "forward_tol": 2e-08,
+            "max_iter": 2000
+          }
+        ]
+      },
+      "N": {
+        "n": 1,
+        "consistent": true,
+        "values": [
+          2048000
+        ]
+      },
+      "G": {
+        "n": 1,
+        "consistent": true,
+        "values": [
+          614400
+        ]
+      },
+      "U": {
+        "n": 1,
+        "consistent": true,
+        "values": [
+          1638400
+        ]
+      },
+      "total_s": {
+        "n": 1,
+        "median": 8.345950335999078,
+        "min": 8.345950335999078,
+        "max": 8.345950335999078
+      },
+      "setup_s": {
+        "n": 1,
+        "median": 0.09631019700100296,
+        "min": 0.09631019700100296,
+        "max": 0.09631019700100296
+      },
+      "solve_s": {
+        "n": 1,
+        "median": 8.249640138998075,
+        "min": 8.249640138998075,
+        "max": 8.249640138998075
+      },
+      "all_returned_total_s": {
+        "n": 1,
+        "median": 8.345950335999078,
+        "min": 8.345950335999078,
+        "max": 8.345950335999078
+      },
+      "max_forward_error": 5.576735790579497e-13,
+      "native": {
+        "observations": 1,
+        "counters": {
+          "fereg.calls_started_with_joint_factor": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.calls_started_with_small_factor": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.calls_with_warm_coefficients": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.escalation_calls": {
+            "n": 1,
+            "median": 1,
+            "min": 1,
+            "max": 1,
+            "consistent": true
+          },
+          "fereg.escalation_changes": {
+            "n": 1,
+            "median": 1,
+            "min": 1,
+            "max": 1,
+            "consistent": true
+          },
+          "fereg.exact_precond_calls": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.joint_aggregation_calls": {
+            "n": 1,
+            "median": 1,
+            "min": 1,
+            "max": 1,
+            "consistent": true
+          },
+          "fereg.joint_analyze_calls": {
+            "n": 1,
+            "median": 1,
+            "min": 1,
+            "max": 1,
+            "consistent": true
+          },
+          "fereg.joint_assembly_calls": {
+            "n": 1,
+            "median": 1,
+            "min": 1,
+            "max": 1,
+            "consistent": true
+          },
+          "fereg.joint_assembly_errors": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.joint_build_attempts": {
+            "n": 1,
+            "median": 1,
+            "min": 1,
+            "max": 1,
+            "consistent": true
+          },
+          "fereg.joint_build_errors": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.joint_build_successes": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.joint_numeric_calls": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.joint_numeric_errors": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.joint_pattern_calls": {
+            "n": 1,
+            "median": 1,
+            "min": 1,
+            "max": 1,
+            "consistent": true
+          },
+          "fereg.joint_refactor_calls": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.joint_refactor_errors": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.joint_refresh_calls": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.joint_refresh_errors": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.large_block_build_calls": {
+            "n": 1,
+            "median": 2,
+            "min": 2,
+            "max": 2,
+            "consistent": true
+          },
+          "fereg.large_block_build_errors": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.matvec_calls": {
+            "n": 1,
+            "median": 70,
+            "min": 70,
+            "max": 70,
+            "consistent": true
+          },
+          "fereg.matvec_errors": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.matvec_rhs_columns": {
+            "n": 1,
+            "median": 140,
+            "min": 140,
+            "max": 140,
+            "consistent": true
+          },
+          "fereg.pcg_calls": {
+            "n": 1,
+            "median": 1,
+            "min": 1,
+            "max": 1,
+            "consistent": true
+          },
+          "fereg.pcg_errors": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.precond_calls": {
+            "n": 1,
+            "median": 71,
+            "min": 71,
+            "max": 71,
+            "consistent": true
+          },
+          "fereg.precond_rhs_columns": {
+            "n": 1,
+            "median": 142,
+            "min": 142,
+            "max": 142,
+            "consistent": true
+          },
+          "fereg.probe_calls": {
+            "n": 1,
+            "median": 4,
+            "min": 4,
+            "max": 4,
+            "consistent": true
+          },
+          "fereg.probe_changes": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.recovery_calls": {
+            "n": 1,
+            "median": 1,
+            "min": 1,
+            "max": 1,
+            "consistent": true
+          },
+          "fereg.residualize_calls": {
+            "n": 1,
+            "median": 1,
+            "min": 1,
+            "max": 1,
+            "consistent": true
+          },
+          "fereg.residualize_errors": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.rhs_calls": {
+            "n": 1,
+            "median": 1,
+            "min": 1,
+            "max": 1,
+            "consistent": true
+          },
+          "fereg.small_build_calls": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.small_build_errors": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.weight_update_calls": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.weight_update_errors": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          }
+        },
+        "phase_times_s": {
+          "fereg.escalation_seconds": {
+            "n": 1,
+            "median": 1.1518902739999999,
+            "min": 1.1518902739999999,
+            "max": 1.1518902739999999
+          },
+          "fereg.joint_aggregation_seconds": {
+            "n": 1,
+            "median": 0.029742886,
+            "min": 0.029742886,
+            "max": 0.029742886
+          },
+          "fereg.joint_analyze_seconds": {
+            "n": 1,
+            "median": 0.761727635,
+            "min": 0.761727635,
+            "max": 0.761727635
+          },
+          "fereg.joint_assembly_seconds": {
+            "n": 1,
+            "median": 0.22347378,
+            "min": 0.22347378,
+            "max": 0.22347378
+          },
+          "fereg.joint_build_seconds": {
+            "n": 1,
+            "median": 1.057848492,
+            "min": 1.057848492,
+            "max": 1.057848492
+          },
+          "fereg.joint_numeric_seconds": {
+            "n": 1,
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "fereg.joint_pattern_seconds": {
+            "n": 1,
+            "median": 0.032839105,
+            "min": 0.032839105,
+            "max": 0.032839105
+          },
+          "fereg.joint_refactor_seconds": {
+            "n": 1,
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "fereg.joint_refresh_seconds": {
+            "n": 1,
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "fereg.large_block_build_seconds": {
+            "n": 1,
+            "median": 1.151886249,
+            "min": 1.151886249,
+            "max": 1.151886249
+          },
+          "fereg.matvec_seconds": {
+            "n": 1,
+            "median": 0.7876903730000001,
+            "min": 0.7876903730000001,
+            "max": 0.7876903730000001
+          },
+          "fereg.pcg_seconds": {
+            "n": 1,
+            "median": 7.913385221,
+            "min": 7.913385221,
+            "max": 7.913385221
+          },
+          "fereg.precond_seconds": {
+            "n": 1,
+            "median": 4.531739631,
+            "min": 4.531739631,
+            "max": 4.531739631
+          },
+          "fereg.probe_seconds": {
+            "n": 1,
+            "median": 1.057855862,
+            "min": 1.057855862,
+            "max": 1.057855862
+          },
+          "fereg.recovery_seconds": {
+            "n": 1,
+            "median": 0.005303027,
+            "min": 0.005303027,
+            "max": 0.005303027
+          },
+          "fereg.residualize_seconds": {
+            "n": 1,
+            "median": 8.022489846,
+            "min": 8.022489846,
+            "max": 8.022489846
+          },
+          "fereg.rhs_seconds": {
+            "n": 1,
+            "median": 0.102786814,
+            "min": 0.102786814,
+            "max": 0.102786814
+          },
+          "fereg.small_build_seconds": {
+            "n": 1,
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "fereg.weight_update_seconds": {
+            "n": 1,
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "snapshot_metadata_s": {
+          "fereg.constructor_structure_seconds": {
+            "n": 1,
+            "median": 0.040529983,
+            "min": 0.040529983,
+            "max": 0.040529983
+          },
+          "fereg.constructor_weights_seconds": {
+            "n": 1,
+            "median": 0.050463787,
+            "min": 0.050463787,
+            "max": 0.050463787
+          },
+          "wrapper.constructor.wrapper_seconds": {
+            "n": 1,
+            "median": 0.029358897,
+            "min": 0.029358897,
+            "max": 0.029358897
+          }
+        },
+        "fractions": {
+          "joint_build_fraction_of_core_residualize": {
+            "n": 1,
+            "median": 0.13186037156873953,
+            "min": 0.13186037156873953,
+            "max": 0.13186037156873953
+          },
+          "joint_build_fraction_of_outer_total": {
+            "n": 1,
+            "median": 0.12674991455881543,
+            "min": 0.12674991455881543,
+            "max": 0.12674991455881543
+          }
+        },
+        "structure": {
+          "fereg.basic_fresh": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              true
+            ]
+          },
+          "fereg.joint_aggregation_cached": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              false
+            ]
+          },
+          "fereg.joint_analyzed_factor_entries": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              142379817
+            ]
+          },
+          "fereg.joint_factor_entries": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              null
+            ]
+          },
+          "fereg.joint_factor_present": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              false
+            ]
+          },
+          "fereg.joint_failed": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              true
+            ]
+          },
+          "fereg.joint_last_build_outcome": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              "over the fill budget"
+            ]
+          },
+          "fereg.joint_matrix_nnz": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              12697600
+            ]
+          },
+          "fereg.joint_pattern_cached": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              false
+            ]
+          },
+          "fereg.joint_structural_nnz": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              12697600
+            ]
+          },
+          "fereg.joint_symbolic_flops": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              261268847273.0
+            ]
+          },
+          "fereg.large_fresh": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              true
+            ]
+          },
+          "fereg.large_sparse_factor_entries": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              22365678
+            ]
+          },
+          "fereg.last_escalated": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              true
+            ]
+          },
+          "fereg.last_exact": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              false
+            ]
+          },
+          "fereg.last_rhs_width": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              2
+            ]
+          },
+          "fereg.last_success": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              true
+            ]
+          },
+          "fereg.m_small": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              0
+            ]
+          },
+          "fereg.n_blocks": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              2
+            ]
+          },
+          "fereg.n_cells": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              1638400
+            ]
+          },
+          "fereg.n_obs": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              2048000
+            ]
+          },
+          "fereg.precond_kinds": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              [
+                "approx-chol",
+                "sparse-chol"
+              ]
+            ]
+          },
+          "fereg.reduced_dim": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              409600
+            ]
+          },
+          "fereg.small_factor_kind": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              null
+            ]
+          },
+          "fereg.small_factor_present": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              false
+            ]
+          },
+          "fereg.small_fresh": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              false
+            ]
+          },
+          "fereg.small_sparse_factor_entries": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              null
+            ]
+          },
+          "kernel_builds_in_call": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              1
+            ]
+          },
+          "reported_iterations": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              [
+                69,
+                69
+              ]
+            ]
+          },
+          "shared_iterations_per_attempt": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              [
+                {
+                  "iterations": 69,
+                  "rhs_width": 2
+                }
+              ]
+            ]
+          },
+          "wrapper.route": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              "fereg"
+            ]
+          }
+        },
+        "counter_units": {
+          "n": 1,
+          "consistent": true,
+          "values": [
+            {
+              "fereg": "full-width lockstep batch operator entry calls; rhs_columns sums allocated width including frozen columns",
+              "within": "individual vector operator entry calls summed across RHS; seconds can overlap"
+            }
+          ]
+        },
+        "counters_consistent": true,
+        "structure_consistent": true
+      },
+      "sample_refs": [
+        {
+          "case_index": 0,
+          "mode": "cold",
+          "replicate": 0
+        }
+      ]
+    },
+    {
+      "family": "rigidity_grid",
+      "backend": "fereg",
+      "size": 320,
+      "diagnostics": true,
+      "mode": "warm",
+      "replicates": [
+        0
+      ],
+      "replicates_complete": true,
+      "statuses": {
+        "passed": 1
+      },
+      "controls": {
+        "n": 1,
+        "consistent": true,
+        "values": [
+          {
+            "family": "rigidity_grid",
+            "size": 320,
+            "backend": "fereg",
+            "diagnostics": true,
+            "calls": [
+              "cold",
+              "warm"
+            ],
+            "rhs": 2,
+            "seed": 20261029,
+            "threads": 2,
+            "tol": 1e-10,
+            "forward_tol": 2e-08,
+            "max_iter": 2000
+          }
+        ]
+      },
+      "N": {
+        "n": 1,
+        "consistent": true,
+        "values": [
+          2048000
+        ]
+      },
+      "G": {
+        "n": 1,
+        "consistent": true,
+        "values": [
+          614400
+        ]
+      },
+      "U": {
+        "n": 1,
+        "consistent": true,
+        "values": [
+          1638400
+        ]
+      },
+      "total_s": {
+        "n": 1,
+        "median": 6.073911957999371,
+        "min": 6.073911957999371,
+        "max": 6.073911957999371
+      },
+      "setup_s": {
+        "n": 1,
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "solve_s": {
+        "n": 1,
+        "median": 6.073911957999371,
+        "min": 6.073911957999371,
+        "max": 6.073911957999371
+      },
+      "all_returned_total_s": {
+        "n": 1,
+        "median": 6.073911957999371,
+        "min": 6.073911957999371,
+        "max": 6.073911957999371
+      },
+      "max_forward_error": 4.334741721025503e-13,
+      "native": {
+        "observations": 1,
+        "counters": {
+          "fereg.calls_started_with_joint_factor": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.calls_started_with_small_factor": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.calls_with_warm_coefficients": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.escalation_calls": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.escalation_changes": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.exact_precond_calls": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.joint_aggregation_calls": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.joint_analyze_calls": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.joint_assembly_calls": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.joint_assembly_errors": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.joint_build_attempts": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.joint_build_errors": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.joint_build_successes": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.joint_numeric_calls": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.joint_numeric_errors": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.joint_pattern_calls": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.joint_refactor_calls": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.joint_refactor_errors": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.joint_refresh_calls": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.joint_refresh_errors": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.large_block_build_calls": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.large_block_build_errors": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.matvec_calls": {
+            "n": 1,
+            "median": 58,
+            "min": 58,
+            "max": 58,
+            "consistent": true
+          },
+          "fereg.matvec_errors": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.matvec_rhs_columns": {
+            "n": 1,
+            "median": 116,
+            "min": 116,
+            "max": 116,
+            "consistent": true
+          },
+          "fereg.pcg_calls": {
+            "n": 1,
+            "median": 1,
+            "min": 1,
+            "max": 1,
+            "consistent": true
+          },
+          "fereg.pcg_errors": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.precond_calls": {
+            "n": 1,
+            "median": 59,
+            "min": 59,
+            "max": 59,
+            "consistent": true
+          },
+          "fereg.precond_rhs_columns": {
+            "n": 1,
+            "median": 118,
+            "min": 118,
+            "max": 118,
+            "consistent": true
+          },
+          "fereg.probe_calls": {
+            "n": 1,
+            "median": 2,
+            "min": 2,
+            "max": 2,
+            "consistent": true
+          },
+          "fereg.probe_changes": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.recovery_calls": {
+            "n": 1,
+            "median": 1,
+            "min": 1,
+            "max": 1,
+            "consistent": true
+          },
+          "fereg.residualize_calls": {
+            "n": 1,
+            "median": 1,
+            "min": 1,
+            "max": 1,
+            "consistent": true
+          },
+          "fereg.residualize_errors": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.rhs_calls": {
+            "n": 1,
+            "median": 1,
+            "min": 1,
+            "max": 1,
+            "consistent": true
+          },
+          "fereg.small_build_calls": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.small_build_errors": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.weight_update_calls": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          },
+          "fereg.weight_update_errors": {
+            "n": 1,
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "consistent": true
+          }
+        },
+        "phase_times_s": {
+          "fereg.escalation_seconds": {
+            "n": 1,
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "fereg.joint_aggregation_seconds": {
+            "n": 1,
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "fereg.joint_analyze_seconds": {
+            "n": 1,
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "fereg.joint_assembly_seconds": {
+            "n": 1,
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "fereg.joint_build_seconds": {
+            "n": 1,
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "fereg.joint_numeric_seconds": {
+            "n": 1,
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "fereg.joint_pattern_seconds": {
+            "n": 1,
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "fereg.joint_refactor_seconds": {
+            "n": 1,
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "fereg.joint_refresh_seconds": {
+            "n": 1,
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "fereg.large_block_build_seconds": {
+            "n": 1,
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "fereg.matvec_seconds": {
+            "n": 1,
+            "median": 0.6989327380000002,
+            "min": 0.6989327380000002,
+            "max": 0.6989327380000002
+          },
+          "fereg.pcg_seconds": {
+            "n": 1,
+            "median": 5.940477743000001,
+            "min": 5.940477743000001,
+            "max": 5.940477743000001
+          },
+          "fereg.precond_seconds": {
+            "n": 1,
+            "median": 4.895496257999999,
+            "min": 4.895496257999999,
+            "max": 4.895496257999999
+          },
+          "fereg.probe_seconds": {
+            "n": 1,
+            "median": 6.800000000861672e-07,
+            "min": 6.800000000861672e-07,
+            "max": 6.800000000861672e-07
+          },
+          "fereg.recovery_seconds": {
+            "n": 1,
+            "median": 0.007473865,
+            "min": 0.007473865,
+            "max": 0.007473865
+          },
+          "fereg.residualize_seconds": {
+            "n": 1,
+            "median": 5.963534086999999,
+            "min": 5.963534086999999,
+            "max": 5.963534086999999
+          },
+          "fereg.rhs_seconds": {
+            "n": 1,
+            "median": 0.012547736000000004,
+            "min": 0.012547736000000004,
+            "max": 0.012547736000000004
+          },
+          "fereg.small_build_seconds": {
+            "n": 1,
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "fereg.weight_update_seconds": {
+            "n": 1,
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "snapshot_metadata_s": {
+          "fereg.constructor_structure_seconds": {
+            "n": 1,
+            "median": 0.040529983,
+            "min": 0.040529983,
+            "max": 0.040529983
+          },
+          "fereg.constructor_weights_seconds": {
+            "n": 1,
+            "median": 0.050463787,
+            "min": 0.050463787,
+            "max": 0.050463787
+          },
+          "wrapper.constructor.wrapper_seconds": {
+            "n": 1,
+            "median": 0.029358897,
+            "min": 0.029358897,
+            "max": 0.029358897
+          }
+        },
+        "fractions": {
+          "joint_build_fraction_of_core_residualize": {
+            "n": 1,
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "joint_build_fraction_of_outer_total": {
+            "n": 1,
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "structure": {
+          "fereg.basic_fresh": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              true
+            ]
+          },
+          "fereg.joint_aggregation_cached": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              false
+            ]
+          },
+          "fereg.joint_analyzed_factor_entries": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              142379817
+            ]
+          },
+          "fereg.joint_factor_entries": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              null
+            ]
+          },
+          "fereg.joint_factor_present": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              false
+            ]
+          },
+          "fereg.joint_failed": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              true
+            ]
+          },
+          "fereg.joint_last_build_outcome": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              "over the fill budget"
+            ]
+          },
+          "fereg.joint_matrix_nnz": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              12697600
+            ]
+          },
+          "fereg.joint_pattern_cached": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              false
+            ]
+          },
+          "fereg.joint_structural_nnz": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              12697600
+            ]
+          },
+          "fereg.joint_symbolic_flops": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              261268847273.0
+            ]
+          },
+          "fereg.large_fresh": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              true
+            ]
+          },
+          "fereg.large_sparse_factor_entries": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              22365678
+            ]
+          },
+          "fereg.last_escalated": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              false
+            ]
+          },
+          "fereg.last_exact": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              false
+            ]
+          },
+          "fereg.last_rhs_width": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              2
+            ]
+          },
+          "fereg.last_success": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              true
+            ]
+          },
+          "fereg.m_small": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              0
+            ]
+          },
+          "fereg.n_blocks": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              2
+            ]
+          },
+          "fereg.n_cells": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              1638400
+            ]
+          },
+          "fereg.n_obs": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              2048000
+            ]
+          },
+          "fereg.precond_kinds": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              [
+                "approx-chol",
+                "sparse-chol"
+              ]
+            ]
+          },
+          "fereg.reduced_dim": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              409600
+            ]
+          },
+          "fereg.small_factor_kind": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              null
+            ]
+          },
+          "fereg.small_factor_present": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              false
+            ]
+          },
+          "fereg.small_fresh": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              false
+            ]
+          },
+          "fereg.small_sparse_factor_entries": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              null
+            ]
+          },
+          "kernel_builds_in_call": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              0
+            ]
+          },
+          "reported_iterations": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              [
+                58,
+                58
+              ]
+            ]
+          },
+          "shared_iterations_per_attempt": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              [
+                {
+                  "iterations": 58,
+                  "rhs_width": 2
+                }
+              ]
+            ]
+          },
+          "wrapper.route": {
+            "n": 1,
+            "consistent": true,
+            "values": [
+              "fereg"
+            ]
+          }
+        },
+        "counter_units": {
+          "n": 1,
+          "consistent": true,
+          "values": [
+            {
+              "fereg": "full-width lockstep batch operator entry calls; rhs_columns sums allocated width including frozen columns",
+              "within": "individual vector operator entry calls summed across RHS; seconds can overlap"
+            }
+          ]
+        },
+        "counters_consistent": true,
+        "structure_consistent": true
+      },
+      "sample_refs": [
+        {
+          "case_index": 0,
+          "mode": "warm",
+          "replicate": 0
+        }
+      ]
+    }
+  ],
+  "cold_over_warm": [
+    {
+      "family": "rigidity_grid",
+      "backend": "fereg",
+      "size": 320,
+      "diagnostics": true,
+      "kind": "cold_over_warm",
+      "paired_total_time_ratio": {
+        "n": 1,
+        "median": 1.374065082554814,
+        "min": 1.374065082554814,
+        "max": 1.374065082554814
+      },
+      "ratio_of_paired_time_medians": 1.374065082554814,
+      "excluded_or_missing_pairs": 0
+    }
+  ],
+  "diagnostics_on_over_off": [
+    {
+      "family": "rigidity_grid",
+      "backend": "fereg",
+      "size": 320,
+      "mode": "cold",
+      "kind": "diagnostics_on_over_off",
+      "paired_total_time_ratio": {
+        "n": 0,
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "ratio_of_paired_time_medians": null,
+      "excluded_or_missing_pairs": 1
+    },
+    {
+      "family": "rigidity_grid",
+      "backend": "fereg",
+      "size": 320,
+      "mode": "warm",
+      "kind": "diagnostics_on_over_off",
+      "paired_total_time_ratio": {
+        "n": 0,
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "ratio_of_paired_time_medians": null,
+      "excluded_or_missing_pairs": 1
+    }
+  ],
+  "worker_errors": [],
+  "call_errors": [],
+  "warnings": [],
+  "interpretation": {
+    "timing_population": "total/setup/solve stats use passed calls; all returned timings and every outcome remain separate",
+    "deltas": "sum only the same field across disjoint attempts of the same kernel; fallback namespaces remain separate",
+    "timers": "inclusive/nested and sometimes concurrent; phase times must not be added together",
+    "snapshot_metadata": "constructor and cached-build times describe retained objects; repeated warm snapshots are not new work",
+    "factor_entries": "allocated sparse factor values including padding, not exact nnz(L); matrix nnz is full assembled CSR",
+    "local_factors": "within local-factor shapes and cross-tab sparsity are not a factor-nnz or flop measurement",
+    "symbolic_flops": "symbolic work estimate, not instrumented floating-point operations",
+    "ratios": "descriptive paired ratios at equal recorded controls; no significance claim or strong ranking",
+    "toggle": "hot-loop counters/timers only; both modes retain metadata and snapshot generation"
+  },
+  "source": {
+    "path": "fereg_budget_probe.json.gz",
+    "sha256": "33ab2f9fd468fa22f9345b35019b758631437d22b506cb0e035fbad8b0337575",
+    "stored_sha256": "d9fd3357103dd63b4cc488df5ab79fc30804bd25b383365ec153c8d7728a5a48",
+    "compression": "gzip",
+    "study_source_sha256": "a039b3d72960bc5f7b39b6a2d774fa49f9985a54e4f4229ae35308e178b08829"
+  },
+  "markdown_tables": "# Native cost study summary\n\nTimes are seconds: median [min, max] across passed calls. Counts retain their native units.\n\n## Full call timing and accuracy\n\n| Family | Backend | L | Diag | Call | Statuses | Total s | Max forward |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| rigidity_grid | fereg | 320 | on | cold | {\"passed\": 1} | 8.34595 | 5.57674e-13 |\n| rigidity_grid | fereg | 320 | on | warm | {\"passed\": 1} | 6.07391 | 4.33474e-13 |\n\n## Within vector-call work (diagnostics on)\n\n| Backend | L | Call | D apply | D adjoint | P apply | P adjoint | Deferred build s | Escalated | Local factors | Max factor dim |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n\n## Fereg batch work and factor state (diagnostics on)\n\n| L | Call | H batches | P batches | Exact P | Joint allocated entries | CSR nnz | Build outcome | Joint build / outer total |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 320 | cold | 70 | 71 | 0 | \u2014 | 12697600 | over the fill budget | 0.12675 |\n| 320 | warm | 58 | 59 | 0 | \u2014 | 12697600 | over the fill budget | 0 |\n\n## Fereg inclusive phase times; columns must not be added\n\n| L | Call | Joint build | Aggregation | Pattern | Assembly | Analyze incl. ordering | Numeric | Refactor | Refresh |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 320 | cold | 1.05785 | 0.0297429 | 0.0328391 | 0.223474 | 0.761728 | 0 | 0 | 0 |\n| 320 | warm | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |\n\n## Cold total / warm total, paired by worker\n\n| Backend | L | diagnostics | Paired ratio | Excluded pairs |\n| --- | --- | --- | --- | --- |\n| fereg | 320 | True | 1.37407 | 0 |\n\n## Diagnostics on / off total, paired by replicate\n\n| Backend | L | mode | Paired ratio | Excluded pairs |\n| --- | --- | --- | --- | --- |\n| fereg | 320 | cold | \u2014 | 1 |\n| fereg | 320 | warm | \u2014 | 1 |\n\n## Scope and repeat checks\n\n- Worker/call counts: `{\"call_statuses\": {\"passed\": 2}, \"recorded_calls\": 2, \"represented_call_outcomes\": 2, \"worker_cases\": 1, \"worker_statuses\": {\"passed\": 1}}`.\n- Factor entries are allocated values, including padding; symbolic flops are estimates.\n- Snapshot constructor/cached-build times are metadata, not new costs on each warm call.\n- Ratios describe these trials; diagnostics on/off does not measure the entire patch overhead.\n- One exploratory trial per configuration: repeat consistency and timing variability cannot be assessed.\n"
+}

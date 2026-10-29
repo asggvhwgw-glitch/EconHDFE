@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-29",
+  "frontier_suite": {
+    "command": "ECONHDFE_REQUIRE_NATIVE_DIAGNOSTICS=1 python -m pytest benchmarks/hdfe/frontier_v1/tests -q",
+    "environment": "final cost1 wheels; OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1",
+    "exit_code": 0,
+    "passed": 96,
+    "failed": 0,
+    "skipped": 0,
+    "log_sha256": "c6119cf6d7174cee83034f6ce00dbf45b875cc2f35f81ed531aba236bf99bae8",
+    "evidence": "executed command and saved local raw log"
+  },
+  "fereg_rust_diagnostics": {
+    "command": "cargo test -p fereg-core --test solver diagnostics_ --offline -j 1",
+    "passed": 4,
+    "failed": 0,
+    "duration_s": 2.01,
+    "evidence": "observed tool command output; no standalone raw log was saved"
+  },
+  "build_checks": [
+    "within cargo check passed",
+    "fereg cargo check passed",
+    "both release research wheels built",
+    "final installed extensions byte-match wheels",
+    "308 final prepared source files match actual build sources",
+    "native-auto full extension-module feature graph and dual graph pass locked offline metadata"
+  ],
+  "experiment_checks": [
+    {
+      "filename": "rigidity_cost_study.json.gz",
+      "stored_sha256": "cae27dbc9ec7d835d95f370055e0ee81a8067975a73bad52c7c6306dd8ae9592",
+      "decoded_sha256": "2284613d87e0c0d0ba7e02bb8e09a695c9a72674f4a9692075f5bc3960133ac5",
+      "stored_bytes": 537676,
+      "decoded_bytes": 6861851,
+      "workers": 72,
+      "calls": 144,
+      "all_aggregate_records_match_original_worker_files": true,
+      "all_loaded_extensions_match_final_wheels": true,
+      "recorded_runner_and_benchmark_source_hashes_match": true,
+      "summary": {
+        "records": 144,
+        "by_status": {
+          "passed": 144
+        },
+        "max_returned_forward_relative_error": 5.026528489640017e-12
+      }
+    },
+    {
+      "filename": "fereg_budget_probe.json.gz",
+      "stored_sha256": "d9fd3357103dd63b4cc488df5ab79fc30804bd25b383365ec153c8d7728a5a48",
+      "decoded_sha256": "33ab2f9fd468fa22f9345b35019b758631437d22b506cb0e035fbad8b0337575",
+      "stored_bytes": 13186,
+      "decoded_bytes": 139533,
+      "workers": 1,
+      "calls": 2,
+      "all_aggregate_records_match_original_worker_files": true,
+      "all_loaded_extensions_match_final_wheels": true,
+      "recorded_runner_and_benchmark_source_hashes_match": true,
+      "summary": {
+        "records": 2,
+        "by_status": {
+          "passed": 2
+        },
+        "max_returned_forward_relative_error": 5.576735790579497e-13
+      }
+    }
+  ],
+  "initial_full_suite_attempt": {
+    "outcome": "failed",
+    "passed": 331,
+    "failed": 174,
+    "errors": 3,
+    "context": "Run overlapped Rust builds and preceded regenerated architecture maps. Numerous resource.memory admission failures occurred. This run is retained as a failed attempt, not a valid green gate.",
+    "log_sha256": "b0f8c4e7fa087d6fab989e49f12bd736ce183ef536b4868b99715a69d67e9b7d"
+  },
+  "repository_gates": {
+    "full_suite": {
+      "command": "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 NUMBA_NUM_THREADS=4 python scripts/run_tests.py --suite full -- -q",
+      "exit_code": 1,
+      "passed": 507,
+      "failed": 1,
+      "duration_s": 24.34,
+      "failed_test": "tests/tooling/test_versioning_policy.py::test_workqueue_parallel_bootstrap_in_fresh_process",
+      "failure": "Fresh child querying its own RSS raises psutil.NoSuchProcess. Same contextual failure as previous prototype. Root cause remains unresolved; full local suite is not green.",
+      "log_sha256": "587060bd5d6a02c2bd3e3a0e41b70d909463a0ab0c557b844a683f37ff115aec"
+    },
+    "failed_test_isolated": {
+      "command": "python -m pytest tests/tooling/test_versioning_policy.py::test_workqueue_parallel_bootstrap_in_fresh_process -q",
+      "exit_code": 0,
+      "passed": 1,
+      "duration_s": 3.54,
+      "log_sha256": "f43139fd91e82a3f04b4fd245f00a142a7ee4fe342d23cbbc384345d5a4027da"
+    },
+    "version_gate": {
+      "command": "python scripts/version.py gate",
+      "exit_code": 0,
+      "version": "0.9.2"
+    },
+    "architecture_gate": {
+      "command": "python scripts/generate_architecture_map.py --check",
+      "exit_code": 0
+    },
+    "diff_whitespace": {
+      "command": "git diff --cached --check",
+      "exit_code": 0,
+      "scope": "All staged files; .gitattributes preserves mandatory blank context spaces inside archived unified patches. Generated SVG trailing spaces removed."
+    }
+  },
+  "persistence_observation": {
+    "initial_smoke": "Printed 8 calls but later aggregate read showed 4; all 4 worker files complete. Cause not established.",
+    "mitigation": "Explicit final write, full equality readback, SHA256 print; final studies also matched every worker record and decoded gzip bytes.",
+    "formal_workers_verified": 73,
+    "formal_calls_verified": 146
+  },
+  "remote_ci": {
+    "status": "not yet run for this commit; inspect draft PR checks for live status"
+  }
+}

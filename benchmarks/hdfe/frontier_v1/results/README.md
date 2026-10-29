@@ -55,9 +55,10 @@ fixture and oracle buffers, not just solver memory.
   performance are not covered by these four reports.
 - The exact measured benchmark commit is
   `b9127b174c10b065deee1fc68ad0a64ffb928e85`. Subsequent changes before
-  publication only add documentation and these archived records. Every
-  executable `.py` source hash in the reports still matches the published
-  prototype.
+  the first publication only added documentation and these archived records.
+  Every executable `.py` source hash in the reports matched published commit
+  `adcbc7340a8a4f6c8d100d5e993864f6fc7e2d96`. Later native-cost extensions have
+  separate source/binary identities and do not rewrite these measurements.
 - Native sources, upstream pins, wheel hashes and build provenance are
   documented in [BOOTSTRAP.md](../BOOTSTRAP.md). Native binaries are not
   committed in this PR.

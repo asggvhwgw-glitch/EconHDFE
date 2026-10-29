@@ -153,10 +153,22 @@ BSD notices and an Eigen MPL-2.0 notice in addition to its top-level MIT
 declaration. The collection records the provenance and limits of that evidence;
 it must not be described as a complete license audit of both native binaries.
 
-In particular, the CI source has no committed `native/dual-absorber/Cargo.lock`,
-and the archived build log does not identify every resolved crate version.
-Upstream lockfiles and inspected crate releases therefore do not establish the
-dual wheel's exact transitive dependency inventory or the applicability of every
-file-level license to its compiled code. Preserve the collected notices with
-any archived copies, and retain this unresolved coverage statement. The wheel
-hashes above establish binary identity, not a completed license review.
+The CI source has no committed `native/dual-absorber/Cargo.lock`. A subsequent
+inspection found CycloneDX SBOMs **inside both preserved wheels**, which the
+initial review had missed: 159 components in the dual wheel and 62 in the
+native-within wheel. Their digests are respectively
+`af75962626a5a291d03f126efdc3ce4e1dc99fa4ec9b9ce7f5b8bad02f35adfd` and
+`dd1cc6fbd49b9ee7268c06f48ee8c2ad695ce9a6b99aa8265396de715900a56b`.
+These provide a build-tool dependency inventory with resolved versions and
+source hashes. The SBOMs mark `all_targets=true`; they are not a closed inventory
+of code actually linked into the final extension or a completed file-level
+license review. Preserve the collected notices with archived copies.
+
+## Instrumented follow-up
+
+The [native cost research build](native_cost/README.md) rebuilds these same
+pinned kernels with explicit, recorded diagnostic patches and committed
+lockfiles. It exposes actual operator calls and factor phases, including the
+route that the original reports could only infer. Use its separate environment
+and `+cost1` binary identities; do not relabel the original opaque measurements
+as if they had contained these diagnostics.

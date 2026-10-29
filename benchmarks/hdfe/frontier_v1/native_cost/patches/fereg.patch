@@ -1,0 +1,1513 @@
+--- /dev/null
++++ b/crates/fereg-core/src/diagnostics.rs
+@@ -0,0 +1,141 @@
++//! Opt-in, solver-local work diagnostics for FE projection.
++//!
++//! Counters measure actual API calls, not inferred iteration work. A matvec or
++//! preconditioner call processes one full row-major batch; `*_rhs_columns`
++//! sums its allocated width, including any frozen columns. Timers are elapsed
++//! wall seconds. They are nested: residualize contains PCG, PCG contains
++//! operator/preconditioner calls and adaptive builds, and joint build contains
++//! its assembly/analysis/numeric phases. They must not all be added together.
++//! No timing or counter participates in numerical or routing decisions.
++
++/// Cumulative diagnostics owned by one `FeSolver` (no global or atomic state).
++#[derive(Clone, Debug, Default)]
++pub struct WorkDiagnostics {
++    /// Hot-loop instrumentation is disabled by default. Constructor timings
++    /// below are retained regardless, since construction already has timers.
++    pub enabled: bool,
++    pub constructor_structure_seconds: f64,
++    pub constructor_weights_seconds: f64,
++    pub residualize_calls: u64,
++    pub residualize_errors: u64,
++    pub residualize_seconds: f64,
++    pub weight_update_calls: u64,
++    pub weight_update_errors: u64,
++    pub weight_update_seconds: f64,
++    pub rhs_calls: u64,
++    pub rhs_seconds: f64,
++    pub recovery_calls: u64,
++    pub recovery_seconds: f64,
++    pub pcg_calls: u64,
++    pub pcg_errors: u64,
++    pub pcg_seconds: f64,
++    pub matvec_calls: u64,
++    pub matvec_errors: u64,
++    pub matvec_rhs_columns: u64,
++    pub matvec_seconds: f64,
++    pub precond_calls: u64,
++    pub precond_rhs_columns: u64,
++    pub precond_seconds: f64,
++    /// Calls made when `CgSystem::exact()` was true. This does not count a
++    /// sparse factorization as one matvec or one arithmetic operation.
++    pub exact_precond_calls: u64,
++    pub probe_calls: u64,
++    pub probe_changes: u64,
++    pub probe_seconds: f64,
++    pub escalation_calls: u64,
++    pub escalation_changes: u64,
++    pub escalation_seconds: f64,
++    pub small_build_calls: u64,
++    pub small_build_errors: u64,
++    pub small_build_seconds: f64,
++    pub large_block_build_calls: u64,
++    pub large_block_build_errors: u64,
++    pub large_block_build_seconds: f64,
++    pub joint_build_attempts: u64,
++    pub joint_build_successes: u64,
++    /// Returned errors, not ordinary cost/budget rejections (`Ok(None)`).
++    pub joint_build_errors: u64,
++    pub joint_build_seconds: f64,
++    pub joint_aggregation_calls: u64,
++    pub joint_aggregation_seconds: f64,
++    pub joint_pattern_calls: u64,
++    pub joint_pattern_seconds: f64,
++    pub joint_assembly_calls: u64,
++    pub joint_assembly_errors: u64,
++    pub joint_assembly_seconds: f64,
++    /// Includes lower-triangle extraction, ordering and symbolic analysis.
++    /// It is not a symbolic-only time excluding AMD.
++    pub joint_analyze_calls: u64,
++    pub joint_analyze_seconds: f64,
++    pub joint_numeric_calls: u64,
++    /// Returned errors and numerical rejection (`Ok(false)`).
++    pub joint_numeric_errors: u64,
++    pub joint_numeric_seconds: f64,
++    /// Same-pattern refactor API: includes scaling and pattern validation before
++    /// numeric factorization. Counted separately from initial `factor()` calls.
++    pub joint_refactor_calls: u64,
++    /// Returned errors and rejection (`Ok(false)`, including pattern changes).
++    pub joint_refactor_errors: u64,
++    pub joint_refactor_seconds: f64,
++    /// A numeric refresh may fall back to a full joint rebuild. Its inclusive
++    /// time overlaps `joint_build_seconds` in that case.
++    pub joint_refresh_calls: u64,
++    pub joint_refresh_errors: u64,
++    pub joint_refresh_seconds: f64,
++    pub calls_started_with_joint_factor: u64,
++    pub calls_started_with_small_factor: u64,
++    pub calls_with_warm_coefficients: u64,
++}
++
++/// Current cache/structure state plus the outcome of the last instrumented call.
++#[derive(Clone, Debug, Default)]
++pub struct DiagnosticState {
++    pub last_rhs_width: usize,
++    /// `None` after a failed call or before any instrumented call.
++    pub last_exact: Option<bool>,
++    pub last_escalated: Option<bool>,
++    pub last_success: Option<bool>,
++    pub precond_kinds: Vec<&'static str>,
++    pub joint_factor_present: bool,
++    /// Allocated factor values (`len_val`), which can include supernodal
++    /// padding. This must not be relabelled exact numerical nnz(L).
++    pub joint_factor_entries: Option<usize>,
++    /// Actual full-CSR nnz of the most recently assembled joint candidate.
++    /// It may describe a rejected candidate when no joint factor is present.
++    pub joint_matrix_nnz: Option<u64>,
++    pub joint_structural_nnz: Option<u64>,
++    pub joint_analyzed_factor_entries: Option<usize>,
++    /// Symbolic factorization work estimate, not an instrumented flop count.
++    pub joint_symbolic_flops: Option<f64>,
++    pub joint_last_build_outcome: Option<&'static str>,
++    pub joint_pattern_cached: bool,
++    pub joint_aggregation_cached: bool,
++    pub joint_failed: bool,
++    pub small_factor_present: bool,
++    pub small_factor_kind: Option<&'static str>,
++    pub small_sparse_factor_entries: Option<usize>,
++    pub large_sparse_factor_entries: usize,
++    pub basic_fresh: bool,
++    pub small_fresh: bool,
++    pub large_fresh: bool,
++    pub n_obs: usize,
++    pub n_cells: usize,
++    pub reduced_dim: usize,
++    pub m_small: usize,
++    pub n_blocks: usize,
++}
++
++/// A cheap owned snapshot; wrappers may take differences of numeric totals.
++#[derive(Clone, Debug, Default)]
++pub struct DiagnosticsSnapshot {
++    pub totals: WorkDiagnostics,
++    pub state: DiagnosticState,
++}
++
++#[derive(Clone, Debug, Default)]
++pub(crate) struct LastCall {
++    pub rhs_width: usize,
++    pub exact: Option<bool>,
++    pub escalated: Option<bool>,
++    pub success: Option<bool>,
++}
+--- a/crates/fereg-core/src/lib.rs
++++ b/crates/fereg-core/src/lib.rs
+@@ -16,6 +16,7 @@
+ pub mod conley;
+ pub mod crv3;
+ pub mod dof;
++pub mod diagnostics;
+ pub mod error;
+ pub mod factor;
+ pub mod fe_recovery;
+--- a/crates/fereg-core/src/solve.rs
++++ b/crates/fereg-core/src/solve.rs
+@@ -15,6 +15,8 @@
+ use crate::absorber::{Absorber, FeCoefs, SolveInfo, SolveOpts, fe1_index};
+ use crate::api::Ctx;
+ use crate::cg::{self, CgSystem};
++use crate::diagnostics::{DiagnosticState, DiagnosticsSnapshot, LastCall, WorkDiagnostics};
++
+ use crate::error::RfError;
+ use crate::operator::{JointCells, Ops, Rhs, Scratch, SegAgg, WeightState, weight_state};
+ use crate::par::{self, CHUNK, Pool, alloc_vec, sum_chunks};
+@@ -23,6 +25,25 @@
+ use crate::session::Term;
+ use crate::slopes::SlopeSolver;
+ use crate::structure::{self, Structure};
++
++// Evaluate the operation exactly once. Keep its Result intact until after the
++// timer is recorded so failing attempts retain their work. No clock reads occur
++// here when instrumentation is disabled.
++macro_rules! measured {
++    ($d:expr, $calls:ident, $seconds:ident, $op:expr) => {{
++        let started = if $d.enabled {
++            $d.$calls += 1;
++            Some(Instant::now())
++        } else {
++            None
++        };
++        let result = $op;
++        if let Some(started) = started {
++            $d.$seconds += started.elapsed().as_secs_f64();
++        }
++        result
++    }};
++}
+ 
+ /// Assembly-work limit E_b = sum_s d_s^2 for exact assembly of a large block.
+ pub const MAX_ASSEMBLY_WORK: u64 = 400_000_000;
+@@ -280,17 +301,23 @@
+ }
+ 
+ /// The dense factor of the small super-block for the current weights.
+-fn small_factor(ops: &Ops, pool: &Pool) -> Result<Dense, RfError> {
+-    let (st, ws) = (ops.st, ops.ws);
+-    let built;
+-    let a = match ws.small_s.as_deref() {
+-        Some(a) => a,
+-        None => {
+-            built = ops.assemble_small(pool)?;
+-            &built
+-        }
+-    };
+-    Dense::factor(a, st.m_small, &ws.redundant[..st.m_small], pool)
++fn small_factor(ops: &Ops, pool: &Pool, diagnostics: &mut WorkDiagnostics) -> Result<Dense, RfError> {
++    let result = measured!(diagnostics, small_build_calls, small_build_seconds, (|| {
++        let (st, ws) = (ops.st, ops.ws);
++        let built;
++        let a = match ws.small_s.as_deref() {
++            Some(a) => a,
++            None => {
++                built = ops.assemble_small(pool)?;
++                &built
++            }
++        };
++        Dense::factor(a, st.m_small, &ws.redundant[..st.m_small], pool)
++    })());
++    if diagnostics.enabled && result.is_err() {
++        diagnostics.small_build_errors += 1;
++    }
++    result
+ }
+ 
+ /// Joint factor state of a solver.
+@@ -307,6 +334,9 @@
+     pattern: Option<(JointCells, Vec<u32>)>,
+     /// Per-segment aggregates for the current weights, kept between attempts of one solve.
+     agg: Option<SegAgg>,
++    /// Diagnostics only; never read by policy or numerical code.
++    last_assembled_nnz: Option<u64>,
++    last_build_outcome: Option<&'static str>,
+ }
+ 
+ /// Builds the production absorber for the kept sample (`weights` in kept order): [`FeSolver`]
+@@ -358,6 +388,8 @@
+     cfg: SolverConfig,
+     /// Kernel scratch reused across solves.
+     scratch: Scratch,
++    diagnostics: WorkDiagnostics,
++    last_diagnostic_call: LastCall,
+ }
+ 
+ pub(crate) fn log_phase(ctx: &Ctx, t: &mut Instant, what: &str) {
+@@ -379,6 +411,7 @@
+         }
+         let mut st = structure::build(terms, n, cfg.small_limit, pool)?;
+         st.acc_bytes_max = cfg.acc_bytes_max;
++        let structure_seconds = t.elapsed().as_secs_f64();
+         log_phase(ctx, &mut t, "structure");
+         ctx.check()?;
+         let w_rows = match weights {
+@@ -396,6 +429,7 @@
+             None => None,
+         };
+         let ws = weight_state(&st, w_rows, pool)?;
++        let weights_seconds = t.elapsed().as_secs_f64();
+         log_phase(ctx, &mut t, "weights/diag");
+         let nl = st.blocks.iter().filter(|b| !b.small).count();
+         if ctx.verbose >= 2 {
+@@ -430,11 +464,61 @@
+             joint: JointState::default(),
+             cfg,
+             scratch: Scratch::default(),
++            diagnostics: WorkDiagnostics {
++                constructor_structure_seconds: structure_seconds,
++                constructor_weights_seconds: weights_seconds,
++                ..WorkDiagnostics::default()
++            },
++            last_diagnostic_call: LastCall::default(),
+         })
+     }
+ 
+     pub fn structure(&self) -> &Structure {
+         &self.st
++    }
++
++    /// Enable solver-local counters/timers without changing numerical policy.
++    /// Disabling instrumentation pauses accumulation; it does not reset totals.
++    pub fn enable_diagnostics(&mut self, enabled: bool) {
++        self.diagnostics.enabled = enabled;
++    }
++
++    /// Cumulative work and current cache state. Constructor timing is retained
++    /// even when hot-loop instrumentation has not yet been enabled.
++    pub fn diagnostics(&self) -> DiagnosticsSnapshot {
++        let small_work = self.pre.small.as_ref().map(Dense::work);
++        DiagnosticsSnapshot {
++            totals: self.diagnostics.clone(),
++            state: DiagnosticState {
++                last_rhs_width: self.last_diagnostic_call.rhs_width,
++                last_exact: self.last_diagnostic_call.exact,
++                last_escalated: self.last_diagnostic_call.escalated,
++                last_success: self.last_diagnostic_call.success,
++                precond_kinds: self.precond_kinds(),
++                joint_factor_present: self.pre.joint.is_some(),
++                joint_factor_entries: self.pre.joint.as_ref().map(|j| j.f.len_val()),
++                joint_matrix_nnz: self.joint.last_assembled_nnz,
++                joint_structural_nnz: self.joint.stats.nnz,
++                joint_analyzed_factor_entries: self.joint.stats.len_val,
++                joint_symbolic_flops: self.joint.stats.flops,
++                joint_last_build_outcome: self.joint.last_build_outcome,
++                joint_pattern_cached: self.joint.pattern.is_some(),
++                joint_aggregation_cached: self.joint.agg.is_some(),
++                joint_failed: self.joint.failed,
++                small_factor_present: self.pre.small.is_some(),
++                small_factor_kind: small_work.map(|w| match w { SmallWork::Dense => "dense", SmallWork::Sparse { .. } => "sparse-chol" }),
++                small_sparse_factor_entries: small_work.and_then(|w| match w { SmallWork::Dense => None, SmallWork::Sparse { entries, .. } => Some(entries) }),
++                large_sparse_factor_entries: self.pre.large.iter().map(|p| match p { BlockPrecond::SparseChol { f, .. } => f.len_val(), _ => 0 }).sum(),
++                basic_fresh: self.basic_fresh,
++                small_fresh: self.small_fresh,
++                large_fresh: self.large_fresh,
++                n_obs: self.st.n,
++                n_cells: self.st.ncells,
++                reduced_dim: self.st.m,
++                m_small: self.st.m_small,
++                n_blocks: self.st.nb,
++            },
++        }
+     }
+ 
+     /// Names of the current large-block preconditioners (`["joint"]` with the joint factor).
+@@ -469,7 +553,7 @@
+             self.basic_fresh = true;
+         }
+         if !defer_small && self.pre.small.is_none() && self.st.m_small > 0 {
+-            let d = small_factor(&Ops { st: &self.st, ws: &self.ws }, pool)?;
++            let d = small_factor(&Ops { st: &self.st, ws: &self.ws }, pool, &mut self.diagnostics)?;
+             self.small_work = Some(d.work());
+             self.pre.small = Some(d);
+             self.small_fresh = true;
+@@ -569,7 +653,7 @@
+                 _ => false,
+             };
+             if !refreshed {
+-                self.pre.large[i] = escalate_block(&ops, b, &self.cfg, &mut cell_seg, pool, ctx)?;
++                self.pre.large[i] = escalate_block(&ops, b, &self.cfg, &mut cell_seg, pool, ctx, &mut self.diagnostics)?;
+             }
+             ctx.check()?;
+         }
+@@ -582,36 +666,55 @@
+     /// when the kept coordinates changed. On failure the joint factor is dropped for good and the
+     /// block preconditioner (with its one-time escalation) takes over again.
+     fn refresh_joint(&mut self, pool: &Pool, ctx: &Ctx) -> Result<(), RfError> {
+-        let t = Instant::now();
+-        let ops = Ops { st: &self.st, ws: &self.ws };
+-        let keep = kept_coords(&ops);
+-        let Some(j) = self.pre.joint.as_mut() else { return Ok(()) };
+-        let mut ok = false;
+-        if j.keep == keep {
+-            let agg = ops.joint_seg_agg(pool)?;
+-            if self.joint.pattern.is_none() {
+-                let jc = ops.joint_cells(pool)?;
+-                let (row_nnz, _, _) = ops.joint_row_nnz(&agg, &jc, pool);
+-                self.joint.pattern = Some((jc, row_nnz));
+-            }
+-            let (jc, row_nnz) = self.joint.pattern.as_ref().expect("set above");
+-            let csr = ops.assemble_joint(&agg, jc, row_nnz, &keep, pool)?;
+-            ok = j.f.refactor(&csr, pool)?;
+-        }
+-        if ctx.verbose >= 2 {
+-            ctx.log(&format!("fereg: joint factor refresh: {} in {:.4}s", if ok { "refactored" } else { "pattern changed or failed" }, t.elapsed().as_secs_f64()));
+-        }
+-        if !ok {
+-            self.pre.joint = None;
++        let result = measured!(self.diagnostics, joint_refresh_calls, joint_refresh_seconds, (|| {
++            let t = Instant::now();
+             let ops = Ops { st: &self.st, ws: &self.ws };
+-            self.pre.joint = build_joint(&ops, &self.cfg, &mut self.joint, f64::INFINITY, 1, "refresh", pool, ctx)?;
+-            if self.pre.joint.is_none() {
+-                self.joint.failed = true;
+-                self.escalated = false;
+-            }
+-        }
+-        self.large_fresh = true;
+-        Ok(())
++            let keep = kept_coords(&ops);
++            let Some(j) = self.pre.joint.as_mut() else { return Ok(()) };
++            let mut ok = false;
++            if j.keep == keep {
++                let agg = measured!(self.diagnostics, joint_aggregation_calls, joint_aggregation_seconds, ops.joint_seg_agg(pool))?;
++                if self.joint.pattern.is_none() {
++                    let pattern_result: Result<_, RfError> = measured!(self.diagnostics, joint_pattern_calls, joint_pattern_seconds, (|| {
++                        let jc = ops.joint_cells(pool)?;
++                        let (row_nnz, _, _) = ops.joint_row_nnz(&agg, &jc, pool);
++                        Ok((jc, row_nnz))
++                    })());
++                    let (jc, row_nnz) = pattern_result?;
++                    self.joint.pattern = Some((jc, row_nnz));
++                }
++                let (jc, row_nnz) = self.joint.pattern.as_ref().expect("set above");
++                let assembled = measured!(self.diagnostics, joint_assembly_calls, joint_assembly_seconds, ops.assemble_joint(&agg, jc, row_nnz, &keep, pool));
++                if self.diagnostics.enabled && assembled.is_err() {
++                    self.diagnostics.joint_assembly_errors += 1;
++                }
++                let csr = assembled?;
++                self.joint.last_assembled_nnz = Some(csr.col.len() as u64);
++                let refactored = measured!(self.diagnostics, joint_refactor_calls, joint_refactor_seconds, j.f.refactor(&csr, pool));
++                if self.diagnostics.enabled && !matches!(&refactored, Ok(true)) {
++                    self.diagnostics.joint_refactor_errors += 1;
++                }
++                ok = refactored?;
++            }
++            if ctx.verbose >= 2 {
++                ctx.log(&format!("fereg: joint factor refresh: {} in {:.4}s", if ok { "refactored" } else { "pattern changed or failed" }, t.elapsed().as_secs_f64()));
++            }
++            if !ok {
++                self.pre.joint = None;
++                let ops = Ops { st: &self.st, ws: &self.ws };
++                self.pre.joint = build_joint(&ops, &self.cfg, &mut self.joint, f64::INFINITY, 1, "refresh", pool, ctx, &mut self.diagnostics)?;
++                if self.pre.joint.is_none() {
++                    self.joint.failed = true;
++                    self.escalated = false;
++                }
++            }
++            self.large_fresh = true;
++            Ok(())
++        })());
++        if self.diagnostics.enabled && result.is_err() {
++            self.diagnostics.joint_refresh_errors += 1;
++        }
++        result
+     }
+ 
+     fn wsum_b1sq(&self, b1: &[f64], r: usize, pool: &Pool) -> Vec<f64> {
+@@ -651,125 +754,153 @@
+ /// possible. Hard budget overruns (assembly work, nnz, factor entries) and numerical failure
+ /// mark the joint factor as failed for good.
+ #[allow(clippy::too_many_arguments)]
+-fn build_joint(ops: &Ops, cfg: &SolverConfig, js: &mut JointState, without: f64, r: usize, why: &str, pool: &Pool, ctx: &Ctx) -> Result<Option<Joint>, RfError> {
+-    let t = Instant::now();
+-    let mv = matvec_cost(ops.st, r);
+-    let force = cfg.joint == JointPolicy::Always;
+-    let cost = |s: &JointStats, from: Stage| joint_build_cost(s, from) + 2.0 * (mv + joint_solve_cost(s, r));
+-    let budget = JOINT_MARGIN * without;
+-    let affordable = |s: &JointStats, from: Stage| force || cost(s, from) <= budget;
+-    let mut times = [0.0f64; 6];
+-    let mut lap = Instant::now();
+-    let mut built = None;
+-    // Per-segment aggregates (current weights) and the structural pattern survive a rejection,
+-    // so a later probe in the same solve does not recompute them.
+-    let mut agg = js.agg.take();
+-    let mut pattern = js.pattern.take();
+-    let what: &str = 'stages: {
+-        if !affordable(&js.stats, Stage::Assemble) {
+-            break 'stages "rejected (cost)";
+-        }
+-        let st = ops.st;
+-        // Structural work first (a cheap counting pass): an unaffordable factor is rejected
+-        // before the per-segment aggregates are built.
+-        if js.stats.work.is_none() {
+-            let (seg_work, dl) = ops.joint_seg_counts(pool);
+-            let small_work = if st.m_small > 0 { st.small_work } else { 0 };
+-            js.stats.seg_work = Some(seg_work);
+-            js.stats.work = Some(2 * dl + (st.ncells * st.nb) as u64 + small_work);
+-        }
+-        times[0] = split(&mut lap);
+-        ctx.check()?;
+-        if js.stats.seg_work.is_some_and(|w| w > cfg.max_assembly_work) {
+-            js.failed = true;
+-            break 'stages "over the assembly budget";
+-        }
+-        if !affordable(&js.stats, Stage::Assemble) {
+-            break 'stages "rejected (cost)";
+-        }
+-        if agg.is_none() {
+-            agg = Some(ops.joint_seg_agg(pool)?);
+-        }
+-        let a = agg.as_ref().expect("set above");
+-        times[0] += split(&mut lap);
+-        if pattern.is_none() {
+-            let jc = ops.joint_cells(pool)?;
+-            times[1] = split(&mut lap);
+-            let (row_nnz, nnz, amd_nnz) = ops.joint_row_nnz(a, &jc, pool);
+-            js.stats.nnz = Some(nnz);
+-            js.stats.amd_nnz = Some(amd_nnz);
+-            pattern = Some((jc, row_nnz));
+-        }
+-        times[2] = split(&mut lap);
+-        if js.stats.nnz.is_some_and(|n| n > cfg.max_block_nnz) {
+-            js.failed = true;
+-            break 'stages "over the nnz budget";
+-        }
+-        if !affordable(&js.stats, Stage::Assemble) {
+-            break 'stages "rejected (cost)";
+-        }
+-        let keep = kept_coords(ops);
+-        let (jc, row_nnz) = pattern.as_ref().expect("set above");
+-        let csr = ops.assemble_joint(a, jc, row_nnz, &keep, pool)?;
+-        times[3] = split(&mut lap);
+-        ctx.check()?;
+-        // Small coordinates (dense-ish rows, coupled to almost everything) are eliminated last.
+-        let small_kept = keep.partition_point(|&k| (k as usize) < ops.st.m_small);
+-        let analyzed = SparseChol::analyze_last(&csr, small_kept, pool);
+-        drop(csr);
+-        times[4] = split(&mut lap);
+-        let Some((mut f, vals)) = analyzed else {
+-            js.failed = true;
+-            break 'stages "symbolic analysis failed";
++fn build_joint(ops: &Ops, cfg: &SolverConfig, js: &mut JointState, without: f64, r: usize, why: &str, pool: &Pool, ctx: &Ctx, diagnostics: &mut WorkDiagnostics) -> Result<Option<Joint>, RfError> {
++    let result = measured!(diagnostics, joint_build_attempts, joint_build_seconds, (|| {
++        let t = Instant::now();
++        let mv = matvec_cost(ops.st, r);
++        let force = cfg.joint == JointPolicy::Always;
++        let cost = |s: &JointStats, from: Stage| joint_build_cost(s, from) + 2.0 * (mv + joint_solve_cost(s, r));
++        let budget = JOINT_MARGIN * without;
++        let affordable = |s: &JointStats, from: Stage| force || cost(s, from) <= budget;
++        let mut times = [0.0f64; 6];
++        let mut lap = Instant::now();
++        let mut built = None;
++        // Per-segment aggregates (current weights) and the structural pattern survive a rejection,
++        // so a later probe in the same solve does not recompute them.
++        let mut agg = js.agg.take();
++        let mut pattern = js.pattern.take();
++        let what: &'static str = 'stages: {
++            if !affordable(&js.stats, Stage::Assemble) {
++                break 'stages "rejected (cost)";
++            }
++            let st = ops.st;
++            // Structural work first (a cheap counting pass): an unaffordable factor is rejected
++            // before the per-segment aggregates are built.
++            if js.stats.work.is_none() {
++                let (seg_work, dl) = ops.joint_seg_counts(pool);
++                let small_work = if st.m_small > 0 { st.small_work } else { 0 };
++                js.stats.seg_work = Some(seg_work);
++                js.stats.work = Some(2 * dl + (st.ncells * st.nb) as u64 + small_work);
++            }
++            times[0] = split(&mut lap);
++            ctx.check()?;
++            if js.stats.seg_work.is_some_and(|w| w > cfg.max_assembly_work) {
++                js.failed = true;
++                break 'stages "over the assembly budget";
++            }
++            if !affordable(&js.stats, Stage::Assemble) {
++                break 'stages "rejected (cost)";
++            }
++            if agg.is_none() {
++                agg = Some(measured!(diagnostics, joint_aggregation_calls, joint_aggregation_seconds, ops.joint_seg_agg(pool))?);
++            }
++            let a = agg.as_ref().expect("set above");
++            times[0] += split(&mut lap);
++            if pattern.is_none() {
++                let pattern_result: Result<_, RfError> = measured!(diagnostics, joint_pattern_calls, joint_pattern_seconds, (|| {
++                    let jc = ops.joint_cells(pool)?;
++                    times[1] = split(&mut lap);
++                    let (row_nnz, nnz, amd_nnz) = ops.joint_row_nnz(a, &jc, pool);
++                    Ok((jc, row_nnz, nnz, amd_nnz))
++                })());
++                let (jc, row_nnz, nnz, amd_nnz) = pattern_result?;
++                js.stats.nnz = Some(nnz);
++                js.stats.amd_nnz = Some(amd_nnz);
++                pattern = Some((jc, row_nnz));
++            }
++            times[2] = split(&mut lap);
++            if js.stats.nnz.is_some_and(|n| n > cfg.max_block_nnz) {
++                js.failed = true;
++                break 'stages "over the nnz budget";
++            }
++            if !affordable(&js.stats, Stage::Assemble) {
++                break 'stages "rejected (cost)";
++            }
++            let keep = kept_coords(ops);
++            let (jc, row_nnz) = pattern.as_ref().expect("set above");
++            let assembled = measured!(diagnostics, joint_assembly_calls, joint_assembly_seconds, ops.assemble_joint(a, jc, row_nnz, &keep, pool));
++            if diagnostics.enabled && assembled.is_err() {
++                diagnostics.joint_assembly_errors += 1;
++            }
++            let csr = assembled?;
++            js.last_assembled_nnz = Some(csr.col.len() as u64);
++            times[3] = split(&mut lap);
++            ctx.check()?;
++            // Small coordinates (dense-ish rows, coupled to almost everything) are eliminated last.
++            let small_kept = keep.partition_point(|&k| (k as usize) < ops.st.m_small);
++            let analyzed = measured!(diagnostics, joint_analyze_calls, joint_analyze_seconds, SparseChol::analyze_last(&csr, small_kept, pool));
++            drop(csr);
++            times[4] = split(&mut lap);
++            let Some((mut f, vals)) = analyzed else {
++                js.failed = true;
++                break 'stages "symbolic analysis failed";
++            };
++            js.stats.len_val = Some(f.len_val());
++            js.stats.flops = Some(f.flops());
++            if f.len_val() > MAX_JOINT_LEN {
++                js.failed = true;
++                break 'stages "over the fill budget";
++            }
++            if !affordable(&js.stats, Stage::Factor) {
++                break 'stages "rejected (cost)";
++            }
++            ctx.check()?;
++            let factored = measured!(diagnostics, joint_numeric_calls, joint_numeric_seconds, f.factor(&vals, pool));
++            if diagnostics.enabled && !matches!(&factored, Ok(true)) {
++                diagnostics.joint_numeric_errors += 1;
++            }
++            let ok = factored?;
++            times[5] = split(&mut lap);
++            if !ok {
++                js.failed = true;
++                break 'stages "numeric factorization failed";
++            }
++            built = Some(Joint { keep, f: Box::new(f) });
++            "built"
+         };
+-        js.stats.len_val = Some(f.len_val());
+-        js.stats.flops = Some(f.flops());
+-        if f.len_val() > MAX_JOINT_LEN {
+-            js.failed = true;
+-            break 'stages "over the fill budget";
+-        }
+-        if !affordable(&js.stats, Stage::Factor) {
+-            break 'stages "rejected (cost)";
+-        }
+-        ctx.check()?;
+-        let ok = f.factor(&vals, pool)?;
+-        times[5] = split(&mut lap);
+-        if !ok {
+-            js.failed = true;
+-            break 'stages "numeric factorization failed";
+-        }
+-        built = Some(Joint { keep, f: Box::new(f) });
+-        "built"
+-    };
+-    if js.failed {
+-        (agg, pattern) = (None, None);
+-    } else if built.is_some() {
+-        agg = None;
+-    }
+-    (js.agg, js.pattern) = (agg, pattern);
+-    if ctx.verbose >= 2 {
+-        let s = &js.stats;
+-        let opt = |v: Option<u64>| v.map_or("?".to_string(), |v| v.to_string());
+-        ctx.log(&format!(
+-            "fereg: joint factor ({why}): m={} work={} nnz={} (amd {}) L={} flops={} est {:.4}s vs pcg {:.4}s -> {what} in {:.4}s (agg {:.4} cells {:.4} nnz {:.4} asm {:.4} amd {:.4} num {:.4})",
+-            ops.st.m,
+-            opt(s.work),
+-            opt(s.nnz),
+-            opt(s.amd_nnz),
+-            opt(s.len_val.map(|v| v as u64)),
+-            s.flops.map_or("?".to_string(), |f| format!("{f:.3e}")),
+-            cost(s, Stage::Assemble),
+-            without,
+-            t.elapsed().as_secs_f64(),
+-            times[0],
+-            times[1],
+-            times[2],
+-            times[3],
+-            times[4],
+-            times[5]
+-        ));
+-    }
+-    Ok(built)
++        if js.failed {
++            (agg, pattern) = (None, None);
++        } else if built.is_some() {
++            agg = None;
++        }
++        (js.agg, js.pattern) = (agg, pattern);
++        js.last_build_outcome = Some(what);
++        if ctx.verbose >= 2 {
++            let s = &js.stats;
++            let opt = |v: Option<u64>| v.map_or("?".to_string(), |v| v.to_string());
++            ctx.log(&format!(
++                "fereg: joint factor ({why}): m={} work={} nnz={} (amd {}) L={} flops={} est {:.4}s vs pcg {:.4}s -> {what} in {:.4}s (agg {:.4} cells {:.4} nnz {:.4} asm {:.4} amd {:.4} num {:.4})",
++                ops.st.m,
++                opt(s.work),
++                opt(s.nnz),
++                opt(s.amd_nnz),
++                opt(s.len_val.map(|v| v as u64)),
++                s.flops.map_or("?".to_string(), |f| format!("{f:.3e}")),
++                cost(s, Stage::Assemble),
++                without,
++                t.elapsed().as_secs_f64(),
++                times[0],
++                times[1],
++                times[2],
++                times[3],
++                times[4],
++                times[5]
++            ));
++        }
++        Ok(built)
++    })());
++    if diagnostics.enabled {
++        if matches!(&result, Ok(Some(_))) {
++            diagnostics.joint_build_successes += 1;
++        }
++        if result.is_err() {
++            diagnostics.joint_build_errors += 1;
++        }
++    }
++    if result.is_err() {
++        js.last_build_outcome = Some("error");
++    }
++    result
+ }
+ 
+ /// Seconds since `t`, restarting it.
+@@ -780,59 +911,65 @@
+ }
+ 
+ /// Escalated preconditioner of large block `b` (plan D5 (b)).
+-fn escalate_block(ops: &Ops, b: usize, cfg: &SolverConfig, cell_seg: &mut Option<Vec<u32>>, pool: &Pool, ctx: &Ctx) -> Result<BlockPrecond, RfError> {
+-    let t = Instant::now();
+-    let keep = kept_levels(ops, b);
+-    let g = ops.st.blocks[b].g;
+-    let agg = ops.seg_agg(b, pool)?;
+-    ctx.check()?;
+-    let mut exact_csr = None;
+-    let mut nnz_total = 0u64;
+-    if agg.work <= cfg.max_assembly_work {
+-        if cell_seg.is_none() {
+-            *cell_seg = Some(ops.st.cell_segments(pool)?);
+-        }
+-        let cs = cell_seg.as_deref().expect("set above");
+-        let row_nnz = ops.block_row_nnz(b, &agg, cs, pool);
+-        nnz_total = row_nnz.iter().map(|&v| u64::from(v)).sum();
+-        if nnz_total <= cfg.max_block_nnz {
+-            exact_csr = Some(ops.assemble_block(b, &agg, cs, &row_nnz, &keep, pool)?);
+-        }
+-    }
+-    ctx.check()?;
+-    let out = match exact_csr {
+-        Some(csr) => match if cfg.sparse_chol { SparseChol::try_factor(&csr, pool)? } else { None } {
+-            Some(f) => {
+-                let rebuild = C_ASM * agg.work as f64 + C_ASM_NNZ * nnz_total as f64 + C_FLOP * f.flops() + C_ENTRY * f.len_val() as f64;
+-                BlockPrecond::SparseChol { keep, f: Box::new(f), rebuild }
+-            }
+-            None => match ApproxChol::factor(&csr) {
+-                Ok(f) => BlockPrecond::ApproxChol { keep, f: Box::new(f) },
+-                Err(_) => BlockPrecond::Jacobi,
++fn escalate_block(ops: &Ops, b: usize, cfg: &SolverConfig, cell_seg: &mut Option<Vec<u32>>, pool: &Pool, ctx: &Ctx, diagnostics: &mut WorkDiagnostics) -> Result<BlockPrecond, RfError> {
++    let result = measured!(diagnostics, large_block_build_calls, large_block_build_seconds, (|| {
++        let t = Instant::now();
++        let keep = kept_levels(ops, b);
++        let g = ops.st.blocks[b].g;
++        let agg = ops.seg_agg(b, pool)?;
++        ctx.check()?;
++        let mut exact_csr = None;
++        let mut nnz_total = 0u64;
++        if agg.work <= cfg.max_assembly_work {
++            if cell_seg.is_none() {
++                *cell_seg = Some(ops.st.cell_segments(pool)?);
++            }
++            let cs = cell_seg.as_deref().expect("set above");
++            let row_nnz = ops.block_row_nnz(b, &agg, cs, pool);
++            nnz_total = row_nnz.iter().map(|&v| u64::from(v)).sum();
++            if nnz_total <= cfg.max_block_nnz {
++                exact_csr = Some(ops.assemble_block(b, &agg, cs, &row_nnz, &keep, pool)?);
++            }
++        }
++        ctx.check()?;
++        let out = match exact_csr {
++            Some(csr) => match if cfg.sparse_chol { SparseChol::try_factor(&csr, pool)? } else { None } {
++                Some(f) => {
++                    let rebuild = C_ASM * agg.work as f64 + C_ASM_NNZ * nnz_total as f64 + C_FLOP * f.flops() + C_ENTRY * f.len_val() as f64;
++                    BlockPrecond::SparseChol { keep, f: Box::new(f), rebuild }
++                }
++                None => match ApproxChol::factor(&csr) {
++                    Ok(f) => BlockPrecond::ApproxChol { keep, f: Box::new(f) },
++                    Err(_) => BlockPrecond::Jacobi,
++                },
+             },
+-        },
+-        None => {
+-            let csr = ops.sample_block(&agg, g, &keep, pool)?;
+-            match ApproxChol::factor(&csr) {
+-                Ok(f) => BlockPrecond::ApproxChol { keep, f: Box::new(f) },
+-                Err(_) => BlockPrecond::Jacobi,
+-            }
+-        }
+-    };
+-    if ctx.verbose >= 2 {
+-        let fill = match &out {
+-            BlockPrecond::SparseChol { f, .. } => format!(" (L={} flops={:.3e})", f.len_val(), f.flops()),
+-            _ => String::new(),
++            None => {
++                let csr = ops.sample_block(&agg, g, &keep, pool)?;
++                match ApproxChol::factor(&csr) {
++                    Ok(f) => BlockPrecond::ApproxChol { keep, f: Box::new(f) },
++                    Err(_) => BlockPrecond::Jacobi,
++                }
++            }
+         };
+-        ctx.log(&format!(
+-            "fereg: escalate block {b} (G={g}): E={} nnz={} -> {}{fill} in {:.4}s",
+-            agg.work,
+-            nnz_total,
+-            out.name(),
+-            t.elapsed().as_secs_f64()
+-        ));
+-    }
+-    Ok(out)
++        if ctx.verbose >= 2 {
++            let fill = match &out {
++                BlockPrecond::SparseChol { f, .. } => format!(" (L={} flops={:.3e})", f.len_val(), f.flops()),
++                _ => String::new(),
++            };
++            ctx.log(&format!(
++                "fereg: escalate block {b} (G={g}): E={} nnz={} -> {}{fill} in {:.4}s",
++                agg.work,
++                nnz_total,
++                out.name(),
++                t.elapsed().as_secs_f64()
++            ));
++        }
++        Ok(out)
++    })());
++    if diagnostics.enabled && result.is_err() {
++        diagnostics.large_block_build_errors += 1;
++    }
++    result
+ }
+ 
+ struct System<'a> {
+@@ -844,6 +981,7 @@
+     large_fresh: bool,
+     cfg: &'a SolverConfig,
+     joint: &'a mut JointState,
++    diagnostics: &'a mut WorkDiagnostics,
+     /// The joint factor was built during this solve.
+     joint_built: bool,
+     /// The dense small factor is deferred (every block small; see `FeSolver::defer_small`).
+@@ -858,11 +996,24 @@
+ 
+ impl CgSystem for System<'_> {
+     fn matvec(&mut self, p: &[f64], q: &mut [f64], pool: &Pool) -> Result<(), RfError> {
+-        self.ops.apply(p, self.w, q, self.scratch, pool)
++        if self.diagnostics.enabled {
++            self.diagnostics.matvec_rhs_columns += self.w as u64;
++        }
++        let result = measured!(self.diagnostics, matvec_calls, matvec_seconds, self.ops.apply(p, self.w, q, self.scratch, pool));
++        if self.diagnostics.enabled && result.is_err() {
++            self.diagnostics.matvec_errors += 1;
++        }
++        result
+     }
+ 
+     fn precond(&mut self, r: &[f64], z: &mut [f64], pool: &Pool) {
+-        self.pre.apply(self.ops.st, r, z, self.w, pool);
++        if self.diagnostics.enabled {
++            self.diagnostics.precond_rhs_columns += self.w as u64;
++            if self.exact() {
++                self.diagnostics.exact_precond_calls += 1;
++            }
++        }
++        measured!(self.diagnostics, precond_calls, precond_seconds, self.pre.apply(self.ops.st, r, z, self.w, pool));
+     }
+ 
+     fn exact(&self) -> bool {
+@@ -875,43 +1026,49 @@
+     }
+ 
+     fn probe(&mut self, p: &cg::Probe, pool: &Pool, ctx: &Ctx) -> Result<Option<bool>, RfError> {
+-        if self.small_deferred {
+-            // Build the dense small factor when the projected Jacobi iterations cost more; the
+-            // restart from the current iterate is then exact.
++        let result = measured!(self.diagnostics, probe_calls, probe_seconds, (|| {
++            if self.small_deferred {
++                // Build the dense small factor when the projected Jacobi iterations cost more; the
++                // restart from the current iterate is then exact.
++                let st = self.ops.st;
++                let (iters, build) = (p.remaining * jacobi_iter_cost(st, self.w), small_build_cost(st, self.ops.ws, self.small_known));
++                if ctx.verbose >= 2 {
++                    ctx.log(&format!(
++                        "fereg: deferred small block at k={} (rho={:.3}, remaining={:.0}): pcg est {iters:.4}s vs factor est {build:.4}s",
++                        p.k, p.rho_hat, p.remaining
++                    ));
++                }
++                if iters > build {
++                    self.pre.small = Some(small_factor(&self.ops, pool, self.diagnostics)?);
++                    self.small_deferred = false;
++                    self.small_built = true;
++                    self.small_fresh = true;
++                    return Ok(Some(true));
++                }
++                return Ok(Some(false));
++            }
++            // Every block small: the small factor already covers all of S (a stale one is still the
++            // cheaper preconditioner), so there is no joint factor to build.
++            if self.pre.joint.is_some() || !joint_allowed(self.cfg, self.joint) || !self.ops.st.has_large() {
++                return Ok(None);
++            }
+             let st = self.ops.st;
+-            let (iters, build) = (p.remaining * jacobi_iter_cost(st, self.w), small_build_cost(st, self.ops.ws, self.small_known));
+-            if ctx.verbose >= 2 {
+-                ctx.log(&format!(
+-                    "fereg: deferred small block at k={} (rho={:.3}, remaining={:.0}): pcg est {iters:.4}s vs factor est {build:.4}s",
+-                    p.k, p.rho_hat, p.remaining
+-                ));
+-            }
+-            if iters > build {
+-                self.pre.small = Some(small_factor(&self.ops, pool)?);
+-                self.small_deferred = false;
+-                self.small_built = true;
+-                self.small_fresh = true;
+-                return Ok(Some(true));
+-            }
+-            return Ok(Some(false));
+-        }
+-        // Every block small: the small factor already covers all of S (a stale one is still the
+-        // cheaper preconditioner), so there is no joint factor to build.
+-        if self.pre.joint.is_some() || !joint_allowed(self.cfg, self.joint) || !self.ops.st.has_large() {
+-            return Ok(None);
+-        }
+-        let st = self.ops.st;
+-        let without = p.remaining * (matvec_cost(st, self.w) + block_precond_cost(st, self.pre, self.w));
+-        let why = format!("k={} rho={:.3} remaining={:.0}", p.k, p.rho_hat, p.remaining);
+-        match build_joint(&self.ops, self.cfg, self.joint, without, self.w, &why, pool, ctx)? {
+-            Some(j) => {
+-                self.pre.joint = Some(j);
+-                self.large_fresh = true;
+-                self.joint_built = true;
+-                Ok(Some(true))
+-            }
+-            None => Ok(None),
+-        }
++            let without = p.remaining * (matvec_cost(st, self.w) + block_precond_cost(st, self.pre, self.w));
++            let why = format!("k={} rho={:.3} remaining={:.0}", p.k, p.rho_hat, p.remaining);
++            match build_joint(&self.ops, self.cfg, self.joint, without, self.w, &why, pool, ctx, self.diagnostics)? {
++                Some(j) => {
++                    self.pre.joint = Some(j);
++                    self.large_fresh = true;
++                    self.joint_built = true;
++                    Ok(Some(true))
++                }
++                None => Ok(None),
++            }
++        })());
++        if self.diagnostics.enabled && matches!(&result, Ok(Some(true))) {
++            self.diagnostics.probe_changes += 1;
++        }
++        result
+     }
+ 
+     fn can_escalate(&self) -> bool {
+@@ -919,18 +1076,24 @@
+     }
+ 
+     fn escalate(&mut self, pool: &Pool, ctx: &Ctx) -> Result<bool, RfError> {
+-        self.can_escalate = false;
+-        let ns = self.ops.st.blocks.len() - self.pre.large.len();
+-        let mut cell_seg = None;
+-        let mut changed = false;
+-        for i in 0..self.pre.large.len() {
+-            if matches!(self.pre.large[i], BlockPrecond::Jacobi) {
+-                let bp = escalate_block(&self.ops, ns + i, self.cfg, &mut cell_seg, pool, ctx)?;
+-                changed |= !matches!(bp, BlockPrecond::Jacobi);
+-                self.pre.large[i] = bp;
+-            }
+-        }
+-        Ok(changed)
++        let result = measured!(self.diagnostics, escalation_calls, escalation_seconds, (|| {
++            self.can_escalate = false;
++            let ns = self.ops.st.blocks.len() - self.pre.large.len();
++            let mut cell_seg = None;
++            let mut changed = false;
++            for i in 0..self.pre.large.len() {
++                if matches!(self.pre.large[i], BlockPrecond::Jacobi) {
++                    let bp = escalate_block(&self.ops, ns + i, self.cfg, &mut cell_seg, pool, ctx, self.diagnostics)?;
++                    changed |= !matches!(bp, BlockPrecond::Jacobi);
++                    self.pre.large[i] = bp;
++                }
++            }
++            Ok(changed)
++        })());
++        if self.diagnostics.enabled && matches!(&result, Ok(true)) {
++            self.diagnostics.escalation_changes += 1;
++        }
++        result
+     }
+ }
+ 
+@@ -948,24 +1111,30 @@
+     }
+ 
+     fn set_weights(&mut self, w: Option<&[f64]>, pool: &Pool, ctx: &Ctx) -> Result<(), RfError> {
+-        if w.is_some_and(|v| v.len() != self.st.n || !par::all_positive(v, pool)) {
+-            return Err(RfError::InvalidInput("weights must be positive and finite".into()));
+-        }
+-        ctx.check()?;
+-        let mut t = Instant::now();
+-        if self.pre.small.is_some() {
+-            self.small_drift *= ratio_range(self.ws.w_rows.as_deref(), w, pool);
+-        }
+-        let w_rows = w.map(|v| par::copy_into(self.ws.w_rows.take(), v, pool)).transpose()?;
+-        self.ws = weight_state(&self.st, w_rows, pool)?;
+-        log_phase(ctx, &mut t, "set_weights");
+-        self.joint.agg = None;
+-        self.basic_fresh = false;
+-        self.small_fresh = false;
+-        if self.escalated || self.pre.joint.is_some() {
+-            self.large_fresh = false;
+-        }
+-        Ok(())
++        let result = measured!(self.diagnostics, weight_update_calls, weight_update_seconds, (|| {
++            if w.is_some_and(|v| v.len() != self.st.n || !par::all_positive(v, pool)) {
++                return Err(RfError::InvalidInput("weights must be positive and finite".into()));
++            }
++            ctx.check()?;
++            let mut t = Instant::now();
++            if self.pre.small.is_some() {
++                self.small_drift *= ratio_range(self.ws.w_rows.as_deref(), w, pool);
++            }
++            let w_rows = w.map(|v| par::copy_into(self.ws.w_rows.take(), v, pool)).transpose()?;
++            self.ws = weight_state(&self.st, w_rows, pool)?;
++            log_phase(ctx, &mut t, "set_weights");
++            self.joint.agg = None;
++            self.basic_fresh = false;
++            self.small_fresh = false;
++            if self.escalated || self.pre.joint.is_some() {
++                self.large_fresh = false;
++            }
++            Ok(())
++        })());
++        if self.diagnostics.enabled && result.is_err() {
++            self.diagnostics.weight_update_errors += 1;
++        }
++        result
+     }
+ 
+     fn residualize(
+@@ -977,168 +1146,192 @@
+         pool: &Pool,
+         ctx: &Ctx,
+     ) -> Result<SolveInfo, RfError> {
+-        let (n, m, g1) = (self.st.n, self.st.m, self.st.g1);
+-        if z.len() != n * r {
+-            return Err(RfError::InvalidInput("residualize: block size differs from n*R".into()));
+-        }
+-        if warm.is_some_and(|wc| wc.r != r || wc.p != m + g1) {
+-            return Err(RfError::InvalidInput("residualize: warm start has a different shape".into()));
+-        }
+-        if r == 0 {
+-            return Ok(SolveInfo { iterations: 1, escalated: false, coefs: o.want_coefs.then(|| FeCoefs { p: m + g1, r, data: Vec::new() }), exact: true });
+-        }
+-        ctx.check()?;
+-        let mut t = Instant::now();
+-        let mut joint_now = false;
+-        if self.need_refactor || self.stale_refresh_pays(r, ctx) {
+-            self.refresh_large(pool, ctx)?;
+-            self.need_refactor = false;
+-        } else if self.pre.joint.is_some() && !self.large_fresh {
+-            // Stale joint factor (weights changed): refresh it numerically when that costs less
+-            // than iterating with it (at least the window, else as many as the last stale solve).
+-            let (mv, sol) = (matvec_cost(&self.st, r), joint_solve_cost(&self.joint.stats, r));
+-            let stale = cg::WINDOW.max(self.joint.stale_iters.unwrap_or(0)) as f64 * (mv + sol);
+-            let fresh = joint_refresh_cost(&self.joint.stats) + 2.0 * (mv + sol);
+-            if ctx.verbose >= 2 {
+-                ctx.log(&format!("fereg: stale joint factor: refresh est {fresh:.4}s vs stale pcg {stale:.4}s"));
+-            }
+-            if fresh <= stale {
+-                self.refresh_joint(pool, ctx)?;
+-            }
+-        }
+-        // `Always`: build before the first iteration. `Auto` decides at the PCG probes, where the
+-        // observed contraction projects the remaining iterations (an up-front attempt would pay
+-        // the aggregation pass even on designs that converge in a few iterations).
+-        if m > 0 && self.cfg.joint == JointPolicy::Always && self.joint_allowed() {
++        if self.diagnostics.enabled {
++            self.last_diagnostic_call = LastCall { rhs_width: r, ..LastCall::default() };
++            self.diagnostics.calls_started_with_joint_factor += u64::from(self.pre.joint.is_some());
++            self.diagnostics.calls_started_with_small_factor += u64::from(self.pre.small.is_some());
++            self.diagnostics.calls_with_warm_coefficients += u64::from(warm.is_some());
++        }
++        let result = measured!(self.diagnostics, residualize_calls, residualize_seconds, (|| {
++            let (n, m, g1) = (self.st.n, self.st.m, self.st.g1);
++            if z.len() != n * r {
++                return Err(RfError::InvalidInput("residualize: block size differs from n*R".into()));
++            }
++            if warm.is_some_and(|wc| wc.r != r || wc.p != m + g1) {
++                return Err(RfError::InvalidInput("residualize: warm start has a different shape".into()));
++            }
++            if r == 0 {
++                return Ok(SolveInfo { iterations: 1, escalated: false, coefs: o.want_coefs.then(|| FeCoefs { p: m + g1, r, data: Vec::new() }), exact: true });
++            }
++            ctx.check()?;
++            let mut t = Instant::now();
++            let mut joint_now = false;
++            if self.need_refactor || self.stale_refresh_pays(r, ctx) {
++                self.refresh_large(pool, ctx)?;
++                self.need_refactor = false;
++            } else if self.pre.joint.is_some() && !self.large_fresh {
++                // Stale joint factor (weights changed): refresh it numerically when that costs less
++                // than iterating with it (at least the window, else as many as the last stale solve).
++                let (mv, sol) = (matvec_cost(&self.st, r), joint_solve_cost(&self.joint.stats, r));
++                let stale = cg::WINDOW.max(self.joint.stale_iters.unwrap_or(0)) as f64 * (mv + sol);
++                let fresh = joint_refresh_cost(&self.joint.stats) + 2.0 * (mv + sol);
++                if ctx.verbose >= 2 {
++                    ctx.log(&format!("fereg: stale joint factor: refresh est {fresh:.4}s vs stale pcg {stale:.4}s"));
++                }
++                if fresh <= stale {
++                    self.refresh_joint(pool, ctx)?;
++                }
++            }
++            // `Always`: build before the first iteration. `Auto` decides at the PCG probes, where the
++            // observed contraction projects the remaining iterations (an up-front attempt would pay
++            // the aggregation pass even on designs that converge in a few iterations).
++            if m > 0 && self.cfg.joint == JointPolicy::Always && self.joint_allowed() {
++                let ops = Ops { st: &self.st, ws: &self.ws };
++                if let Some(j) = build_joint(&ops, &self.cfg, &mut self.joint, f64::INFINITY, r, "k=0", pool, ctx, &mut self.diagnostics)? {
++                    self.pre.joint = Some(j);
++                    self.large_fresh = true;
++                    joint_now = true;
++                }
++            }
++            if self.pre.joint.is_none() {
++                self.refresh_small(r, ctx);
++            }
++            let defer = self.pre.joint.is_none() && self.defer_small(r);
++            if self.pre.joint.is_none() {
++                self.ensure_basic(defer, pool)?;
++            }
++            if defer && ctx.verbose >= 2 {
++                ctx.log(&format!(
++                    "fereg: small block deferred: factor est {:.4}s vs pcg iteration est {:.5}s",
++                    small_build_cost(&self.st, &self.ws, self.small_work),
++                    jacobi_iter_cost(&self.st, r)
++                ));
++            }
++            log_phase(ctx, &mut t, "preconditioner");
+             let ops = Ops { st: &self.st, ws: &self.ws };
+-            if let Some(j) = build_joint(&ops, &self.cfg, &mut self.joint, f64::INFINITY, r, "k=0", pool, ctx)? {
+-                self.pre.joint = Some(j);
+-                self.large_fresh = true;
+-                joint_now = true;
+-            }
+-        }
+-        if self.pre.joint.is_none() {
+-            self.refresh_small(r, ctx);
+-        }
+-        let defer = self.pre.joint.is_none() && self.defer_small(r);
+-        if self.pre.joint.is_none() {
+-            self.ensure_basic(defer, pool)?;
+-        }
+-        if defer && ctx.verbose >= 2 {
+-            ctx.log(&format!(
+-                "fereg: small block deferred: factor est {:.4}s vs pcg iteration est {:.5}s",
+-                small_build_cost(&self.st, &self.ws, self.small_work),
+-                jacobi_iter_cost(&self.st, r)
+-            ));
+-        }
+-        log_phase(ctx, &mut t, "preconditioner");
+-        let ops = Ops { st: &self.st, ws: &self.ws };
+-        let Rhs { rhs, b1, wsq, wsum } = ops.rhs(z, r, &mut self.scratch, pool)?;
+-        log_phase(ctx, &mut t, "rhs pass");
+-        ctx.check()?;
+-        let sw = self.ws.sw;
+-        let ss0: Vec<f64> = (0..r)
+-            .map(|j| {
+-                let s = wsq[j] - wsum[j] * wsum[j] / sw;
+-                if s > 1e-15 * wsq[j] { s } else { 0.0 }
+-            })
+-            .collect();
+-        let b1sq = self.wsum_b1sq(&b1, r, pool);
+-        let ss1: Vec<f64> = (0..r).map(|j| wsq[j] - b1sq[j]).collect();
+-        let mut x = match warm {
+-            Some(wc) => wc.data[..m * r].to_vec(),
+-            None => alloc_vec(m * r, 0.0)?,
+-        };
+-        for j in 0..r {
+-            if ss0[j] == 0.0 {
+-                for i in 0..m {
+-                    x[i * r + j] = 0.0;
+-                }
+-            }
+-        }
+-        let mut iterations = 1;
+-        let mut escalated_now = false;
+-        // Closed form without reduced blocks; else set from the PCG outcome.
+-        let mut exact = true;
+-        if m > 0 {
+-            let can_escalate = !self.escalated && self.st.has_large() && self.pre.joint.is_none();
+-            let small_fresh = self.small_fresh;
+-            let mut sys = System {
+-                ops: Ops { st: &self.st, ws: &self.ws },
+-                pre: &mut self.pre,
+-                scratch: &mut self.scratch,
+-                w: r,
+-                can_escalate,
+-                large_fresh: self.large_fresh,
+-                cfg: &self.cfg,
+-                joint: &mut self.joint,
+-                joint_built: false,
+-                small_deferred: defer,
+-                small_built: false,
+-                small_fresh,
+-                small_known: self.small_work,
++            let Rhs { rhs, b1, wsq, wsum } = measured!(self.diagnostics, rhs_calls, rhs_seconds, ops.rhs(z, r, &mut self.scratch, pool))?;
++            log_phase(ctx, &mut t, "rhs pass");
++            ctx.check()?;
++            let sw = self.ws.sw;
++            let ss0: Vec<f64> = (0..r)
++                .map(|j| {
++                    let s = wsq[j] - wsum[j] * wsum[j] / sw;
++                    if s > 1e-15 * wsq[j] { s } else { 0.0 }
++                })
++                .collect();
++            let b1sq = self.wsum_b1sq(&b1, r, pool);
++            let ss1: Vec<f64> = (0..r).map(|j| wsq[j] - b1sq[j]).collect();
++            let mut x = match warm {
++                Some(wc) => wc.data[..m * r].to_vec(),
++                None => alloc_vec(m * r, 0.0)?,
+             };
+-            let out = cg::pcg(&mut sys, &rhs, &mut x, r, &ss1, &ss0, o.tol, o.maxiter, pool, ctx)?;
+-            iterations = out.iterations.max(1);
+-            self.last_iters = Some(iterations);
+-            exact = out.exact || ss0.iter().all(|&s| s == 0.0);
+-            let joint_built = sys.joint_built;
+-            // Building a deferred small factor restarts PCG; it is not a large-block escalation
+-            // (deferral requires that there are no large blocks).
+-            let escalated_large = out.escalated && !sys.small_built;
+-            self.small_upfront |= sys.small_built;
+-            if sys.small_built {
+-                self.small_fresh = true;
+-                self.small_drift = 1.0;
+-                self.small_work = sys.pre.small.as_ref().map(Dense::work);
+-            } else if sys.pre.joint.is_none() && sys.pre.small.is_some() {
+-                // Iteration counts with the small factor, for the stale-factor decision (solves
+-                // that built it at a probe also ran Jacobi iterations and are not recorded).
+-                if small_fresh {
+-                    self.small_iters.fresh = Some(iterations);
+-                } else {
+-                    self.small_iters.record_stale(iterations);
+-                }
+-            }
+-            if joint_built {
+-                joint_now = true;
+-                self.large_fresh = true;
+-            } else if escalated_large || !sys.can_escalate && can_escalate {
+-                self.escalated = true;
+-                self.large_fresh = true;
+-                self.base_iters = None;
+-            }
+-            escalated_now = escalated_large || joint_now;
+-            if ctx.verbose >= 2 {
+-                ctx.log(&format!("fereg: pcg {} iterations (escalated: {}, joint: {})", out.iterations, escalated_now, self.pre.joint.is_some()));
+-            }
+-            if joint_now {
+-                // The joint factor replaces the block preconditioners: free their factors.
+-                self.pre.large.iter_mut().for_each(|bp| *bp = BlockPrecond::Jacobi);
+-                self.joint.stale_iters = None;
+-            } else if self.pre.joint.is_some() {
+-                if !self.large_fresh {
+-                    self.joint.stale_iters = Some(iterations);
+-                }
+-            } else if self.escalated {
+-                match self.base_iters {
+-                    None => self.base_iters = Some(iterations),
+-                    Some(base) if !self.large_fresh && iterations > 30.max(2 * base) => self.need_refactor = true,
+-                    Some(_) => {}
+-                }
+-            }
+-        }
+-        log_phase(ctx, &mut t, "pcg");
+-        ctx.check()?;
+-        let mut alpha = if o.want_coefs { Some(alloc_vec(g1 * r, 0.0)?) } else { None };
+-        Ops { st: &self.st, ws: &self.ws }.residualize_rows(z, r, &x, &b1, alpha.as_deref_mut(), pool);
+-        log_phase(ctx, &mut t, "residualize pass");
+-        let coefs = alpha.map(|a| {
+-            let mut data = x;
+-            data.extend_from_slice(&a);
+-            FeCoefs { p: m + g1, r, data }
+-        });
+-        Ok(SolveInfo { iterations, escalated: escalated_now, coefs, exact })
++            for j in 0..r {
++                if ss0[j] == 0.0 {
++                    for i in 0..m {
++                        x[i * r + j] = 0.0;
++                    }
++                }
++            }
++            let mut iterations = 1;
++            let mut escalated_now = false;
++            // Closed form without reduced blocks; else set from the PCG outcome.
++            let mut exact = true;
++            if m > 0 {
++                let can_escalate = !self.escalated && self.st.has_large() && self.pre.joint.is_none();
++                let small_fresh = self.small_fresh;
++                let mut sys = System {
++                    ops: Ops { st: &self.st, ws: &self.ws },
++                    pre: &mut self.pre,
++                    scratch: &mut self.scratch,
++                    w: r,
++                    can_escalate,
++                    large_fresh: self.large_fresh,
++                    cfg: &self.cfg,
++                    joint: &mut self.joint,
++                    diagnostics: &mut self.diagnostics,
++                    joint_built: false,
++                    small_deferred: defer,
++                    small_built: false,
++                    small_fresh,
++                    small_known: self.small_work,
++                };
++                let outcome = measured!(sys.diagnostics, pcg_calls, pcg_seconds, cg::pcg(&mut sys, &rhs, &mut x, r, &ss1, &ss0, o.tol, o.maxiter, pool, ctx));
++                if sys.diagnostics.enabled && outcome.is_err() {
++                    sys.diagnostics.pcg_errors += 1;
++                }
++                let out = outcome?;
++                iterations = out.iterations.max(1);
++                self.last_iters = Some(iterations);
++                exact = out.exact || ss0.iter().all(|&s| s == 0.0);
++                let joint_built = sys.joint_built;
++                // Building a deferred small factor restarts PCG; it is not a large-block escalation
++                // (deferral requires that there are no large blocks).
++                let escalated_large = out.escalated && !sys.small_built;
++                self.small_upfront |= sys.small_built;
++                if sys.small_built {
++                    self.small_fresh = true;
++                    self.small_drift = 1.0;
++                    self.small_work = sys.pre.small.as_ref().map(Dense::work);
++                } else if sys.pre.joint.is_none() && sys.pre.small.is_some() {
++                    // Iteration counts with the small factor, for the stale-factor decision (solves
++                    // that built it at a probe also ran Jacobi iterations and are not recorded).
++                    if small_fresh {
++                        self.small_iters.fresh = Some(iterations);
++                    } else {
++                        self.small_iters.record_stale(iterations);
++                    }
++                }
++                if joint_built {
++                    joint_now = true;
++                    self.large_fresh = true;
++                } else if escalated_large || !sys.can_escalate && can_escalate {
++                    self.escalated = true;
++                    self.large_fresh = true;
++                    self.base_iters = None;
++                }
++                escalated_now = escalated_large || joint_now;
++                if ctx.verbose >= 2 {
++                    ctx.log(&format!("fereg: pcg {} iterations (escalated: {}, joint: {})", out.iterations, escalated_now, self.pre.joint.is_some()));
++                }
++                if joint_now {
++                    // The joint factor replaces the block preconditioners: free their factors.
++                    self.pre.large.iter_mut().for_each(|bp| *bp = BlockPrecond::Jacobi);
++                    self.joint.stale_iters = None;
++                } else if self.pre.joint.is_some() {
++                    if !self.large_fresh {
++                        self.joint.stale_iters = Some(iterations);
++                    }
++                } else if self.escalated {
++                    match self.base_iters {
++                        None => self.base_iters = Some(iterations),
++                        Some(base) if !self.large_fresh && iterations > 30.max(2 * base) => self.need_refactor = true,
++                        Some(_) => {}
++                    }
++                }
++            }
++            log_phase(ctx, &mut t, "pcg");
++            ctx.check()?;
++            let mut alpha = if o.want_coefs { Some(alloc_vec(g1 * r, 0.0)?) } else { None };
++            measured!(self.diagnostics, recovery_calls, recovery_seconds, Ops { st: &self.st, ws: &self.ws }.residualize_rows(z, r, &x, &b1, alpha.as_deref_mut(), pool));
++            log_phase(ctx, &mut t, "residualize pass");
++            let coefs = alpha.map(|a| {
++                let mut data = x;
++                data.extend_from_slice(&a);
++                FeCoefs { p: m + g1, r, data }
++            });
++            Ok(SolveInfo { iterations, escalated: escalated_now, coefs, exact })
++        })());
++        if self.diagnostics.enabled {
++            self.last_diagnostic_call.success = Some(result.is_ok());
++            match &result {
++                Ok(info) => {
++                    self.last_diagnostic_call.exact = Some(info.exact);
++                    self.last_diagnostic_call.escalated = Some(info.escalated);
++                }
++                Err(_) => self.diagnostics.residualize_errors += 1,
++            }
++        }
++        result
+     }
+ 
+     fn fit_rows(&self, c: &FeCoefs, col: usize, pool: &Pool) -> Vec<f64> {
+--- a/crates/fereg-core/tests/solver.rs
++++ b/crates/fereg-core/tests/solver.rs
+@@ -184,6 +184,135 @@
+ 
+ fn all_large() -> SolverConfig {
+     limit(0)
++}
++
++#[test]
++fn diagnostics_opt_in_preserves_projection_bits_and_route() {
++    let d = coupled(44);
++    let cfg = SolverConfig { joint: JointPolicy::Always, ..limit(10) };
++    let mut unmeasured = setup(&d, cfg, 3);
++    let mut measured = setup(&d, cfg, 3);
++    measured.fast.enable_diagnostics(true);
++    let (a, _, info_a, _) = run(&mut unmeasured, None);
++    let (b, _, info_b, _) = run(&mut measured, None);
++    assert_eq!(a, b);
++    assert_eq!(info_a.iterations, info_b.iterations);
++    assert_eq!(info_a.exact, info_b.exact);
++    assert_eq!(info_a.escalated, info_b.escalated);
++    assert_eq!(unmeasured.fast.precond_kinds(), measured.fast.precond_kinds());
++    assert_eq!(unmeasured.fast.diagnostics().totals.residualize_calls, 0);
++    let cold = measured.fast.diagnostics();
++    assert!(cold.state.joint_factor_present);
++    assert_eq!(cold.state.precond_kinds, vec!["joint"]);
++    assert_eq!(cold.state.last_exact, Some(true));
++    assert_eq!(cold.state.last_escalated, Some(true));
++    assert_eq!(cold.totals.residualize_calls, 1);
++    assert_eq!(cold.totals.matvec_calls, 0); // The one exact correction is not a matvec.
++    assert_eq!(cold.totals.precond_calls, 1);
++    assert_eq!(cold.totals.precond_rhs_columns, 3);
++    assert_eq!(cold.totals.exact_precond_calls, 1);
++    assert_eq!(cold.totals.joint_build_successes, 1);
++    assert_eq!(cold.totals.joint_assembly_calls, 1);
++    assert_eq!(cold.totals.joint_analyze_calls, 1);
++    assert_eq!(cold.totals.joint_numeric_calls, 1);
++    assert!(cold.state.joint_matrix_nnz.unwrap() > 0);
++    assert!(cold.state.joint_factor_entries.unwrap() > 0);
++    assert_eq!(cold.state.joint_last_build_outcome, Some("built"));
++    assert!(cold.totals.residualize_seconds >= cold.totals.joint_build_seconds);
++    assert!(cold.totals.joint_build_seconds >= cold.totals.joint_numeric_seconds);
++
++    // Same structure and weights: the cached factor is reused. A nonzero warm
++    // coefficient vector causes an actual residual matvec before correction.
++    let coefs = info_b.coefs.unwrap();
++    run(&mut measured, Some(&coefs));
++    let warm = measured.fast.diagnostics();
++    assert_eq!(warm.totals.residualize_calls, 2);
++    assert_eq!(warm.totals.calls_started_with_joint_factor, 1);
++    assert_eq!(warm.totals.calls_with_warm_coefficients, 1);
++    assert_eq!(warm.totals.joint_build_attempts, cold.totals.joint_build_attempts);
++    assert_eq!(warm.totals.matvec_calls, 1);
++    assert_eq!(warm.totals.matvec_rhs_columns, 3);
++    assert_eq!(warm.totals.precond_calls, 2);
++    assert_eq!(warm.totals.exact_precond_calls, 2);
++    assert_eq!(warm.state.last_escalated, Some(false));
++
++    measured.fast.enable_diagnostics(false);
++    run(&mut measured, None);
++    assert_eq!(measured.fast.diagnostics().totals.residualize_calls, 2);
++}
++
++#[test]
++fn diagnostics_counts_adaptive_restart_operator_calls() {
++    let mut p = setup(&coupled(42), limit(10), 2);
++    p.fast.enable_diagnostics(true);
++    let (_, _, info, _) = run(&mut p, None);
++    let d = p.fast.diagnostics();
++    assert!(info.exact && info.escalated && info.iterations > 1);
++    assert_eq!(d.totals.joint_build_successes, 1);
++    assert_eq!(d.totals.probe_changes, 1);
++    // Each PCG step, plus the restart residual, is one batched matvec. The
++    // final exact correction adds an iteration without another loop matvec.
++    assert_eq!(d.totals.matvec_calls, info.iterations as u64);
++    assert_eq!(d.totals.precond_calls, info.iterations as u64 + 1);
++    assert_eq!(d.totals.exact_precond_calls, 1);
++    assert_eq!(d.totals.matvec_rhs_columns, 2 * d.totals.matvec_calls);
++    assert_eq!(d.totals.precond_rhs_columns, 2 * d.totals.precond_calls);
++    assert!(d.totals.pcg_seconds >= d.totals.joint_build_seconds);
++}
++
++#[test]
++fn diagnostics_keeps_failed_solve_and_weight_update_costs() {
++    let mut p = setup(&coupled(44), joint_off(all_large()), 2);
++    p.fast.enable_diagnostics(true);
++    let refs: Vec<&[f64]> = p.cols.iter().map(Vec::as_slice).collect();
++    let ctx = Ctx::quiet(4);
++    with_pool(4, |pool| {
++        let mut rows = gather_rows(p.fast.row_order(), &refs, pool).unwrap();
++        let o = SolveOpts { maxiter: 2, ..opts() };
++        assert!(matches!(p.fast.residualize(&mut rows, 2, &o, None, pool, &ctx), Err(RfError::Convergence(2))));
++        assert!(p.fast.set_weights(Some(&[0.0]), pool, &ctx).is_err());
++    }).unwrap();
++    let d = p.fast.diagnostics();
++    assert_eq!(d.state.last_success, Some(false));
++    assert_eq!(d.state.last_exact, None);
++    assert_eq!(d.totals.residualize_calls, 1);
++    assert_eq!(d.totals.residualize_errors, 1);
++    assert_eq!(d.totals.pcg_calls, 1);
++    assert_eq!(d.totals.pcg_errors, 1);
++    assert_eq!(d.totals.matvec_calls, 2);
++    assert_eq!(d.totals.precond_calls, 3);
++    assert_eq!(d.totals.recovery_calls, 0);
++    assert_eq!(d.totals.weight_update_calls, 1);
++    assert_eq!(d.totals.weight_update_errors, 1);
++    assert!(d.totals.residualize_seconds >= d.totals.pcg_seconds);
++    assert!(d.totals.pcg_seconds > 0.0);
++}
++
++#[test]
++fn diagnostics_separates_joint_numeric_refresh_from_initial_build() {
++    let mut p = setup(&coupled(44), SolverConfig { joint: JointPolicy::Always, ..limit(10) }, 2);
++    p.fast.enable_diagnostics(true);
++    run(&mut p, None);
++    let ctx = Ctx::quiet(4);
++    with_pool(4, |pool| {
++        let wd: Vec<f64> = p.dense.weights().unwrap().iter().map(|w| 1.5 * w).collect();
++        p.dense.absorber_mut().set_weights(Some(&wd), pool, &ctx).unwrap();
++        let wf: Vec<f64> = p.fast.weights().unwrap().iter().map(|w| 1.5 * w).collect();
++        p.fast.set_weights(Some(&wf), pool, &ctx).unwrap();
++        p.fast.request_refactor();
++    }).unwrap();
++    let (f, dn, _, _) = run(&mut p, None);
++    assert!(max_rel(&f, &dn) <= 1e-9);
++    let d = p.fast.diagnostics();
++    assert_eq!(d.totals.joint_build_successes, 1);
++    assert_eq!(d.totals.joint_analyze_calls, 1);
++    assert_eq!(d.totals.joint_numeric_calls, 1);
++    assert_eq!(d.totals.joint_refresh_calls, 1);
++    assert_eq!(d.totals.joint_refactor_calls, 1);
++    assert_eq!(d.totals.joint_refactor_errors, 0);
++    assert_eq!(d.totals.joint_assembly_calls, 2);
++    assert_eq!(d.totals.weight_update_calls, 1);
++    assert!(d.state.joint_factor_present && d.state.large_fresh);
+ }
+ 
+ #[test]

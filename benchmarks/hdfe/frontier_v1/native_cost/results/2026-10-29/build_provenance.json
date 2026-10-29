@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-29",
+  "purpose": "research-only native internal cost diagnostics",
+  "repository_base_commit": "adcbc7340a8a4f6c8d100d5e993864f6fc7e2d96",
+  "prepared_source_manifest": "prepared_source_manifest.json",
+  "prepared_source_manifest_sha256": "3438e7d13d6be39aae32ff8d187b04bdfdb6ae7c344465bf4aec918591146bc2",
+  "prepared_vs_actual_build_source": {
+    "matching_files": 308,
+    "mismatches": []
+  },
+  "sources": {
+    "within": {
+      "revision": "fc44282cea6124f5f18bb142908605a656d35a7c",
+      "url": "https://codeload.github.com/py-econometrics/within/tar.gz/fc44282cea6124f5f18bb142908605a656d35a7c",
+      "sha256": "7f8568b97bff327028ae20b00b98e54457fcaed50ebcb6d94c4f7f5e4768c06b",
+      "archive": "within.tar.gz"
+    },
+    "fereg": {
+      "revision": "0fa59e3b539addbddaee8bd71acd031c497166a0",
+      "url": "https://codeload.github.com/leoliu0/fereg/tar.gz/0fa59e3b539addbddaee8bd71acd031c497166a0",
+      "sha256": "0e0987a857d87dccda5b8443cdbaf99e4dd77b08b72edecb0bcfc30ed5cab3fe",
+      "archive": "fereg.tar.gz"
+    },
+    "adapter-source": {
+      "revision": "23a0c12f04983514a64e7cc9b10145d1e34c584e",
+      "url": "https://codeload.github.com/asggvhwgw-glitch/EconHDFE/tar.gz/23a0c12f04983514a64e7cc9b10145d1e34c584e",
+      "sha256": "e7484912c27ad2dd1b0da1c524ae256f8e196ec657ef13b443b1d46e20790525",
+      "archive": "adapter-source.tar.gz"
+    }
+  },
+  "patches_sha256": {
+    "dual.patch": "a5f7981ee6075d87cbb8413d078442b700db52cc9c4415451d5046a12b8e1828",
+    "fereg.patch": "f37292c96504b8ffec7a51e5e006cfddd54f8598bc4ce4af69623ab0cb455ee7",
+    "native-auto.patch": "f93fd750bd2ca64b3e58465a05f59d0991cffca0676ca13c77197619fe7e9e5e",
+    "within.patch": "ebd20d4067f02fbd66cbf8d19b8722bc703b3f2a51ad7dc0c5b1fd36a32eb7cb"
+  },
+  "lockfiles_sha256": {
+    "dual.Cargo.lock": "e50449e316f12f0a074ab2011b81dd09812c82c0a6be06b34fb0db75da617835",
+    "native-auto.Cargo.lock": "9f85060c907939009ab03dcfb1162779452962b040e1a69032d41df5c9b3961d"
+  },
+  "toolchain": {
+    "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "cargo 1.99.1 (5f94df478 2026-08-27)",
+    "maturin": "1.15.0",
+    "python": "Python 3.12.14",
+    "python_dependencies": {
+      "numpy": "2.3.5",
+      "scipy": "1.17.0",
+      "pytest": "9.2.0"
+    }
+  },
+  "build_method": "release maturin builds with pinned lockfiles in separate workspace; final native-auto rebuilt after fallback status serialization correction",
+  "wheels": [
+    {
+      "filename": "econhdfe_dual_prototype-0.1.0a1+cost1-cp310-abi3-manylinux_2_39_x86_64.whl",
+      "sha256": "3b1207ff096d40243b65ed7d2ed026c897c69dc140736f247811016d500f7731",
+      "size_bytes": 2118396,
+      "extensions": [
+        {
+          "member": "econhdfe_dual/_native.abi3.so",
+          "sha256": "e374b085d738ca62951112e241b142f1f9fa3489921f4357d8423a38b203dca8",
+          "installed_bytes_match": true
+        }
+      ],
+      "sboms": [
+        {
+          "member": "econhdfe_dual_prototype-0.1.0a1+cost1.dist-info/sboms/econhdfe-dual-prototype.cyclonedx.json",
+          "sha256": "28f3b8bac08f6157949ae2b67061c4aa5a2a22e7c4661a8ee7e683e8dc2627af",
+          "component_count": 159,
+          "scope": "resolved build dependency inventory, all_targets; not final-linked-code/license audit"
+        }
+      ]
+    },
+    {
+      "filename": "econhdfe_within-0.1.0a2+cost1-cp310-abi3-manylinux_2_35_x86_64.whl",
+      "sha256": "3417105c23ff5fdba5fe37046a3a29fae476adcbe025795a69fb4910770d8dfe",
+      "size_bytes": 887130,
+      "extensions": [
+        {
+          "member": "_econhdfe_within/_econhdfe_within.abi3.so",
+          "sha256": "231311fffdb7b82120aeb8e5ee412b584348f1904dc74170976b1097745be822",
+          "installed_bytes_match": true
+        }
+      ],
+      "sboms": [
+        {
+          "member": "econhdfe_within-0.1.0a2+cost1.dist-info/sboms/econhdfe-within.cyclonedx.json",
+          "sha256": "fea12be66a5bc64e2cac10151d3e61b23667036cc6ba6f72d3b9fa1ba5e32a21",
+          "component_count": 66,
+          "scope": "resolved build dependency inventory, all_targets; not final-linked-code/license audit"
+        }
+      ]
+    }
+  ],
+  "studies": [
+    {
+      "filename": "rigidity_cost_study.json.gz",
+      "stored_sha256": "cae27dbc9ec7d835d95f370055e0ee81a8067975a73bad52c7c6306dd8ae9592",
+      "decoded_sha256": "2284613d87e0c0d0ba7e02bb8e09a695c9a72674f4a9692075f5bc3960133ac5",
+      "stored_bytes": 537676,
+      "decoded_bytes": 6861851,
+      "workers": 72,
+      "calls": 144,
+      "all_aggregate_records_match_original_worker_files": true,
+      "all_loaded_extensions_match_final_wheels": true,
+      "recorded_runner_and_benchmark_source_hashes_match": true,
+      "summary": {
+        "records": 144,
+        "by_status": {
+          "passed": 144
+        },
+        "max_returned_forward_relative_error": 5.026528489640017e-12
+      }
+    },
+    {
+      "filename": "fereg_budget_probe.json.gz",
+      "stored_sha256": "d9fd3357103dd63b4cc488df5ab79fc30804bd25b383365ec153c8d7728a5a48",
+      "decoded_sha256": "33ab2f9fd468fa22f9345b35019b758631437d22b506cb0e035fbad8b0337575",
+      "stored_bytes": 13186,
+      "decoded_bytes": 139533,
+      "workers": 1,
+      "calls": 2,
+      "all_aggregate_records_match_original_worker_files": true,
+      "all_loaded_extensions_match_final_wheels": true,
+      "recorded_runner_and_benchmark_source_hashes_match": true,
+      "summary": {
+        "records": 2,
+        "by_status": {
+          "passed": 2
+        },
+        "max_returned_forward_relative_error": 5.576735790579497e-13
+      }
+    }
+  ],
+  "analysis_scripts_sha256": {
+    "prepare.py": "3c332d55fda39dce47f6cbff057b2de2fe479b31a3d425833a989382fc68a1ac",
+    "study.py": "a039b3d72960bc5f7b39b6a2d774fa49f9985a54e4f4229ae35308e178b08829",
+    "summarize.py": "1ecacbdb3bf9a090d678eb681664fe69eee260e37c802e2d4047e64478cd3e61",
+    "plot.py": "c781e187fbf838ac349891cd911bdf460532c6d6577f4171dd5486988f5eb536"
+  },
+  "limitations": [
+    "Exact final wheel binaries are identified here, not committed to git; rebuilds may differ in bytes and platform tags.",
+    "Source pins, patches and Cargo.lock fix source/dependency identities; ubuntu-latest and system linker are not hermetically pinned.",
+    "Common registry component versions match original SBOMs, but native-auto adds serialization dependencies; graphs are not identical.",
+    "SBOMs describe resolved build dependencies, not a complete finally-linked-code or file-level license audit.",
+    "Source-manifest reproduction comparison does not itself claim a second independent full binary rebuild."
+  ]
+}

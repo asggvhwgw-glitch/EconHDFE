@@ -1,0 +1,465 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -16,8 +16,8 @@
+ ndarray = "0.17"
+ rayon = "1.12"
+ serde_json = "1"
+-within = { git = "https://github.com/py-econometrics/within", rev = "fc44282cea6124f5f18bb142908605a656d35a7c" }
+-fereg-core = { git = "https://github.com/leoliu0/fereg", rev = "0fa59e3b539addbddaee8bd71acd031c497166a0" }
++within = { path = "../within/crates/within" }
++fereg-core = { path = "../fereg/crates/fereg-core" }
+ 
+ [profile.release]
+ opt-level = 3
+--- /dev/null
++++ b/LICENSE
+@@ -0,0 +1,29 @@
++BSD 3-Clause License
++
++Copyright (c) 2026, pyreghdfe contributors
++All rights reserved.
++
++Redistribution and use in source and binary forms, with or without
++modification, are permitted provided that the following conditions are met:
++
++1. Redistributions of source code must retain the above copyright notice, this
++   list of conditions and the following disclaimer.
++
++2. Redistributions in binary form must reproduce the above copyright notice,
++   this list of conditions and the following disclaimer in the documentation
++   and/or other materials provided with the distribution.
++
++3. Neither the name of the copyright holder nor the names of its
++   contributors may be used to endorse or promote products derived from
++   this software without specific prior written permission.
++
++THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
++FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+--- /dev/null
++++ b/LICENSE-FEREG
+@@ -0,0 +1,21 @@
++MIT License
++
++Copyright (c) 2026 Leo Liu
++
++Permission is hereby granted, free of charge, to any person obtaining a copy
++of this software and associated documentation files (the "Software"), to deal
++in the Software without restriction, including without limitation the rights
++to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++copies of the Software, and to permit persons to whom the Software is
++furnished to do so, subject to the following conditions:
++
++The above copyright notice and this permission notice shall be included in all
++copies or substantial portions of the Software.
++
++THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++SOFTWARE.
+--- /dev/null
++++ b/LICENSE-WITHIN
+@@ -0,0 +1,23 @@
++MIT License
++
++Copyright (c) 2026 within contributors
++Copyright (c) 2026 appliedAI Institute for Europe gGmbH
++
++
++Permission is hereby granted, free of charge, to any person obtaining a copy
++of this software and associated documentation files (the "Software"), to deal
++in the Software without restriction, including without limitation the rights
++to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++copies of the Software, and to permit persons to whom the Software is
++furnished to do so, subject to the following conditions:
++
++The above copyright notice and this permission notice shall be included in all
++copies or substantial portions of the Software.
++
++THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++SOFTWARE.
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -4,10 +4,11 @@
+ 
+ [project]
+ name = "econhdfe-dual-prototype"
+-version = "0.1.0a1"
++version = "0.1.0a1+cost1"
+ requires-python = ">=3.10"
+ description = "Experimental certified dual-kernel categorical FE absorption"
+-license = "BSD-3-Clause"
++license = "BSD-3-Clause AND MIT"
++license-files = ["LICENSE", "LICENSE-WITHIN", "LICENSE-FEREG"]
+ dependencies = ["numpy>=1.24"]
+ 
+ [tool.maturin]
+--- a/python/econhdfe_dual/__init__.py
++++ b/python/econhdfe_dual/__init__.py
+@@ -7,7 +7,7 @@
+ import json
+ from typing import Literal
+ import numpy as np
+-from ._native import NativeDualSolver, WITHIN_REV, FEREG_REV
++from ._native import NativeDualSolver, WITHIN_REV, FEREG_REV, COST_DIAGNOSTICS_SCHEMA
+ 
+ __all__ = ["DualAbsorber", "WITHIN_REV", "FEREG_REV"]
+ __version__ = "0.1.0a1"
+@@ -23,7 +23,7 @@
+     def __init__(self, codes: np.ndarray, *, weights: np.ndarray | None = None,
+                  backend: Literal["auto", "within", "fereg"] = "auto",
+                  threads: int = 2, scratch_bytes: int = 512 << 20,
+-                 allow_fallback: bool = True) -> None:
++                 allow_fallback: bool = True, diagnostics: bool = True) -> None:
+         codes = np.asarray(codes)
+         if codes.ndim != 2 or codes.dtype.kind not in "iu":
+             raise ValueError("codes must be a two-dimensional integer array")
+@@ -36,7 +36,7 @@
+             np.ascontiguousarray(codes, dtype=np.uint32),
+             None if weights is None else np.asarray(weights, dtype=np.float64),
+             backend=backend, threads=int(threads), scratch_bytes=int(scratch_bytes),
+-            allow_fallback=allow_fallback,
++            allow_fallback=allow_fallback, diagnostics=bool(diagnostics),
+         )
+ 
+     def residualize(self, data: np.ndarray, *, tol: float = 1e-10,
+--- /dev/null
++++ b/src/cost.rs
+@@ -0,0 +1,111 @@
++use serde_json::{json, Value};
++pub fn fereg_snapshot(solver: &fereg_core::solve::FeSolver) -> Value {
++    let s = solver.diagnostics();
++    json!({"totals": {
++        "enabled":s.totals.enabled,
++        "constructor_structure_seconds":s.totals.constructor_structure_seconds,
++        "constructor_weights_seconds":s.totals.constructor_weights_seconds,
++        "residualize_calls":s.totals.residualize_calls,
++        "residualize_errors":s.totals.residualize_errors,
++        "residualize_seconds":s.totals.residualize_seconds,
++        "weight_update_calls":s.totals.weight_update_calls,
++        "weight_update_errors":s.totals.weight_update_errors,
++        "weight_update_seconds":s.totals.weight_update_seconds,
++        "rhs_calls":s.totals.rhs_calls,
++        "rhs_seconds":s.totals.rhs_seconds,
++        "recovery_calls":s.totals.recovery_calls,
++        "recovery_seconds":s.totals.recovery_seconds,
++        "pcg_calls":s.totals.pcg_calls,
++        "pcg_errors":s.totals.pcg_errors,
++        "pcg_seconds":s.totals.pcg_seconds,
++        "matvec_calls":s.totals.matvec_calls,
++        "matvec_errors":s.totals.matvec_errors,
++        "matvec_rhs_columns":s.totals.matvec_rhs_columns,
++        "matvec_seconds":s.totals.matvec_seconds,
++        "precond_calls":s.totals.precond_calls,
++        "precond_rhs_columns":s.totals.precond_rhs_columns,
++        "precond_seconds":s.totals.precond_seconds,
++        "exact_precond_calls":s.totals.exact_precond_calls,
++        "probe_calls":s.totals.probe_calls,
++        "probe_changes":s.totals.probe_changes,
++        "probe_seconds":s.totals.probe_seconds,
++        "escalation_calls":s.totals.escalation_calls,
++        "escalation_changes":s.totals.escalation_changes,
++        "escalation_seconds":s.totals.escalation_seconds,
++        "small_build_calls":s.totals.small_build_calls,
++        "small_build_errors":s.totals.small_build_errors,
++        "small_build_seconds":s.totals.small_build_seconds,
++        "large_block_build_calls":s.totals.large_block_build_calls,
++        "large_block_build_errors":s.totals.large_block_build_errors,
++        "large_block_build_seconds":s.totals.large_block_build_seconds,
++        "joint_build_attempts":s.totals.joint_build_attempts,
++        "joint_build_successes":s.totals.joint_build_successes,
++        "joint_build_errors":s.totals.joint_build_errors,
++        "joint_build_seconds":s.totals.joint_build_seconds,
++        "joint_aggregation_calls":s.totals.joint_aggregation_calls,
++        "joint_aggregation_seconds":s.totals.joint_aggregation_seconds,
++        "joint_pattern_calls":s.totals.joint_pattern_calls,
++        "joint_pattern_seconds":s.totals.joint_pattern_seconds,
++        "joint_assembly_calls":s.totals.joint_assembly_calls,
++        "joint_assembly_errors":s.totals.joint_assembly_errors,
++        "joint_assembly_seconds":s.totals.joint_assembly_seconds,
++        "joint_analyze_calls":s.totals.joint_analyze_calls,
++        "joint_analyze_seconds":s.totals.joint_analyze_seconds,
++        "joint_numeric_calls":s.totals.joint_numeric_calls,
++        "joint_numeric_errors":s.totals.joint_numeric_errors,
++        "joint_numeric_seconds":s.totals.joint_numeric_seconds,
++        "joint_refactor_calls":s.totals.joint_refactor_calls,
++        "joint_refactor_errors":s.totals.joint_refactor_errors,
++        "joint_refactor_seconds":s.totals.joint_refactor_seconds,
++        "joint_refresh_calls":s.totals.joint_refresh_calls,
++        "joint_refresh_errors":s.totals.joint_refresh_errors,
++        "joint_refresh_seconds":s.totals.joint_refresh_seconds,
++        "calls_started_with_joint_factor":s.totals.calls_started_with_joint_factor,
++        "calls_started_with_small_factor":s.totals.calls_started_with_small_factor,
++        "calls_with_warm_coefficients":s.totals.calls_with_warm_coefficients,
++    }, "state": {
++        "last_rhs_width":s.state.last_rhs_width,
++        "last_exact":s.state.last_exact,
++        "last_escalated":s.state.last_escalated,
++        "last_success":s.state.last_success,
++        "precond_kinds":s.state.precond_kinds,
++        "joint_factor_present":s.state.joint_factor_present,
++        "joint_factor_entries":s.state.joint_factor_entries,
++        "joint_matrix_nnz":s.state.joint_matrix_nnz,
++        "joint_structural_nnz":s.state.joint_structural_nnz,
++        "joint_analyzed_factor_entries":s.state.joint_analyzed_factor_entries,
++        "joint_symbolic_flops":s.state.joint_symbolic_flops,
++        "joint_last_build_outcome":s.state.joint_last_build_outcome,
++        "joint_pattern_cached":s.state.joint_pattern_cached,
++        "joint_aggregation_cached":s.state.joint_aggregation_cached,
++        "joint_failed":s.state.joint_failed,
++        "small_factor_present":s.state.small_factor_present,
++        "small_factor_kind":s.state.small_factor_kind,
++        "small_sparse_factor_entries":s.state.small_sparse_factor_entries,
++        "large_sparse_factor_entries":s.state.large_sparse_factor_entries,
++        "basic_fresh":s.state.basic_fresh,
++        "small_fresh":s.state.small_fresh,
++        "large_fresh":s.state.large_fresh,
++        "n_obs":s.state.n_obs,
++        "n_cells":s.state.n_cells,
++        "reduced_dim":s.state.reduced_dim,
++        "m_small":s.state.m_small,
++        "n_blocks":s.state.n_blocks,
++    }})
++}
++
++// Difference only cumulative counters/timers. State and constructor metadata are
++// snapshots, not work to add again on each projection. Integer counts stay exact.
++pub fn delta_totals(before: &Value, after: &Value) -> Value {
++    delta(&before["totals"], &after["totals"])
++}
++pub fn delta(before: &Value, after: &Value) -> Value {
++    match after {
++        Value::Object(values) => Value::Object(values.iter()
++            .filter(|(key,value)| !key.starts_with("constructor_") && !value.is_boolean())
++            .map(|(key,value)| (key.clone(),delta(&before[key],value))).collect()),
++        Value::Number(n) if n.is_u64() => json!(n.as_u64().unwrap().saturating_sub(before.as_u64().unwrap_or(0))),
++        Value::Number(n) => json!(n.as_f64().unwrap() - before.as_f64().unwrap_or(0.0)),
++        _ => Value::Null,
++    }
++}
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -1,3 +1,4 @@
++#![recursion_limit = "256"]
+ #![forbid(unsafe_code)]
+ //! Experimental, opt-in categorical-intercept absorber. No statistical policy.
+ use std::collections::{HashMap, HashSet};
+@@ -10,6 +11,7 @@
+ use pyo3::{prelude::*, exceptions::{PyRuntimeError, PyValueError}};
+ use serde_json::{json, Value};
+ use within::{Design, LsmrOptions, PreconditionerConfig, Solver};
++mod cost;
+ 
+ const WITHIN_REV: &str = "fc44282cea6124f5f18bb142908605a656d35a7c";
+ const FEREG_REV: &str = "0fa59e3b539addbddaee8bd71acd031c497166a0";
+@@ -83,7 +85,7 @@
+ }
+ 
+ enum Kernel { Within(Solver<'static>), Fereg(Box<FeSolver>) }
+-struct Projected { residual: Vec<f64>, iterations: Vec<usize>, converged: Vec<bool> }
++struct Projected { residual: Vec<f64>, iterations: Vec<usize>, converged: Vec<bool>, core_report: Value }
+ 
+ #[pyclass(module = "econhdfe_dual._native")]
+ pub struct NativeDualSolver {
+@@ -95,9 +97,13 @@
+     scratch_bytes: usize, allow_fallback: bool,
+     weight_generation: usize, kernel_builds: usize, fallback_count: usize,
+     last: Value,
++    diagnostics_enabled: bool,
++    constructor_seconds: f64,
++    cost_build_events: Vec<Value>,
+ }
+ impl NativeDualSolver {
+     fn activate(&mut self, name: &str) -> Res<()> {
++        let cost_start = Instant::now();
+         // Never retain a failed or obsolete numerical kernel.
+         self.kernel = None;
+         let core = if name == "within" {
+@@ -110,6 +116,7 @@
+             let design = self.design.as_ref().unwrap();
+             let solver = self.pool.install(|| Solver::new(design, Some(&self.w),
+                 None::<&PreconditionerConfig>)).map_err(|e| e.to_string())?;
++            solver.enable_diagnostics(self.diagnostics_enabled);
+             Kernel::Within(solver)
+         } else {
+             // Do not hold an unused within design while using fereg.
+@@ -120,14 +127,17 @@
+             }).collect();
+             let ctx = Ctx::quiet(self.threads);
+             let cfg = SolverConfig::default();
+-            let solver = with_pool(self.threads, |p|
++            let mut solver = with_pool(self.threads, |p|
+                 FeSolver::new(&terms, Some(&self.w), self.n, cfg, p, &ctx))
+                 .map_err(|e| e.to_string())?.map_err(|e| e.to_string())?;
++            solver.enable_diagnostics(self.diagnostics_enabled);
+             Kernel::Fereg(Box::new(solver))
+         };
+         self.kernel = Some(core);
+         self.selected = name.into();
+         self.kernel_builds += 1;
++        self.cost_build_events.push(json!({"backend": name, "seconds": cost_start.elapsed().as_secs_f64(),
++            "core_after": self.core_snapshot()}));
+         Ok(())
+     }
+     fn project(&mut self, z: &[f64], r: usize, tol: f64, max_iter: usize) -> Res<Projected> {
+@@ -142,7 +152,9 @@
+                     .map_err(|e| e.to_string())?;
+                 let mut residual = vec![0.0; n*r];
+                 for j in 0..r { for i in 0..n { residual[i*r+j] = out.demeaned[j*n+i]; } }
+-                Ok(Projected { residual, iterations: out.iterations, converged: out.converged })
++                Ok(Projected { residual, iterations: out.iterations, converged: out.converged,
++                    core_report: json!({"time_setup_seconds":out.time_setup, "time_total_seconds":out.time_total,
++                        "per_rhs_solve_seconds":out.time_solve, "iteration_scope":"per_rhs"}) })
+             }
+             Kernel::Fereg(solver) => {
+                 let mut data = vec![0.0; n*r];
+@@ -157,7 +169,9 @@
+                 for (i, &orig) in solver.row_order().iter().enumerate() {
+                     residual[orig as usize*r..(orig as usize+1)*r].copy_from_slice(&data[i*r..(i+1)*r]);
+                 }
+-                Ok(Projected { residual, iterations: vec![info.iterations; r], converged: vec![true; r] })
++                Ok(Projected { residual, iterations: vec![info.iterations; r], converged: vec![true; r],
++                    core_report: json!({"exact":info.exact,"escalated":info.escalated,
++                        "shared_iterations":info.iterations,"iteration_scope":"one_shared_lockstep_batch"}) })
+             }
+         }
+     }
+@@ -185,11 +199,17 @@
+         // At most one residual-replacement correction per kernel attempt.
+         for correction in 0..2 {
+             let t = Instant::now();
+-            let out = match self.project(&source, r, inner_tol, max_iter) {
++            let before = self.core_snapshot();
++            let projected = self.project(&source, r, inner_tol, max_iter);
++            let after = self.core_snapshot();
++            let native_cost = json!({"kernel":self.selected,"rhs_width":r,
++                "before":before,"after":after,"delta":cost::delta_totals(&before, &after)});
++            let out = match projected {
+                 Ok(v) => v,
+                 Err(e) => {
+                     attempts.push(json!({"backend":self.selected, "correction":correction,
+-                        "inner_tolerance":inner_tol,"seconds":t.elapsed().as_secs_f64(), "error":e}));
++                        "inner_tolerance":inner_tol,"seconds":t.elapsed().as_secs_f64(), "error":e,
++                        "native_cost":native_cost}));
+                     return Err(e);
+                 }
+             };
+@@ -200,8 +220,9 @@
+             let valid = out.converged.iter().all(|v| *v) && cert.iter().all(|v| v.is_finite() && *v <= gate);
+             attempts.push(json!({"backend":self.selected,"correction":correction,
+                 "inner_tolerance":inner_tol,"seconds":seconds,"certificate_seconds":check.elapsed().as_secs_f64(),
+-                "iterations":out.iterations,"converged":out.converged,"certificate":cert,"accepted":valid}));
+-            if valid { return Ok(Projected { residual:out.residual, iterations:total, converged:out.converged }); }
++                "iterations":out.iterations,"converged":out.converged,"certificate":cert,"accepted":valid,
++                "native_cost":native_cost,"core_report":out.core_report}));
++            if valid { return Ok(Projected { residual:out.residual, iterations:total, converged:out.converged, core_report:out.core_report }); }
+             if !out.converged.iter().all(|v| *v) || out.residual.iter().any(|v| !v.is_finite()) { break; }
+             // The core's residual norm is not our maximum group-mean norm.
+             // Repeating the same tolerance can leave sparse groups above the gate.
+@@ -213,7 +234,36 @@
+         }
+         Err("independent weighted group-mean certificate did not pass".into())
+     }
++    fn core_snapshot(&self) -> Value {
++        match &self.kernel {
++            Some(Kernel::Within(s)) => serde_json::to_value(s.cost_diagnostics()).unwrap(),
++            Some(Kernel::Fereg(s)) => cost::fereg_snapshot(s),
++            None => Value::Null,
++        }
++    }
+     fn run(&mut self, input: Vec<f64>, k: usize, tol: f64, max_iter: usize) -> Res<(Vec<f64>, String)> {
++        let before = self.core_snapshot();
++        let builds_before = self.cost_build_events.len();
++        self.last = json!({"accepted":false,"attempts":[]});
++        let result = self.run_inner(input, k, tol, max_iter);
++        if let Err(e) = &result { self.last["error"] = json!(e); self.last["accepted"] = json!(false); }
++        let after = self.core_snapshot();
++        self.last["native_cost_diagnostics"] = json!({
++            "schema_version":1,"scope":"call","enabled":self.diagnostics_enabled,
++            "kernel":self.selected,"rhs_columns":k,
++            "constructor":{"scope":"object_lifetime_once","wrapper_seconds":self.constructor_seconds},
++            "core_before":before,"core_after":after,
++            "kernel_builds":self.cost_build_events[builds_before..],
++            "attempts":self.last["attempts"],
++            "counter_units":{
++                "within":"individual vector operator entry calls summed across RHS; seconds can overlap",
++                "fereg":"full-width lockstep batch operator entry calls; rhs_columns sums allocated width including frozen columns"},
++            "timing_semantics":"cumulative snapshots; delta counters exclude constructor; nested timers are inclusive and must not be summed; outer elapsed includes instrumentation",
++            "unavailable":{"within_factor_nnz":true,"within_symbolic_numeric_split":true,"instrumented_flops":true}
++        });
++        result.map(|(out,_)| (out,self.last.to_string()))
++    }
++    fn run_inner(&mut self, input: Vec<f64>, k: usize, tol: f64, max_iter: usize) -> Res<(Vec<f64>, String)> {
+         let clock = Instant::now();
+         if input.iter().any(|v| !v.is_finite()) { return Err("RHS must be finite".into()); }
+         if k == 0 {
+@@ -292,9 +342,9 @@
+ #[pymethods]
+ impl NativeDualSolver {
+     #[new]
+-    #[pyo3(signature=(codes, weights=None, backend="auto", threads=2, scratch_bytes=536870912, allow_fallback=true))]
++    #[pyo3(signature=(codes, weights=None, backend="auto", threads=2, scratch_bytes=536870912, allow_fallback=true, diagnostics=true))]
+     fn new(py: Python<'_>, codes: PyReadonlyArray2<'_, u32>, weights: Option<PyReadonlyArray1<'_, f64>>,
+-           backend: &str, threads: usize, scratch_bytes: usize, allow_fallback: bool) -> PyResult<Self> {
++           backend: &str, threads: usize, scratch_bytes: usize, allow_fallback: bool, diagnostics: bool) -> PyResult<Self> {
+         if !matches!(backend, "auto" | "within" | "fereg") || threads == 0 || scratch_bytes < 1024 {
+             return Err(value("invalid backend, threads or scratch_bytes"));
+         }
+@@ -307,6 +357,7 @@
+         let raw_w = weights.map(|w| w.as_array().iter().copied().collect::<Vec<_>>());
+         let requested = backend.to_string();
+         py.detach(move || -> Res<Self> {
++            let cost_start = Instant::now();
+             let levels: Vec<usize> = groups.iter_mut().map(|c| compact(c)).collect();
+             let w = crate::weights(raw_w.as_deref(), n)?;
+             let mass = masses(&groups, &levels, &w);
+@@ -315,12 +366,16 @@
+             Ok(Self { groups, levels, n, w, mass, duplicate_hint, requested,
+                 selected:"uninitialized".into(), reason:"pending_first_rhs".into(), threads, pool,
+                 design:None, kernel:None, scratch_bytes, allow_fallback, weight_generation:0,
+-                kernel_builds:0, fallback_count:0, last:json!({}) })
++                kernel_builds:0, fallback_count:0, last:json!({}), diagnostics_enabled:diagnostics,
++                constructor_seconds:cost_start.elapsed().as_secs_f64(),cost_build_events:vec![] })
+         }).map_err(value)
+     }
+     #[pyo3(signature=(data, tol=1e-10, max_iter=6000))]
+     fn solve_block<'py>(&mut self, py: Python<'py>, data: PyReadonlyArray2<'py, f64>, tol: f64,
+                        max_iter: usize) -> PyResult<(Bound<'py, PyArray2<f64>>, String)> {
++        self.last = json!({"accepted":false,"attempts":[],"native_cost_diagnostics":{
++            "schema_version":1,"scope":"call","enabled":self.diagnostics_enabled,
++            "kernel":self.selected,"phase":"input_validation","attempts":[]}});
+         if !tol.is_finite() || tol <= 0.0 || tol > 0.1 || max_iter == 0 {
+             return Err(value("tol must be in (0,0.1], max_iter must be positive"));
+         }
+@@ -344,7 +399,7 @@
+                     Kernel::Within(_) => {
+                         let design = self.design.as_ref().ok_or("missing cached design")?;
+                         self.pool.install(|| Solver::new(design,Some(&new_w),None::<&PreconditionerConfig>))
+-                            .map(Kernel::Within).map_err(|e| e.to_string())
++                            .map(|s| { s.enable_diagnostics(self.diagnostics_enabled); Kernel::Within(s) }).map_err(|e| e.to_string())
+                     }
+                     Kernel::Fereg(mut solver) => {
+                         let sorted: Vec<f64> = solver.row_order().iter().map(|&i|new_w[i as usize]).collect();
+@@ -373,6 +428,7 @@
+ #[pymodule]
+ fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
+     m.add_class::<NativeDualSolver>()?;
++    m.add("COST_DIAGNOSTICS_SCHEMA",1)?;
+     m.add("WITHIN_REV",WITHIN_REV)?; m.add("FEREG_REV",FEREG_REV)?;
+     Ok(())
+ }

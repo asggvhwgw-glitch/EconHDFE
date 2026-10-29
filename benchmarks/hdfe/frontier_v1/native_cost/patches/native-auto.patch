@@ -1,0 +1,305 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -12,7 +12,7 @@
+ 
+ [features]
+ default = []
+-python = ["dep:pyo3", "dep:numpy", "dep:within", "dep:ndarray", "dep:rayon"]
++python = ["dep:pyo3", "dep:numpy", "dep:within", "dep:ndarray", "dep:rayon", "dep:serde", "dep:serde_json"]
+ extension-module = ["python", "pyo3/extension-module"]
+ 
+ [dependencies]
+@@ -20,7 +20,10 @@
+ numpy = { version = "0.29", optional = true }
+ ndarray = { version = "0.17", optional = true }
+ rayon = { version = "1.12", optional = true }
+-within = { git = "https://github.com/py-econometrics/within", rev = "fc44282cea6124f5f18bb142908605a656d35a7c", optional = true }
++within = { path = "../within/crates/within", optional = true }
++
++serde = { version = "1", features = ["derive"], optional = true }
++serde_json = { version = "1", optional = true }
+ 
+ [profile.release]
+ opt-level = 3
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -4,7 +4,7 @@
+ 
+ [project]
+ name = "econhdfe-within"
+-version = "0.1.0a2"
++version = "0.1.0a2+cost1"
+ requires-python = ">=3.10"
+ dependencies = ["numpy>=1.26"]
+ description = "Experimental native structured FE reductions over pinned within"
+--- /dev/null
++++ b/src/cost.rs
+@@ -0,0 +1,27 @@
++use serde_json::{json, Value};
++#[derive(Clone, Default, serde::Serialize)]
++pub struct WrapperCosts {
++    pub projection_calls: usize,
++    pub projection_errors: usize,
++    pub projection_seconds: f64,
++    pub certificate_calls: usize,
++    pub certificate_seconds: f64,
++    pub polish_calls: usize,
++    pub polish_seconds: f64,
++}
++
++// Difference only cumulative counters/timers. State and constructor metadata are
++// snapshots, not work to add again on each projection. Integer counts stay exact.
++pub fn delta_totals(before: &Value, after: &Value) -> Value {
++    delta(&before["totals"], &after["totals"])
++}
++pub fn delta(before: &Value, after: &Value) -> Value {
++    match after {
++        Value::Object(values) => Value::Object(values.iter()
++            .filter(|(key,value)| !key.starts_with("constructor_") && !value.is_boolean())
++            .map(|(key,value)| (key.clone(),delta(&before[key],value))).collect()),
++        Value::Number(n) if n.is_u64() => json!(n.as_u64().unwrap().saturating_sub(before.as_u64().unwrap_or(0))),
++        Value::Number(n) => json!(n.as_f64().unwrap() - before.as_f64().unwrap_or(0.0)),
++        _ => Value::Null,
++    }
++}
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -3,3 +3,5 @@
+ #[cfg(feature = "python")]
+ mod python;
+ mod reductions;
++#[cfg(feature = "python")]
++mod cost;
+--- a/src/python.rs
++++ b/src/python.rs
+@@ -5,7 +5,10 @@
+     exceptions::{PyRuntimeError, PyValueError},
+     prelude::*,
+ };
+-use std::sync::Arc;
++use std::sync::{Arc, Mutex};
++use std::time::Instant;
++use serde_json::{json, Value};
++use crate::cost::{WrapperCosts, delta_totals, delta};
+ use within::{Design, LsmrOptions, PreconditionerConfig, Solver};
+ 
+ const REV: &str = "fc44282cea6124f5f18bb142908605a656d35a7c";
+@@ -49,6 +52,11 @@
+     generation: usize,
+     fallbacks: usize,
+     schur_fallbacks: usize,
++    diagnostics_enabled: bool,
++    constructor_seconds: f64,
++    costs: Mutex<WrapperCosts>,
++    fallback_costs: Vec<Value>,
++    last_cost: Value,
+ }
+ impl NativeSolver {
+     fn build_engine(
+@@ -97,7 +105,33 @@
+             _ => "within",
+         }
+     }
+-    fn project(
++    fn core_snapshot(&self) -> Value {
++        match &self.engine {
++            Engine::Iterative { solver, .. } => serde_json::to_value(solver.cost_diagnostics()).unwrap(),
++            Engine::Schur(s) => json!({"route":"small_schur","exact_route":true,
++                "resident_bytes":s.resident_bytes(),"totals":{}}),
++        }
++    }
++    fn measure_certificate(&self, residual: &[f64]) -> f64 {
++        let start = self.diagnostics_enabled.then(Instant::now);
++        let result = reductions::stationarity(&self.geometry, &self.weights, residual);
++        if let Some(start) = start {
++            let mut c = self.costs.lock().unwrap(); c.certificate_calls += 1;
++            c.certificate_seconds += start.elapsed().as_secs_f64();
++        }
++        result
++    }
++    fn project(&self, y: &[f64], options: &LsmrOptions) -> reductions::Result<(Vec<f64>, bool, usize)> {
++        let start = self.diagnostics_enabled.then(Instant::now);
++        let result = self.project_inner(y, options);
++        if let Some(start) = start {
++            let mut c = self.costs.lock().unwrap(); c.projection_calls += 1;
++            c.projection_errors += usize::from(result.is_err());
++            c.projection_seconds += start.elapsed().as_secs_f64();
++        }
++        result
++    }
++    fn project_inner(
+         &self,
+         y: &[f64],
+         options: &LsmrOptions,
+@@ -139,13 +173,13 @@
+         };
+         let gate = tol.max(64.0 * f64::EPSILON);
+         let (mut result, mut ok, mut iterations) = project(y, &options)?;
+-        let mut error = reductions::stationarity(&self.geometry, &self.weights, &result);
++        let mut error = self.measure_certificate(&result);
+         let mut tightened = false;
+         while ok && error.is_finite() && error > gate && iterations < max_iter {
+             options.maxiter = max_iter - iterations;
+             let (corrected, success, spent) = project(&result, &options)?;
+             iterations += spent;
+-            let next_error = reductions::stationarity(&self.geometry, &self.weights, &corrected);
++            let next_error = self.measure_certificate(&corrected);
+             let contracted = next_error <= 0.5 * error;
+             // Keep the best certified metric if a roundoff-limited replacement
+             // regresses. Both candidates still have y-r in the original FE span.
+@@ -176,9 +210,15 @@
+             // group means without rebuilding an engine or changing the FE span.
+             // Count the full sweep against the same total iteration allowance;
+             // retain the best candidate and accept only the unchanged gate.
+-            let polished = reductions::cyclic_polish(&self.geometry, &self.weights, &result)?;
++            let polish_start = self.diagnostics_enabled.then(Instant::now);
++            let polished = reductions::cyclic_polish(&self.geometry, &self.weights, &result);
++            if let Some(start) = polish_start {
++                let mut c = self.costs.lock().unwrap(); c.polish_calls += 1;
++                c.polish_seconds += start.elapsed().as_secs_f64();
++            }
++            let polished = polished?;
+             iterations += 1;
+-            let metric = reductions::stationarity(&self.geometry, &self.weights, &polished);
++            let metric = self.measure_certificate(&polished);
+             if metric < error {
+                 result = polished;
+                 error = metric;
+@@ -237,10 +277,18 @@
+             // This changes neither the FE operator nor its numerical rank.
+             self.fallbacks += 1;
+             self.schur_fallbacks += usize::from(matches!(&self.engine, Engine::Schur(_)));
+-            let (r, success, spent, metric) = self.certify(y, tol, remaining, |rhs, options| {
++            solver.enable_diagnostics(self.diagnostics_enabled);
++            let fallback_before = serde_json::to_value(solver.cost_diagnostics()).unwrap();
++            let fallback_result = self.certify(y, tol, remaining, |rhs, options| {
+                 let r = solver.solve(rhs, options).map_err(|e| e.to_string())?;
+                 Ok((r.demeaned, r.converged, r.iterations))
+-            })?;
++            });
++            let fallback_after = serde_json::to_value(solver.cost_diagnostics()).unwrap();
++            self.fallback_costs.push(json!({"kernel":"within_diagonal_fallback","before":fallback_before,
++                "after":fallback_after,"delta":delta_totals(&fallback_before,&fallback_after),
++                "returned_without_error":fallback_result.is_ok(),
++                "success":fallback_result.as_ref().is_ok_and(|(_, success, _, _)| *success)}));
++            let (r, success, spent, metric) = fallback_result?;
+             if success || metric < error {
+                 result = r;
+                 error = metric;
+@@ -261,7 +309,7 @@
+ #[pymethods]
+ impl NativeSolver {
+     #[new]
+-    #[pyo3(signature=(codes, weights=None, strategy="auto", threads=1, workspace_bytes=536870912))]
++    #[pyo3(signature=(codes, weights=None, strategy="auto", threads=1, workspace_bytes=536870912, diagnostics=true))]
+     fn new(
+         py: Python<'_>,
+         codes: PyReadonlyArray2<'_, u32>,
+@@ -269,6 +317,7 @@
+         strategy: &str,
+         threads: usize,
+         workspace_bytes: usize,
++        diagnostics: bool,
+     ) -> PyResult<Self> {
+         if !matches!(strategy, "auto" | "plain" | "compressed" | "schur") {
+             return Err(value("invalid strategy"));
+@@ -285,6 +334,7 @@
+         let raw_w = weights.map(|w| w.as_array().iter().copied().collect::<Vec<_>>());
+         let strategy = strategy.to_owned();
+         py.detach(move || {
++            let cost_start = Instant::now();
+             let g = Geometry::new(groups)?;
+             let w = reductions::weights(raw_w.as_deref(), g.n)?;
+             let pool = Arc::new(
+@@ -313,6 +363,7 @@
+                     Self::build_engine(&g, index.as_deref(), &w, &strategy, workspace_bytes)
+                 })?,
+             };
++            if let Engine::Iterative { solver, .. } = &engine { solver.enable_diagnostics(diagnostics); }
+             Ok(Self {
+                 geometry: g,
+                 index,
+@@ -324,6 +375,8 @@
+                 generation: 0,
+                 fallbacks: 0,
+                 schur_fallbacks: 0,
++                diagnostics_enabled: diagnostics, constructor_seconds:cost_start.elapsed().as_secs_f64(),
++                costs:Mutex::new(WrapperCosts::default()),fallback_costs:vec![],last_cost:json!({}),
+             })
+         })
+         .map_err(value)
+@@ -336,6 +389,8 @@
+         tol: f64,
+         max_iter: usize,
+     ) -> PyResult<(Bound<'py, PyArray2<f64>>, Vec<bool>, Vec<usize>, Vec<f64>)> {
++        self.last_cost = json!({"schema_version":1,"scope":"call","enabled":self.diagnostics_enabled,
++            "kernel":"native_auto","phase":"input_validation","success":false,"attempts":[]});
+         if !tol.is_finite() || tol <= 0.0 || tol > 1.0 || max_iter == 0 {
+             return Err(value("invalid tolerance or iteration limit"));
+         }
+@@ -347,8 +402,12 @@
+         let other_rhs_bytes = n.saturating_mul(k.saturating_sub(1)).saturating_mul(8);
+         let mut out: Vec<f64> = a.columns().into_iter().flat_map(|c| c.to_vec()).collect();
+         let pool = Arc::clone(&self.pool);
+-        let (out, ok, iterations, errors) = py
+-            .detach(move || {
++        let call_start = Instant::now();
++        let before = self.core_snapshot();
++        let wrapper_before = serde_json::to_value(self.costs.lock().unwrap().clone()).unwrap();
++        let fallbacks_before = self.fallback_costs.len();
++        let solved = py
++            .detach(|| {
+                 pool.install(|| {
+                     let mut ok = Vec::with_capacity(k);
+                     let mut iterations = Vec::with_capacity(k);
+@@ -361,8 +420,24 @@
+                     }
+                     Ok::<_, String>((out, ok, iterations, errors))
+                 })
+-            })
+-            .map_err(runtime)?;
++            });
++        let call_seconds = call_start.elapsed().as_secs_f64();
++        let after = self.core_snapshot();
++        let wrapper_after = serde_json::to_value(self.costs.lock().unwrap().clone()).unwrap();
++        let mut attempts = vec![json!({"kernel":if self.label() == "schur" { "small_schur" } else { "within" },"route":self.label(),"rhs_width":k,
++            "before":before,"after":after,"delta":delta_totals(&before,&after)})];
++        attempts.extend_from_slice(&self.fallback_costs[fallbacks_before..]);
++        self.last_cost = json!({"schema_version":1,"scope":"call","enabled":self.diagnostics_enabled,
++            "kernel":"native_auto","route":self.label(),"rhs_columns":k,
++            "returned_without_error":solved.is_ok(),"success":solved.as_ref().is_ok_and(|(_,flags,_,_)| flags.iter().all(|v| *v)),
++            "error":solved.as_ref().err(),"core_before":before,"core_after":after,
++            "constructor":{"scope":"object_lifetime_once","wrapper_seconds":self.constructor_seconds},
++            "wrapper_call_seconds":call_seconds,"wrapper_delta":delta(&wrapper_before,&wrapper_after),
++            "attempts":attempts,"weight_generation":self.generation,
++            "counter_units":"within individual vector operator entries summed across sequential RHS; fallback snapshots separate",
++            "timing_semantics":"cumulative snapshots and per-call deltas; nested inclusive times must not be summed; constructor metadata charged once; outer elapsed includes instrumentation",
++            "unavailable":{"factor_nnz":true,"symbolic_numeric_split":true,"instrumented_flops":true}});
++        let (out, ok, iterations, errors) = solved.map_err(runtime)?;
+         let array = Array2::from_shape_vec((n, k).f(), out).map_err(value)?;
+         Ok((array.into_pyarray(py), ok, iterations, errors))
+     }
+@@ -389,6 +464,7 @@
+             })
+             .map_err(value)?;
+         self.weights = w;
++        if let Engine::Iterative { solver, .. } = &engine { solver.enable_diagnostics(self.diagnostics_enabled); }
+         self.engine = engine;
+         self.generation += 1;
+         Ok(())
+@@ -408,6 +484,8 @@
+         Ok(())
+     }
+     #[getter]
++    fn cost_diagnostics_json(&self) -> String { self.last_cost.to_string() }
++    #[getter]
+     fn route(&self) -> String {
+         self.label().to_owned()
+     }
+@@ -451,5 +529,6 @@
+     m.add_class::<NativeSolver>()?;
+     m.add("UPSTREAM_REV", REV)?;
+     m.add("ABI_VERSION", 1)?;
++    m.add("COST_DIAGNOSTICS_SCHEMA", 1)?;
+     Ok(())
+ }

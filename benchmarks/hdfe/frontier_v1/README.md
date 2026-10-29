@@ -1,5 +1,8 @@
 # FE complexity frontier benchmark — prototype v0.1
 
+**Native-cost follow-up:** [instrumented build and measurement contract](native_cost/README.md).
+The original v0.1 records below retain their original binaries and limited diagnostics.
+
 This is an isolated research benchmark, outside the production `econhdfe` API.
 It connects three-way categorical FE families with explicit spectral structure
 to actual projection backends and an independent projection-error oracle.

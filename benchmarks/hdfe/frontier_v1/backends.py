@@ -6,9 +6,11 @@ cross-kernel fallback disabled. ``native_auto`` is EconHDFE's native-within
 adapter, including its existing SmallSchur / exact-tuple / within routing.
 These are projection calls, never complete regression estimates.
 
-Only SciPy's operator applications are instrumented here. Native iteration
-counts are *not* substituted for unavailable matrix-vector-product counts.
-Independent error, feasibility, rank and spectrum oracles belong to the runner.
+Only SciPy's operator applications are counted by this Python adapter. Optional
+native cost diagnostics retain their own counter units, batch scopes and timing
+boundaries; they are not combined with SciPy's counts or inferred from native
+iterations. Independent error, feasibility, rank and spectrum oracles belong to
+the runner.
 """
 from __future__ import annotations
 
@@ -17,6 +19,7 @@ from functools import lru_cache
 import hashlib
 import importlib
 import importlib.metadata
+import json
 from pathlib import Path
 from time import perf_counter
 from typing import Any
@@ -97,6 +100,10 @@ def _provenance(name: str, module: Any) -> dict[str, Any]:
                       normal_equations_formed=False, rank_gauge_removed=False)
     else:
         result["precision"] = "float64"
+        result["cost_diagnostics_schema"] = getattr(module, "COST_DIAGNOSTICS_SCHEMA", None)
+        result["research_cost_instrumentation"] = result["cost_diagnostics_schema"] == 1
+        if result["research_cost_instrumentation"]:
+            result["source_revision_scope"] = "pinned upstream sources plus native_cost/patches; see build manifest"
         result["upstream_within_revision"] = getattr(module, "WITHIN_REV", getattr(module, "UPSTREAM_REV", None))
         if name in {"within", "fereg"}:
             result.update(adapter="econhdfe_dual.DualAbsorber", requested_kernel=name,
@@ -192,6 +199,70 @@ def _lsmr_solver(module: Any, codes: np.ndarray, w: np.ndarray, levels: list[int
     return operator, scale, sqrtw, fitted, counts
 
 
+def _native_cost_diagnostics(name: str, solver: Any, info: Any = None) -> dict[str, Any]:
+    """Read optional native telemetry without changing the projection API.
+
+    Old wheels are usable but explicitly uninstrumented. A new wheel's malformed
+    telemetry is distinguished from an old wheel's absent API. Only the common
+    envelope is checked: constructor metadata, cumulative snapshots, attempt
+    deltas and kernel-specific units remain as reported. In particular, no RHS
+    multiplication, snapshot subtraction or timing addition happens here.
+
+    Reading a getter and validating the payload happen after the solver timers.
+    Dual ``return_info`` decoding remains part of the existing projection call.
+    Telemetry failure does not discard the residual or its independent oracle;
+    callers can require ``available is True`` for diagnostic experiments.
+    """
+    source = "dual_return_info" if name in {"within", "fereg"} else "native_getter"
+
+    def unavailable(reason: str, *, invalid: bool = False, error: Exception | None = None):
+        result: dict[str, Any] = {
+            "available": False, "status": "invalid" if invalid else "unavailable",
+            "reason": reason, "source": source,
+        }
+        if error is not None:
+            result["error"] = {"type": type(error).__name__, "message": str(error)}
+        return result
+
+    try:
+        if name in {"within", "fereg"}:
+            payload = info.get("native_cost_diagnostics") if isinstance(info, Mapping) else None
+        else:
+            payload = getattr(solver, "cost_diagnostics_json", None)
+    except Exception as exc:
+        return unavailable("diagnostic_read_failed", invalid=True, error=exc)
+    if payload is None:
+        return unavailable("not_exposed_by_installed_wheel")
+
+    try:
+        if isinstance(payload, str):
+            payload = json.loads(payload)
+        if not isinstance(payload, Mapping):
+            raise ValueError("native cost diagnostics must be a JSON object")
+        # This also rejects nonfinite values and non-JSON native objects. It
+        # detaches the returned snapshot from a mutable Python wrapper's info.
+        result = json.loads(json.dumps(dict(payload), allow_nan=False))
+        if "available" in result and not isinstance(result["available"], bool):
+            raise ValueError("available must be a boolean when provided")
+        if result.get("available") is False:
+            result.setdefault("status", "unavailable")
+            result.setdefault("reason", "native_reports_unavailable")
+            result.setdefault("source", source)
+            return result
+        if type(result.get("schema_version")) is not int or result["schema_version"] != 1:
+            raise ValueError("unsupported native cost diagnostics schema_version; expected 1")
+        if result.get("scope") != "call":
+            raise ValueError("native cost diagnostics scope must be 'call'")
+        attempts = result.get("attempts")
+        if not isinstance(attempts, list) or not all(isinstance(a, dict) for a in attempts):
+            raise ValueError("native cost diagnostics attempts must be a list of objects")
+    except (TypeError, ValueError, OverflowError, RecursionError) as exc:
+        return unavailable("invalid_diagnostic_payload", invalid=True, error=exc)
+    result["available"] = True
+    result.setdefault("source", source)
+    return result
+
+
 def run_backend(name: str, case: Any, tol: float = 1e-10, max_iter: int = 16_000,
                 threads: int = 1, *, scratch_bytes: int = 1 << 30) -> tuple[np.ndarray, dict[str, Any]]:
     """Return ``(residual, metrics)`` for one cold projection.
@@ -203,6 +274,8 @@ def run_backend(name: str, case: Any, tol: float = 1e-10, max_iter: int = 16_000
     occur inside ``solve_s``. ``total_s`` includes both; external oracles do not.
     Native failures that raise are intentionally left for the runner to record.
     A returned nonconvergence flag is retained, never converted into success.
+    Optional native diagnostic collection is timed separately, after ``total_s``.
+    Every call constructs a new solver; it does not measure warm solver reuse.
     """
     if not np.isfinite(tol) or not 0 < tol <= 1:
         raise ValueError("tol must lie in (0, 1]")
@@ -222,6 +295,7 @@ def run_backend(name: str, case: Any, tol: float = 1e-10, max_iter: int = 16_000
         "input_weight_normalization": "divide_by_max_positive_weight",
         "actual_matvec_counts": None, "actual_preconditioner_apply_counts": None,
         "count_kind": "unavailable_native", "reported_iterations": None,
+        "solver_lifecycle": "fresh_constructor_first_projection_call",
         "timing_scope": "setup=validation_layout_constructor; solve=full_call_and_output_copy; deferred_setup_in_solve; excludes_import_provenance_and_external_oracles",
     }
     if name == "scipy_lsmr":
@@ -280,4 +354,15 @@ def run_backend(name: str, case: Any, tol: float = 1e-10, max_iter: int = 16_000
     end = perf_counter()
     metrics.update(setup_s=setup_end - start, solve_s=end - setup_end, total_s=end - start,
                    output_finite=bool(np.isfinite(out).all()))
+    if name == "scipy_lsmr":
+        metrics["native_cost_diagnostics"] = {
+            "available": False, "status": "not_applicable", "reason": "not_a_native_backend",
+        }
+        metrics["diagnostics_collection_s"] = 0.0
+    else:
+        diagnostic_start = perf_counter()
+        metrics["native_cost_diagnostics"] = _native_cost_diagnostics(
+            name, solver, info if name in {"within", "fereg"} else None,
+        )
+        metrics["diagnostics_collection_s"] = perf_counter() - diagnostic_start
     return (out[:, 0] if vector else out), metrics

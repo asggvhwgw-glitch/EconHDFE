@@ -1,0 +1,359 @@
+--- a/crates/within/src/block_elim/solver.rs
++++ b/crates/within/src/block_elim/solver.rs
+@@ -283,6 +283,11 @@
+ }
+ 
+ impl BlockElimSolver {
++    pub(crate) fn cost_shape(&self) -> crate::cost::LocalFactorShape {
++        crate::cost::LocalFactorShape { eliminated_dim: self.n_eliminated(), kept_dim: self.n_kept(),
++            factor_solve_dim: self.n_reduced, cross_tab_nnz: self.cross_tab.c.nnz() }
++    }
++
+     /// Size of the block the elimination removes, the leading one.
+     fn n_eliminated(&self) -> usize {
+         self.cross_tab.n_rows()
+--- /dev/null
++++ b/crates/within/src/cost.rs
+@@ -0,0 +1,134 @@
++//! Research-only, per-solver cost instrumentation. No numerical policy lives here.
++//!
++//! Counts are actual entry calls, not inferred from iteration counts. Operator
++//! durations sum elapsed time across concurrent RHS and are not additive wall time.
++#![allow(missing_docs)]
++
++use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
++use std::time::Instant;
++use schwarz_precond::{Operator, SolveError};
++
++#[derive(Default)]
++pub(crate) struct Counter {
++    calls: AtomicU64,
++    nanos: AtomicU64,
++}
++
++impl Counter {
++    pub(crate) fn guard(&self, enabled: bool) -> Option<Guard<'_>> {
++        enabled.then(|| {
++            self.calls.fetch_add(1, Ordering::Relaxed);
++            Guard { counter: self, start: Instant::now() }
++        })
++    }
++    fn snapshot(&self) -> OperationCost {
++        OperationCost {
++            calls: self.calls.load(Ordering::Relaxed),
++            seconds: self.nanos.load(Ordering::Relaxed) as f64 * 1e-9,
++        }
++    }
++}
++
++pub(crate) struct Guard<'a> {
++    counter: &'a Counter,
++    start: Instant,
++}
++impl Drop for Guard<'_> {
++    fn drop(&mut self) {
++        self.counter.nanos.fetch_add(
++            self.start.elapsed().as_nanos().min(u64::MAX as u128) as u64,
++            Ordering::Relaxed,
++        );
++    }
++}
++
++#[derive(Default)]
++pub(crate) struct Counters {
++    pub enabled: AtomicBool,
++    pub design_apply: Counter,
++    pub design_adjoint: Counter,
++    pub preconditioner_apply: Counter,
++    pub preconditioner_adjoint: Counter,
++    pub solve: Counter,
++    pub deferred_build: Counter,
++    pub failed_solves: AtomicU64,
++    pub rhs_columns: AtomicU64,
++}
++impl Counters {
++    pub fn enabled(&self) -> bool { self.enabled.load(Ordering::Relaxed) }
++    pub fn snapshot(&self) -> CostTotals {
++        CostTotals {
++            design_apply: self.design_apply.snapshot(),
++            design_adjoint: self.design_adjoint.snapshot(),
++            preconditioner_apply: self.preconditioner_apply.snapshot(),
++            preconditioner_adjoint: self.preconditioner_adjoint.snapshot(),
++            solve: self.solve.snapshot(),
++            deferred_build: self.deferred_build.snapshot(),
++            failed_solves: self.failed_solves.load(Ordering::Relaxed),
++            rhs_columns: self.rhs_columns.load(Ordering::Relaxed),
++        }
++    }
++}
++
++#[derive(Clone, Debug, serde::Serialize)]
++pub struct OperationCost { pub calls: u64, pub seconds: f64 }
++#[derive(Clone, Debug, serde::Serialize)]
++pub struct CostTotals {
++    pub design_apply: OperationCost,
++    pub design_adjoint: OperationCost,
++    pub preconditioner_apply: OperationCost,
++    pub preconditioner_adjoint: OperationCost,
++    pub solve: OperationCost,
++    pub deferred_build: OperationCost,
++    pub failed_solves: u64,
++    pub rhs_columns: u64,
++}
++
++#[derive(Clone, Debug, Default, serde::Serialize)]
++pub struct SchwarzBuildCost {
++    pub domain_assembly_seconds: f64,
++    pub local_factors_wall_seconds: f64,
++}
++#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, serde::Serialize)]
++pub struct LocalFactorShape {
++    pub eliminated_dim: usize,
++    pub kept_dim: usize,
++    pub factor_solve_dim: usize,
++    pub cross_tab_nnz: usize,
++}
++#[derive(Clone, Debug, serde::Serialize)]
++pub struct LocalFactorGroup { pub shape: LocalFactorShape, pub count: usize }
++#[derive(Clone, Debug, serde::Serialize)]
++pub struct NativeCostSnapshot {
++    pub enabled: bool,
++    pub totals: CostTotals,
++    pub core_constructor_seconds: f64,
++    pub initial_preconditioner_seconds: f64,
++    pub preconditioner_kind: &'static str,
++    pub has_escalated: bool,
++    pub n_obs: usize,
++    pub n_dofs: usize,
++    pub schwarz_build: Option<SchwarzBuildCost>,
++    pub local_factors: Vec<LocalFactorGroup>,
++}
++
++/// Counts the boundary actually used by LSMR, including its residual checks.
++/// Reconstruction and wrapper certificates are outside this boundary.
++pub(crate) struct CountedOperator<'a> {
++    pub inner: &'a dyn Operator,
++    pub forward: &'a Counter,
++    pub adjoint: &'a Counter,
++    pub enabled: bool,
++}
++impl Operator for CountedOperator<'_> {
++    fn nrows(&self) -> usize { self.inner.nrows() }
++    fn ncols(&self) -> usize { self.inner.ncols() }
++    fn apply(&self, x: &[f64], y: &mut [f64]) -> Result<(), SolveError> {
++        let _guard = self.forward.guard(self.enabled);
++        self.inner.apply(x, y)
++    }
++    fn apply_adjoint(&self, x: &[f64], y: &mut [f64]) -> Result<(), SolveError> {
++        let _guard = self.adjoint.guard(self.enabled);
++        self.inner.apply_adjoint(x, y)
++    }
++}
+--- a/crates/within/src/lib.rs
++++ b/crates/within/src/lib.rs
+@@ -30,6 +30,8 @@
+ //! across solves; fitted values agree.
+ 
+ pub mod config;
++/// Research-only cost snapshots for pinned FE frontier instrumentation.
++pub mod cost;
+ pub mod error;
+ 
+ pub(crate) mod block_elim;
+--- a/crates/within/src/operator/schwarz.rs
++++ b/crates/within/src/operator/schwarz.rs
+@@ -27,6 +27,8 @@
+ pub(crate) struct FeSchwarz {
+     inner: SchwarzPreconditioner<BlockElimSolver>,
+     config: SchwarzConfig,
++    #[serde(skip)]
++    cost_build: crate::cost::SchwarzBuildCost,
+ }
+ 
+ impl std::fmt::Debug for FeSchwarz {
+@@ -102,6 +104,7 @@
+     config: &SchwarzConfig,
+     n_dofs: usize,
+ ) -> Result<FeSchwarz, BuildError> {
++    let cost_started = Instant::now();
+     let entries = domains
+         .into_par_iter()
+         .map(|domain| build_entry(domain, &config.local_solver))
+@@ -109,6 +112,10 @@
+     Ok(FeSchwarz {
+         inner: SchwarzPreconditioner::with_n_dofs(entries, n_dofs, config.reduction),
+         config: config.clone(),
++        cost_build: crate::cost::SchwarzBuildCost {
++            domain_assembly_seconds: 0.0,
++            local_factors_wall_seconds: cost_started.elapsed().as_secs_f64(),
++        },
+     })
+ }
+ 
+@@ -152,6 +159,21 @@
+             Variant::Additive(_) => "Additive",
+             Variant::Diagonal(_) => "Diagonal",
+             Variant::Adaptive(_) => "Adaptive",
++        }
++    }
++
++    pub(crate) fn cost_build(&self) -> Option<crate::cost::SchwarzBuildCost> {
++        match &self.inner { Variant::Additive(p) => Some(p.cost_build.clone()), _ => None }
++    }
++
++    pub(crate) fn cost_factor_shapes(&self) -> Vec<crate::cost::LocalFactorGroup> {
++        match &self.inner {
++            Variant::Additive(p) => {
++                let mut shapes = std::collections::BTreeMap::new();
++                for e in p.inner.subdomains() { *shapes.entry(e.solver().cost_shape()).or_insert(0) += 1; }
++                shapes.into_iter().map(|(shape, count)| crate::cost::LocalFactorGroup { shape, count }).collect()
++            },
++            _ => Vec::new(),
+         }
+     }
+ 
+@@ -299,7 +321,9 @@
+     if domains.is_empty() {
+         return Ok((None, warnings));
+     }
+-    let schwarz = build_additive(domains, config, prepared.design.n_dofs)?;
++    let domain_assembly_seconds = build_started.elapsed().as_secs_f64();
++    let mut schwarz = build_additive(domains, config, prepared.design.n_dofs)?;
++    schwarz.cost_build.domain_assembly_seconds = domain_assembly_seconds;
+     let preconditioner = Preconditioner {
+         inner: Variant::Additive(schwarz),
+         build_duration: build_started.elapsed(),
+--- a/crates/within/src/solver.rs
++++ b/crates/within/src/solver.rs
+@@ -3,6 +3,8 @@
+ //! convenience wrappers built on top of it.
+ 
+ use std::borrow::Cow;
++use std::sync::atomic::Ordering;
++use crate::cost::{Counters, CountedOperator, NativeCostSnapshot};
+ use std::time::Instant;
+ 
+ use ndarray::ArrayView2;
+@@ -212,6 +214,9 @@
+ pub struct Solver<'a> {
+     prepared: PreparedDesign<'a>,
+     slot: PrecondSlot,
++    costs: Counters,
++    constructor_seconds: f64,
++    initial_preconditioner_seconds: f64,
+ }
+ 
+ impl std::fmt::Debug for Solver<'_> {
+@@ -303,10 +308,12 @@
+         weights: Option<&[f64]>,
+         preconditioner: impl Into<PreconditionerInput>,
+     ) -> Result<Self, BuildError> {
++        let cost_started = Instant::now();
+         // Whiten the slope columns (if any) before the preconditioner reads them.
+         let prepared = PreparedDesign::new(design.into_design()?, weights)?;
+         let n_dofs = prepared.design.n_dofs;
+ 
++        let preconditioner_started = Instant::now();
+         let slot = match preconditioner.into() {
+             PreconditionerInput::Default => {
+                 PrecondSlot::build(&prepared, PreconditionerConfig::default())?
+@@ -324,7 +331,9 @@
+             }
+         };
+ 
+-        Ok(Self { prepared, slot })
++        Ok(Self { prepared, slot, costs: Counters::default(),
++            constructor_seconds: cost_started.elapsed().as_secs_f64(),
++            initial_preconditioner_seconds: preconditioner_started.elapsed().as_secs_f64() })
+     }
+ 
+     /// Non-fatal events from the preconditioner build; a reused pre-built preconditioner
+@@ -404,6 +413,19 @@
+ 
+     /// Every RHS in one pass; an unsettled ladder then builds Schwarz once and resumes the stalled.
+     fn solve_all(
++        &self,
++        ys: &[&[f64]],
++        lsmr: &LsmrOptions,
++    ) -> Result<(Vec<RhsSolution>, f64), WithinError> {
++        let enabled = self.costs.enabled();
++        let _call = self.costs.solve.guard(enabled);
++        if enabled { self.costs.rhs_columns.fetch_add(ys.len() as u64, Ordering::Relaxed); }
++        let result = self.solve_all_inner(ys, lsmr);
++        if enabled && result.is_err() { self.costs.failed_solves.fetch_add(1, Ordering::Relaxed); }
++        result
++    }
++
++    fn solve_all_inner(
+         &self,
+         ys: &[&[f64]],
+         lsmr: &LsmrOptions,
+@@ -431,10 +453,7 @@
+                     local_size: lsmr.local_size,
+                     ..Default::default()
+                 };
+-                let run = Run::timed(|| match map {
+-                    Some(m) => mlsmr(&rhs.op, rhs.b(), m, lsmr.tol, lsmr.maxiter, options),
+-                    None => lsmr_solve(&rhs.op, rhs.b(), lsmr.tol, lsmr.maxiter, lsmr.local_size),
+-                })?;
++                let run = Run::timed(|| self.instrumented_run(&rhs, map, lsmr.tol, lsmr.maxiter, options))?;
+                 Ok(if stalled(&run.result) {
+                     Pass::Stalled(rhs, run)
+                 } else {
+@@ -446,6 +465,7 @@
+         // Built outside the fan-out, so sibling RHS never race for it.
+         let build_secs = match ladder {
+             Some(a) if passes.iter().any(|p| matches!(p, Pass::Stalled(..))) => {
++                let _build = self.costs.deferred_build.guard(self.costs.enabled());
+                 a.escalate(&self.prepared)?
+             }
+             _ => 0.0,
+@@ -467,13 +487,47 @@
+                 };
+                 let remaining = lsmr.maxiter - rung1.iterations;
+                 let mut resumed =
+-                    Run::timed(|| mlsmr(&rhs.op, rhs.b(), map, lsmr.tol, remaining, options))?;
++                    Run::timed(|| self.instrumented_run(&rhs, Some(map), lsmr.tol, remaining, options))?;
+                 resumed.result.iterations += rung1.iterations;
+                 resumed.solve_secs += probe.solve_secs;
+                 Ok(self.finish(rhs, resumed))
+             })
+             .collect::<Result<Vec<_>, SolveError>>()?;
+         Ok((solutions, build_secs))
++    }
++
++    fn instrumented_run(&self, rhs: &PreparedRhs<'_>, map: Option<&Preconditioner>,
++                        tol: f64, maxiter: usize, options: MlsmrOptions<'_>) -> Result<LsmrResult, SolveError> {
++        let enabled = self.costs.enabled();
++        let op = CountedOperator { inner: &rhs.op, forward: &self.costs.design_apply,
++            adjoint: &self.costs.design_adjoint, enabled };
++        match map {
++            Some(m) => {
++                let pre = CountedOperator { inner: m, forward: &self.costs.preconditioner_apply,
++                    adjoint: &self.costs.preconditioner_adjoint, enabled };
++                mlsmr(&op, rhs.b(), &pre, tol, maxiter, options)
++            }
++            None => lsmr_solve(&op, rhs.b(), tol, maxiter, options.local_size),
++        }
++    }
++
++    /// Enable opt-in per-solver research counters. Never changes numerical policy.
++    pub fn enable_diagnostics(&self, enabled: bool) {
++        self.costs.enabled.store(enabled, Ordering::Relaxed);
++    }
++
++    /// Cumulative snapshot. Operator seconds may overlap across parallel RHS.
++    pub fn cost_diagnostics(&self) -> NativeCostSnapshot {
++        let pre = self.preconditioner();
++        NativeCostSnapshot {
++            enabled: self.costs.enabled(), totals: self.costs.snapshot(),
++            core_constructor_seconds: self.constructor_seconds,
++            initial_preconditioner_seconds: self.initial_preconditioner_seconds,
++            preconditioner_kind: pre.map_or("Off", |p| p.variant_name()),
++            has_escalated: self.has_escalated(), n_obs: self.n_obs(), n_dofs: self.n_dofs(),
++            schwarz_build: pre.and_then(|p| p.cost_build()),
++            local_factors: pre.map_or_else(Vec::new, |p| p.cost_factor_shapes()),
++        }
+     }
+ 
+     /// Per-level directions the data cannot identify, shared across all RHS:
