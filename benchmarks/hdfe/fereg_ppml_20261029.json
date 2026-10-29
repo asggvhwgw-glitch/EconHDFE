@@ -1,0 +1,943 @@
+{
+ "run_id": 40809995049,
+ "source_sha": "b899ce84155c3a7712b48e9e73fd439b72d902dd",
+ "comparisons": [
+  {
+   "name": "one_big",
+   "id": 123239492234,
+   "records": [
+    {
+     "case": "one_big",
+     "rows": 120000,
+     "threads": 2,
+     "records": [
+      {
+       "case": "one_big",
+       "rows": 120000,
+       "rep": 0,
+       "name": "fereg",
+       "seconds": 0.08204222900000957,
+       "beta": 0.1796933555137774,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 120000
+       }
+      },
+      {
+       "case": "one_big",
+       "rows": 120000,
+       "rep": 0,
+       "name": "econhdfe",
+       "seconds": 3.3034254920000024,
+       "beta": 0.17969335551377727,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 120000,
+        "iterations": 7,
+        "route": null
+       }
+      },
+      {
+       "case": "one_big",
+       "rows": 120000,
+       "rep": 0,
+       "comparison": "slope",
+       "beta_abs_gap": 1.3877787807814457e-16,
+       "valid": true
+      },
+      {
+       "case": "one_big",
+       "rows": 120000,
+       "rep": 1,
+       "name": "econhdfe",
+       "seconds": 0.41832762900000375,
+       "beta": 0.17969335551377727,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 120000,
+        "iterations": 7,
+        "route": null
+       }
+      },
+      {
+       "case": "one_big",
+       "rows": 120000,
+       "rep": 1,
+       "name": "fereg",
+       "seconds": 0.06752119300000459,
+       "beta": 0.1796933555137774,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 120000
+       }
+      },
+      {
+       "case": "one_big",
+       "rows": 120000,
+       "rep": 1,
+       "comparison": "slope",
+       "beta_abs_gap": 1.3877787807814457e-16,
+       "valid": true
+      }
+     ],
+     "valid": true,
+     "peak_rss_mb": 425.43359375,
+     "scope": "Full fereg PPML versus full EconHDFE PPML/within; different estimator implementation, same FE topology and data",
+     "limitation": "No fereg-core direct IRLS solver reuse diagnosis; no IV-PPML competitor in fereg's Python API"
+    },
+    {
+     "case": "one_big",
+     "rows": 1000000,
+     "threads": 2,
+     "records": [
+      {
+       "case": "one_big",
+       "rows": 1000000,
+       "rep": 0,
+       "name": "fereg",
+       "seconds": 0.5489452369999981,
+       "beta": 0.1799691109793838,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 1000000
+       }
+      },
+      {
+       "case": "one_big",
+       "rows": 1000000,
+       "rep": 0,
+       "name": "econhdfe",
+       "seconds": 5.002055826999992,
+       "beta": 0.17996911097938245,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 1000000,
+        "iterations": 7,
+        "route": null
+       }
+      },
+      {
+       "case": "one_big",
+       "rows": 1000000,
+       "rep": 0,
+       "comparison": "slope",
+       "beta_abs_gap": 1.3600232051658168e-15,
+       "valid": true
+      },
+      {
+       "case": "one_big",
+       "rows": 1000000,
+       "rep": 1,
+       "name": "econhdfe",
+       "seconds": 4.752153785000004,
+       "beta": 0.17996911097938245,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 1000000,
+        "iterations": 7,
+        "route": null
+       }
+      },
+      {
+       "case": "one_big",
+       "rows": 1000000,
+       "rep": 1,
+       "name": "fereg",
+       "seconds": 0.4643234999999919,
+       "beta": 0.1799691109793838,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 1000000
+       }
+      },
+      {
+       "case": "one_big",
+       "rows": 1000000,
+       "rep": 1,
+       "comparison": "slope",
+       "beta_abs_gap": 1.3600232051658168e-15,
+       "valid": true
+      }
+     ],
+     "valid": true,
+     "peak_rss_mb": 912.3671875,
+     "scope": "Full fereg PPML versus full EconHDFE PPML/within; different estimator implementation, same FE topology and data",
+     "limitation": "No fereg-core direct IRLS solver reuse diagnosis; no IV-PPML competitor in fereg's Python API"
+    }
+   ],
+   "exits": [
+    "EXIT_STATUS one_big 120000 0",
+    "EXIT_STATUS one_big 1000000 0"
+   ],
+   "cpu": "AMD EPYC 7763 64-Core Processor"
+  },
+  {
+   "name": "two_big",
+   "id": 123239492293,
+   "records": [
+    {
+     "case": "two_big",
+     "rows": 120000,
+     "threads": 2,
+     "records": [
+      {
+       "case": "two_big",
+       "rows": 120000,
+       "rep": 0,
+       "name": "fereg",
+       "seconds": 0.08700122899999485,
+       "beta": 0.17955284297303778,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 120000
+       }
+      },
+      {
+       "case": "two_big",
+       "rows": 120000,
+       "rep": 0,
+       "name": "econhdfe",
+       "seconds": 2.5889342759999963,
+       "beta": 0.179552842973037,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 120000,
+        "iterations": 7,
+        "route": null
+       }
+      },
+      {
+       "case": "two_big",
+       "rows": 120000,
+       "rep": 0,
+       "comparison": "slope",
+       "beta_abs_gap": 7.771561172376096e-16,
+       "valid": true
+      },
+      {
+       "case": "two_big",
+       "rows": 120000,
+       "rep": 1,
+       "name": "econhdfe",
+       "seconds": 0.3119168919999993,
+       "beta": 0.179552842973037,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 120000,
+        "iterations": 7,
+        "route": null
+       }
+      },
+      {
+       "case": "two_big",
+       "rows": 120000,
+       "rep": 1,
+       "name": "fereg",
+       "seconds": 0.11474620900000332,
+       "beta": 0.17955284297303778,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 120000
+       }
+      },
+      {
+       "case": "two_big",
+       "rows": 120000,
+       "rep": 1,
+       "comparison": "slope",
+       "beta_abs_gap": 7.771561172376096e-16,
+       "valid": true
+      }
+     ],
+     "valid": true,
+     "peak_rss_mb": 401.91796875,
+     "scope": "Full fereg PPML versus full EconHDFE PPML/within; different estimator implementation, same FE topology and data",
+     "limitation": "No fereg-core direct IRLS solver reuse diagnosis; no IV-PPML competitor in fereg's Python API"
+    },
+    {
+     "case": "two_big",
+     "rows": 1000000,
+     "threads": 2,
+     "records": [
+      {
+       "case": "two_big",
+       "rows": 1000000,
+       "rep": 0,
+       "name": "fereg",
+       "seconds": 0.9506945439999939,
+       "beta": 0.1798512729621797,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 1000000
+       }
+      },
+      {
+       "case": "two_big",
+       "rows": 1000000,
+       "rep": 0,
+       "name": "econhdfe",
+       "seconds": 2.5289466290000036,
+       "beta": 0.1798512729621782,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 1000000,
+        "iterations": 7,
+        "route": null
+       }
+      },
+      {
+       "case": "two_big",
+       "rows": 1000000,
+       "rep": 0,
+       "comparison": "slope",
+       "beta_abs_gap": 1.4988010832439613e-15,
+       "valid": true
+      },
+      {
+       "case": "two_big",
+       "rows": 1000000,
+       "rep": 1,
+       "name": "econhdfe",
+       "seconds": 2.3165007769999946,
+       "beta": 0.17985127296217826,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 1000000,
+        "iterations": 7,
+        "route": null
+       }
+      },
+      {
+       "case": "two_big",
+       "rows": 1000000,
+       "rep": 1,
+       "name": "fereg",
+       "seconds": 0.9318871810000005,
+       "beta": 0.1798512729621797,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 1000000
+       }
+      },
+      {
+       "case": "two_big",
+       "rows": 1000000,
+       "rep": 1,
+       "comparison": "slope",
+       "beta_abs_gap": 1.4432899320127035e-15,
+       "valid": true
+      }
+     ],
+     "valid": true,
+     "peak_rss_mb": 797.5390625,
+     "scope": "Full fereg PPML versus full EconHDFE PPML/within; different estimator implementation, same FE topology and data",
+     "limitation": "No fereg-core direct IRLS solver reuse diagnosis; no IV-PPML competitor in fereg's Python API"
+    }
+   ],
+   "exits": [
+    "EXIT_STATUS two_big 120000 0",
+    "EXIT_STATUS two_big 1000000 0"
+   ],
+   "cpu": "AMD EPYC 9V74 80-Core Processor"
+  },
+  {
+   "name": "three_big",
+   "id": 123239492256,
+   "records": [
+    {
+     "case": "three_big",
+     "rows": 120000,
+     "threads": 2,
+     "records": [
+      {
+       "case": "three_big",
+       "rows": 120000,
+       "rep": 0,
+       "name": "fereg",
+       "seconds": 0.1366089819999985,
+       "beta": 0.1799601602484798,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 120000
+       }
+      },
+      {
+       "case": "three_big",
+       "rows": 120000,
+       "rep": 0,
+       "name": "econhdfe",
+       "seconds": 3.3370894460000002,
+       "beta": 0.17996016024847875,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 120000,
+        "iterations": 7,
+        "route": null
+       }
+      },
+      {
+       "case": "three_big",
+       "rows": 120000,
+       "rep": 0,
+       "comparison": "slope",
+       "beta_abs_gap": 1.0547118733938987e-15,
+       "valid": true
+      },
+      {
+       "case": "three_big",
+       "rows": 120000,
+       "rep": 1,
+       "name": "econhdfe",
+       "seconds": 0.46423839900000274,
+       "beta": 0.17996016024847875,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 120000,
+        "iterations": 7,
+        "route": null
+       }
+      },
+      {
+       "case": "three_big",
+       "rows": 120000,
+       "rep": 1,
+       "name": "fereg",
+       "seconds": 0.1318889040000002,
+       "beta": 0.1799601602484798,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 120000
+       }
+      },
+      {
+       "case": "three_big",
+       "rows": 120000,
+       "rep": 1,
+       "comparison": "slope",
+       "beta_abs_gap": 1.0547118733938987e-15,
+       "valid": true
+      }
+     ],
+     "valid": true,
+     "peak_rss_mb": 397.6328125,
+     "scope": "Full fereg PPML versus full EconHDFE PPML/within; different estimator implementation, same FE topology and data",
+     "limitation": "No fereg-core direct IRLS solver reuse diagnosis; no IV-PPML competitor in fereg's Python API"
+    },
+    {
+     "case": "three_big",
+     "rows": 1000000,
+     "threads": 2,
+     "records": [
+      {
+       "case": "three_big",
+       "rows": 1000000,
+       "rep": 0,
+       "name": "fereg",
+       "seconds": 1.4334908330000005,
+       "beta": 0.17995228110988032,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 1000000
+       }
+      },
+      {
+       "case": "three_big",
+       "rows": 1000000,
+       "rep": 0,
+       "name": "econhdfe",
+       "seconds": 3.6561289990000034,
+       "beta": 0.17995228110988337,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 1000000,
+        "iterations": 7,
+        "route": null
+       }
+      },
+      {
+       "case": "three_big",
+       "rows": 1000000,
+       "rep": 0,
+       "comparison": "slope",
+       "beta_abs_gap": 3.0531133177191805e-15,
+       "valid": true
+      },
+      {
+       "case": "three_big",
+       "rows": 1000000,
+       "rep": 1,
+       "name": "econhdfe",
+       "seconds": 3.4894360290000037,
+       "beta": 0.17995228110988337,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 1000000,
+        "iterations": 7,
+        "route": null
+       }
+      },
+      {
+       "case": "three_big",
+       "rows": 1000000,
+       "rep": 1,
+       "name": "fereg",
+       "seconds": 1.2852546700000005,
+       "beta": 0.17995228110988032,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 1000000
+       }
+      },
+      {
+       "case": "three_big",
+       "rows": 1000000,
+       "rep": 1,
+       "comparison": "slope",
+       "beta_abs_gap": 3.0531133177191805e-15,
+       "valid": true
+      }
+     ],
+     "valid": true,
+     "peak_rss_mb": 852.7265625,
+     "scope": "Full fereg PPML versus full EconHDFE PPML/within; different estimator implementation, same FE topology and data",
+     "limitation": "No fereg-core direct IRLS solver reuse diagnosis; no IV-PPML competitor in fereg's Python API"
+    }
+   ],
+   "exits": [
+    "EXIT_STATUS three_big 120000 0",
+    "EXIT_STATUS three_big 1000000 0"
+   ],
+   "cpu": "AMD EPYC 7763 64-Core Processor"
+  },
+  {
+   "name": "weak_links",
+   "id": 123239492244,
+   "records": [
+    {
+     "case": "weak_links",
+     "rows": 120000,
+     "threads": 2,
+     "records": [
+      {
+       "case": "weak_links",
+       "rows": 120000,
+       "rep": 0,
+       "name": "fereg",
+       "seconds": 0.12189135099999504,
+       "beta": 0.1792047204629737,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 120000
+       }
+      },
+      {
+       "case": "weak_links",
+       "rows": 120000,
+       "rep": 0,
+       "name": "econhdfe",
+       "seconds": 2.5396405039999976,
+       "beta": 0.17920472046297373,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 120000,
+        "iterations": 7,
+        "route": null
+       }
+      },
+      {
+       "case": "weak_links",
+       "rows": 120000,
+       "rep": 0,
+       "comparison": "slope",
+       "beta_abs_gap": 2.7755575615628914e-17,
+       "valid": true
+      },
+      {
+       "case": "weak_links",
+       "rows": 120000,
+       "rep": 1,
+       "name": "econhdfe",
+       "seconds": 0.6011691020000001,
+       "beta": 0.17920472046297373,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 120000,
+        "iterations": 7,
+        "route": null
+       }
+      },
+      {
+       "case": "weak_links",
+       "rows": 120000,
+       "rep": 1,
+       "name": "fereg",
+       "seconds": 0.11154415400000062,
+       "beta": 0.1792047204629737,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 120000
+       }
+      },
+      {
+       "case": "weak_links",
+       "rows": 120000,
+       "rep": 1,
+       "comparison": "slope",
+       "beta_abs_gap": 2.7755575615628914e-17,
+       "valid": true
+      }
+     ],
+     "valid": true,
+     "peak_rss_mb": 474.109375,
+     "scope": "Full fereg PPML versus full EconHDFE PPML/within; different estimator implementation, same FE topology and data",
+     "limitation": "No fereg-core direct IRLS solver reuse diagnosis; no IV-PPML competitor in fereg's Python API"
+    },
+    {
+     "case": "weak_links",
+     "rows": 1000000,
+     "threads": 2,
+     "records": [
+      {
+       "case": "weak_links",
+       "rows": 1000000,
+       "rep": 0,
+       "name": "fereg",
+       "seconds": 4.176893875000005,
+       "beta": 0.18022615488915933,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 1000000
+       }
+      },
+      {
+       "case": "weak_links",
+       "rows": 1000000,
+       "rep": 0,
+       "name": "econhdfe",
+       "seconds": 10.398812139999997,
+       "beta": 0.18022615488915972,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 1000000,
+        "iterations": 7,
+        "route": null
+       }
+      },
+      {
+       "case": "weak_links",
+       "rows": 1000000,
+       "rep": 0,
+       "comparison": "slope",
+       "beta_abs_gap": 3.885780586188048e-16,
+       "valid": true
+      },
+      {
+       "case": "weak_links",
+       "rows": 1000000,
+       "rep": 1,
+       "name": "econhdfe",
+       "seconds": 10.190957499000007,
+       "beta": 0.18022615488915955,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 1000000,
+        "iterations": 7,
+        "route": null
+       }
+      },
+      {
+       "case": "weak_links",
+       "rows": 1000000,
+       "rep": 1,
+       "name": "fereg",
+       "seconds": 4.002242320999997,
+       "beta": 0.18022615488915933,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 1000000
+       }
+      },
+      {
+       "case": "weak_links",
+       "rows": 1000000,
+       "rep": 1,
+       "comparison": "slope",
+       "beta_abs_gap": 2.220446049250313e-16,
+       "valid": true
+      }
+     ],
+     "valid": true,
+     "peak_rss_mb": 1655.8125,
+     "scope": "Full fereg PPML versus full EconHDFE PPML/within; different estimator implementation, same FE topology and data",
+     "limitation": "No fereg-core direct IRLS solver reuse diagnosis; no IV-PPML competitor in fereg's Python API"
+    }
+   ],
+   "exits": [
+    "EXIT_STATUS weak_links 120000 0",
+    "EXIT_STATUS weak_links 1000000 0"
+   ],
+   "cpu": "AMD EPYC 9V45 96-Core Processor"
+  },
+  {
+   "name": "repeated_cells",
+   "id": 123239492231,
+   "records": [
+    {
+     "case": "repeated_cells",
+     "rows": 120000,
+     "threads": 2,
+     "records": [
+      {
+       "case": "repeated_cells",
+       "rows": 120000,
+       "rep": 0,
+       "name": "fereg",
+       "seconds": 0.04323848099999594,
+       "beta": 0.17948425138433977,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 120000
+       }
+      },
+      {
+       "case": "repeated_cells",
+       "rows": 120000,
+       "rep": 0,
+       "name": "econhdfe",
+       "seconds": 1.923155830000006,
+       "beta": 0.17948425138434038,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 120000,
+        "iterations": 7,
+        "route": null
+       }
+      },
+      {
+       "case": "repeated_cells",
+       "rows": 120000,
+       "rep": 0,
+       "comparison": "slope",
+       "beta_abs_gap": 6.106226635438361e-16,
+       "valid": true
+      },
+      {
+       "case": "repeated_cells",
+       "rows": 120000,
+       "rep": 1,
+       "name": "econhdfe",
+       "seconds": 0.1177414739999989,
+       "beta": 0.17948425138434038,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 120000,
+        "iterations": 7,
+        "route": null
+       }
+      },
+      {
+       "case": "repeated_cells",
+       "rows": 120000,
+       "rep": 1,
+       "name": "fereg",
+       "seconds": 0.035189958000003685,
+       "beta": 0.17948425138433977,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 120000
+       }
+      },
+      {
+       "case": "repeated_cells",
+       "rows": 120000,
+       "rep": 1,
+       "comparison": "slope",
+       "beta_abs_gap": 6.106226635438361e-16,
+       "valid": true
+      }
+     ],
+     "valid": true,
+     "peak_rss_mb": 386.453125,
+     "scope": "Full fereg PPML versus full EconHDFE PPML/within; different estimator implementation, same FE topology and data",
+     "limitation": "No fereg-core direct IRLS solver reuse diagnosis; no IV-PPML competitor in fereg's Python API"
+    },
+    {
+     "case": "repeated_cells",
+     "rows": 1000000,
+     "threads": 2,
+     "records": [
+      {
+       "case": "repeated_cells",
+       "rows": 1000000,
+       "rep": 0,
+       "name": "fereg",
+       "seconds": 0.2952447850000013,
+       "beta": 0.17999824781063062,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 1000000
+       }
+      },
+      {
+       "case": "repeated_cells",
+       "rows": 1000000,
+       "rep": 0,
+       "name": "econhdfe",
+       "seconds": 1.0162812880000018,
+       "beta": 0.17999824781062915,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 1000000,
+        "iterations": 7,
+        "route": null
+       }
+      },
+      {
+       "case": "repeated_cells",
+       "rows": 1000000,
+       "rep": 0,
+       "comparison": "slope",
+       "beta_abs_gap": 1.4710455076283324e-15,
+       "valid": true
+      },
+      {
+       "case": "repeated_cells",
+       "rows": 1000000,
+       "rep": 1,
+       "name": "econhdfe",
+       "seconds": 0.8265730780000027,
+       "beta": 0.17999824781062893,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 1000000,
+        "iterations": 7,
+        "route": null
+       }
+      },
+      {
+       "case": "repeated_cells",
+       "rows": 1000000,
+       "rep": 1,
+       "name": "fereg",
+       "seconds": 0.23167159500000167,
+       "beta": 0.17999824781063062,
+       "valid": true,
+       "diagnostics": {
+        "n_obs": 1000000
+       }
+      },
+      {
+       "case": "repeated_cells",
+       "rows": 1000000,
+       "rep": 1,
+       "comparison": "slope",
+       "beta_abs_gap": 1.6930901125533637e-15,
+       "valid": true
+      }
+     ],
+     "valid": true,
+     "peak_rss_mb": 669.2890625,
+     "scope": "Full fereg PPML versus full EconHDFE PPML/within; different estimator implementation, same FE topology and data",
+     "limitation": "No fereg-core direct IRLS solver reuse diagnosis; no IV-PPML competitor in fereg's Python API"
+    }
+   ],
+   "exits": [
+    "EXIT_STATUS repeated_cells 120000 0",
+    "EXIT_STATUS repeated_cells 1000000 0"
+   ],
+   "cpu": "AMD EPYC 9V45 96-Core Processor"
+  }
+ ],
+ "summary": [
+  {
+   "case": "one_big",
+   "n": 120000,
+   "f_seconds": 0.06752119300000459,
+   "e_seconds": 0.41832762900000375,
+   "ratio": 6.195501151763941,
+   "beta_gap": 1.3877787807814457e-16,
+   "valid": true
+  },
+  {
+   "case": "one_big",
+   "n": 1000000,
+   "f_seconds": 0.4643234999999919,
+   "e_seconds": 4.752153785000004,
+   "ratio": 10.234575215340355,
+   "beta_gap": 1.3600232051658168e-15,
+   "valid": true
+  },
+  {
+   "case": "two_big",
+   "n": 120000,
+   "f_seconds": 0.11474620900000332,
+   "e_seconds": 0.3119168919999993,
+   "ratio": 2.7183198008745566,
+   "beta_gap": 7.771561172376096e-16,
+   "valid": true
+  },
+  {
+   "case": "two_big",
+   "n": 1000000,
+   "f_seconds": 0.9318871810000005,
+   "e_seconds": 2.3165007769999946,
+   "ratio": 2.4858167643364046,
+   "beta_gap": 1.4432899320127035e-15,
+   "valid": true
+  },
+  {
+   "case": "three_big",
+   "n": 120000,
+   "f_seconds": 0.1318889040000002,
+   "e_seconds": 0.46423839900000274,
+   "ratio": 3.5199200609021823,
+   "beta_gap": 1.0547118733938987e-15,
+   "valid": true
+  },
+  {
+   "case": "three_big",
+   "n": 1000000,
+   "f_seconds": 1.2852546700000005,
+   "e_seconds": 3.4894360290000037,
+   "ratio": 2.7149763470612425,
+   "beta_gap": 3.0531133177191805e-15,
+   "valid": true
+  },
+  {
+   "case": "weak_links",
+   "n": 120000,
+   "f_seconds": 0.11154415400000062,
+   "e_seconds": 0.6011691020000001,
+   "ratio": 5.389516890324855,
+   "beta_gap": 2.7755575615628914e-17,
+   "valid": true
+  },
+  {
+   "case": "weak_links",
+   "n": 1000000,
+   "f_seconds": 4.002242320999997,
+   "e_seconds": 10.190957499000007,
+   "ratio": 2.546311962553457,
+   "beta_gap": 2.220446049250313e-16,
+   "valid": true
+  },
+  {
+   "case": "repeated_cells",
+   "n": 120000,
+   "f_seconds": 0.035189958000003685,
+   "e_seconds": 0.1177414739999989,
+   "ratio": 3.3458827657591,
+   "beta_gap": 6.106226635438361e-16,
+   "valid": true
+  },
+  {
+   "case": "repeated_cells",
+   "n": 1000000,
+   "f_seconds": 0.23167159500000167,
+   "e_seconds": 0.8265730780000027,
+   "ratio": 3.567865443322893,
+   "beta_gap": 1.6930901125533637e-15,
+   "valid": true
+  }
+ ]
+}
