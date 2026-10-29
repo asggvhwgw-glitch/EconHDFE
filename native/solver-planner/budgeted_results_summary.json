@@ -1,0 +1,39 @@
+{
+  "runtime_commit": "23a0c12f04983514a64e7cc9b10145d1e34c584e",
+  "ci_run": 40828420235,
+  "primary_configs": 12,
+  "primary_method_records": 36,
+  "primary_returned_projections": 231,
+  "sensitivity_method_records": 4,
+  "combined_returned_projections": 263,
+  "all_valid": true,
+  "max_forward_or_reference_difference": 6.205895088857551e-11,
+  "v03_strictly_faster_than_legacy_primary": 2,
+  "v03_faster_by_more_than_5percent_primary": 1,
+  "v03_strictly_faster_than_v02_primary": 7,
+  "max_primary_optional_seconds": 2.93131978800011,
+  "max_primary_effective_budget_overrun_seconds": 0.06599969450007848,
+  "timing_scope": "constructor plus all measured updates and projections; includes trial IPC and rejected-trial cleanup; excludes DGP, independent oracle and final object teardown",
+  "environment": {"cpu": "AMD EPYC 9V74", "python": "3.13.5", "memory_limit_bytes": 4294967296, "native_threads": 2, "blas_threads": 1},
+  "primary_rows": [
+    {"case":"unique_one","n":1000000,"rhs":8,"horizon":1,"seed":31733,"reweight":false,"legacy_total":0.5539109189999181,"v02_total":2.9774585929999375,"v03_total":0.5472401859999536,"selected":"legacy_auto","optional_seconds":0.0},
+    {"case":"unique_two","n":1000000,"rhs":2,"horizon":3,"seed":31733,"reweight":true,"legacy_total":1.7039956370001619,"v02_total":3.23058439200031,"v03_total":1.9165042050005923,"selected":"legacy_auto","optional_seconds":0.0},
+    {"case":"weak_cycle","n":1000000,"rhs":8,"horizon":8,"seed":31733,"reweight":false,"legacy_total":24.075437128999738,"v02_total":9.632713694000131,"v03_total":25.77423190599984,"selected":"legacy_auto","optional_seconds":1.5120742340000106},
+    {"case":"paired_three","n":250000,"rhs":8,"horizon":8,"seed":31733,"reweight":false,"legacy_total":22.91267621999964,"v02_total":14.153265496998984,"v03_total":9.213621752999643,"selected":"fereg","optional_seconds":0.9713384659999065},
+    {"case":"unique_three","n":1000000,"rhs":2,"horizon":8,"seed":31733,"reweight":false,"legacy_total":27.8601703730003,"v02_total":16.050854413000025,"v03_total":30.44661243800033,"selected":"legacy_auto","optional_seconds":1.7336201969999365},
+    {"case":"unique_two","n":1000000,"rhs":8,"horizon":8,"seed":31733,"reweight":true,"legacy_total":19.182746581999936,"v02_total":14.903693308000356,"v03_total":20.99206528899981,"selected":"legacy_auto","optional_seconds":1.277178097999922},
+    {"case":"repeated","n":1000000,"rhs":8,"horizon":8,"seed":31733,"reweight":false,"legacy_total":12.481241816999727,"v02_total":14.526865585000223,"v03_total":13.822115456999654,"selected":"legacy_auto","optional_seconds":0.8794908910001595},
+    {"case":"weak_cycle","n":5000000,"rhs":2,"horizon":8,"seed":31733,"reweight":false,"legacy_total":54.99175137599991,"v02_total":48.836519827000075,"v03_total":59.43481001400028,"selected":"legacy_auto","optional_seconds":2.93131978800011},
+    {"case":"repeated","n":5000000,"rhs":2,"horizon":1,"seed":31733,"reweight":false,"legacy_total":4.57254335499988,"v02_total":31.090573561000156,"v03_total":4.838677179000115,"selected":"legacy_auto","optional_seconds":0.0},
+    {"case":"iid_three","n":1000000,"rhs":2,"horizon":8,"seed":71031,"reweight":false,"legacy_total":4.42587807200016,"v02_total":6.5131401090006875,"v03_total":5.244379052999648,"selected":"legacy_auto","optional_seconds":0.282796314000052},
+    {"case":"dense_repeated","n":1000000,"rhs":8,"horizon":8,"seed":71031,"reweight":false,"legacy_total":4.577251483000055,"v02_total":9.770289240999773,"v03_total":4.969567060000372,"selected":"legacy_auto","optional_seconds":0.28749527700006183},
+    {"case":"unique_three","n":250000,"rhs":8,"horizon":8,"seed":89173,"reweight":false,"legacy_total":16.2602028660001,"v02_total":5.1370788249998895,"v03_total":16.703351015999715,"selected":"legacy_auto","optional_seconds":0.32712486700006593}
+  ],
+  "sensitivity_scope": "subsequent same-machine runs; n=1M rhs=8 horizon=8 seed31733; overhead fraction1 exploration fraction0.25 max3 seconds; not fresh repeated controls",
+  "sensitivity": [
+    {"case":"weak_cycle","pilot_rhs":1,"total_seconds":27.763309594000702,"optional_seconds":2.970459314999971,"effective_budget":2.9542236310001044,"selected":"legacy_auto","valid":true,"statuses":["screened_no_predicted_gain","timeout_unranked"]},
+    {"case":"unique_two","pilot_rhs":1,"total_seconds":21.928301627000337,"optional_seconds":1.9000145529998917,"effective_budget":2.659048281999958,"selected":"legacy_auto","valid":true,"statuses":["screened_no_predicted_gain","screened_no_predicted_gain"]},
+    {"case":"weak_cycle","pilot_rhs":8,"total_seconds":28.177569525999388,"optional_seconds":3.0174608130000706,"effective_budget":3.0,"selected":"legacy_auto","valid":true,"statuses":["untested_promotion_budget","timeout_unranked"]},
+    {"case":"unique_two","pilot_rhs":8,"total_seconds":22.09738857499906,"optional_seconds":2.6582814499997767,"effective_budget":2.639216476999536,"selected":"legacy_auto","valid":true,"statuses":["untested_promotion_budget","timeout_unranked"]}
+  ]
+}
