@@ -1,25 +1,25 @@
 {
   "approved": [
     {
-      "id": "633a95fc65d54d9e",
+      "id": "2a288eb5dbf7de0b",
       "kind": "changed",
       "path": "signatures.InferenceConfig",
-      "reason": "Add opt-in InferenceConfig.ivppml_misspecification_robust (default False): overidentified IV-PPML can use the estimating-equation sandwich valid under misspecified overidentifying moments; the default ivppmlhdfe sandwich is unchanged."
+      "reason": "Append ppml_small_sample to InferenceConfig without changing earlier positional fields; default asymptotic fixes upstream compatibility and residual supports migration."
     },
     {
-      "id": "79d3e8993ea9a783",
+      "id": "716cd3dc14bbef3e",
       "kind": "changed",
       "path": "exported_dataclass_schemas.InferenceConfig",
-      "reason": "Add opt-in InferenceConfig.ivppml_misspecification_robust (default False): overidentified IV-PPML can use the estimating-equation sandwich valid under misspecified overidentifying moments; the default ivppmlhdfe sandwich is unchanged."
+      "reason": "Expose the deliberate PPML finite-sample convention as an additive InferenceConfig field; retain prior residual-DF behavior by explicit request and record the selected factor in diagnostics."
     },
     {
-      "id": "faec2397e2ce0d7c",
+      "id": "a4d09d51f24e89a9",
       "kind": "changed",
       "path": "config_schemas.InferenceConfig",
-      "reason": "Add opt-in InferenceConfig.ivppml_misspecification_robust (default False): overidentified IV-PPML can use the estimating-equation sandwich valid under misspecified overidentifying moments; the default ivppmlhdfe sandwich is unchanged."
+      "reason": "Add ppml_small_sample with default asymptotic to match upstream PPML finite-sample factors; explicit residual preserves the previous convention. This is independent of sample policy and documented in statistical-audit-closeout.md."
     }
   ],
-  "baseline_version": "0.9.2",
-  "release_version": "0.9.3",
+  "baseline_version": "0.9.3",
+  "release_version": "0.9.4",
   "schema_version": 1
 }

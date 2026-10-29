@@ -1,81 +1,81 @@
 {
   "schema_version": 1,
-  "release_version": "0.9.3",
-  "previous_version": "0.9.2",
+  "release_version": "0.9.4",
+  "previous_version": "0.9.3",
   "checks": {
     "frontend_api": {
       "status": "changed",
-      "evidence": "InferenceConfig gains ivppml_misspecification_robust (default False), read by ivppmlhdfe and IVPPMLHDFE.fit; structured DataFrame specs take the dense path when it is set. No other signature or export change.",
+      "evidence": "InferenceConfig appends ppml_small_sample=asymptotic/residual; arrays, DataFrame, reusable and structured PPML routes forward it. Existing ivppml_misspecification_robust remains supported.",
       "description": "Public call signatures, exports, aliases, CLI/front-end validation and compatibility."
     },
     "backend_compute": {
       "status": "changed",
-      "evidence": "IV-PPML dense/structured IRLS iterate on y/mean(y) via ppml_iv.irls.in_outcome_units and drop the absolute |eta|>30 divergence bound (exploding-slope check kept). PPML standardize=False uses Standardization.outcome_only. New ppml_iv.vce.ivppml_ee_vcov (meat via ivppml_vcov, one extra K-column FE projection). overid_test moved to iv.moments.",
+      "evidence": "Outcome-normalized Poisson inference, protected PPML intercept direction, joint IV state, observed-space rank checks, bounded TSQR block2SLS, Schur-completed full multiway covariance. Generic QR admission stays in compute; IV does not import planner.",
       "description": "Solver/compute/cache/backend contracts, numerical defaults and resource controls."
     },
     "errors": {
       "status": "reviewed",
-      "evidence": "No new error class. A singular estimating-equation Jacobian raises InferenceError code inference.singular_jacobian; the false IV-PPML DivergenceError on large-unit outcomes no longer occurs.",
+      "evidence": "Reuse UnderidentifiedError for missing weighted IV directions and existing numerical/inference errors; explicit unsafe legacy IV separation warns; no new public error family.",
       "description": "Structured exception classes, codes, stages, suggestions and public error boundaries."
     },
     "public_contract": {
       "status": "changed",
-      "evidence": "Three approved InferenceConfig contract changes (config/exported schema, signature) against immutable 0.9.2; new immutable 0.9.3 snapshot.",
+      "evidence": "Three reviewed InferenceConfig schema/signature changes against immutable 0.9.3. Additive ppml_small_sample field documents upstream default and explicit migration to residual convention; new0.9.4 snapshot retained.",
       "description": "Public exports/signatures, result/config schemas and stable structured-error compatibility."
     },
     "skill": {
       "status": "changed",
-      "evidence": "skills/econhdfe/references/configuration.md lists ivppml_misspecification_robust; empirical-research.md explains IV-PPML overidentification diagnostics and when to request estimating-equation SEs.",
+      "evidence": "Configuration and empirical-research references cover default factors, safe IV separation, outcome normalization, covariance completion and assumptions for EE/growing-FE inference. Existing router and metadata remain appropriate.",
       "description": "Agent skill commands, examples, decision rules and newly exposed controls."
     },
     "linked_modules": {
       "status": "changed",
-      "evidence": "overid_test now lives in outcome-agnostic econhdfe.iv.moments and is consumed by linear_iv.estimators and ppml_iv.estimator (no linear_iv <-> ppml_iv import). Block IV-PPML IRLS shares in_outcome_units. Architecture map regenerated.",
+      "evidence": "Shared IV solve is used by nonlinear and linear paths; PPML outcome_scale is reused by IV; all model families share covariance completion. Imports verified by regenerated architecture map.",
       "description": "Cross-module imports, shared schemas, adapters, compatibility shims and downstream consumers."
     },
     "results_reporting": {
       "status": "changed",
-      "evidence": "IV-PPML diagnostics add overidentification {stat, df, pvalue} (Hansen J on Z' w0 (y-mu)) and misspecification_robust. Default params/SE differ from 0.9.2 by <=4.2e-13 at ordinary outcome scales; PPML default path bitwise unchanged.",
+      "evidence": "PPML diagnostics expose finite_sample_correction; IV coefficients, eta, mu, VCE/EE/J refer to one accepted state. Complete multiway covariance is PSD within numerical tolerance.",
       "description": "Result fields, publication output, diagnostics metadata and serialization-facing schemas."
     },
     "config_defaults": {
-      "status": "reviewed",
-      "evidence": "All defaults unchanged: ivppml_misspecification_robust=False keeps the ivppmlhdfe sandwich; PPML standardize default True unchanged.",
+      "status": "changed",
+      "evidence": "PPML asymptotic finite-sample convention is default with residual opt-in. IV separation None resolves to FE-only in both modes. SamplePolicy label refers to counting and is not full Stata parity.",
       "description": "Config objects, defaults, deprecations, aliases and backwards-compatible behavior."
     },
     "cache_state": {
-      "status": "not_applicable",
-      "evidence": "No cache key, fingerprint or session state touched; results from 0.9.2 caches remain valid up to rounding.",
+      "status": "changed",
+      "evidence": "Persistent linear result ABI bumped to linear-session-result-7 so old covariance/identification results are recomputed. FE projection cache identity unchanged; normalization is per fit.",
       "description": "Reusable state/cache invalidation, fingerprints, lifecycle semantics and stale-state hazards."
     },
     "tests_validation": {
       "status": "changed",
-      "evidence": "New tests: IV-PPML outcome-unit invariance (fails on 0.9.2), PPML standardize=False invariance (fails on 0.9.2), EE SE vs independent stacked M-estimator oracle plus Hansen J vs orthogonalized Wald oracle. Full suite, native within tests. Verification scripts, 11-case dense root comparison and 400-replication MC in archive/econhdfe/v0.9.2/development/ivppml-outer-inference-20261029.",
+      "evidence": "Final integrated source suite: 588 passed,1 optional-native skip,27.54s;76 new audit cases. Original analytical/unit/EE scripts rerun on final code. Evidence and exact code fingerprint: docs/release/evidence/0.9.4/statistical-audit.json and full-suite.txt. All resource guards retained.",
       "description": "Regression tests, install smoke tests, golden/parity coverage and failure-path tests."
     },
     "performance": {
       "status": "reviewed",
-      "evidence": "Default path: identical iteration counts on the drift cases; one extra division/rescale per fit. EE adds one K-column FE projection only when requested; Hansen J is one L x L meat.",
+      "evidence": "No target-scale speedup claim. Dense relevance reuses firststage projection; block2SLS uses admitted bounded-row QR with O((L+K)^2+N) workspaces and can cost more than Gram solving. Full resource-policy tests passed; PSD completion reuses slope decomposition.",
       "description": "Representative benchmark/resource regressions for code paths materially changed by the release."
     },
     "docs_migration": {
       "status": "changed",
-      "evidence": "CHANGELOG 0.9.3; skill configuration and empirical-research references; architecture map.",
+      "evidence": "0.9.4 changelog, English/Chinese README, migration, audit closeout, singleton policies, covariance conventions and current validation status updated. Prior overly broad inference/parity claims qualified.",
       "description": "README/architecture/changelog/migration/versioning documentation and user-visible examples."
     },
     "packaging_dependencies": {
       "status": "reviewed",
-      "evidence": "No dependency, extra or build metadata change beyond the version.",
+      "evidence": "No new dependency or build-system requirement; version bumped with scripts/version.py; current public snapshot and existing source packaging retained.",
       "description": "Python/dependency matrix, optional extras, wheel/source contents and build metadata."
     },
     "external_validation": {
       "status": "reviewed",
-      "evidence": "No licensed Stata run for this change. Default IV-PPML estimates move only at rounding level at ordinary scales; no new parity claim.",
+      "evidence": "No licensed Stata execution or new Monte Carlo coverage experiment. Evidence consists of pinned upstream source analysis, analytical examples, independent numerical oracles and tests on this candidate.",
       "description": "Licensed/reference-environment parity gates and explicitly deferred external certification."
     },
     "release_artifacts": {
       "status": "not_applicable",
-      "evidence": "Source candidate only: no sdist/wheel built, tagged or published.",
+      "evidence": "This is a source PR candidate. No package publication, tag or release creation is requested; CI build/install evidence is tracked separately from maintenance review.",
       "description": "Version consistency, source/wheel parity, hashes, clean install and reproducible bundle contents."
     }
   }

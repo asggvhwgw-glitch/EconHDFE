@@ -1,6 +1,50 @@
 # Changelog
 
+## 0.9.4 — unreleased candidate
+
+Statistical-audit follow-up to the 0.9.3 candidate in PR #38. Existing snapshots
+remain immutable; this candidate adds `InferenceConfig.ppml_small_sample`.
+
+- Reject numerical loss of IV identification before a roundoff-sized fitted
+  regressor can be normalized into an apparently identified direction. Dense
+  and block 2SLS share the rejection contract; this is not a weak-IV test.
+- IV-PPML now defaults to FE-zero separation only in both sample modes.
+  Explicit simplex/ReLU/mu legacy selection warns in compatibility mode and
+  remains rejected in unified mode. Ordinary PPML separation is unchanged.
+- Every PPML standardization mode uses a positive weighted outcome mean with
+  no absolute lower bound. Default standardized PPML no longer falsely
+  converges to different slopes when tiny outcomes cross the former SD floor.
+- Preserve the generated PPML constant when user columns already span an
+  intercept. Unit restoration, model Wald and covariance repair use the actual
+  constant index; a redundant user constant/dummy can be omitted instead.
+- Replace the structured 2SLS normal-Gram coefficient solve with bounded QR
+  compression, avoiding false rank loss and coefficient error in a verified
+  near-collinear self-instrumentation example. Dense relevance checks reuse
+  the first-stage projection in original regressor norm coordinates.
+- IV-PPML keeps normalized outcome units through final projection, covariance,
+  EE and J. It returns the jointly accepted IRLS coefficient/mean state;
+  an inference-only extra solve cannot overwrite the coefficient. Tiny user
+  units no longer trigger a different final weighted regression.
+- Complete the multiway covariance with a Schur-complement bound for the
+  constant after separate slope clipping. The full matrix is PSD to numerical
+  precision while the repaired slope block is preserved. This intentionally
+  differs from upstream full-matrix-then-slope replacement. Persistent linear
+  result caches are invalidated (`linear-session-result-7`).
+- Ordinary PPML defaults to the upstream asymptotic finite-sample factors:
+  `N/(N-1)` robust and `G_min/(G_min-1)` clustered. Set
+  `InferenceConfig(ppml_small_sample="residual")` for the previous residual-DF
+  convention. Diagnostics report the convention and multiplier actually used;
+  model-based Poisson covariance is unchanged.
+- Add analytical counterexamples, outcome-unit metamorphic checks, explicit
+  dummy/root/sandwich references and full-covariance contrast tests. Clarify
+  valid-moment versus misspecified EE inference, weak identification, many-FE
+  bias and the absence of fresh licensed-Stata execution. See
+  [the audit closeout](docs/development/statistical-audit-closeout.md).
+
 ## 0.9.3 — unreleased candidate
+
+Historical first candidate; the 0.9.4 section supersedes its incomplete
+outcome-unit claims and final-state behavior below.
 
 Patch on 0.9.2 (adds one opt-in `InferenceConfig` field).
 
@@ -22,8 +66,8 @@ Patch on 0.9.2 (adds one opt-in `InferenceConfig` field).
   IV-PPML uses the estimating-equation sandwich, which adds the first-stage
   re-estimation terms that the `ivppmlhdfe` sandwich omits when the
   overidentifying moments fail. It equals the stacked M-estimator sandwich and
-  agrees with the default under correct specification and exact
-  identification. Structured DataFrame specifications use the dense path when
+  agrees asymptotically with the default under correct specification and at
+  a solved root under exact identification. Structured DataFrame specifications use the dense path when
   it is requested. The default covariance is unchanged.
 
 ## 0.9.2 — unreleased candidate

@@ -17,7 +17,7 @@ from ..poisson import (
     initial_active_rows, separation_survivors, poisson_clusters, poisson_inference, poisson_df_resid,
 )
 from .config import IVPPMLConfig
-from .irls import fit_iv_irls
+from .irls import fit_iv_irls, restore_outcome_units
 from .results import IVPPMLResult
 from .standardize import IVPPMLStandardization
 from .vce import ivppml_vcov, ivppml_ee_vcov, normalize_ivppml_vce
@@ -182,11 +182,14 @@ def fit_arrays(
         sample_idx = np.flatnonzero(sample)
         separation[sample_idx[state.separated]] = True
 
-    # Final exact weighted HDFE + 2SLS solve for inference.
+    # Final projection supplies inference at the converged state. Keep its
+    # mean-normalized units: flooring user-unit weights changes their relative
+    # values merely when the outcome is quoted in smaller units.
+    y_unit = y1 / state.outcome_scale
     irls_w = np.maximum(w1 * state.mu, 1e-20)
     z = state.eta - off1 - 1.0
-    pos = y1 > 0
-    z[pos] += y1[pos] / state.mu[pos]
+    pos = y_unit > 0
+    z[pos] += y_unit[pos] / state.mu[pos]
     block = np.empty((len(y1), 1 + Xs.shape[1] + Is.shape[1]), dtype=np.float64)
     block[:, 0] = z
     block[:, 1:1 + Xs.shape[1]] = Xs
@@ -202,13 +205,15 @@ def fit_arrays(
     else:
         Z_dm = block[:, 1 + Xs.shape[1]:]
     solved = weighted_2sls(z_dm, X_dm, Z_dm, weights=irls_w)
-    beta = scaling.unscale_coef(solved.beta)
+    # An extra 2SLS step must not overwrite beta while eta/mu stay at the
+    # preceding iterate. The jointly accepted IRLS state is the estimate.
+    beta = scaling.unscale_coef(state.beta)
 
     cls = poisson_clusters(clusters, sample, vce)
     dof = p1.dof_info(clusters=cls, method=config.dof_method)
     effective_n = float(np.sum(w1)) if weight_kind == "fweight" else float(len(y1))
     vce_kw = dict(kind=vce, clusters=cls, effective_n=effective_n, base_weights=w1, weight_kind=weight_kind)
-    weighted_residual = w1 * (y1 - state.mu)
+    weighted_residual = w1 * (y_unit - state.mu)
     overidentified = Z_dm.shape[1] > X_dm.shape[1]
     if misspecification_robust and overidentified:
         Vstd = ivppml_ee_vcov(
@@ -216,7 +221,10 @@ def fit_arrays(
             tol=config.target_inner_tol, **vce_kw,
         )
     else:
-        Vstd = ivppml_vcov(solved.projected_X, X_dm, solved.residuals, irls_w, bread=solved.bread, **vce_kw)
+        Vstd = ivppml_vcov(
+            solved.projected_X, X_dm, weighted_residual / irls_w,
+            irls_w, bread=solved.bread, **vce_kw,
+        )
     # Hansen J on the additive moments Z_dm' w0 (y - mu), as for linear IV.
     overid = overid_test(
         weighted_residual, Z_dm, X=irls_w[:, None] * X_dm, kind=normalize_ivppml_vce(vce),
@@ -229,6 +237,8 @@ def fit_arrays(
         scale=lambda: regressor_scale(
             Xraw, frequency_weights=w1 if config.sample_policy.psd_frequency_scale(weight_kind) else None),
     )
+
+    restore_outcome_units(state)
 
     # Upstream posts a normalized constant with zero reported variance.
     b_cons = float(np.average(state.eta - off1, weights=irls_w) - np.average(Xraw, axis=0, weights=irls_w) @ beta)

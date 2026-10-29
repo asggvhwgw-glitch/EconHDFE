@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from contextlib import nullcontext
 import numpy as np
 
 from .block_design import BlockDesign
@@ -225,6 +226,27 @@ def _merge_augmented_qr(current: np.ndarray | None, incoming: np.ndarray) -> np.
     if current.shape[1] != Rc.shape[1]:
         raise ValueError("streamed QR factors have incompatible widths")
     return np.asarray(np.linalg.qr(np.vstack((current, Rc)), mode="r"), dtype=np.float64)
+
+
+def _augmented_qr_workspace(nobs, width, max_rows, *, label="augmented_qr_solve"):
+    """Admit compact QR factors and size row scratch to the active allocation.
+
+    Compact factors, SVD/bread work and three observation vectors are retained
+    independently of row scratch. This conservative bound is O(width**2 + N),
+    not a promise of width-independent memory. Resource policy stays in the
+    compute layer; callers need only supply their numerical matrix geometry.
+    """
+    from ..planner.scheduler import current_allocation, reserve_memory
+
+    chunk = max(1, min(32768, 2_000_000 // width, max_rows))
+    fixed = 8 * (12 * width * width + 3 * nobs + 4 * width)
+    per_row = 8 * 4 * width
+    allocation = current_allocation()
+    if allocation is None:
+        return chunk, nullcontext()
+    available = allocation.unreserved_memory_bytes()
+    chunk = max(1, min(chunk, (available - fixed) // per_row))
+    return chunk, reserve_memory(fixed + chunk * per_row, label=label)
 
 
 def _disjoint_weighted_lstsq(

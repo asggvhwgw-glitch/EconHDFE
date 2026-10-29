@@ -36,7 +36,7 @@ from ..ppml.execution import resolve_execution
 from ..ppml.heterogeneous import detect_separation_block
 from ..ppml.separation import initial_sample_selection, sample_policy_diagnostics
 from .config import IVPPMLConfig
-from .irls import in_outcome_units
+from .irls import fit_in_normalized_outcome_units, restore_outcome_units
 from .results import IVPPMLResult
 from .standardize import IVPPMLStandardization
 
@@ -54,6 +54,7 @@ class BlockIVIRLSState:
     separated: np.ndarray
     residual: np.ndarray
     irls_w: np.ndarray
+    outcome_scale: float = 1.0
 
 
 def _slice_roles(design: BlockDesign, kc: int, ke: int):
@@ -111,7 +112,7 @@ def _fit_iv_irls_block(
     y, C: BlockDesign, E: BlockDesign, I: BlockDesign, plan: FEPlan,
     true_w, offset, config: IVPPMLConfig, *, projector, initial_eta=None, detect_mu=False,
 ):
-    return in_outcome_units(
+    return fit_in_normalized_outcome_units(
         _iterate_block, y, true_w, initial_eta, C, E, I, plan, offset, config,
         projector=projector, detect_mu=detect_mu,
     )
@@ -372,22 +373,25 @@ def fit_block_arrays(
         sample_idx = np.flatnonzero(sample)
         separation[sample_idx[state.separated]] = True
 
+    # Match the dense closeout: all projection and covariance work remains
+    # in the normalized outcome units used by IRLS.
+    y_unit = y1 / state.outcome_scale
     irls_w = np.maximum(w1 * state.mu, 1e-20)
     z = state.eta - off1 - 1.0
-    pos = y1 > 0
-    z[pos] += y1[pos] / state.mu[pos]
+    pos = y_unit > 0
+    z[pos] += y_unit[pos] / state.mu[pos]
     projected = projector.residualize_response_design(z, combined, irls_w, tol=config.target_inner_tol)
     Cdm, Edm, Idm = _slice_roles(projected.design, Cs.ncols, Es.ncols)
     Xdm = hstack_block_designs(Cdm, Edm)
     Zdm = hstack_block_designs(Cdm, Idm)
     solved = weighted_2sls_block(projected.response, Xdm, Zdm, weights=irls_w)
-    beta = scaling.unscale_coef(solved.beta)
+    beta = scaling.unscale_coef(state.beta)
 
     cls = poisson_clusters(clusters, sample, vce)
     dof = p1.dof_info(clusters=cls, method=config.dof_method)
     effective_n = float(np.sum(w1)) if weight_kind == "fweight" else float(len(y1))
     Vstd = _ivppml_vcov_block(
-        Xdm, Zdm, solved.first_stage, solved.residuals, irls_w, kind=vce, clusters=cls,
+        Xdm, Zdm, solved.first_stage, w1 * (y_unit - state.mu) / irls_w, irls_w, kind=vce, clusters=cls,
         effective_n=effective_n, base_weights=w1, weight_kind=weight_kind, bread=solved.bread,
     )
     Xraw = hstack_block_designs(C1, E1)
@@ -396,6 +400,8 @@ def fit_block_arrays(
         scale=lambda: regressor_scale(
             Xraw, frequency_weights=w1 if config.sample_policy.psd_frequency_scale(weight_kind) else None),
     )
+
+    restore_outcome_units(state)
 
     mean_x = Xraw.t_matvec(irls_w) / float(np.sum(irls_w))
     b_cons = float(np.average(state.eta - off1, weights=irls_w) - mean_x @ beta)

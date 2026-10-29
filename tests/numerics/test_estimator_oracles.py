@@ -92,11 +92,12 @@ def test_linear_iv_dense_oracle_and_frequency_replication(kind):
     np.testing.assert_allclose(got.vcov,clone.vcov,rtol=2e-7,atol=2e-10)
 
 
+@pytest.mark.parametrize('convention', ['asymptotic', 'residual'])
 @pytest.mark.parametrize('engine,kind', [
     ('replica', 'robust'),
     ('optimized', 'cluster'),
 ])
-def test_ppml_against_independent_glm(engine,kind):
+def test_ppml_against_independent_glm(engine,kind,convention):
     rng,_,X,groups,cluster=sample(6729)
     off=rng.normal(scale=.15,size=len(X));weights=rng.uniform(.7,1.4,len(X))
     eta=.2*X[:,0]-.15*X[:,1]+rng.normal(scale=.15,size=17)[groups[0]]+rng.normal(scale=.15,size=7)[groups[1]]+off
@@ -105,16 +106,18 @@ def test_ppml_against_independent_glm(engine,kind):
     ref=sm.GLM(y,U,family=sm.families.Poisson(),offset=off,var_weights=weights).fit(tol=1e-12,maxiter=100)
     got=e.ppmlhdfe(y=y,x=X,absorb=groups,offset=off,weights=weights,vce=kind,
                    cluster=[cluster] if kind=='cluster' else None,
+                   inference_config=e.InferenceConfig(ppml_small_sample=convention),
                    config=e.PPMLConfig(engine=engine,tolerance=1e-11,target_inner_tol=1e-12,dof_method='exact'))
     assert np.all(got.sample_mask)
     bread=np.linalg.inv(U.T@((weights*ref.mu)[:,None]*U))
     if kind=='iid':V=bread
     else:
         scores=U*(weights*(y-ref.mu))[:,None]
-        if kind=='robust':meat=scores.T@scores;scale=len(y)/(len(y)-U.shape[1])
+        k_total = U.shape[1] if convention == 'residual' else 1
+        if kind=='robust':meat=scores.T@scores;scale=len(y)/(len(y)-k_total)
         else:
             unq,inv=np.unique(cluster,return_inverse=True);agg=np.zeros((len(unq),U.shape[1]));np.add.at(agg,inv,scores)
-            meat=agg.T@agg;scale=(len(y)-1)/(len(y)-U.shape[1])*len(unq)/(len(unq)-1)
+            meat=agg.T@agg;scale=(len(y)-1)/(len(y)-k_total)*len(unq)/(len(unq)-1)
         V=scale*bread@meat@bread
     np.testing.assert_allclose(got.params,ref.params[:2],rtol=2e-6,atol=2e-8)
     np.testing.assert_allclose(got.mu,ref.mu,rtol=2e-6,atol=2e-7)

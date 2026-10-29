@@ -7,39 +7,34 @@ from ...compute.block_design import BlockDesign
 from ...compute.design_plan import StructuralDesignPlan
 
 
-def _reghdfe_scale(a: np.ndarray, axis=None):
-    """Sample-standard-deviation scale used by reghdfe, without demeaning."""
-    a = np.asarray(a, dtype=np.float64)
-    n = a.shape[0] if a.ndim else 1
-    if n <= 1:
-        if axis is None:
-            return 1e-3
-        shape = a.shape[1:] if axis == 0 else ()
-        return np.full(shape, 1e-3, dtype=np.float64)
-    if axis is None:
-        ss = float(np.dot(a.ravel(), a.ravel()))
-        s = float(np.sum(a))
-        var = max((ss - s * s / n) / (n - 1), 0.0)
-        scale = np.sqrt(var)
-        return float(max(scale, 1e-3)) if np.isfinite(scale) else 1.0
-    ss = np.einsum("ij,ij->j", a, a, optimize=True) if axis == 0 and a.ndim == 2 else np.sum(a * a, axis=axis)
-    s = np.sum(a, axis=axis)
-    var = np.maximum((ss - s * s / n) / (n - 1), 0.0)
-    scale = np.sqrt(var)
-    scale = np.where(np.isfinite(scale), scale, 1.0)
-    return np.maximum(scale, 1e-3)
-
-
 def outcome_scale(y, weights) -> float:
-    """Weighted mean of ``y``, the outcome unit IRLS runs in without standardization.
+    """Weighted mean of ``y``, the outcome unit used by every IRLS path.
 
     Poisson PML slopes do not depend on the units of ``y``, but the IRLS
     safeguards (deviance-change floor, divergence bound, step-halving floor,
     initial-mean floor) are absolute. Iterating on ``y / outcome_scale`` keeps
     the iterations, and hence the estimates, invariant to rescaling ``y``.
     """
-    m = float(np.average(y, weights=weights))
-    return m if m > 0 else 1.0
+    # Form the mean in bounded coordinates: sums of large outcomes or weights
+    # can overflow even though their weighted mean is finite.  A fixed lower
+    # bound on this scale would reintroduce dependence on the units of y.
+    y = np.asarray(y, dtype=np.float64)
+    ymax = float(np.max(y, initial=0.0))
+    if ymax <= 0:
+        return 1.0
+    if weights is None:
+        mean = float(np.mean(y / ymax))
+    else:
+        w = np.asarray(weights, dtype=np.float64)
+        wmax = float(np.max(w, initial=0.0))
+        if wmax <= 0:
+            return ymax
+        wn = w / wmax
+        mean = float(np.dot(y / ymax, wn) / np.sum(wn))
+    scale = ymax * mean
+    # Only subnormal arithmetic can round a positive mean down to zero.
+    # The maximum is still a positive outcome unit in that limiting case.
+    return scale if scale > 0 else ymax
 
 
 @dataclass(slots=True)
@@ -48,7 +43,7 @@ class Standardization:
     y_scale: float
 
     @classmethod
-    def fit(cls, y, X, *, structure: StructuralDesignPlan | None = None) -> "Standardization":
+    def fit(cls, y, X, *, weights=None, structure: StructuralDesignPlan | None = None) -> "Standardization":
         y = np.asarray(y, dtype=np.float64)
         X = np.asarray(X, dtype=np.float64)
         if X.shape[1]:
@@ -56,15 +51,15 @@ class Standardization:
             xs = moments.sample_scale()
         else:
             xs = np.empty(0, dtype=np.float64)
-        ys = _reghdfe_scale(y)
+        ys = outcome_scale(y, weights)
         return cls(np.asarray(xs, dtype=np.float64), float(ys))
 
     @classmethod
-    def fit_block(cls, y, X: BlockDesign) -> "Standardization":
+    def fit_block(cls, y, X: BlockDesign, *, weights=None) -> "Standardization":
         """Fit exactly from a block-native design without dense materialization."""
         y = np.asarray(y, dtype=np.float64)
         xs = X.column_moments().sample_scale() if X.ncols else np.empty(0, dtype=np.float64)
-        ys = _reghdfe_scale(y)
+        ys = outcome_scale(y, weights)
         return cls(np.asarray(xs, dtype=np.float64), float(ys))
 
     @classmethod

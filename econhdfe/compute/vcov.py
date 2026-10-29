@@ -307,17 +307,24 @@ def regressor_scale(*designs, frequency_weights=None) -> np.ndarray:
 
 
 def finalize_cluster_vcov(V, kind, clusters, scale, constant_index=None):
-    """Repair a multiway-cluster covariance as reghdfe/ppmlhdfe do.
+    """Repair a multiway-cluster covariance in regressor-stdev coordinates.
 
     The signed CGM sandwich can be indefinite. Upstream clips its negative
-    eigenvalues in the standardized coordinates of the original regressors,
-    which makes the repair independent of user units and of any solver
-    scaling. ``scale()`` returns those column scales expressed in the
+    eigenvalues in the standardized coordinates of the original regressors.
+    This separates the repair from solver scaling; regressor-unit invariance
+    holds where the upstream stdev floor does not bind. ``scale()`` returns
+    those column scales expressed in the
     coordinates of ``V`` (``regressor_scale`` for reported units); it is
     evaluated only when a repair can apply. With a reported constant at
-    ``constant_index`` (scale 1), the full matrix is clipped first and its
-    slope block is then replaced by the separately clipped slope block, as
-    in ``reghdfe_fix_psd``. Any other VCE is returned unchanged.
+    ``constant_index`` (scale 1), keep the independently clipped slope block
+    so that reporting a constant cannot change slope inference. Merely
+    inserting that block into the full spectral clip, as upstream reghdfe
+    does, can leave the full covariance indefinite. Complete it instead:
+    project the full clip's constant cross-covariances into the numerical
+    range of the slope block and increase the constant variance, if needed,
+    to satisfy its Schur-complement bound. This is a PSD completion policy,
+    not a claim of a nearest-matrix solution or full-matrix Stata parity.
+    Any other VCE is returned unchanged.
     """
     if not _is_multiway_cluster(kind, clusters):
         return V
@@ -334,8 +341,40 @@ def finalize_cluster_vcov(V, kind, clusters, scale, constant_index=None):
     fixed = (evecs * np.clip(evals, 0.0, None)) @ evecs.T
     fixed = (fixed + fixed.T) / 2.0
     if constant_index is not None:
-        slopes = np.ix_(*(2 * [np.delete(np.arange(len(s)), constant_index)]))
-        fixed[slopes] = _fix_psd(W[slopes])
+        indices = np.delete(np.arange(len(s)), constant_index)
+        slopes = np.ix_(indices, indices)
+        if len(indices):
+            A = W[slopes]
+            values, vectors = np.linalg.eigh(A)
+            if values[0] < 0.0:
+                A = (vectors * np.maximum(values, 0.0)) @ vectors.T
+                A = (A + A.T) / 2.0
+            # Keep the slope block itself unchanged. Numerically null slope
+            # directions must have zero covariance with the constant; using
+            # their noisy inverse would instead inflate its variance without
+            # bound. The cutoff is relative to A, not to an absolute unit.
+            cutoff = np.finfo(float).eps * len(indices) * max(values[-1], 0.0)
+            active = values > cutoff
+            coordinates = vectors[:, active].T @ fixed[indices, constant_index]
+            cross = vectors[:, active] @ coordinates
+            root = coordinates / np.sqrt(values[active])
+            with np.errstate(over="ignore", invalid="ignore"):
+                bound = float(root @ root)
+                # An upward rounding guard prevents a binding Schur
+                # complement from becoming negative through dot-product
+                # roundoff. Null slope directions still have zero variance.
+                bound *= 1.0 + 8.0 * np.finfo(float).eps * len(indices)
+            if not np.isfinite(bound):
+                raise InferenceError(
+                    "constant covariance PSD completion exceeds numerical range",
+                    details={"n_slopes": int(len(indices))},
+                )
+            fixed[slopes] = A
+            fixed[indices, constant_index] = cross
+            fixed[constant_index, indices] = cross
+            fixed[constant_index, constant_index] = max(
+                fixed[constant_index, constant_index], bound,
+            )
     return fixed / outer
 
 

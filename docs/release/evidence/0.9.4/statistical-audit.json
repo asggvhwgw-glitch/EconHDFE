@@ -1,0 +1,555 @@
+{
+  "candidate_version": "0.9.4",
+  "audit_date": "2026-10-29",
+  "validated_at": "2026-10-29T20:19:53.786239+08:00",
+  "starting_pr_head": "23d0d6f125ff197641f68d35f5a5645540ab7086",
+  "base_main": "44dae3f41f978a3ce78e0d780feab42b49a352f3",
+  "code_fingerprint_sha256": "9e7540b3bf735cad52fb2dbc342f08f86a2293edc4e3341a1b6ce859b94625f7",
+  "environment": {
+    "python": "3.12.14",
+    "numpy": "2.5.4",
+    "scipy": "1.18.1",
+    "numba": "0.68.1",
+    "full_suite_numba_threads": 4,
+    "blas_threads": 1
+  },
+  "full_suite": {
+    "tests": 589,
+    "passed": 588,
+    "failed": 0,
+    "skipped": 1,
+    "seconds": 27.537,
+    "new_audit_cases": {
+      "tests.numerics.test_covariance_audit_fixes": 7,
+      "tests.numerics.test_iv_audit_fixes": 20,
+      "tests.numerics.test_ppml_audit_fixes": 49
+    },
+    "skip_reasons": [
+      {
+        "class": "tests.numerics.test_wild_score_bootstrap",
+        "test": "test_native_score_draws_match_dense_projection_when_available",
+        "reason": "could not import '_econhdfe_within': No module named '_econhdfe_within'"
+      }
+    ]
+  },
+  "previous_attempt": {
+    "passed": 575,
+    "failed": 13,
+    "skipped": 1,
+    "resolution": "One IV-to-planner dependency violation was fixed by moving generic workspace admission to compute. Twelve existing mocked-host scheduler cases lacked actual cgroup headroom; reclaimable file cache was released. No resource guard or test expectation was weakened."
+  },
+  "ppml_outcome_units": [
+    {
+      "standardize": true,
+      "log_units": 0.0,
+      "beta": [
+        0.6017099328707415,
+        0.6934008128180749
+      ],
+      "normalized_intercept": 0.6934008128180749,
+      "nobs": 200,
+      "iterations": 5,
+      "epsilon": 0.0
+    },
+    {
+      "standardize": true,
+      "log_units": -30.0,
+      "beta": [
+        0.6017099328707415,
+        -29.306599187181927
+      ],
+      "normalized_intercept": 0.6934008128180729,
+      "nobs": 200,
+      "iterations": 5,
+      "epsilon": 0.0
+    },
+    {
+      "standardize": true,
+      "log_units": -36.0,
+      "beta": [
+        0.6017099328707417,
+        -35.306599187181924
+      ],
+      "normalized_intercept": 0.6934008128180764,
+      "nobs": 200,
+      "iterations": 5,
+      "epsilon": 2.0312356243262061e-16
+    },
+    {
+      "standardize": true,
+      "log_units": -40.0,
+      "beta": [
+        0.6017099328707415,
+        -39.306599187181924
+      ],
+      "normalized_intercept": 0.6934008128180764,
+      "nobs": 200,
+      "iterations": 5,
+      "epsilon": 0.0
+    },
+    {
+      "standardize": false,
+      "log_units": 0.0,
+      "beta": [
+        0.6017099328707417,
+        0.6934008128180749
+      ],
+      "normalized_intercept": 0.6934008128180749,
+      "nobs": 200,
+      "iterations": 5,
+      "epsilon": 2.0312356243262056e-16
+    },
+    {
+      "standardize": false,
+      "log_units": -30.0,
+      "beta": [
+        0.6017099328707415,
+        -29.306599187181927
+      ],
+      "normalized_intercept": 0.6934008128180729,
+      "nobs": 200,
+      "iterations": 5,
+      "epsilon": 2.0312356243262061e-16
+    },
+    {
+      "standardize": false,
+      "log_units": -36.0,
+      "beta": [
+        0.6017099328707416,
+        -35.306599187181924
+      ],
+      "normalized_intercept": 0.6934008128180764,
+      "nobs": 200,
+      "iterations": 5,
+      "epsilon": 0.0
+    },
+    {
+      "standardize": false,
+      "log_units": -40.0,
+      "beta": [
+        0.6017099328707417,
+        -39.306599187181924
+      ],
+      "normalized_intercept": 0.6934008128180764,
+      "nobs": 200,
+      "iterations": 5,
+      "epsilon": 2.0312356243262056e-16
+    }
+  ],
+  "ppml_finite_sample_oracles": [
+    {
+      "vce": "robust",
+      "nobs": 120,
+      "df_absorbed": 40,
+      "params": [
+        0.18079978357253107
+      ],
+      "econ_se": [
+        0.07026658043401836
+      ],
+      "upstream_convention_oracle_se": 0.07026658043401836,
+      "se_ratio": 1.0,
+      "raw_factor": 1.0084033613445373
+    },
+    {
+      "vce": "cluster",
+      "nobs": 120,
+      "df_absorbed": 40,
+      "params": [
+        0.18079978357253107
+      ],
+      "econ_se": [
+        0.04842319890838884
+      ],
+      "upstream_convention_oracle_se": 0.048423198908388865,
+      "se_ratio": 0.9999999999999994,
+      "raw_factor": 1.1428571428571417
+    }
+  ],
+  "iv_analytical_counterexamples": [
+    {
+      "case": "ppml_separation_does_not_imply_iv_nonexistence",
+      "policy": "stata_compat",
+      "proof": {
+        "x": [
+          0.0,
+          0.0,
+          1.0,
+          1.0
+        ],
+        "z": [
+          0.0,
+          2.0,
+          1.0,
+          3.0
+        ],
+        "y": [
+          1.0,
+          3.0,
+          0.0,
+          0.0
+        ],
+        "known_solution_alpha_beta": [
+          0.0,
+          0.0
+        ],
+        "moments_at_known_solution": [
+          0.0,
+          0.0
+        ],
+        "jacobian_determinant": 3.999999999999999,
+        "ppml_separation_direction": [
+          0.0,
+          0.0,
+          -1.0,
+          -1.0
+        ]
+      },
+      "status": "returned_fit",
+      "params": [
+        -6.283673613597826e-17,
+        3.9272960130574135e-17
+      ],
+      "stderr": [
+        2.1602468994692874,
+        0.0
+      ],
+      "converged": true,
+      "iterations": 6,
+      "sample_mask": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "separation_mask": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "mu": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "moments": [
+        0.0
+      ],
+      "reported_slope_rank": 1
+    },
+    {
+      "case": "ppml_separation_does_not_imply_iv_nonexistence",
+      "policy": "unified",
+      "proof": {
+        "x": [
+          0.0,
+          0.0,
+          1.0,
+          1.0
+        ],
+        "z": [
+          0.0,
+          2.0,
+          1.0,
+          3.0
+        ],
+        "y": [
+          1.0,
+          3.0,
+          0.0,
+          0.0
+        ],
+        "known_solution_alpha_beta": [
+          0.0,
+          0.0
+        ],
+        "moments_at_known_solution": [
+          0.0,
+          0.0
+        ],
+        "jacobian_determinant": 3.999999999999999,
+        "ppml_separation_direction": [
+          0.0,
+          0.0,
+          -1.0,
+          -1.0
+        ]
+      },
+      "status": "returned_fit",
+      "params": [
+        -6.283673613597826e-17,
+        3.9272960130574135e-17
+      ],
+      "stderr": [
+        2.1602468994692874,
+        0.0
+      ],
+      "converged": true,
+      "iterations": 6,
+      "sample_mask": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "separation_mask": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "mu": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "moments": [
+        0.0
+      ],
+      "reported_slope_rank": 1
+    },
+    {
+      "case": "exactly_irrelevant_instrument",
+      "policy": "stata_compat",
+      "proof": {
+        "x": [
+          -1.0,
+          -1.0,
+          1.0,
+          1.0
+        ],
+        "z": [
+          -1.0,
+          1.0,
+          -1.0,
+          1.0
+        ],
+        "y": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "full_jacobian_rank": 1,
+        "parameter_count": 2,
+        "continuum_of_solutions": [
+          {
+            "alpha": -0.4337808304830271,
+            "beta": -1.0,
+            "moments": [
+              -4.440892098500626e-16,
+              0.0
+            ]
+          },
+          {
+            "alpha": -0.0,
+            "beta": 0.0,
+            "moments": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "alpha": -0.4337808304830271,
+            "beta": 1.0,
+            "moments": [
+              -4.440892098500626e-16,
+              0.0
+            ]
+          }
+        ]
+      },
+      "status": "raised",
+      "error_type": "UnderidentifiedError",
+      "error": "Instrument moments do not separately identify all coefficients"
+    },
+    {
+      "case": "exactly_irrelevant_instrument",
+      "policy": "unified",
+      "proof": {
+        "x": [
+          -1.0,
+          -1.0,
+          1.0,
+          1.0
+        ],
+        "z": [
+          -1.0,
+          1.0,
+          -1.0,
+          1.0
+        ],
+        "y": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "full_jacobian_rank": 1,
+        "parameter_count": 2,
+        "continuum_of_solutions": [
+          {
+            "alpha": -0.4337808304830271,
+            "beta": -1.0,
+            "moments": [
+              -4.440892098500626e-16,
+              0.0
+            ]
+          },
+          {
+            "alpha": -0.0,
+            "beta": 0.0,
+            "moments": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "alpha": -0.4337808304830271,
+            "beta": 1.0,
+            "moments": [
+              -4.440892098500626e-16,
+              0.0
+            ]
+          }
+        ]
+      },
+      "status": "raised",
+      "error_type": "UnderidentifiedError",
+      "error": "Instrument moments do not separately identify all coefficients"
+    }
+  ],
+  "iv_ee_oracle": {
+    "joint_parameter_count": 9,
+    "profile_root_norm": 6.0123204608261414e-15,
+    "joint_max_moment": 3.890776589798861e-13,
+    "standard_se": 0.04512526794818452,
+    "ee_se": 0.04528483516862678,
+    "oracle_se": 0.045284835168626705,
+    "ee_oracle_relative_error": 1.7763568394002505e-15,
+    "oracle_variance": 0.0020507162962496903,
+    "ee_variance": 0.0020507162962496973
+  },
+  "iv_outcome_units": [
+    {
+      "log_multiplier": 0,
+      "beta": 0.4667303710416915,
+      "stderr": 0.04512526794818452,
+      "iterations": 7,
+      "converged": true,
+      "beta_difference_from_unscaled": 0.0,
+      "minimum_mu": 0.20064520486599527,
+      "mu_relative_equivariance_error": 0.0,
+      "rows_below_former_user_unit_floor": 0
+    },
+    {
+      "log_multiplier": -20,
+      "beta": 0.4667303710416917,
+      "stderr": 0.04512526794818452,
+      "iterations": 7,
+      "converged": true,
+      "beta_difference_from_unscaled": 1.6653345369377348e-16,
+      "minimum_mu": 4.135605908344723e-10,
+      "mu_relative_equivariance_error": 6.532640560943678e-16,
+      "rows_below_former_user_unit_floor": 0
+    },
+    {
+      "log_multiplier": -40,
+      "beta": 0.46673037104169157,
+      "stderr": 0.045125267948184514,
+      "iterations": 7,
+      "converged": true,
+      "beta_difference_from_unscaled": 5.551115123125783e-17,
+      "minimum_mu": 8.524119098963028e-19,
+      "mu_relative_equivariance_error": 4.355093707295785e-16,
+      "rows_below_former_user_unit_floor": 0
+    },
+    {
+      "log_multiplier": -45,
+      "beta": 0.46673037104169157,
+      "stderr": 0.045125267948184514,
+      "iterations": 7,
+      "converged": true,
+      "beta_difference_from_unscaled": 5.551115123125783e-17,
+      "minimum_mu": 5.743506270270505e-21,
+      "mu_relative_equivariance_error": 6.532640560943678e-16,
+      "rows_below_former_user_unit_floor": 9
+    },
+    {
+      "log_multiplier": -50,
+      "beta": 0.4667303710416915,
+      "stderr": 0.045125267948184535,
+      "iterations": 7,
+      "converged": true,
+      "beta_difference_from_unscaled": 0.0,
+      "minimum_mu": 3.8699440837997754e-23,
+      "mu_relative_equivariance_error": 3.266320280471839e-16,
+      "rows_below_former_user_unit_floor": 900
+    },
+    {
+      "log_multiplier": -60,
+      "beta": 0.46673037104169157,
+      "stderr": 0.04512526794818451,
+      "iterations": 7,
+      "converged": true,
+      "beta_difference_from_unscaled": 5.551115123125783e-17,
+      "minimum_mu": 1.756951895892536e-27,
+      "mu_relative_equivariance_error": 2.1775468536478926e-16,
+      "rows_below_former_user_unit_floor": 900
+    }
+  ],
+  "ppml_psd": {
+    "seed": 41,
+    "nobs": 60,
+    "vcov": [
+      [
+        0.0020835248394856045,
+        0.008820953195285251
+      ],
+      [
+        0.008820953195285251,
+        0.037344990469431266
+      ]
+    ],
+    "eigenvalues": [
+      3.0357660829594124e-18,
+      0.03942851530891687
+    ],
+    "index_contrast": {
+      "weights": {
+        "x": -1.75,
+        "_cons": 1.0
+      },
+      "interpretation": "log conditional mean index at x = -1.75, inside observed x range",
+      "estimate": 0.5511779023879895,
+      "variance": 0.012852449106857552,
+      "public_postestimation": {
+        "status": "returned",
+        "result": {
+          "estimate": 0.5511779023879895,
+          "std_error": 0.11336864252013232,
+          "statistic": 4.861819724886534,
+          "p_value": 1.1631152709179682e-06,
+          "ci_low": 0.328979446072334,
+          "ci_high": 0.773376358703645,
+          "df": "inf",
+          "value": 0.0
+        }
+      }
+    },
+    "joint_wald": {
+      "status": "rejected",
+      "exception": "ValueError",
+      "message": "restriction includes a direction with no estimated sampling variance"
+    }
+  },
+  "scope": {
+    "licensed_stata_executed": false,
+    "new_monte_carlo_executed": false,
+    "native_extension_installed_locally": false,
+    "interpretation": "Analytical and numerical regression evidence, not blanket external parity or universal coverage certification."
+  }
+}

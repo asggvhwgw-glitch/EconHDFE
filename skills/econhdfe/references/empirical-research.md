@@ -70,6 +70,12 @@ All four estimators share the calling form `estimator(data, *, y=..., ...)`: wit
 
 Use PPML for the intended Poisson PML/multiplicative conditional-mean specification; do not choose it merely because the outcome has zeros.
 
+From 0.9.4, ordinary PPML defaults to the ppmlhdfe asymptotic small-sample
+factors (`N/(N-1)` robust; `G/(G-1)` using the minimum marginal cluster count). Set
+`InferenceConfig(ppml_small_sample="residual")` for the earlier residual-DF
+convention and disclose that choice when comparing estimates. Neither factor
+is a general correction for many-FE incidental-parameter or leverage bias.
+
 ### IV-PPML
 
 ```python
@@ -89,7 +95,31 @@ res = ivppmlhdfe(
 
 IV-PPML is not linear IV. Do not transfer linear KP/SW/Stock-Yogo critical values or diagnostics into this model unless a statistic is explicitly derived/implemented for IV-PPML.
 
-Overidentified IV-PPML reports `diagnostics["overidentification"]` (Hansen J on the additive moments). The default SEs follow `ivppmlhdfe` and assume the overidentifying moments hold; when that is doubtful (for example J rejects), `InferenceConfig(ivppml_misspecification_robust=True)` gives estimating-equation SEs that remain valid for the pseudo-true value. Exactly identified models are unaffected.
+Dense overidentified IV-PPML reports `diagnostics["overidentification"]` (an
+efficient-step Hansen J based on additive moments). Default SEs follow the
+ivppmlhdfe sandwich under valid moment restrictions and suitable identification
+and asymptotics. `InferenceConfig(ivppml_misspecification_robust=True)` uses the
+stacked estimating-equation sandwich for the estimator's pseudo-true value
+under misspecification, subject to a nonsingular Jacobian, suitable moments
+and the stated dependence/asymptotic assumptions. It does not make invalid
+instruments valid or supply weak-IV-robust confidence sets. Structured
+DataFrame specifications route to dense execution when EE is requested;
+the direct block path does not provide J or EE. Do not select a covariance
+solely after a J-test rejection without accounting for that selection.
+
+Both sample modes now default IV-PPML to FE-zero separation only. PPML
+simplex/ReLU separation is not an existence test for additive IV moments;
+an explicit legacy request in compatibility mode warns. Numerical loss of
+identification must raise a structured error rather than returning a slope
+with zero SE. Passing that rank check is not evidence of strong identification.
+
+Poisson estimation and sandwich VCE do not automatically remove every bias
+from a growing number of fixed effects. In three-way gravity settings,
+consistency of PPML slopes can coexist with biased centering and cluster-VCE
+distortion. Use design-specific theory and any separately validated bias
+correction; the IV-PPML SPJ/bootstrap tools have their own panel-design
+assumptions and are not a universal replacement. See the
+[audit closeout](../../../docs/development/statistical-audit-closeout.md).
 
 ## Semantic specification preflight
 

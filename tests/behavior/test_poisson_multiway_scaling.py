@@ -81,7 +81,9 @@ def _oracle(result, family):
     raw = bread @ meat @ bread
     if family == 'ppml':
         assert result.df_absorbed == 0  # Both FEs nested in cluster dimensions.
-        raw *= ((fw.sum()-1)/(fw.sum()-4-1)) * (8/7)
+        # Ordinary PPML's default is upstream's asymptotic factor, independent
+        # of absorbed/nested FE counts. Residual corrections remain opt-in.
+        raw *= 8/7
     # Unified mode: the stdev of the frequency-expanded original regressors.
     n = fw.sum()
     s = np.sqrt(((fw[:, None] * X**2).sum(0) - (fw @ X)**2 / n) / (n - 1))

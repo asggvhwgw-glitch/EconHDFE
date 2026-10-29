@@ -150,13 +150,15 @@ def test_ppml_block_path_uses_the_same_upstream_sample(d, xs, expected, b):
     assert _coef(r) == pytest.approx(b, rel=1e-6)
 
 
-def _ivppml(d, wk=None):
+def _ivppml(d, wk=None, *, legacy_separation=False):
     xs = [c for c in ("x2",) if c in d]
     z = (d.x + 0.3 * np.sin(np.arange(len(d)))).to_numpy()[:, None]
     return ivppmlhdfe(y=d.y.to_numpy(), exog=d[xs].to_numpy() if xs else None, endog=d[["x"]].to_numpy(),
                       instruments=z, absorb=[d.a.to_numpy(), d.b.to_numpy()],
                       weights=None if wk is None else d.w.to_numpy(), weight_type=wk,
-                      exog_names=xs or None, endog_names=["x"])
+                      exog_names=xs or None, endog_names=["x"],
+                      config=IVPPMLConfig(separation=("fe", "simplex", "relu"))
+                      if legacy_separation else IVPPMLConfig())
 
 
 @pytest.mark.parametrize("wk, rows, expected", [
@@ -176,22 +178,25 @@ def test_ivppml_first_stage_uses_rows_and_joint_fe_separation(wk, rows, expected
     # remaining b=7 row has fw=2, so it is not a singleton.
     ("fweight", 21, (0, 2)),
 ])
-def test_ivppml_post_separation_singletons_count_as_separated(wk, rows, expected):
-    r = _ivppml(SIMPLEX_SEP, wk)
+def test_ivppml_explicit_legacy_post_separation_singletons_count_as_separated(wk, rows, expected):
+    with pytest.warns(RuntimeWarning, match="Legacy IV-PPML separation"):
+        r = _ivppml(SIMPLEX_SEP, wk, legacy_separation=True)
     assert int(r.sample_mask.sum()) == rows
     assert (int(r.n_singletons), int(r.n_separated)) == expected
     assert r.sample_mask[22] == (wk == "fweight")
 
 
-def test_ivppml_block_path_matches_dense_sample():
+def test_ivppml_explicit_legacy_block_path_matches_dense_sample():
     d = SIMPLEX_SEP
     n = len(d)
     z = (d.x + 0.3 * np.sin(np.arange(n))).to_numpy()
     r = ivppml_block(
         d.y.to_numpy(), _one_block(d[["x2"]].to_numpy()), _one_block(d.x.to_numpy()), _one_block(z),
         FEPlan.from_arrays([d.a.to_numpy(), d.b.to_numpy()]), offset=np.zeros(n), true_w=np.ones(n),
-        vce="robust", exog_names=("x2",), endog_names=("x",), instrument_names=("z",), config=IVPPMLConfig(),
+        vce="robust", exog_names=("x2",), endog_names=("x",), instrument_names=("z",),
+        config=IVPPMLConfig(separation=("fe", "simplex", "relu")),
     )
-    dense = _ivppml(d)
+    with pytest.warns(RuntimeWarning, match="Legacy IV-PPML separation"):
+        dense = _ivppml(d, legacy_separation=True)
     np.testing.assert_array_equal(r.sample_mask, dense.sample_mask)
     assert (int(r.n_singletons), int(r.n_separated)) == (0, 3)

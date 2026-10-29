@@ -1,5 +1,14 @@
 # econhdfe
 
+## 统计正确性审计修复（0.9.4 候选）
+
+本轮拒绝数值上未识别的 IV 系统，IV-PPML 两种样本模式均默认只检查全零 FE，
+并使 Poisson 估计及最终推断保持因变量量纲等变。多向聚类协方差保留单独修复后的
+斜率块，同时保证包含常数项的完整矩阵半正定。普通 PPML 默认使用上游的渐近
+小样本修正；需要原来的残差自由度修正时，显式设置
+`InferenceConfig(ppml_small_sample="residual")`。
+解析反例、验证范围、迁移方式和统计假设见[审计修复说明](docs/development/statistical-audit-closeout.md)。
+
 ## 加权样本双模式（0.9.2 候选）
 
 默认保留 `singleton_mode="stata_compat"`。线性估计器及 session 使用
@@ -18,9 +27,9 @@ IV-PPML 默认只检查全零 FE，不误用普通 PPML 的解释变量分离判
 
 `econhdfe` 是一个用于 OLS-HDFE、线性 IV-HDFE、PPML-HDFE 和 IV-PPML-HDFE 的 Python 包，面向大规模数据、高基数固定效应、聚类推断、复杂交互项以及大量相近规格的实证工作流。
 
-项目目前仍属于 **alpha 阶段研究软件**。本源码版本为 **0.8.4**。源码合并与公开发布分开登记，安装后应核对版本，参见[发布状态](docs/development/test-status.md)。仓库内已经进行了较广泛的验证，但 licensed Stata 对照和完整 upstream external certification 仍属于独立的外部验证边界。
+项目目前仍属于 **alpha 阶段研究软件**。本源码版本为 **0.9.4**。源码合并与公开发布分开登记，安装后应核对版本，参见[发布状态](docs/development/test-status.md)。仓库内已经进行了较广泛的验证，但 licensed Stata 对照和完整 upstream external certification 仍属于独立的外部验证边界。
 
-## 当前源码：0.8.4
+## 先前源码里程碑：0.8.4
 
 - **近共线 OLS**：补齐 CG 迭代保护、弱方向可逆缩放及稳定坐标下的协方差计算，OLS Session 使用相同保护；筛查复用全样本统计量。详见[求解说明](docs/technical/hdfe/solver/design.md)。
 - **线性 IV**：复用单次拟合内的计算；可通过 `on_stage` 同步读取阶段快照，或设置 `InferenceConfig(iv_advanced_statistics=False)` 跳过高级诊断。KP、普通首阶段 F、过度识别与识别检查仍保留，详见[分阶段结果与诊断开关](docs/development/iv-staged-diagnostics.md)。

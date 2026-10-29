@@ -27,31 +27,37 @@ class IVIRLSState:
     residual: np.ndarray
     projected_X: np.ndarray
     irls_w: np.ndarray
+    outcome_scale: float = 1.0
 
 
-def in_outcome_units(iterate, y, true_w, initial_eta, *args, **kwargs):
-    """Run an IV-PPML IRLS iteration on ``y / outcome_scale`` in user units.
+def fit_in_normalized_outcome_units(iterate, y, true_w, initial_eta, *args, **kwargs):
+    """Run IV-PPML on ``y / outcome_scale`` and retain normalized state.
 
     The iteration's safeguards are absolute (see ``outcome_scale``); without
     this, rescaling ``y`` changes convergence and can fail or stop early.
-    ``mu``, ``eta``, ``deviance`` and ``irls_w`` are returned in user units.
+    Final projection, scores and covariance must use these same normalized
+    units. Only the public result is restored to user units, after inference.
     """
     y = np.asarray(y, dtype=np.float64)
     scale = outcome_scale(y, true_w)
     if initial_eta is not None:
         initial_eta = np.asarray(initial_eta, dtype=np.float64) - math.log(scale)
     state = iterate(y / scale, *args, true_w=true_w, initial_eta=initial_eta, **kwargs)
-    state.mu *= scale
-    state.eta += math.log(scale)
-    state.deviance *= scale
-    state.irls_w *= scale
+    state.outcome_scale = scale
     return state
+
+
+def restore_outcome_units(state):
+    """Restore public mean/index/deviance after all numerical work is done."""
+    state.mu *= state.outcome_scale
+    state.eta += math.log(state.outcome_scale)
+    state.deviance *= state.outcome_scale
 
 
 def fit_iv_irls(y, exog, endog, excluded, plan: FEPlan, true_w, offset, config: IVPPMLConfig,
                 *, projector=None, initial_eta=None, detect_mu=False) -> IVIRLSState:
     """IRLS-IV core for the additive moment E[q(y-mu)] = 0."""
-    return in_outcome_units(
+    return fit_in_normalized_outcome_units(
         _iterate, y, true_w, initial_eta, exog, endog, excluded, plan, offset, config,
         projector=projector, detect_mu=detect_mu,
     )
@@ -112,7 +118,7 @@ def _iterate(y, exog, endog, excluded, plan, offset, config, *, true_w, projecto
             raise DivergenceError(
                 f"IV-PPML IRLS produced non-finite mu at iteration {it}",
                 code="numerical.non_finite_mu", details={"iteration": int(it)},
-                suggestion="Try separation=('fe','simplex','relu','mu'), standardize=True, or a simpler FE specification.",
+                suggestion="Inspect the instrument specification and fixed effects, or use standardize=True.",
             )
         # Only an exploding slope index signals divergence. A wide but finite
         # eta range is a valid fit (PPML has no such bound); zero-outcome

@@ -8,9 +8,11 @@ from .errors import SpecificationError
 class SamplePolicy:
     """Semantics of a ``singleton_mode`` value, queried instead of comparing names.
 
-    ``stata_compat`` reproduces the upstream reghdfe/ppmlhdfe/ivppmlhdfe
-    sample rules; ``unified`` counts frequency multiplicity at every stage
-    and keeps singleton and FE-zero removals as separate reasons.
+    ``stata_compat`` follows the upstream singleton/FE-zero counting
+    conventions; ``unified`` counts frequency multiplicity at every stage
+    and keeps singleton and FE-zero removals as separate reasons. IV-PPML's
+    default FE-only separation is a correctness exception in both modes;
+    this label is not a promise to reproduce all upstream sample rules.
     """
     mode: str = "stata_compat"
 
@@ -56,7 +58,7 @@ class SamplePolicy:
     @property
     def iv_default_separation(self) -> tuple[str, ...]:
         """IV-PPML separation when unset: PPML regressor separation is not an IV existence test."""
-        return ("fe",) if self.unified else ("fe", "simplex", "relu")
+        return ("fe",)
 
 
 @dataclass(slots=True, frozen=True)
@@ -111,13 +113,21 @@ class InferenceConfig:
     ``ivppml_misspecification_robust`` makes overidentified IV-PPML use the
     estimating-equation sandwich, which stays valid when the overidentifying
     moments do not hold; the default keeps the ``ivppmlhdfe`` sandwich. Both
-    agree under correct specification and in exactly identified models.
+    agree asymptotically under correct specification, and at a solved root
+    in exactly identified models. Regular identification and suitable
+    dependence/asymptotic assumptions remain necessary.
+
+    ``ppml_small_sample`` selects ordinary PPML's finite-sample covariance
+    convention, independently of sample selection. ``"asymptotic"`` uses
+    ppmlhdfe's N/(N-1) robust and G/(G-1) cluster factors; ``"residual"``
+    retains the residual-degrees-of-freedom factors used before 0.9.4.
     """
     vce: str | None = None
     confidence_level: float = 0.95
     diagnostics: str = "off"  # off | publication | full
     iv_advanced_statistics: bool = True
     ivppml_misspecification_robust: bool = False
+    ppml_small_sample: str = "asymptotic"
 
     def validate(self) -> None:
         if not 0 < self.confidence_level < 1:
@@ -128,6 +138,8 @@ class InferenceConfig:
             raise SpecificationError("iv_advanced_statistics must be a boolean")
         if not isinstance(self.ivppml_misspecification_robust, bool):
             raise SpecificationError("ivppml_misspecification_robust must be a boolean")
+        if not isinstance(self.ppml_small_sample, str) or self.ppml_small_sample not in {"asymptotic", "residual"}:
+            raise SpecificationError("ppml_small_sample must be asymptotic/residual")
 
 
 @dataclass(slots=True, frozen=True)

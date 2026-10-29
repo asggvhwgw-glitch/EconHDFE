@@ -1,0 +1,36 @@
+{"MKL_NUM_THREADS": "1", "NUMBA_NUM_THREADS": "4", "OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1"}
+........................................................................ [ 12%]
+........................................................................ [ 24%]
+........................................................................ [ 36%]
+........................................................................ [ 48%]
+........................................................................ [ 61%]
+........................................................................ [ 73%]
+........................................................................ [ 85%]
+..................................................................s..... [ 97%]
+.............                                                            [100%]
+=============================== warnings summary ===============================
+tests/behavior/test_collinearity.py::test_ols_order_preserving_composite_collinearity
+  econhdfe/planner/scheduler.py:342: OmittedVariableWarning: 2 requested column(s) omitted for collinearity/absorption: xsum (linear_combination), xdup (duplicate_or_scaled)
+    result = function(*bound.args, **bound.kwargs)
+
+tests/behavior/test_collinearity.py::test_iv_drops_absorbed_and_duplicate_excluded_instruments
+  econhdfe/planner/scheduler.py:342: OmittedVariableWarning: 8 requested column(s) omitted for collinearity/absorption: year[1] (absorbed_by_fe), year[2] (absorbed_by_fe), year[3] (absorbed_by_fe), year[4] (absorbed_by_fe), year[5] (absorbed_by_fe), year[6] (absorbed_by_fe), year[7] (absorbed_by_fe), zdup (duplicate_or_scaled)
+    result = function(*bound.args, **bound.kwargs)
+
+tests/behavior/test_effects_adapters.py::test_ivppml_adapter_reconstructs_eta_after_reported_constant
+tests/behavior/test_ivppml.py::test_ivppml_mu_separation_keeps_sample_and_reports_mask
+tests/behavior/test_nonlinear_resource_policy.py::test_post_separation_rank_filter_preserves_resources[relu-replica-ivppml]
+tests/behavior/test_nonlinear_resource_policy.py::test_post_separation_rank_filter_preserves_resources[relu-optimized-ivppml]
+  econhdfe/models/ppml/api.py:61: RuntimeWarning: Legacy IV-PPML separation was explicitly requested. PPML regressor and mu-threshold checks do not certify existence of IV moments and can change an identified IV sample; use separation=('fe',) for the safe default.
+    config.validate()
+
+tests/behavior/test_structural_omissions.py::test_public_structural_collinearity_toggle_preserves_estimates
+  econhdfe/planner/scheduler.py:342: OmittedVariableWarning: 7 requested column(s) omitted for collinearity/absorption: year[1] (absorbed_by_fe), year[2] (absorbed_by_fe), year[3] (absorbed_by_fe), year[4] (absorbed_by_fe), year[5] (absorbed_by_fe), year[6] (absorbed_by_fe), year[7] (absorbed_by_fe)
+    result = function(*bound.args, **bound.kwargs)
+
+tests/behavior/test_structural_omissions.py::test_public_structural_collinearity_toggle_preserves_estimates
+  econhdfe/planner/scheduler.py:342: OmittedVariableWarning: 7 requested column(s) omitted for collinearity/absorption: year[1] (absorbed_or_zero), year[2] (absorbed_or_zero), year[3] (absorbed_or_zero), year[4] (absorbed_or_zero), year[5] (absorbed_or_zero), year[6] (absorbed_or_zero), year[7] (absorbed_or_zero)
+    result = function(*bound.args, **bound.kwargs)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+588 passed, 1 skipped, 8 warnings in 27.54s

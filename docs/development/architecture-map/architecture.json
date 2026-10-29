@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "econhdfe",
-  "version": "0.9.3",
+  "version": "0.9.4",
   "evidence": {
     "topology": "Python AST import analysis; package __init__ re-export imports excluded from aggregated dependency counts.",
     "execution_flows": "Explicit semantic overlays reviewed against estimator orchestration modules; not presented as import edges."
@@ -459,7 +459,7 @@
     {
       "source": "compute",
       "target": "planner",
-      "count": 5,
+      "count": 6,
       "examples": [
         "econhdfe.compute.context → econhdfe.planner.resources",
         "econhdfe.compute.context → econhdfe.planner.scheduler",
@@ -707,21 +707,22 @@
     {
       "source": "iv",
       "target": "compute",
-      "count": 5,
+      "count": 7,
       "examples": [
         "econhdfe.iv.design → econhdfe.compute.wls",
         "econhdfe.iv.moments → econhdfe.compute.vcov",
         "econhdfe.iv.solve → econhdfe.compute.wls",
         "econhdfe.iv.solve → econhdfe.compute.stable_linalg",
-        "econhdfe.iv.solve → econhdfe.compute.block_design"
+        "econhdfe.iv.solve → econhdfe.compute.partitioned_lstsq"
       ]
     },
     {
       "source": "iv",
       "target": "contracts",
-      "count": 1,
+      "count": 2,
       "examples": [
-        "econhdfe.iv.design → econhdfe.errors"
+        "econhdfe.iv.design → econhdfe.errors",
+        "econhdfe.iv.solve → econhdfe.errors"
       ]
     },
     {
@@ -991,7 +992,7 @@
     {
       "source": "ppml",
       "target": "contracts",
-      "count": 14,
+      "count": 15,
       "examples": [
         "econhdfe.models.ppml.api → econhdfe.errors",
         "econhdfe.models.ppml.api → econhdfe.config",
@@ -1559,6 +1560,14 @@
       "source_path": "econhdfe/compute/partitioned_lstsq.py",
       "source_group": "compute",
       "target_module": "econhdfe.planner",
+      "target_group": "planner",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.compute.partitioned_lstsq",
+      "source_path": "econhdfe/compute/partitioned_lstsq.py",
+      "source_group": "compute",
+      "target_module": "econhdfe.planner.scheduler",
       "target_group": "planner",
       "reexport_surface": false
     },
@@ -2919,6 +2928,30 @@
       "source_path": "econhdfe/iv/solve.py",
       "source_group": "iv",
       "target_module": "econhdfe.compute.stable_linalg",
+      "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.iv.solve",
+      "source_path": "econhdfe/iv/solve.py",
+      "source_group": "iv",
+      "target_module": "econhdfe.compute.partitioned_lstsq",
+      "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.iv.solve",
+      "source_path": "econhdfe/iv/solve.py",
+      "source_group": "iv",
+      "target_module": "econhdfe.errors",
+      "target_group": "contracts",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.iv.solve",
+      "source_path": "econhdfe/iv/solve.py",
+      "source_group": "iv",
+      "target_module": "econhdfe.compute.block_design",
       "target_group": "compute",
       "reexport_surface": false
     },
@@ -4504,6 +4537,14 @@
       "source_group": "ppml",
       "target_module": "econhdfe.compute.stable_linalg",
       "target_group": "compute",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ppml.vce",
+      "source_path": "econhdfe/models/ppml/vce.py",
+      "source_group": "ppml",
+      "target_module": "econhdfe.errors",
+      "target_group": "contracts",
       "reexport_surface": false
     },
     {
@@ -6408,8 +6449,8 @@
     },
     {
       "name": "tests",
-      "files": 88,
-      "python_files": 88,
+      "files": 91,
+      "python_files": 91,
       "markdown_files": 0
     },
     {
@@ -6426,9 +6467,9 @@
     },
     {
       "name": "docs",
-      "files": 113,
+      "files": 116,
       "python_files": 1,
-      "markdown_files": 79
+      "markdown_files": 80
     },
     {
       "name": "scripts",
@@ -6444,7 +6485,7 @@
     },
     {
       "name": "compatibility",
-      "files": 36,
+      "files": 37,
       "python_files": 0,
       "markdown_files": 0
     }

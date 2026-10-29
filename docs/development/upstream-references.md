@@ -3,6 +3,13 @@
 
 # Upstream compatibility references (checked 2026-09-10)
 
+The [2026-10-29 statistical audit follow-up](statistical-audit-closeout.md)
+pins current reghdfe/ppmlhdfe/ivppmlhdfe sources and documents deliberate
+correctness departures: IV regressor-separation defaults, full covariance
+PSD completion, and explicit ordinary-PPML finite-sample conventions.
+Current ppmlhdfe still uses reghdfe5; reghdfe v6 behavior is not automatically
+its behavior. This follow-up did not execute licensed Stata.
+
 `econhdfe` (formerly `pyreghdfe`) is a clean-room implementation. The files below were consulted as
 behavioral/econometric references; their source code is not vendored here.
 

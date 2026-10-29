@@ -32,6 +32,7 @@ inference = InferenceConfig(
     diagnostics="off",   # off | publication | full
     iv_advanced_statistics=True,  # False skips advanced linear-IV calculations
     ivppml_misspecification_robust=False,  # True: estimating-equation SEs for overidentified IV-PPML
+    ppml_small_sample="asymptotic",  # ordinary PPML: upstream factors; "residual" retains old DF factors
 )
 
 execution = ExecutionConfig(
@@ -154,7 +155,16 @@ Never silently reinterpret one weight type as another. Some estimator/VCE combin
 
 Use the public `vce`, `cluster`, `time`, `panel`, `bandwidth` and `kernel` controls supported by the chosen estimator. One- and multi-way clustering are distinct inference specifications; do not change them for speed.
 
-Standard one-/multi-way CRV1 is part of estimator covariance. An indefinite multiway covariance is repaired as in reghdfe (eigenvalue clipping in original-regressor stdev coordinates) for OLS, IV, PPML and IV-PPML; ivreghdfe does not repair by default. `cluster_diagnostics()` and `wild_cluster_test_ols()` are post-estimation tools: the latter is currently one-way OLS only and must not be substituted for a substantively required multi-way cluster specification.
+Standard one-/multi-way CRV1 is part of estimator covariance. For OLS, IV, PPML and IV-PPML, indefinite multiway covariance is repaired in original-regressor stdev coordinates. From 0.9.4, a reported constant uses a Schur-complement completion after separate slope clipping, so the full matrix is PSD; this deliberately departs from reghdfe's full-matrix-then-slope replacement, which can leave an indefinite matrix. ivreghdfe does not repair by default. `cluster_diagnostics()` and `wild_cluster_test_ols()` are post-estimation tools: the latter is currently one-way OLS only and must not be substituted for a substantively required multi-way cluster specification.
+
+For ordinary PPML, `InferenceConfig(ppml_small_sample="asymptotic")` is the
+default: robust VCE uses `N/(N-1)` and cluster VCE uses `G/(G-1)`, where
+`G` is the minimum cluster count across the requested dimensions,
+matching the current ppmlhdfe source convention. Choose `"residual"` explicitly
+to retain the earlier `N/(N-K)` robust factor and the residual-DF/nesting
+cluster factor. Frequency weights use frequency N. The choice changes VCE,
+not coefficients or sample selection, and does not implement incidental-parameter
+or leverage-bias correction. Model-based Poisson VCE is unaffected.
 
 Diagnostics policy:
 
@@ -188,7 +198,7 @@ print(r.diagnostics["separation_solvers"])
 
 Use `projection_resources["requested_threads"]` and `projection_resources["actual_threads"]` to audit the HDFE projector actually used by the final estimation sample. `memory_budget_mb` controls projector/workspace planning and is not a whole-process RSS cap.
 
-`PPMLConfig(engine="optimized")` now routes simplex separation through the optimized FE plan and ReLU through an optimized MAP/HDFE projector. `engine="replica"` retains the replica-oriented paths. Do not disable `simplex` or `relu` solely because a previous dataset/run found zero additional separated observations: that is an empirical observation, not a general safety certificate. Use FE-only separation only as an explicitly labelled sensitivity/performance experiment.
+For ordinary PPML, `PPMLConfig(engine="optimized")` routes simplex separation through the optimized FE plan and ReLU through an optimized MAP/HDFE projector. `engine="replica"` retains the replica-oriented paths. Do not disable ordinary PPML's `simplex` or `relu` solely because a previous dataset/run found zero additional separated observations. IV-PPML has different estimating equations and defaults to FE-zero checks; applying ordinary PPML regressor separation to IV can remove observations despite a unique finite IV root.
 
 `PPMLConfig(engine="within")` / `IVPPMLConfig(engine="within")` opt into the optional native weighted within absorber (install `native/within-accel` first) for rank checks, IRLS and final inference; separation stays on the replica solvers (`config.separation_engine`). A failed or nonfinite inner certificate raises `HDFEConvergenceError` instead of producing an estimate, and a missing extension raises rather than falling back. Check `diagnostics["projection_resources"]["backend"]` and its `within` entry to confirm the route; no speedup is guaranteed.
 
@@ -211,10 +221,11 @@ type from values. All typed weights must be strictly positive; zero weights
 require explicit prefiltering. Plain Poisson does not support `aw`.
 
 Unified Poisson keeps ordinary singleton and all-zero FE counts separate;
-`drop_singletons=False` does not disable `fe` separation. Unified IV-PPML defaults
-to `separation=("fe",)` and rejects PPML simplex/ReLU/mu choices; they are not
-IV existence certificates. The default `separation=None` follows the mode, also
-through `dataclasses.replace`; an explicit tuple is kept as given.
+`drop_singletons=False` does not disable `fe` separation. From 0.9.4, IV-PPML
+defaults to `separation=("fe",)` in both modes. Unified mode rejects PPML
+simplex/ReLU/mu choices; explicitly requesting them in compatibility mode emits
+a warning because they can alter an otherwise valid IV sample. The default
+`separation=None` resolves to FE-only through `dataclasses.replace` as well.
 Grouped/individual FE unified mode is explicitly unsupported. This version
 retains all statistical rows in the work sample; no extra computational
 elimination should be inferred from the policy name. Compare sample, N, DF and

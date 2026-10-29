@@ -1,13 +1,25 @@
 # econhdfe
 
+## Statistical correctness audit (0.9.4 candidate)
+
+This candidate rejects numerically unidentified IV systems, defaults IV-PPML
+to FE-zero separation checks in both sample modes, and preserves outcome-unit
+invariance through Poisson estimation and final inference. Multiway covariance
+repair now produces a positive-semidefinite full matrix while retaining the
+independently repaired slope block. Ordinary PPML uses the upstream asymptotic
+small-sample convention by default; set
+`InferenceConfig(ppml_small_sample="residual")` to retain the earlier residual-DF
+convention. See the [audit fixes and migration](docs/development/statistical-audit-closeout.md)
+for analytical counterexamples, regression coverage and inference assumptions.
+
 ## Weighted sample policies (0.9.2 candidate)
 
 `singleton_mode="stata_compat"` remains the default; use
 `HDFEConfig(singleton_mode="unified")` for linear models/sessions or
 `PPMLConfig` / `IVPPMLConfig` for Poisson models. Plain PPML now accepts explicit
 `weight_type="fw"` / `"pw"`. Unified mode preserves frequency expansion semantics
-and reports all-zero FE deletion separately. Unified IV-PPML defaults to FE-zero
-checks, not ordinary PPML regressor separation. See the
+and reports all-zero FE deletion separately. From 0.9.4, IV-PPML defaults to
+FE-zero checks in both modes. See the
 [sample-policy contract](docs/technical/hdfe/singleton-policies.md) and
 [validation scope](validation/singleton_policy/README.md). No computational
 rank-pruning or new licensed Stata certification is claimed.
@@ -19,9 +31,9 @@ rank-pruning or new licensed Stata certification is claimed.
 
 `econhdfe` is a Python package for OLS-HDFE, linear IV-HDFE, PPML-HDFE, and IV-PPML-HDFE. It is designed for empirical work with large datasets, high-cardinality fixed effects, clustered inference, rich interactions, and many closely related specifications.
 
-The project is currently **alpha research software**. This source tree is version **0.8.4**. Source integration and package publication are separate; check the installed version and the [release status](docs/development/test-status.md). Repository-local validation is extensive, but licensed-Stata and complete upstream external certification remain separate validation boundaries.
+The project is currently **alpha research software**. This source tree is version **0.9.4**. Source integration and package publication are separate; check the installed version and the [release status](docs/development/test-status.md). Repository-local validation is extensive, but licensed-Stata and complete upstream external certification remain separate validation boundaries.
 
-## Current source: 0.8.4
+## Earlier source milestone: 0.8.4
 
 - **Near-collinear OLS:** protect CG iterations, condition weak design directions, and compute covariance in stable coordinates; repeated OLS sessions use the same protection. Full-data screening moments are reused. See [solver details](docs/technical/hdfe/solver/design.md).
 - **Linear IV:** reuse work within a fit; optionally receive synchronous `on_stage` snapshots or skip advanced diagnostics with `InferenceConfig(iv_advanced_statistics=False)`. KP, ordinary first-stage F, overidentification and identification checks remain. See [IV stages and diagnostics](docs/development/iv-staged-diagnostics.md).

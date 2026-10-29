@@ -1,6 +1,30 @@
 # Validation status
 
-## Current source: 0.8.4
+## Current source: 0.9.4 statistical audit candidate
+
+The follow-up to PR #38 corrects the confirmed estimation/inference failures
+and adds 76 analytical and numerical audit cases. The final integrated local
+suite passed **588 tests**, with **one optional native-extension skip**, on
+Python 3.12 / NumPy 2.5.4 / SciPy 1.18.1 / Numba 0.68.1. The full suite used
+four Numba threads and one BLAS thread; no tests or runtime resource guards
+were disabled. The module dependency gate, compatibility snapshot, version
+maintenance gate and generated architecture map checks passed.
+
+The [machine-readable evidence](../release/evidence/0.9.4/statistical-audit.json)
+binds these results to the runtime/validation fingerprint;
+[the complete test output](../release/evidence/0.9.4/full-suite.txt) is retained.
+Original analytical/unit-scale and nine-parameter EE reference scripts were
+also rerun. See [the audit closeout](statistical-audit-closeout.md) for the
+numerical claims and assumptions. The initial full run exposed an architecture
+layering violation (fixed) and actual-memory interference with simulated-host
+tests (resolved by releasing reclaimable cache, without weakening tests).
+
+CI attached to the new PR head supplies cross-platform/build/install and
+optional native validation; no prior green run is transferred to it. No
+licensed-Stata run or new Monte Carlo coverage experiment was performed.
+This remains a source candidate, with no release tag or package publication.
+
+## Historical source checkpoint: 0.8.4
 
 The 0.8.4 source candidate includes [PR #22](https://github.com/asggvhwgw-glitch/EconHDFE/pull/22):
 near-collinear OLS/OLS-session protection, shared CG safeguards, and full-data

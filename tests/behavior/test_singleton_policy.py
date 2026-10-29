@@ -109,9 +109,9 @@ def test_iv_unified_does_not_apply_ppml_regressor_separation():
     for methods in [('simplex',), ('relu',), ('mu',)]:
         with pytest.raises(ValueError,match='separation|threshold'):
             IVPPMLConfig(singleton_mode='unified',separation=methods).validate()
-    # The policy default is resolved on use, so replace() switches it both ways.
+    # Replacing sample policy never enables an unsafe IV existence heuristic.
     from dataclasses import replace
-    assert replace(cfg, singleton_mode='stata_compat').separation_methods == ('fe','simplex','relu')
+    assert replace(cfg, singleton_mode='stata_compat').separation_methods == ('fe',)
     assert replace(IVPPMLConfig(), singleton_mode='unified').separation_methods == ('fe',)
     with pytest.raises(ValueError, match='separation'):
         replace(IVPPMLConfig(separation=('fe','relu')), singleton_mode='unified').validate()
@@ -287,7 +287,9 @@ def test_unified_frequency_against_independent_dense_moment_root_and_sandwich(fa
     Jinv = np.linalg.inv(-jacobian(solved.x))
     S = Q*(np.sqrt(fs)*(ys-mu))[:,None]
     N = fs.sum()
-    correction = N/(N-A.shape[1]) if family=='ppml' else N/(N-1)
+    # Both Poisson families default to the upstream asymptotic N/(N-1)
+    # convention; PPML's residual-DoF correction is now an explicit option.
+    correction = N/(N-1)
     oracle_vcov = correction*Jinv@(S.T@S)@Jinv.T
     cfgtype = PPMLConfig if family=='ppml' else IVPPMLConfig
     kw = dict(y=y,absorb=[g,h],weights=fw,weight_type='fw',vce='robust',
@@ -309,7 +311,7 @@ def test_sample_policy_truth_table():
         assert policy.requires_positive_user_weights is u and policy.slope_only_eligibility is u
         assert policy.disjoint_reasons is u and policy.allows_group_individual is (not u)
         assert policy.profile == ('frequency-invariant-v1' if u else 'stata-source-20261027')
-        assert policy.iv_default_separation == (('fe',) if u else ('fe', 'simplex', 'relu'))
+        assert policy.iv_default_separation == ('fe',)
         assert policy.initial_frequency_count('fweight') is u
         assert policy.initial_frequency_count('pweight') is False
         assert policy.psd_frequency_scale('fweight') is u
