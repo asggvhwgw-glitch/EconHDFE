@@ -1,0 +1,67 @@
+name: Bounded finite-horizon planner prototype
+on:
+  push:
+    branches: [feat/budgeted-planner-v03-20261029]
+    paths:
+      - native/solver-planner/src/**
+      - native/solver-planner/tests/**
+      - native/solver-planner/pyproject.toml
+      - .github/workflows/budgeted-planner-prototype.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_TARGET_DIR: ${{ github.workspace }}/.bounded-target
+      RAYON_NUM_THREADS: '2'
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Independently build pinned adapters and install planner
+        run: |
+          mkdir -p bounded-results wheelhouse
+          git rev-parse HEAD > bounded-results/source-sha.txt
+          lscpu > bounded-results/cpu.txt
+          python -m pip install 'numpy>=1.26,<3' pytest maturin
+          python -m pip wheel --no-deps ./native/dual-absorber ./native/within-accel ./native/solver-planner -w wheelhouse 2>&1 | tee bounded-results/build.log
+          python -m pip install wheelhouse/*.whl
+          python -m pip freeze > bounded-results/environment.txt
+      - name: Oracles, actual cancellation, horizon accounting and state rollback
+        run: python -m pytest native/solver-planner/tests -q --junitxml=bounded-results/tests.xml 2>&1 | tee bounded-results/tests.log
+      - name: Full-row smoke with genuinely optional child trials
+        run: |
+          PYTHONPATH=native/solver-planner python - <<'PY'
+          import json
+          from pathlib import Path
+          from fixtures import corpus,forward_error
+          from econhdfe_planner import BudgetedAbsorber
+          for case in ['unique_three','weak_cycle']:
+              g,y,w,truth,_=corpus(case,100000,2,99123)
+              with BudgetedAbsorber(g,weights=w,expected_calls=100,max_probe_seconds=2,max_overhead_fraction=100,exploration_fraction=1,calibration_after=1) as s:
+                  out,info=s.residualize(y,return_info=True)
+                  error=forward_error(out,truth,w)
+                  assert info['accepted'] and error<2e-8
+                  assert info['plan']['optional_seconds']<=info['plan']['requested_budget_seconds']+1
+                  Path('bounded-results/'+case+'.json').write_text(json.dumps(dict(error=error,info=info),indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bounded-planner-validation-${{ github.run_id }}
+          path: |
+            bounded-results/
+            wheelhouse/
+          if-no-files-found: error

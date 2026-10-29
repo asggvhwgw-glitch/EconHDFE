@@ -1,4 +1,5 @@
-"""Opt-in FE planner over pinned, independently certified numerical backends."""
+"""Opt-in FE planners over pinned numerical adapters."""
 from .planner import PlannedAbsorber, PlanningError, ProjectionDisagreement
-__all__ = ["PlannedAbsorber", "PlanningError", "ProjectionDisagreement"]
-__version__ = "0.2.0a1"
+from .budgeted import BudgetedAbsorber
+__all__ = ["PlannedAbsorber", "BudgetedAbsorber", "PlanningError", "ProjectionDisagreement"]
+__version__ = "0.3.0a1"
