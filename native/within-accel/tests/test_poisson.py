@@ -167,14 +167,52 @@ def test_advanced_separation_rebuilds_the_native_sample(kind):
     y = d["y"].copy()
     y[separated] = 0
     d = dict(d, y=y, C=np.column_stack([d["C"], separated.astype(float)]))
-    native = fit(kind, d)
-    compare(native, fit(kind, d, "replica"))
+    # This test exercises an explicitly requested advanced-separation sample
+    # rebuild. IV defaults to FE-only: the PPML regressor rule must not be
+    # silently reintroduced merely to trigger the native lifecycle check.
+    results = []
+    for engine in ("within", "replica"):
+        cfg = config(kind, engine, separation=("fe", "simplex", "relu"))
+        if kind == "ivppml":
+            with pytest.warns(RuntimeWarning, match="do not certify existence of IV moments"):
+                result = fit(kind, d, engine, cfg=cfg)
+        else:
+            result = fit(kind, d, engine, cfg=cfg)
+        results.append(result)
+    native, replica = results
+    compare(native, replica)
     assert_array_equal(native.sample_mask, ~separated)
     resources = native.diagnostics["projection_resources"]
     assert resources["backend"] == "within"
     assert resources["within"]["nobs"] == int((~separated).sum())
     # Separation retains the existing replica solvers, not the native positive-weight solver.
     assert all("within" not in s for s in native.diagnostics["separation_solvers"].values())
+
+
+@pytest.mark.parametrize("singleton_mode", ["stata_compat", "unified"])
+def test_default_iv_fe_only_preserves_a_finite_root_in_native_sample(singleton_mode):
+    # These additive moments uniquely imply mu0=mu1=1. Ordinary PPML would
+    # nevertheless delete x=1. An explicit constant FE ensures that both
+    # engines actually absorb a nuisance direction in this regression.
+    y = np.array([1., 3., 0., 0.])
+    x = np.array([0., 0., 1., 1.])
+    z = np.array([0., 2., 1., 3.])
+    d = dict(y=y, C=np.empty((4, 0)), E=x[:, None], I=z[:, None],
+             off=np.zeros(4), w=np.ones(4), groups=[np.zeros(4, dtype=np.int32)])
+    native_cfg = config("ivppml", singleton_mode=singleton_mode)
+    replica_cfg = config("ivppml", "replica", singleton_mode=singleton_mode)
+    assert native_cfg.separation_methods == replica_cfg.separation_methods == ("fe",)
+    native = fit("ivppml", d, cfg=native_cfg)
+    replica = fit("ivppml", d, "replica", cfg=replica_cfg)
+    compare(native, replica)
+    assert_array_equal(native.sample_mask, np.ones(4, dtype=bool))
+    assert not np.any(native.separation_mask)
+    assert_allclose(native.params, 0., atol=2e-9)
+    assert_allclose(native.mu, 1., atol=2e-9)
+    assert_allclose(np.column_stack([np.ones(4), z]).T @ (y-native.mu), 0., atol=2e-9)
+    resources = native.diagnostics["projection_resources"]
+    assert resources["backend"] == "within"
+    assert resources["within"]["nobs"] == native.nobs == 4
 
 
 @pytest.mark.parametrize("kind", ["ppml", "ivppml"])
