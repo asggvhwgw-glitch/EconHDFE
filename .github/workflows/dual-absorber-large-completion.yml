@@ -1,0 +1,119 @@
+name: Dual absorber large-case completion
+on:
+  push:
+    branches: [feat/dual-absorber-prototype-20261029]
+    paths: [.github/workflows/dual-absorber-large-completion.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+defaults:
+  run:
+    shell: bash
+jobs:
+  large:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        case: [three_big, weak, repeated]
+    env:
+      RAYON_NUM_THREADS: '2'
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      NUMBA_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ca26258eb5f575805ba33fd0a03b9315be922ac1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Retrieve the exact successfully built and unit-tested binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: dual-absorber-prototype-40813893262
+          run-id: 40813893262
+          github-token: ${{ github.token }}
+          path: prior
+      - name: Verify source and install exact wheels
+        run: |
+          test "$(cat prior/prototype-results/source-sha.txt)" = ca26258eb5f575805ba33fd0a03b9315be922ac1
+          python -m pip install 'numpy>=1.26,<3' prior/wheelhouse/*.whl
+          mkdir -p results
+          lscpu > results/${{ matrix.case }}-cpu.txt
+          python -m pip freeze > results/${{ matrix.case }}-environment.txt
+          git rev-parse HEAD > results/${{ matrix.case }}-source.txt
+      - name: Complete all four methods, retaining the slow cases
+        run: |
+          timeout 900s python native/dual-absorber/benchmark.py \
+            --case '${{ matrix.case }}' --rows 5000000 --rhs 2 --repeat 2 --threads 2 \
+            --output 'results/${{ matrix.case }}-5m-2.json' \
+            2>&1 | tee 'results/${{ matrix.case }}-benchmarks.log'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dual-prototype-large-${{ matrix.case }}
+          path: results/
+          if-no-files-found: error
+  aggregate:
+    needs: large
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ca26258eb5f575805ba33fd0a03b9315be922ac1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: dual-absorber-prototype-40813893262
+          run-id: 40813893262
+          github-token: ${{ github.token }}
+          path: combined
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dual-prototype-large-*
+          path: combined/prototype-results
+          merge-multiple: true
+      - name: Check all oracles, all configurations and all source revisions
+        run: |
+          python - <<'PY'
+          import json,hashlib,os,xml.etree.ElementTree as ET
+          from pathlib import Path
+          root=Path('combined/prototype-results')
+          expected_sha='ca26258eb5f575805ba33fd0a03b9315be922ac1'
+          assert (root/'source-sha.txt').read_text().strip()==expected_sha
+          for p in root.glob('*-source.txt'):
+              assert p.read_text().strip()==expected_sha
+          suites=list(ET.parse(root/'tests.xml').getroot().iter('testsuite'))
+          tests=sum(int(s.get('tests','0')) for s in suites)
+          assert tests==47 and all(int(s.get('errors','0'))==0 and int(s.get('failures','0'))==0 for s in suites)
+          files=sorted(root.glob('*-1m-*.json'))+sorted(root.glob('*-5m-*.json'))
+          assert len(files)==16, [p.name for p in files]
+          records=[r for p in files for r in json.loads(p.read_text())['results']]
+          assert len(records)==64
+          keys={(r['case'],r['n'],r['rhs'],r['method']) for r in records}
+          assert len(keys)==64
+          for r in records:
+              assert r['valid'] and len(r['rounds'])==2
+              assert all(x['valid'] and x['forward_error']<=2e-8 for x in r['rounds'])
+          assert all(len({r['method'] for r in records if (r['case'],r['n'],r['rhs'])==k})==4 for k in { (r['case'],r['n'],r['rhs']) for r in records })
+          report=dict(source_sha=expected_sha,unit_tests=tests,benchmark_records=len(records),projection_rounds=128,
+                      max_forward_error=max(x['forward_error'] for r in records for x in r['rounds']),
+                      initial_run=40813893262,completion_run=int(os.environ['GITHUB_RUN_ID']),
+                      note='The first run timed out during a slow serial 5M comparison. Its 12 completed 1M cases and 1 completed 5M case are combined with 3 fully rerun 5M cases on separate runners. No numerical acceptance threshold was loosened.',
+                      wheels={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in Path('combined/wheelhouse').glob('*.whl')})
+          (root/'validation-summary.json').write_text(json.dumps(report,indent=2))
+          print('PROTOTYPE_VALIDATED',json.dumps(report))
+          PY
+          git archive --format=zip HEAD native/dual-absorber .github/workflows/dual-absorber-prototype.yml > combined/prototype-results/source.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dual-absorber-prototype-validated-${{ github.run_id }}
+          path: combined/
+          if-no-files-found: error
