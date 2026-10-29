@@ -68,3 +68,41 @@ def ivppml_vcov(
     for sign, meat, g, _ in cluster_subset_meats_xe(Xhat, score_scalar, clusters):
         V += sign * (g / (g - 1.0)) * (bread @ meat @ bread)
     return (V + V.T) / 2.0
+
+
+def ivppml_ee_vcov(Xhat, X_dm, Z_dm, irls_w, weighted_residual, projector, *, tol, **vce_kw):
+    """Estimating-equation sandwich for overidentified IV-PPML.
+
+    The estimator solves ``Pi(b)' Z_dm' w0 (y - mu) = 0`` with first-stage
+    coefficients ``Pi = (Z'WZ)^-1 Z'WX`` re-estimated at each mean
+    (``W = w0 mu``, FE profiled out). When the sample overidentifying moments
+    ``m = Z_dm' w0 (y - mu)`` are not zero, the standard sandwich omits two
+    terms: the derivative of ``Pi`` in the Jacobian and the first-stage
+    estimation error in the scores. Both vanish under correctly specified
+    moments, where this equals ``ivppml_vcov`` asymptotically; under
+    misspecification it is the sandwich of the stacked M-estimator.
+    ``weighted_residual`` is ``w0 (y - mu)``; ``vce_kw`` follows ``ivppml_vcov``.
+    """
+    H, X, Z = (np.asarray(a, dtype=np.float64) for a in (Xhat, X_dm, Z_dm))
+    W = np.asarray(irls_w, dtype=np.float64)
+    u = np.asarray(weighted_residual, dtype=np.float64)
+    n, k = X.shape
+    G = Z.T @ (W[:, None] * Z)
+    h = Z @ (equilibrated_gram_inverse((G + G.T) / 2.0) @ (Z.T @ u))
+    R = X - H
+    WX = W[:, None] * X
+    sensitivity = H.T @ WX - R.T @ (h[:, None] * WX)
+    Q = h[:, None] * R
+    # Profiling the FE adds their W-projection of Q to the scores.
+    PQ = Q - projector.residualize(Q.copy(), W, tol=tol, return_info=True, copy=False)[0]
+    scores = (H + PQ) * u[:, None] + Q * W[:, None]
+    meat = ivppml_vcov(scores, X, np.ones(n), np.ones(n), bread=np.eye(k), **vce_kw)
+    try:
+        inv = np.linalg.solve(sensitivity, np.eye(k))
+    except np.linalg.LinAlgError as exc:
+        raise InferenceError(
+            "IV-PPML estimating-equation Jacobian is singular", code="inference.singular_jacobian",
+        ) from exc
+    V = inv @ meat @ inv.T
+    return (V + V.T) / 2.0
+

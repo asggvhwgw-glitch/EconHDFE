@@ -89,6 +89,8 @@ res = ivppmlhdfe(
 
 IV-PPML is not linear IV. Do not transfer linear KP/SW/Stock-Yogo critical values or diagnostics into this model unless a statistic is explicitly derived/implemented for IV-PPML.
 
+Overidentified IV-PPML reports `diagnostics["overidentification"]` (Hansen J on the additive moments). The default SEs follow `ivppmlhdfe` and assume the overidentifying moments hold; when that is doubtful (for example J rejects), `InferenceConfig(ivppml_misspecification_robust=True)` gives estimating-equation SEs that remain valid for the pseudo-true value. Exactly identified models are unaffected.
+
 ## Semantic specification preflight
 
 Before fitting an interaction-heavy model:

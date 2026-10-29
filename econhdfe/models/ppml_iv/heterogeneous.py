@@ -36,6 +36,7 @@ from ..ppml.execution import resolve_execution
 from ..ppml.heterogeneous import detect_separation_block
 from ..ppml.separation import initial_sample_selection, sample_policy_diagnostics
 from .config import IVPPMLConfig
+from .irls import in_outcome_units
 from .results import IVPPMLResult
 from .standardize import IVPPMLStandardization
 
@@ -110,6 +111,13 @@ def _fit_iv_irls_block(
     y, C: BlockDesign, E: BlockDesign, I: BlockDesign, plan: FEPlan,
     true_w, offset, config: IVPPMLConfig, *, projector, initial_eta=None, detect_mu=False,
 ):
+    return in_outcome_units(
+        _iterate_block, y, true_w, initial_eta, C, E, I, plan, offset, config,
+        projector=projector, detect_mu=detect_mu,
+    )
+
+
+def _iterate_block(y, C, E, I, plan, offset, config, *, true_w, projector, initial_eta, detect_mu):
     y = np.asarray(y, dtype=np.float64)
     w0 = np.asarray(true_w, dtype=np.float64)
     offset = np.asarray(offset, dtype=np.float64)
@@ -161,7 +169,10 @@ def _fit_iv_irls_block(
                 f"IV-PPML IRLS produced non-finite mu at iteration {it}",
                 code="numerical.non_finite_mu", details={"iteration": int(it)},
             )
-        if it > 10 and (np.max(np.abs(X.matvec(beta)), initial=0.0) > 1e6 or np.max(np.abs(eta), initial=0.0) > 30):
+        # Only an exploding slope index signals divergence. A wide but finite
+        # eta range is a valid fit (PPML has no such bound); zero-outcome
+        # observations heading to mu=0 are the separation checks' job.
+        if it > 10 and np.max(np.abs(X.matvec(beta)), initial=0.0) > 1e6:
             raise DivergenceError(f"IV-PPML IRLS diverged at iteration {it}", details={"iteration": int(it)})
 
         working_state(y, mu, eta, offset, w0, irls_w, z)

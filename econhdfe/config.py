@@ -107,11 +107,17 @@ class InferenceConfig:
 
     For ``olshdfe``/``ivhdfe`` and the linear sessions, ``vce`` pairs with the
     ``vce`` argument under :func:`resolve_override`.
+
+    ``ivppml_misspecification_robust`` makes overidentified IV-PPML use the
+    estimating-equation sandwich, which stays valid when the overidentifying
+    moments do not hold; the default keeps the ``ivppmlhdfe`` sandwich. Both
+    agree under correct specification and in exactly identified models.
     """
     vce: str | None = None
     confidence_level: float = 0.95
     diagnostics: str = "off"  # off | publication | full
     iv_advanced_statistics: bool = True
+    ivppml_misspecification_robust: bool = False
 
     def validate(self) -> None:
         if not 0 < self.confidence_level < 1:
@@ -120,6 +126,8 @@ class InferenceConfig:
             raise SpecificationError("diagnostics must be off/publication/full")
         if not isinstance(self.iv_advanced_statistics, bool):
             raise SpecificationError("iv_advanced_statistics must be a boolean")
+        if not isinstance(self.ivppml_misspecification_robust, bool):
+            raise SpecificationError("ivppml_misspecification_robust must be a boolean")
 
 
 @dataclass(slots=True, frozen=True)

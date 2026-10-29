@@ -9,7 +9,7 @@ from ...compute.context import ExecutionContext
 from scipy.special import gammaln
 from ...compute.linalg import independent_columns
 from ...hdfe.plan import FEPlan
-from ...iv.moments import additive_moments
+from ...iv.moments import additive_moments, overid_test
 from ...iv.solve import weighted_2sls
 from ..ppml.separation import detect_separation, initial_sample_selection, sample_policy_diagnostics
 from ..ppml.execution import resolve_execution, get_projector
@@ -20,7 +20,8 @@ from .config import IVPPMLConfig
 from .irls import fit_iv_irls
 from .results import IVPPMLResult
 from .standardize import IVPPMLStandardization
-from .vce import ivppml_vcov, normalize_ivppml_vce
+from .vce import ivppml_vcov, ivppml_ee_vcov, normalize_ivppml_vce
+from ...compute.weights import frequency_score_scale
 from ...reporting import cluster_counts as _cluster_counts, fe_names_from_metadata
 
 
@@ -79,7 +80,7 @@ def _prune_iv_columns(C, E, I, names_c, names_e, names_i, plan, weights, config,
 def fit_arrays(
     y, exog, endog, instruments, plan: FEPlan, *, offset, true_w, weight_kind="none", vce,
     clusters, exog_names, endog_names, instrument_names, config: IVPPMLConfig,
-    warm_start=None, execution_config: ExecutionConfig | None = None,
+    misspecification_robust=False, warm_start=None, execution_config: ExecutionConfig | None = None,
     execution_context: ExecutionContext | None = None,
 ):
     y = np.asarray(y, dtype=np.float64)
@@ -206,10 +207,21 @@ def fit_arrays(
     cls = poisson_clusters(clusters, sample, vce)
     dof = p1.dof_info(clusters=cls, method=config.dof_method)
     effective_n = float(np.sum(w1)) if weight_kind == "fweight" else float(len(y1))
-    Vstd = ivppml_vcov(
-        solved.projected_X, X_dm, solved.residuals, irls_w,
-        kind=vce, clusters=cls, effective_n=effective_n,
-        base_weights=w1, weight_kind=weight_kind, bread=solved.bread,
+    vce_kw = dict(kind=vce, clusters=cls, effective_n=effective_n, base_weights=w1, weight_kind=weight_kind)
+    weighted_residual = w1 * (y1 - state.mu)
+    overidentified = Z_dm.shape[1] > X_dm.shape[1]
+    if misspecification_robust and overidentified:
+        Vstd = ivppml_ee_vcov(
+            solved.projected_X, X_dm, Z_dm, irls_w, weighted_residual, projector,
+            tol=config.target_inner_tol, **vce_kw,
+        )
+    else:
+        Vstd = ivppml_vcov(solved.projected_X, X_dm, solved.residuals, irls_w, bread=solved.bread, **vce_kw)
+    # Hansen J on the additive moments Z_dm' w0 (y - mu), as for linear IV.
+    overid = overid_test(
+        weighted_residual, Z_dm, X=irls_w[:, None] * X_dm, kind=normalize_ivppml_vce(vce),
+        clusters=cls, effective_n=effective_n,
+        score_scale=frequency_score_scale(weight_kind, w1, normalize_ivppml_vce(vce)),
     )
     Xraw = np.column_stack([C1, E1])
     V, se = poisson_inference(
@@ -270,6 +282,8 @@ def fit_arrays(
             "first_stage": scaling.unscale_first_stage(solved.first_stage, kc),
             "first_stage_units": "original",
             "vce_requested": vce,
+            "overidentification": overid,
+            "misspecification_robust": bool(misspecification_robust and overidentified),
             "rank": solved.rank,
             "warm_started": initial_eta is not None,
         },

@@ -100,7 +100,7 @@ def fit_arrays(
     standardizer = (
         Standardization.fit(y0, X0)
         if config.standardize
-        else Standardization(np.ones(X0.shape[1]), 1.0)
+        else Standardization.outcome_only(y0, w0, X0.shape[1])
     )
     y0s, X0s = standardizer.transform(y0, X0)
 

@@ -31,6 +31,7 @@ inference = InferenceConfig(
     confidence_level=0.95,
     diagnostics="off",   # off | publication | full
     iv_advanced_statistics=True,  # False skips advanced linear-IV calculations
+    ivppml_misspecification_robust=False,  # True: estimating-equation SEs for overidentified IV-PPML
 )
 
 execution = ExecutionConfig(

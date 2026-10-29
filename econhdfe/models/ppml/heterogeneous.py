@@ -451,7 +451,7 @@ def fit_block_arrays(
     else:
         y0, B0, w0, off0, p0 = y, X, true_w, off, plan
 
-    standardizer = Standardization.fit_block(y0, B0) if config.standardize else Standardization(np.ones(B0.ncols), 1.0)
+    standardizer = Standardization.fit_block(y0, B0) if config.standardize else Standardization.outcome_only(y0, w0, B0.ncols)
     y0s, B0s = standardizer.transform_block(y0, B0)
     pre_projector = _resource_block_projector(B0s, p0, config, execution)
     B0s, names, keep = filter_columns_block(

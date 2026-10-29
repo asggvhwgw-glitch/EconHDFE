@@ -30,6 +30,18 @@ def _reghdfe_scale(a: np.ndarray, axis=None):
     return np.maximum(scale, 1e-3)
 
 
+def outcome_scale(y, weights) -> float:
+    """Weighted mean of ``y``, the outcome unit IRLS runs in without standardization.
+
+    Poisson PML slopes do not depend on the units of ``y``, but the IRLS
+    safeguards (deviance-change floor, divergence bound, step-halving floor,
+    initial-mean floor) are absolute. Iterating on ``y / outcome_scale`` keeps
+    the iterations, and hence the estimates, invariant to rescaling ``y``.
+    """
+    m = float(np.average(y, weights=weights))
+    return m if m > 0 else 1.0
+
+
 @dataclass(slots=True)
 class Standardization:
     x_scale: np.ndarray
@@ -54,6 +66,11 @@ class Standardization:
         xs = X.column_moments().sample_scale() if X.ncols else np.empty(0, dtype=np.float64)
         ys = _reghdfe_scale(y)
         return cls(np.asarray(xs, dtype=np.float64), float(ys))
+
+    @classmethod
+    def outcome_only(cls, y, weights, k: int) -> "Standardization":
+        """Leave regressors in user units; rescale only the outcome."""
+        return cls(np.ones(k, dtype=np.float64), outcome_scale(y, weights))
 
     def transform(self, y, X):
         y = np.asarray(y, dtype=np.float64) / self.y_scale

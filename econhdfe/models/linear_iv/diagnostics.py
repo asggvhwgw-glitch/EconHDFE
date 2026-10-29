@@ -635,39 +635,3 @@ def cragg_donald_stat(endog, exog, instruments, *, weights=None, df_absorbed=0, 
     L = C.shape[1] + Zp.shape[1]
     L1 = Zp.shape[1]
     return float(max(n_eff - L - int(df_absorbed), 0) / max(L1, 1) * cdev)
-
-
-def overid_test(resid, Z, *, X, kind="robust", clusters=None, center=False,
-                time=None, panel=None, bandwidth=None, kernel="bartlett", effective_n=None, score_scale=None,
-                _xz=None, _meat=None):
-    resid = np.asarray(resid, dtype=np.float64)
-    Z = np.asarray(Z, dtype=np.float64)
-    df = int(Z.shape[1] - X.shape[1])
-    n_eff = float(len(resid) if effective_n is None else effective_n)
-    if df <= 0:
-        return {"stat": np.nan, "df": 0, "pvalue": np.nan}
-    g = Z.T @ resid
-    if is_iid_vce(kind):
-        # Sargan uses the uncorrected residual variance, not HC1/fit DoF.
-        sigma2 = float(resid @ resid) / n_eff
-        S = sigma2 * (Z.T @ Z)
-    elif kind == 'cluster' and not center:
-        S = (_cluster_meat_xe(Z, resid, clusters, score_scale)[0]
-             if _meat is None else _meat)
-    else:
-        S = score_covariance(
-            Z * resid[:, None], kind=kind, clusters=clusters,
-            k_total=0, center=center, small_sample=False,
-            time=time, panel=panel, bandwidth=bandwidth, kernel=kernel,
-            effective_n=n_eff, score_scale=score_scale,
-        )
-    W = np.linalg.pinv(S, hermitian=True)
-    if not is_iid_vce(kind):
-        # The reported coefficient remains 2SLS/k-class. Hansen J, however,
-        # uses the efficient second-step moments under this fixed S (ivreg2).
-        D = _xz.T if kind == 'cluster' and _xz is not None else Z.T @ X
-        A = D.T @ W @ D
-        delta = np.linalg.pinv((A + A.T) / 2, hermitian=True) @ (D.T @ W @ g)
-        g = g - D @ delta
-    stat = float(g.T @ W @ g)
-    return {"stat": stat, "df": df, "pvalue": float(chi2.sf(stat, df))}

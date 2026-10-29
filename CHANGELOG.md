@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.9.3 — unreleased candidate
+
+Patch on 0.9.2 (adds one opt-in `InferenceConfig` field).
+
+### IV-PPML outcome-unit invariance and overidentification inference
+
+- **Correctness (IV-PPML IRLS).** Poisson PML slopes do not depend on the units
+  of `y`, but the IRLS safeguards were absolute (initial-mean floor, deviance
+  change floor, step-halving floor, `|eta| > 30` divergence bound). Rescaling
+  `y` could stop early with wrong slopes, fail to converge or report a false
+  divergence. Dense and structured IV-PPML now iterate on `y / mean(y)` and
+  return `mu`, `eta` and the deviance in user units; the `|eta|` bound is
+  dropped (a wide finite predictor range is a valid fit, as in PPML), the
+  exploding-slope check stays. PPML with `standardize=False` rescales the
+  outcome the same way; the default standardized PPML path is unchanged.
+- IV-PPML diagnostics report `overidentification` (Hansen J on the additive
+  moments `Z' w0 (y - mu)` with the chosen robust/cluster covariance, as for
+  linear IV). `overid_test` moves to the outcome-agnostic `econhdfe.iv.moments`.
+- Opt-in `InferenceConfig(ivppml_misspecification_robust=True)`: overidentified
+  IV-PPML uses the estimating-equation sandwich, which adds the first-stage
+  re-estimation terms that the `ivppmlhdfe` sandwich omits when the
+  overidentifying moments fail. It equals the stacked M-estimator sandwich and
+  agrees with the default under correct specification and exact
+  identification. Structured DataFrame specifications use the dense path when
+  it is requested. The default covariance is unchanged.
+
 ## 0.9.2 — unreleased candidate
 
 Patch on 0.9.1. The untagged development numbers 0.10.0 and 0.10.1 were
