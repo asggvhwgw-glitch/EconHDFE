@@ -1,0 +1,87 @@
+name: Dual absorber prototype validation
+on:
+  push:
+    branches: [feat/dual-absorber-prototype-20261029]
+    paths:
+      - native/dual-absorber/src/**
+      - native/dual-absorber/python/**
+      - native/dual-absorber/tests/**
+      - native/dual-absorber/Cargo.toml
+      - native/dual-absorber/pyproject.toml
+      - native/dual-absorber/benchmark.py
+      - .github/workflows/dual-absorber-prototype.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: dual-prototype-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_TARGET_DIR: ${{ github.workspace }}/.dual-target
+      RAYON_NUM_THREADS: '2'
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      NUMBA_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            .dual-target
+          key: dual-v01-${{ runner.os }}-${{ hashFiles('native/dual-absorber/Cargo.toml') }}
+      - name: Build isolated wheels
+        run: |
+          mkdir -p prototype-results wheelhouse
+          git rev-parse HEAD > prototype-results/source-sha.txt
+          lscpu > prototype-results/cpu.txt
+          python -m pip install 'numpy>=1.26,<3' pytest maturin
+          python -m pip wheel --no-deps ./native/dual-absorber -w wheelhouse -v 2>&1 | tee prototype-results/dual-build.log
+          python -m pip wheel --no-deps ./native/within-accel -w wheelhouse -v 2>&1 | tee prototype-results/legacy-build.log
+          python -m pip install wheelhouse/*.whl
+          python -m pip freeze > prototype-results/environment.txt
+          cp native/dual-absorber/Cargo.lock prototype-results/Cargo.lock
+      - name: Independent oracle and same-outer-IRLS tests
+        run: python -m pytest native/dual-absorber/tests -q --junitxml=prototype-results/tests.xml 2>&1 | tee prototype-results/tests.log
+      - name: 1M two and eight RHS with weighted forward-error oracle
+        run: |
+          for case in one_big two_big three_big weak repeated reweight; do
+            for rhs in 2 8; do
+              timeout 300s python native/dual-absorber/benchmark.py --case "$case" --rows 1000000 --rhs "$rhs" --repeat 2 --threads 2 --output "prototype-results/${case}-1m-${rhs}.json" | tee -a prototype-results/benchmarks.log
+            done
+          done
+      - name: 5M two-RHS structural checks
+        run: |
+          for case in one_big three_big weak repeated; do
+            timeout 300s python native/dual-absorber/benchmark.py --case "$case" --rows 5000000 --rhs 2 --repeat 2 --threads 2 --output "prototype-results/${case}-5m-2.json" | tee -a prototype-results/benchmarks.log
+          done
+      - name: Validate completeness and archive sources
+        run: |
+          python - <<'PY'
+          import glob,json
+          paths=glob.glob('prototype-results/*-1m-*.json')+glob.glob('prototype-results/*-5m-*.json')
+          assert len(paths)==16, paths
+          records=[r for p in paths for r in json.load(open(p))['results']]
+          assert len(records)==64 and all(r['valid'] for r in records)
+          print('PROTOTYPE_COMPLETE',len(records),max(s['forward_error'] for r in records for s in r['rounds']))
+          PY
+          git archive --format=zip HEAD native/dual-absorber .github/workflows/dual-absorber-prototype.yml > prototype-results/source.zip
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dual-absorber-prototype-${{ github.run_id }}
+          path: |
+            prototype-results/
+            wheelhouse/
+          if-no-files-found: warn
