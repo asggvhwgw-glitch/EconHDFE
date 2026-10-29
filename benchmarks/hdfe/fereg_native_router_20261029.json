@@ -1,0 +1,8632 @@
+{
+ "run_id": 40809577543,
+ "job_id": 123236706221,
+ "results": [
+  {
+   "case": "one_big",
+   "method": "within",
+   "rows": 120000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    30000,
+    48,
+    16
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.0028910850000016808,
+     "setup_s": 0.0013518660000073623,
+     "solve_s": 0.021325193999999215,
+     "route": "within_base",
+     "iters": [
+      12,
+      11
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.1767954623214812e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 7.430000010799631e-7,
+     "solve_s": 0.016467852000005223,
+     "route": "within_base",
+     "iters": [
+      12,
+      11
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.1767954623214812e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 4.0599999806545384e-7,
+     "solve_s": 0.016292870000000903,
+     "route": "within_base",
+     "iters": [
+      12,
+      11
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.1767954623214812e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 73.77734375
+  },
+  {
+   "case": "one_big",
+   "method": "native_plain",
+   "rows": 120000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    30000,
+    48,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.008228048999995963,
+     "setup_s": 0.0000010039999978062042,
+     "solve_s": 0.03261457899999698,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      14,
+      13
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.049792832091243e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 4.6899999972538353e-7,
+     "solve_s": 0.03010498199999745,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      14,
+      13
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.049792832091243e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 4.139999987273768e-7,
+     "solve_s": 0.029812050000003865,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      14,
+      13
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.049792832091243e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 67.89453125
+  },
+  {
+   "case": "one_big",
+   "method": "native_auto",
+   "rows": 120000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    30000,
+    48,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.03335356399999512,
+     "setup_s": 0.0000015710000127455714,
+     "solve_s": 0.01780676699999617,
+     "route": "schur",
+     "n_cells": 120000,
+     "iters": [
+      1,
+      1
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.7545800209197324e-16,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 5.320000013853132e-7,
+     "solve_s": 0.015011998000005633,
+     "route": "schur",
+     "n_cells": 120000,
+     "iters": [
+      1,
+      1
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.7545800209197324e-16,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 3.7399999541776197e-7,
+     "solve_s": 0.01423063700001137,
+     "route": "schur",
+     "n_cells": 120000,
+     "iters": [
+      1,
+      1
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.7545800209197324e-16,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 74.484375
+  },
+  {
+   "case": "one_big",
+   "method": "within",
+   "rows": 120000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    30000,
+    48,
+    16
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.0022412210000055666,
+     "setup_s": 0.001651515000006043,
+     "solve_s": 0.07661542399999632,
+     "route": "within_base",
+     "iters": [
+      12,
+      11,
+      11,
+      11,
+      11,
+      11,
+      11,
+      11
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.1767954623214812e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 9.080000040739833e-7,
+     "solve_s": 0.07322794799999599,
+     "route": "within_base",
+     "iters": [
+      12,
+      11,
+      11,
+      11,
+      11,
+      11,
+      11,
+      11
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.1767954623214812e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 6.87000010657357e-7,
+     "solve_s": 0.06778293200000007,
+     "route": "within_base",
+     "iters": [
+      12,
+      11,
+      11,
+      11,
+      11,
+      11,
+      11,
+      11
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.1767954623214812e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 105.17578125
+  },
+  {
+   "case": "one_big",
+   "method": "native_plain",
+   "rows": 120000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    30000,
+    48,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.0075610619999935125,
+     "setup_s": 8.46999995474107e-7,
+     "solve_s": 0.12589940600000205,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      14,
+      13,
+      13,
+      13,
+      13,
+      13,
+      13,
+      13
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.049792832091243e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 6.730000023935645e-7,
+     "solve_s": 0.12389275799999666,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      14,
+      13,
+      13,
+      13,
+      13,
+      13,
+      13,
+      13
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.049792832091243e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 5.139999927905592e-7,
+     "solve_s": 0.10813998999999797,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      14,
+      13,
+      13,
+      13,
+      13,
+      13,
+      13,
+      13
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.049792832091243e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 86.19921875
+  },
+  {
+   "case": "one_big",
+   "method": "native_auto",
+   "rows": 120000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    30000,
+    48,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.03242017200000191,
+     "setup_s": 0.0000015769999919257316,
+     "solve_s": 0.05964508099999932,
+     "route": "schur",
+     "n_cells": 120000,
+     "iters": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.7545800209197324e-16,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 7.069999981013098e-7,
+     "solve_s": 0.05630802500000698,
+     "route": "schur",
+     "n_cells": 120000,
+     "iters": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.7545800209197324e-16,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 5.5299999246472e-7,
+     "solve_s": 0.05551317600000516,
+     "route": "schur",
+     "n_cells": 120000,
+     "iters": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.7545800209197324e-16,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 90.97265625
+  },
+  {
+   "case": "one_big",
+   "method": "within",
+   "rows": 1000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    250000,
+    48,
+    16
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.028460879999997246,
+     "setup_s": 0.016310261000000992,
+     "solve_s": 0.1721001939999951,
+     "route": "within_base",
+     "iters": [
+      10,
+      9
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.3200772767410524e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 9.270000020933367e-7,
+     "solve_s": 0.1548637419999892,
+     "route": "within_base",
+     "iters": [
+      10,
+      9
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.3200772767410524e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 8.060000027398928e-7,
+     "solve_s": 0.14721404899999868,
+     "route": "within_base",
+     "iters": [
+      10,
+      9
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.3200772767410524e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 275.2109375
+  },
+  {
+   "case": "one_big",
+   "method": "native_plain",
+   "rows": 1000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    250000,
+    48,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.07536675599999398,
+     "setup_s": 0.0000015849999925876546,
+     "solve_s": 0.2598392760000081,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      12,
+      11
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 6.365377701806348e-13,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 8.960000030810988e-7,
+     "solve_s": 0.23379334400000573,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      12,
+      11
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 6.365377701806348e-13,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 5.089999888241437e-7,
+     "solve_s": 0.2318674389999984,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      12,
+      11
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 6.365377701806348e-13,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 238.9609375
+  },
+  {
+   "case": "one_big",
+   "method": "native_auto",
+   "rows": 1000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    250000,
+    48,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.29179430799999295,
+     "setup_s": 0.000001745000005826114,
+     "solve_s": 0.19487000600000215,
+     "route": "schur",
+     "n_cells": 1000000,
+     "iters": [
+      1,
+      1
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.7757700574393076e-16,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 7.839999938141773e-7,
+     "solve_s": 0.18665006499999492,
+     "route": "schur",
+     "n_cells": 1000000,
+     "iters": [
+      1,
+      1
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.7757700574393076e-16,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 5.63000000397551e-7,
+     "solve_s": 0.19231910800000662,
+     "route": "schur",
+     "n_cells": 1000000,
+     "iters": [
+      1,
+      1
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.7757700574393076e-16,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 299.3828125
+  },
+  {
+   "case": "one_big",
+   "method": "within",
+   "rows": 1000000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    250000,
+    48,
+    16
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.023916348000000198,
+     "setup_s": 0.016689292999998884,
+     "solve_s": 0.6915728479999927,
+     "route": "within_base",
+     "iters": [
+      10,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.3374431448898062e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 9.240000053978292e-7,
+     "solve_s": 0.629851599999995,
+     "route": "within_base",
+     "iters": [
+      10,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.3374431448898062e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 8.959999888702441e-7,
+     "solve_s": 0.637940068000006,
+     "route": "within_base",
+     "iters": [
+      10,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.3374431448898062e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 525.1484375
+  },
+  {
+   "case": "one_big",
+   "method": "native_plain",
+   "rows": 1000000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    250000,
+    48,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.07140555300000528,
+     "setup_s": 0.0000015379999922515708,
+     "solve_s": 1.0959725400000053,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      12,
+      11,
+      11,
+      11,
+      11,
+      11,
+      11,
+      11
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 6.365377701806348e-13,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 8.55999999771484e-7,
+     "solve_s": 1.0603630420000059,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      12,
+      11,
+      11,
+      11,
+      11,
+      11,
+      11,
+      11
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 6.365377701806348e-13,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 7.060000086767104e-7,
+     "solve_s": 1.0441250030000049,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      12,
+      11,
+      11,
+      11,
+      11,
+      11,
+      11,
+      11
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 6.365377701806348e-13,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 382.203125
+  },
+  {
+   "case": "one_big",
+   "method": "native_auto",
+   "rows": 1000000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    250000,
+    48,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.2864183509999947,
+     "setup_s": 0.0000014310000011619195,
+     "solve_s": 0.7472024289999979,
+     "route": "schur",
+     "n_cells": 1000000,
+     "iters": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.7757700574393076e-16,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 7.529999948019395e-7,
+     "solve_s": 0.7441970290000057,
+     "route": "schur",
+     "n_cells": 1000000,
+     "iters": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.7757700574393076e-16,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 6.430000070167807e-7,
+     "solve_s": 0.7349714930000033,
+     "route": "schur",
+     "n_cells": 1000000,
+     "iters": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.7757700574393076e-16,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 436.84375
+  },
+  {
+   "case": "two_big",
+   "method": "within",
+   "rows": 120000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    15000,
+    10000,
+    16
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.002768723999992062,
+     "setup_s": 0.001554119999994441,
+     "solve_s": 0.029386990999995533,
+     "route": "within_base",
+     "iters": [
+      21,
+      20
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.4608402966920314e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 8.370000017521306e-7,
+     "solve_s": 0.025866139000001453,
+     "route": "within_base",
+     "iters": [
+      21,
+      20
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.4608402966920314e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 5.80000005356851e-7,
+     "solve_s": 0.02568399700000157,
+     "route": "within_base",
+     "iters": [
+      21,
+      20
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.4608402966920314e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 71.27734375
+  },
+  {
+   "case": "two_big",
+   "method": "native_plain",
+   "rows": 120000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    15000,
+    10000,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.007961515000005193,
+     "setup_s": 8.319999977857151e-7,
+     "solve_s": 0.04797598499999367,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      26,
+      25
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.1772446036786103e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 7.259999961206631e-7,
+     "solve_s": 0.0461983900000007,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      26,
+      25
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.1772446036786103e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 4.0899999476096127e-7,
+     "solve_s": 0.04811110400000018,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      26,
+      25
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.1772446036786103e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 66.66015625
+  },
+  {
+   "case": "two_big",
+   "method": "native_auto",
+   "rows": 120000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    15000,
+    10000,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.012169119999995814,
+     "setup_s": 9.470000037481441e-7,
+     "solve_s": 0.04714665600000956,
+     "route": "within",
+     "n_cells": 119997,
+     "iters": [
+      26,
+      25
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.1772446036786103e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 4.790000076582146e-7,
+     "solve_s": 0.04568274999999744,
+     "route": "within",
+     "n_cells": 119997,
+     "iters": [
+      26,
+      25
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.1772446036786103e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 5.789999875105423e-7,
+     "solve_s": 0.04534230200000877,
+     "route": "within",
+     "n_cells": 119997,
+     "iters": [
+      26,
+      25
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.1772446036786103e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 67.921875
+  },
+  {
+   "case": "two_big",
+   "method": "within",
+   "rows": 120000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    15000,
+    10000,
+    16
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.0021924950000027366,
+     "setup_s": 0.001609282999993411,
+     "solve_s": 0.1128126199999997,
+     "route": "within_base",
+     "iters": [
+      21,
+      20,
+      20,
+      20,
+      20,
+      20,
+      20,
+      20
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.7245317400179127e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 7.240000030606097e-7,
+     "solve_s": 0.10571672599999715,
+     "route": "within_base",
+     "iters": [
+      21,
+      20,
+      20,
+      20,
+      20,
+      20,
+      20,
+      20
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.7245317400179127e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 5.5299999246472e-7,
+     "solve_s": 0.10530446899998935,
+     "route": "within_base",
+     "iters": [
+      21,
+      20,
+      20,
+      20,
+      20,
+      20,
+      20,
+      20
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.7245317400179127e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 101.91015625
+  },
+  {
+   "case": "two_big",
+   "method": "native_plain",
+   "rows": 120000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    15000,
+    10000,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.007167362000004118,
+     "setup_s": 6.970000043793334e-7,
+     "solve_s": 0.18729643100000715,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      26,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.6297009701193805e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 6.560000116451192e-7,
+     "solve_s": 0.18474858799999083,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      26,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.6297009701193805e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 5.490000063446132e-7,
+     "solve_s": 0.1723826480000099,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      26,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.6297009701193805e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 84.81640625
+  },
+  {
+   "case": "two_big",
+   "method": "native_auto",
+   "rows": 120000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    15000,
+    10000,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.01147076300000549,
+     "setup_s": 8.260000043947002e-7,
+     "solve_s": 0.1856240570000125,
+     "route": "within",
+     "n_cells": 119997,
+     "iters": [
+      26,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.6297009701193805e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 9.030000001075678e-7,
+     "solve_s": 0.18421817400000862,
+     "route": "within",
+     "n_cells": 119997,
+     "iters": [
+      26,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.6297009701193805e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 6.369999994149111e-7,
+     "solve_s": 0.17056049599999312,
+     "route": "within",
+     "n_cells": 119997,
+     "iters": [
+      26,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.6297009701193805e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 86.34375
+  },
+  {
+   "case": "two_big",
+   "method": "within",
+   "rows": 1000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    125000,
+    83333,
+    16
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.029249265999993668,
+     "setup_s": 0.016415299999991362,
+     "solve_s": 0.2934424729999989,
+     "route": "within_base",
+     "iters": [
+      21,
+      20
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.3227978874590552e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.0000011820000054285629,
+     "solve_s": 0.279666246000005,
+     "route": "within_base",
+     "iters": [
+      21,
+      20
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.3227978874590552e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 7.009999904994402e-7,
+     "solve_s": 0.2604193009999989,
+     "route": "within_base",
+     "iters": [
+      21,
+      20
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.3227978874590552e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 263.51953125
+  },
+  {
+   "case": "two_big",
+   "method": "native_plain",
+   "rows": 1000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    125000,
+    83333,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.07620292499998982,
+     "setup_s": 0.0000013810000041303283,
+     "solve_s": 0.41469375900000216,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      26,
+      24
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.1501693104493725e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 7.589999881929543e-7,
+     "solve_s": 0.4048143959999919,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      26,
+      24
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.1501693104493725e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 7.010000047102949e-7,
+     "solve_s": 0.39470986199999913,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      26,
+      24
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.1501693104493725e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 221.4375
+  },
+  {
+   "case": "two_big",
+   "method": "native_auto",
+   "rows": 1000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    125000,
+    83333,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.144214747999996,
+     "setup_s": 0.000001880999988657095,
+     "solve_s": 0.4161469300000107,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      26,
+      24
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.1501693104493725e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 7.350000004180401e-7,
+     "solve_s": 0.39396685799999887,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      26,
+      24
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.1501693104493725e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 5.079999993995443e-7,
+     "solve_s": 0.39596569399999737,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      26,
+      24
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.1501693104493725e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 232.90234375
+  },
+  {
+   "case": "two_big",
+   "method": "within",
+   "rows": 1000000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    125000,
+    83333,
+    16
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.02346366999999816,
+     "setup_s": 0.016738759000006098,
+     "solve_s": 1.1364202839999962,
+     "route": "within_base",
+     "iters": [
+      21,
+      20,
+      20,
+      20,
+      20,
+      20,
+      20,
+      20
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.3345981212940156e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 8.720000010953299e-7,
+     "solve_s": 1.0898583320000057,
+     "route": "within_base",
+     "iters": [
+      21,
+      20,
+      20,
+      20,
+      20,
+      20,
+      20,
+      20
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.3345981212940156e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 8.729999905199293e-7,
+     "solve_s": 1.0894711210000025,
+     "route": "within_base",
+     "iters": [
+      21,
+      20,
+      20,
+      20,
+      20,
+      20,
+      20,
+      20
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.3345981212940156e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 521.765625
+  },
+  {
+   "case": "two_big",
+   "method": "native_plain",
+   "rows": 1000000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    125000,
+    83333,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.07157589099999484,
+     "setup_s": 0.0000017410000054951524,
+     "solve_s": 1.6531826929999909,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      26,
+      24,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.1501693104493725e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 9.230000017623752e-7,
+     "solve_s": 1.6487029959999973,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      26,
+      24,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.1501693104493725e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 7.570000093437557e-7,
+     "solve_s": 1.6472272329999953,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      26,
+      24,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.1501693104493725e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 373.94140625
+  },
+  {
+   "case": "two_big",
+   "method": "native_auto",
+   "rows": 1000000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    125000,
+    83333,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.13663287100000332,
+     "setup_s": 0.0000015640000015082478,
+     "solve_s": 1.6671500829999815,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      26,
+      24,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.1501693104493725e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 8.110000067063083e-7,
+     "solve_s": 1.6270727410000063,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      26,
+      24,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.1501693104493725e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 6.900000073528645e-7,
+     "solve_s": 1.625566114999998,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      26,
+      24,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.1501693104493725e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 385.6171875
+  },
+  {
+   "case": "three_big",
+   "method": "within",
+   "rows": 120000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    12000,
+    10000,
+    7500
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.0028930620000267027,
+     "setup_s": 0.0016646709999861287,
+     "solve_s": 0.03501766799999473,
+     "route": "within_base",
+     "iters": [
+      25,
+      25
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.6421451055437867e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 7.669999888548773e-7,
+     "solve_s": 0.03162041599998133,
+     "route": "within_base",
+     "iters": [
+      25,
+      25
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.6421451055437867e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 4.81000000718268e-7,
+     "solve_s": 0.03096881799999096,
+     "route": "within_base",
+     "iters": [
+      25,
+      25
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.6421451055437867e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 71.6171875
+  },
+  {
+   "case": "three_big",
+   "method": "native_plain",
+   "rows": 120000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    12000,
+    10000,
+    7500
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.007936720999992986,
+     "setup_s": 7.799999934832158e-7,
+     "solve_s": 0.057630514999999605,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      31,
+      30
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.161392653223964e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 5.640000040330051e-7,
+     "solve_s": 0.05311615900001243,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      31,
+      30
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.1613929793442854e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 4.1700002384459367e-7,
+     "solve_s": 0.05317333200000007,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      31,
+      30
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.1613929793442854e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 66.69921875
+  },
+  {
+   "case": "three_big",
+   "method": "native_auto",
+   "rows": 120000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    12000,
+    10000,
+    7500
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.012576653999985865,
+     "setup_s": 9.670000054029515e-7,
+     "solve_s": 0.0555571650000104,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      31,
+      30
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.1613929793442854e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 6.119999795828335e-7,
+     "solve_s": 0.053904345000006515,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      31,
+      30
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.1613929793442854e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 4.919999980756984e-7,
+     "solve_s": 0.05325097599998685,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      31,
+      30
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.1613929793442854e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 68.11328125
+  },
+  {
+   "case": "three_big",
+   "method": "within",
+   "rows": 120000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    12000,
+    10000,
+    7500
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.002205654999983153,
+     "setup_s": 0.0016323350000106984,
+     "solve_s": 0.1362878740000042,
+     "route": "within_base",
+     "iters": [
+      25,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.6421451055437867e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 8.560000139823387e-7,
+     "solve_s": 0.13075625499999433,
+     "route": "within_base",
+     "iters": [
+      25,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.6421451055437867e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 4.880000119555916e-7,
+     "solve_s": 0.13024690200001032,
+     "route": "within_base",
+     "iters": [
+      25,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.6421451055437867e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 103.29296875
+  },
+  {
+   "case": "three_big",
+   "method": "native_plain",
+   "rows": 120000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    12000,
+    10000,
+    7500
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.007367675999972789,
+     "setup_s": 0.0000013149999915640365,
+     "solve_s": 0.22259993299999792,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      31,
+      30,
+      31,
+      30,
+      31,
+      31,
+      30,
+      31
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.1613929793442854e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 8.060000027398928e-7,
+     "solve_s": 0.2282482239999979,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      31,
+      30,
+      31,
+      30,
+      31,
+      31,
+      30,
+      31
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.1613929793442854e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 5.550000139464828e-7,
+     "solve_s": 0.20552573900002358,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      31,
+      30,
+      31,
+      30,
+      31,
+      31,
+      30,
+      31
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.1613929793442854e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 84.85546875
+  },
+  {
+   "case": "three_big",
+   "method": "native_auto",
+   "rows": 120000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    12000,
+    10000,
+    7500
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.011840992000003325,
+     "setup_s": 7.78999975636907e-7,
+     "solve_s": 0.21779910799997992,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      31,
+      30,
+      31,
+      30,
+      31,
+      31,
+      30,
+      31
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.1613929793442854e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 6.379999888395105e-7,
+     "solve_s": 0.2228850859999909,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      31,
+      30,
+      31,
+      30,
+      31,
+      31,
+      30,
+      31
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.1613929793442854e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 4.830000079891761e-7,
+     "solve_s": 0.2089993609999965,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      31,
+      30,
+      31,
+      30,
+      31,
+      31,
+      30,
+      31
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.1613929793442854e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 86.5078125
+  },
+  {
+   "case": "three_big",
+   "method": "within",
+   "rows": 1000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    100000,
+    83333,
+    62500
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.029910390000026155,
+     "setup_s": 0.017021726999985276,
+     "solve_s": 0.39184172800000283,
+     "route": "within_base",
+     "iters": [
+      25,
+      25
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.667565986375385e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.000001819000004843474,
+     "solve_s": 0.37040666699999747,
+     "route": "within_base",
+     "iters": [
+      25,
+      25
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.667565986375385e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 6.500000040432496e-7,
+     "solve_s": 0.33935790800001087,
+     "route": "within_base",
+     "iters": [
+      25,
+      25
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.667565986375385e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 268.60546875
+  },
+  {
+   "case": "three_big",
+   "method": "native_plain",
+   "rows": 1000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    100000,
+    83333,
+    62500
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.07736949599998866,
+     "setup_s": 0.0000016919999836773059,
+     "solve_s": 0.5318767549999848,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      31,
+      31
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.592019813249871e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 8.509999815942138e-7,
+     "solve_s": 0.5191843769999878,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      31,
+      31
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.590951668234495e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 5.290000046898058e-7,
+     "solve_s": 0.5334599250000167,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      31,
+      31
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.590951668234495e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 227.15234375
+  },
+  {
+   "case": "three_big",
+   "method": "native_auto",
+   "rows": 1000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    100000,
+    83333,
+    62500
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.16728528999999526,
+     "setup_s": 0.0000014489999955458188,
+     "solve_s": 0.5633312710000098,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      31,
+      31
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.592019813249871e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 7.520000053773401e-7,
+     "solve_s": 0.5304905190000113,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      31,
+      31
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.592019813249871e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 5.869999881724652e-7,
+     "solve_s": 0.5397702190000189,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      31,
+      31
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.592019813249871e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 238.49609375
+  },
+  {
+   "case": "three_big",
+   "method": "within",
+   "rows": 1000000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    100000,
+    83333,
+    62500
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.029783922999996548,
+     "setup_s": 0.017618252999994866,
+     "solve_s": 1.5000447939999901,
+     "route": "within_base",
+     "iters": [
+      25,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.667565986375385e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 8.290000153010624e-7,
+     "solve_s": 1.511957424000002,
+     "route": "within_base",
+     "iters": [
+      25,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.667565986375385e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 7.669999888548773e-7,
+     "solve_s": 1.411162193999985,
+     "route": "within_base",
+     "iters": [
+      25,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.667565986375385e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 521.93359375
+  },
+  {
+   "case": "three_big",
+   "method": "native_plain",
+   "rows": 1000000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    100000,
+    83333,
+    62500
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.07907190800000308,
+     "setup_s": 0.000001905999994278318,
+     "solve_s": 2.1000507260000063,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      31,
+      31,
+      31,
+      31,
+      30,
+      31,
+      31,
+      31
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.573885667444373e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.0000010520000159885967,
+     "solve_s": 2.1115604359999907,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      31,
+      31,
+      31,
+      31,
+      30,
+      31,
+      31,
+      31
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.573885667444373e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 6.730000166044192e-7,
+     "solve_s": 2.1113184029999843,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      31,
+      31,
+      31,
+      31,
+      30,
+      31,
+      31,
+      31
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.573885667444373e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 379.62890625
+  },
+  {
+   "case": "three_big",
+   "method": "native_auto",
+   "rows": 1000000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    100000,
+    83333,
+    62500
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.22937951299999781,
+     "setup_s": 0.0000014379999981883884,
+     "solve_s": 2.1147036769999943,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      31,
+      31,
+      31,
+      31,
+      30,
+      31,
+      31,
+      31
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.573885667444373e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.0000011329999836107163,
+     "solve_s": 2.0841590039999858,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      31,
+      31,
+      31,
+      31,
+      30,
+      31,
+      31,
+      31
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.573885667444373e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 6.709999809118017e-7,
+     "solve_s": 2.1007901099999913,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      31,
+      31,
+      31,
+      31,
+      30,
+      31,
+      31,
+      31
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.573885667444373e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 391.35546875
+  },
+  {
+   "case": "weak_links",
+   "method": "within",
+   "rows": 120000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    9984,
+    7488
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.0022806589999788685,
+     "setup_s": 0.0011082729999998264,
+     "solve_s": 0.12130065200000217,
+     "route": "within_base",
+     "iters": [
+      31,
+      31
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.7078565405688863e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 5.459999954382511e-7,
+     "solve_s": 0.04703618700000334,
+     "route": "within_base",
+     "iters": [
+      23,
+      23
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.38537968565611e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 5.419999808964349e-7,
+     "solve_s": 0.04652102099998956,
+     "route": "within_base",
+     "iters": [
+      23,
+      23
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.38537968565611e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 89.37890625
+  },
+  {
+   "case": "weak_links",
+   "method": "native_plain",
+   "rows": 120000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    9984,
+    7488
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.006243447999992213,
+     "setup_s": 8.65000004068861e-7,
+     "solve_s": 0.15966914300000212,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      36,
+      27
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.8423748118152135e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 4.460000013750687e-7,
+     "solve_s": 0.08252573999999413,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      27,
+      27
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 5.452957149058186e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 3.769999921132694e-7,
+     "solve_s": 0.09065595100000223,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      27,
+      27
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 5.452957149058186e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 88.30859375
+  },
+  {
+   "case": "weak_links",
+   "method": "native_auto",
+   "rows": 120000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    9984,
+    7488
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.009137934000023051,
+     "setup_s": 0.0000010779999968235643,
+     "solve_s": 0.15665320100001168,
+     "route": "within",
+     "n_cells": 117243,
+     "iters": [
+      36,
+      27
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.8423748118152135e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 6.270000199037895e-7,
+     "solve_s": 0.08167432700000177,
+     "route": "within",
+     "n_cells": 117243,
+     "iters": [
+      27,
+      27
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 5.452957149058186e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 3.099999901223782e-7,
+     "solve_s": 0.08166932200001042,
+     "route": "within",
+     "n_cells": 117243,
+     "iters": [
+      27,
+      27
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 5.452957149058186e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 89.1875
+  },
+  {
+   "case": "weak_links",
+   "method": "within",
+   "rows": 120000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    9984,
+    7488
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.0017321480000020983,
+     "setup_s": 0.0010321519999934026,
+     "solve_s": 0.2839225130000216,
+     "route": "within_base",
+     "iters": [
+      31,
+      31,
+      30,
+      30,
+      30,
+      30,
+      30,
+      30
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 5.000209465606466e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 9.629999908611353e-7,
+     "solve_s": 0.189543126000018,
+     "route": "within_base",
+     "iters": [
+      23,
+      23,
+      23,
+      23,
+      23,
+      23,
+      23,
+      23
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.38537968565611e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 6.199999802447564e-7,
+     "solve_s": 0.1904368729999817,
+     "route": "within_base",
+     "iters": [
+      23,
+      23,
+      23,
+      23,
+      23,
+      23,
+      23,
+      23
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.38537968565611e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 124.609375
+  },
+  {
+   "case": "weak_links",
+   "method": "native_plain",
+   "rows": 120000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    9984,
+    7488
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.005518397000003006,
+     "setup_s": 7.630000027347705e-7,
+     "solve_s": 0.404784047999982,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      36,
+      27,
+      27,
+      27,
+      27,
+      27,
+      27,
+      27
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 5.03684140266411e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 9.219999981269211e-7,
+     "solve_s": 0.3359625760000142,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      27,
+      27,
+      27,
+      27,
+      27,
+      27,
+      27,
+      27
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 5.452957149058186e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 5.939999994097889e-7,
+     "solve_s": 0.33845622000001185,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      27,
+      27,
+      27,
+      27,
+      27,
+      27,
+      27,
+      27
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 5.452957149058186e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 99.37109375
+  },
+  {
+   "case": "weak_links",
+   "method": "native_auto",
+   "rows": 120000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    9984,
+    7488
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.008016943999990644,
+     "setup_s": 8.460000060495076e-7,
+     "solve_s": 0.4012436280000031,
+     "route": "within",
+     "n_cells": 117243,
+     "iters": [
+      36,
+      27,
+      27,
+      27,
+      27,
+      27,
+      27,
+      27
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 5.03684140266411e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 9.830000067267974e-7,
+     "solve_s": 0.33186310300001765,
+     "route": "within",
+     "n_cells": 117243,
+     "iters": [
+      27,
+      27,
+      27,
+      27,
+      27,
+      27,
+      27,
+      27
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 5.452957149058186e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 6.340000027194037e-7,
+     "solve_s": 0.3304141239999865,
+     "route": "within",
+     "n_cells": 117243,
+     "iters": [
+      27,
+      27,
+      27,
+      27,
+      27,
+      27,
+      27,
+      27
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 5.452957149058186e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 102.37890625
+  },
+  {
+   "case": "weak_links",
+   "method": "within",
+   "rows": 1000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    83328,
+    62496
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.02453712100000871,
+     "setup_s": 0.014530832999980703,
+     "solve_s": 1.9338577949999944,
+     "route": "within_base",
+     "iters": [
+      29,
+      29
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 4.2499896810661056e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.0000010789999862481636,
+     "solve_s": 0.6171730800000148,
+     "route": "within_base",
+     "iters": [
+      22,
+      22
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.8865153870606635e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 8.530000172868313e-7,
+     "solve_s": 0.6059111049999899,
+     "route": "within_base",
+     "iters": [
+      22,
+      22
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.8865153870606635e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 518.53515625
+  },
+  {
+   "case": "weak_links",
+   "method": "native_plain",
+   "rows": 1000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    83328,
+    62496
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.0630117579999876,
+     "setup_s": 0.000001526000005469541,
+     "solve_s": 2.4923970900000256,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      34,
+      26
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 5.756198749118307e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 5.809999947814504e-7,
+     "solve_s": 1.298544272000015,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      27,
+      26
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 5.7561987478800776e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 5.129999749442504e-7,
+     "solve_s": 1.2541100020000044,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      27,
+      26
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 5.7561987478800776e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 505.7734375
+  },
+  {
+   "case": "weak_links",
+   "method": "native_auto",
+   "rows": 1000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    83328,
+    62496
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.11341160500001024,
+     "setup_s": 0.0000016269999889573228,
+     "solve_s": 2.4872049230000073,
+     "route": "within",
+     "n_cells": 997071,
+     "iters": [
+      34,
+      26
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 5.7561987478800776e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 9.35999992179859e-7,
+     "solve_s": 1.2606821669999988,
+     "route": "within",
+     "n_cells": 997071,
+     "iters": [
+      27,
+      26
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 5.7561987478800776e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 5.349999980808207e-7,
+     "solve_s": 1.258520199000003,
+     "route": "within",
+     "n_cells": 997071,
+     "iters": [
+      27,
+      26
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 5.7561987478800776e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 517.28515625
+  },
+  {
+   "case": "weak_links",
+   "method": "within",
+   "rows": 1000000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    83328,
+    62496
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.02100321399998961,
+     "setup_s": 0.01440003600001205,
+     "solve_s": 3.895964926000005,
+     "route": "within_base",
+     "iters": [
+      29,
+      29,
+      29,
+      29,
+      29,
+      28,
+      29,
+      29
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 4.870151647328039e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.0000013760000001639128,
+     "solve_s": 2.5333588009999914,
+     "route": "within_base",
+     "iters": [
+      22,
+      22,
+      22,
+      22,
+      21,
+      21,
+      22,
+      22
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 5.904441863143505e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 5.33000019231622e-7,
+     "solve_s": 2.5350517579999803,
+     "route": "within_base",
+     "iters": [
+      22,
+      22,
+      22,
+      22,
+      21,
+      21,
+      22,
+      22
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 5.904441863143505e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 717.5
+  },
+  {
+   "case": "weak_links",
+   "method": "native_plain",
+   "rows": 1000000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    83328,
+    62496
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.05865418299998737,
+     "setup_s": 0.0000014949999922464485,
+     "solve_s": 6.304712692999999,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      34,
+      26,
+      26,
+      26,
+      26,
+      26,
+      26,
+      26
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 5.7561987478800776e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 8.769999908508908e-7,
+     "solve_s": 5.042418150000003,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      27,
+      26,
+      26,
+      26,
+      26,
+      26,
+      26,
+      26
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 5.7561987478800776e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 7.479999908355239e-7,
+     "solve_s": 5.094527272999983,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      27,
+      26,
+      26,
+      26,
+      26,
+      26,
+      26,
+      26
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 5.7561987478800776e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 601.33984375
+  },
+  {
+   "case": "weak_links",
+   "method": "native_auto",
+   "rows": 1000000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    83328,
+    62496
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.1070812240000123,
+     "setup_s": 0.0000013530000160244526,
+     "solve_s": 6.272043012000012,
+     "route": "within",
+     "n_cells": 997071,
+     "iters": [
+      34,
+      26,
+      26,
+      26,
+      26,
+      26,
+      26,
+      26
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 5.7561987478800776e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 7.710000033966935e-7,
+     "solve_s": 5.000698698999997,
+     "route": "within",
+     "n_cells": 997071,
+     "iters": [
+      27,
+      26,
+      26,
+      26,
+      26,
+      26,
+      26,
+      26
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 5.7561987478800776e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 6.189999908201571e-7,
+     "solve_s": 5.027591090000016,
+     "route": "within",
+     "n_cells": 997071,
+     "iters": [
+      27,
+      26,
+      26,
+      26,
+      26,
+      26,
+      26,
+      26
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 5.7561987478800776e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 608.8984375
+  },
+  {
+   "case": "hub",
+   "method": "within",
+   "rows": 120000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    12000,
+    5000,
+    16
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.0023560660000043754,
+     "setup_s": 0.0015758199999993394,
+     "solve_s": 0.023996597000007114,
+     "route": "within_base",
+     "iters": [
+      17,
+      17
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.4327463111675956e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 9.790000206066907e-7,
+     "solve_s": 0.020563635999991448,
+     "route": "within_base",
+     "iters": [
+      17,
+      17
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.4327463111675956e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 3.8900000731700857e-7,
+     "solve_s": 0.02076916999999412,
+     "route": "within_base",
+     "iters": [
+      17,
+      17
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.4327463111675956e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 69.546875
+  },
+  {
+   "case": "hub",
+   "method": "native_plain",
+   "rows": 120000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    12000,
+    5000,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.007851818000006006,
+     "setup_s": 8.30999994150261e-7,
+     "solve_s": 0.03730516500002068,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      22,
+      21
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.3527537057698846e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 9.979999902043346e-7,
+     "solve_s": 0.03466527800000563,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      22,
+      21
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.3527537057698846e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 3.480000145827944e-7,
+     "solve_s": 0.033804310999983045,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      22,
+      21
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.3527537057698846e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 66.53515625
+  },
+  {
+   "case": "hub",
+   "method": "native_auto",
+   "rows": 120000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    12000,
+    5000,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.011538022999985742,
+     "setup_s": 0.0000010480000014467805,
+     "solve_s": 0.03683947499999363,
+     "route": "within",
+     "n_cells": 119545,
+     "iters": [
+      22,
+      21
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.3527537057698846e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 7.350000146288949e-7,
+     "solve_s": 0.03409767000002262,
+     "route": "within",
+     "n_cells": 119545,
+     "iters": [
+      22,
+      21
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.3527537057698846e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 3.680000020267471e-7,
+     "solve_s": 0.0337052189999838,
+     "route": "within",
+     "n_cells": 119545,
+     "iters": [
+      22,
+      21
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.3527537057698846e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 67.55859375
+  },
+  {
+   "case": "hub",
+   "method": "within",
+   "rows": 120000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    12000,
+    5000,
+    16
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.002071478000004845,
+     "setup_s": 0.0014990290000014284,
+     "solve_s": 0.09309129199999688,
+     "route": "within_base",
+     "iters": [
+      17,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.4327463111675956e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 8.909999849038286e-7,
+     "solve_s": 0.08619859500001326,
+     "route": "within_base",
+     "iters": [
+      17,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.4327463111675956e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 5.919999921388808e-7,
+     "solve_s": 0.08607202499999289,
+     "route": "within_base",
+     "iters": [
+      17,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.4327463111675956e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 99.9140625
+  },
+  {
+   "case": "hub",
+   "method": "native_plain",
+   "rows": 120000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    12000,
+    5000,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.00714408600001093,
+     "setup_s": 0.0000010640000027706265,
+     "solve_s": 0.14223199599999248,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      22,
+      21,
+      21,
+      20,
+      21,
+      21,
+      21,
+      21
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.919561268146123e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 6.890000179282652e-7,
+     "solve_s": 0.13914910399998348,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      22,
+      21,
+      21,
+      20,
+      21,
+      21,
+      21,
+      21
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.919561268146123e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 5.160000000614673e-7,
+     "solve_s": 0.14410987499999806,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      22,
+      21,
+      21,
+      20,
+      21,
+      21,
+      21,
+      21
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.919561268146123e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 84.41015625
+  },
+  {
+   "case": "hub",
+   "method": "native_auto",
+   "rows": 120000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    12000,
+    5000,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.010969696000017848,
+     "setup_s": 0.0000011620000179846102,
+     "solve_s": 0.14029009600000109,
+     "route": "within",
+     "n_cells": 119545,
+     "iters": [
+      22,
+      21,
+      21,
+      20,
+      21,
+      21,
+      21,
+      21
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.919561268146123e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 6.9500001131928e-7,
+     "solve_s": 0.13877517700001363,
+     "route": "within",
+     "n_cells": 119545,
+     "iters": [
+      22,
+      21,
+      21,
+      20,
+      21,
+      21,
+      21,
+      21
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.919561268146123e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 5.530000066755747e-7,
+     "solve_s": 0.13717407499999013,
+     "route": "within",
+     "n_cells": 119545,
+     "iters": [
+      22,
+      21,
+      21,
+      20,
+      21,
+      21,
+      21,
+      21
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.919561268146123e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 85.859375
+  },
+  {
+   "case": "hub",
+   "method": "within",
+   "rows": 1000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    100000,
+    41666,
+    16
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.027001710000007506,
+     "setup_s": 0.015779734000005874,
+     "solve_s": 0.23912623000001076,
+     "route": "within_base",
+     "iters": [
+      18,
+      17
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.8187892135446826e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 7.429999868691084e-7,
+     "solve_s": 0.21051704300001006,
+     "route": "within_base",
+     "iters": [
+      18,
+      17
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.8187892135446826e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 6.890000179282652e-7,
+     "solve_s": 0.2077110670000195,
+     "route": "within_base",
+     "iters": [
+      18,
+      17
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.8187892135446826e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 251.3828125
+  },
+  {
+   "case": "hub",
+   "method": "native_plain",
+   "rows": 1000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    100000,
+    41666,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.07494907299999909,
+     "setup_s": 0.0000015470000107598025,
+     "solve_s": 0.3263068189999956,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      22,
+      21
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.6681753560853436e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 7.909999908406462e-7,
+     "solve_s": 0.3118940440000131,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      22,
+      21
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.6681753560853436e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 5.670000007285125e-7,
+     "solve_s": 0.31071162800000707,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      22,
+      21
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.6681753560853436e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 220.0703125
+  },
+  {
+   "case": "hub",
+   "method": "native_auto",
+   "rows": 1000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    100000,
+    41666,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.13144322399998032,
+     "setup_s": 0.0000014660000147159735,
+     "solve_s": 0.32418593900001724,
+     "route": "within",
+     "n_cells": 999571,
+     "iters": [
+      22,
+      21
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.6681753560853436e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 8.04999984893584e-7,
+     "solve_s": 0.30376291700000024,
+     "route": "within",
+     "n_cells": 999571,
+     "iters": [
+      22,
+      21
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.6681753560853436e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 5.500000099800673e-7,
+     "solve_s": 0.30405547300000535,
+     "route": "within",
+     "n_cells": 999571,
+     "iters": [
+      22,
+      21
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.6681753560853436e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 231.7421875
+  },
+  {
+   "case": "hub",
+   "method": "within",
+   "rows": 1000000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    100000,
+    41666,
+    16
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.02394324600001596,
+     "setup_s": 0.014818998999999167,
+     "solve_s": 0.8841332849999901,
+     "route": "within_base",
+     "iters": [
+      18,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.8187892135446826e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 8.529999888651218e-7,
+     "solve_s": 0.838417770999996,
+     "route": "within_base",
+     "iters": [
+      18,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.8187892135446826e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 6.639999980961875e-7,
+     "solve_s": 0.8482700639999905,
+     "route": "within_base",
+     "iters": [
+      18,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.8187892135446826e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 472.99609375
+  },
+  {
+   "case": "hub",
+   "method": "native_plain",
+   "rows": 1000000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    100000,
+    41666,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.07018810499999972,
+     "setup_s": 0.0000015560000008463248,
+     "solve_s": 1.2754507330000138,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      22,
+      21,
+      21,
+      21,
+      21,
+      21,
+      21,
+      21
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.6681753560853436e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 6.149999762783409e-7,
+     "solve_s": 1.247840043999986,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      22,
+      21,
+      21,
+      21,
+      21,
+      21,
+      21,
+      21
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.6681753560853436e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 7.060000086767104e-7,
+     "solve_s": 1.2453906480000114,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      22,
+      21,
+      21,
+      21,
+      21,
+      21,
+      21,
+      21
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.6681753560853436e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 372.6640625
+  },
+  {
+   "case": "hub",
+   "method": "native_auto",
+   "rows": 1000000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    100000,
+    41666,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.13077850299998772,
+     "setup_s": 0.0000016259999995327235,
+     "solve_s": 1.2535506270000099,
+     "route": "within",
+     "n_cells": 999571,
+     "iters": [
+      22,
+      21,
+      21,
+      21,
+      21,
+      21,
+      21,
+      21
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.6681753560853436e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 8.529999888651218e-7,
+     "solve_s": 1.2418763089999914,
+     "route": "within",
+     "n_cells": 999571,
+     "iters": [
+      22,
+      21,
+      21,
+      21,
+      21,
+      21,
+      21,
+      21
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.6681753560853436e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 0.0000011480000239316723,
+     "solve_s": 1.247072275999983,
+     "route": "within",
+     "n_cells": 999571,
+     "iters": [
+      22,
+      21,
+      21,
+      21,
+      21,
+      21,
+      21,
+      21
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.6681753560853436e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 384.18359375
+  },
+  {
+   "case": "repeated_cells",
+   "method": "within",
+   "rows": 120000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    5000,
+    2500,
+    32
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.00256236299998136,
+     "setup_s": 0.0011737099999891143,
+     "solve_s": 0.04269478000000504,
+     "route": "within_base",
+     "iters": [
+      37,
+      36
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 4.083931830770806e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 9.399999782999657e-7,
+     "solve_s": 0.04035674200000017,
+     "route": "within_base",
+     "iters": [
+      37,
+      36
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 4.083931830770806e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 4.81000000718268e-7,
+     "solve_s": 0.04033687399999053,
+     "route": "within_base",
+     "iters": [
+      37,
+      36
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 4.083931830770806e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 67.58984375
+  },
+  {
+   "case": "repeated_cells",
+   "method": "native_plain",
+   "rows": 120000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    5000,
+    2500,
+    32
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.007742231000008815,
+     "setup_s": 9.469999895372894e-7,
+     "solve_s": 0.062116260999999895,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      46,
+      44
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 4.786659803402977e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 6.649999875207868e-7,
+     "solve_s": 0.05934961600001998,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      46,
+      44
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 4.786659803402977e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 4.380000007131457e-7,
+     "solve_s": 0.05932438700000375,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      46,
+      44
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 4.786659803402977e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 65.25390625
+  },
+  {
+   "case": "repeated_cells",
+   "method": "native_auto",
+   "rows": 120000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    5000,
+    2500,
+    32
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.007230332999995426,
+     "setup_s": 6.390000066858192e-7,
+     "solve_s": 0.018311584000002767,
+     "route": "compressed_within",
+     "n_cells": 15000,
+     "iters": [
+      48,
+      47
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.0315573176164168e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 8.099999888599996e-7,
+     "solve_s": 0.017229248999996116,
+     "route": "compressed_within",
+     "n_cells": 15000,
+     "iters": [
+      48,
+      47
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.0315573176164168e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 3.7800000995957816e-7,
+     "solve_s": 0.016439058000003115,
+     "route": "compressed_within",
+     "n_cells": 15000,
+     "iters": [
+      48,
+      47
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.0315573176164168e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 61.94921875
+  },
+  {
+   "case": "repeated_cells",
+   "method": "within",
+   "rows": 120000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    5000,
+    2500,
+    32
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.0019173169999930906,
+     "setup_s": 0.001168611999986524,
+     "solve_s": 0.16747547200000668,
+     "route": "within_base",
+     "iters": [
+      37,
+      36,
+      36,
+      36,
+      37,
+      36,
+      36,
+      37
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 4.4732712962637185e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 9.160000047359063e-7,
+     "solve_s": 0.16265379099999677,
+     "route": "within_base",
+     "iters": [
+      37,
+      36,
+      36,
+      36,
+      37,
+      36,
+      36,
+      37
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 4.4732712962637185e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 5.109999960950518e-7,
+     "solve_s": 0.16193925999999692,
+     "route": "within_base",
+     "iters": [
+      37,
+      36,
+      36,
+      36,
+      37,
+      36,
+      36,
+      37
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 4.4732712962637185e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 96.234375
+  },
+  {
+   "case": "repeated_cells",
+   "method": "native_plain",
+   "rows": 120000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    5000,
+    2500,
+    32
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.006698197000019945,
+     "setup_s": 8.610000179487542e-7,
+     "solve_s": 0.24576999200002092,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      46,
+      44,
+      45,
+      45,
+      45,
+      44,
+      45,
+      45
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 4.85042761791536e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 8.479999848987063e-7,
+     "solve_s": 0.24824016499999857,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      46,
+      44,
+      45,
+      45,
+      45,
+      44,
+      45,
+      45
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 4.85042761791536e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 6.109999901582341e-7,
+     "solve_s": 0.2544069850000028,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      46,
+      44,
+      45,
+      45,
+      45,
+      44,
+      45,
+      45
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 4.85042761791536e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 83.54296875
+  },
+  {
+   "case": "repeated_cells",
+   "method": "native_auto",
+   "rows": 120000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    5000,
+    2500,
+    32
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.0062765950000027715,
+     "setup_s": 6.040000073426199e-7,
+     "solve_s": 0.06952799999999115,
+     "route": "compressed_within",
+     "n_cells": 15000,
+     "iters": [
+      48,
+      47,
+      47,
+      47,
+      47,
+      47,
+      47,
+      47
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.2436843646834055e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 6.360000099903118e-7,
+     "solve_s": 0.06852141400000278,
+     "route": "compressed_within",
+     "n_cells": 15000,
+     "iters": [
+      48,
+      47,
+      47,
+      47,
+      47,
+      47,
+      47,
+      47
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.2436843646834055e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 5.729999941195274e-7,
+     "solve_s": 0.06879462499998112,
+     "route": "compressed_within",
+     "n_cells": 15000,
+     "iters": [
+      48,
+      47,
+      47,
+      47,
+      47,
+      47,
+      47,
+      47
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.2436843646834055e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 78.15625
+  },
+  {
+   "case": "repeated_cells",
+   "method": "within",
+   "rows": 1000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    41666,
+    20833,
+    32
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.02689111700001945,
+     "setup_s": 0.014934095999990404,
+     "solve_s": 0.3884978290000163,
+     "route": "within_base",
+     "iters": [
+      37,
+      36
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.1233834687099186e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.0000011010000093847339,
+     "solve_s": 0.37473092100000827,
+     "route": "within_base",
+     "iters": [
+      37,
+      36
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.1233834687099186e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 5.839999914769578e-7,
+     "solve_s": 0.37103963100000215,
+     "route": "within_base",
+     "iters": [
+      37,
+      36
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.1233834687099186e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 241.375
+  },
+  {
+   "case": "repeated_cells",
+   "method": "native_plain",
+   "rows": 1000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    41666,
+    20833,
+    32
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.07332266800000298,
+     "setup_s": 0.0000014599999929032492,
+     "solve_s": 0.5248914090000198,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      45,
+      44
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.809272649353489e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 8.769999908508908e-7,
+     "solve_s": 0.5079081739999936,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      45,
+      44
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.809272649353489e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 5.07000009974945e-7,
+     "solve_s": 0.5103704240000013,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      45,
+      44
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.809272649353489e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 214.296875
+  },
+  {
+   "case": "repeated_cells",
+   "method": "native_auto",
+   "rows": 1000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    41666,
+    20833,
+    32
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.08079078399998707,
+     "setup_s": 0.0000017510000134279835,
+     "solve_s": 0.16242902700000172,
+     "route": "compressed_within",
+     "n_cells": 125000,
+     "iters": [
+      47,
+      46
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.2167423772318267e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 8.330000014211691e-7,
+     "solve_s": 0.15353131699998812,
+     "route": "compressed_within",
+     "n_cells": 125000,
+     "iters": [
+      47,
+      46
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.2167423772318267e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 4.919999980756984e-7,
+     "solve_s": 0.15470787699999278,
+     "route": "compressed_within",
+     "n_cells": 125000,
+     "iters": [
+      47,
+      46
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.2167423772318267e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 185.99609375
+  },
+  {
+   "case": "repeated_cells",
+   "method": "within",
+   "rows": 1000000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    41666,
+    20833,
+    32
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.022350251000005983,
+     "setup_s": 0.014739415999997618,
+     "solve_s": 1.5169446509999887,
+     "route": "within_base",
+     "iters": [
+      37,
+      36,
+      36,
+      36,
+      36,
+      36,
+      36,
+      36
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.2146596386647066e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.0000010400000007848575,
+     "solve_s": 1.4938427980000029,
+     "route": "within_base",
+     "iters": [
+      37,
+      36,
+      36,
+      36,
+      36,
+      36,
+      36,
+      36
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.2146596386647066e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 6.090000397307449e-7,
+     "solve_s": 1.4650830100000007,
+     "route": "within_base",
+     "iters": [
+      37,
+      36,
+      36,
+      36,
+      36,
+      36,
+      36,
+      36
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.2146596386647066e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 450.546875
+  },
+  {
+   "case": "repeated_cells",
+   "method": "native_plain",
+   "rows": 1000000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    41666,
+    20833,
+    32
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.06689465000005157,
+     "setup_s": 0.0000019029999975828105,
+     "solve_s": 2.1189176830000065,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      45,
+      44,
+      44,
+      44,
+      44,
+      44,
+      44,
+      44
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.983566142800057e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 8.390000516556029e-7,
+     "solve_s": 2.069417981000015,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      45,
+      44,
+      44,
+      44,
+      44,
+      44,
+      44,
+      44
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.983566142800057e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 6.080000503061456e-7,
+     "solve_s": 2.061854439000001,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      45,
+      44,
+      44,
+      44,
+      44,
+      44,
+      44,
+      44
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.983566142800057e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 377.3359375
+  },
+  {
+   "case": "repeated_cells",
+   "method": "native_auto",
+   "rows": 1000000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    41666,
+    20833,
+    32
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.07368571099999599,
+     "setup_s": 0.0000014679999935651722,
+     "solve_s": 0.6248151500000176,
+     "route": "compressed_within",
+     "n_cells": 125000,
+     "iters": [
+      47,
+      46,
+      46,
+      46,
+      46,
+      46,
+      46,
+      46
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.2776491162346676e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 8.569999749852286e-7,
+     "solve_s": 0.6192887720000044,
+     "route": "compressed_within",
+     "n_cells": 125000,
+     "iters": [
+      47,
+      46,
+      46,
+      46,
+      46,
+      46,
+      46,
+      46
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.2776491162346676e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 6.090000397307449e-7,
+     "solve_s": 0.6152513870000007,
+     "route": "compressed_within",
+     "n_cells": 125000,
+     "iters": [
+      47,
+      46,
+      46,
+      46,
+      46,
+      46,
+      46,
+      46
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 1.2776491162346676e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 323.13671875
+  },
+  {
+   "case": "reweight",
+   "method": "within",
+   "rows": 120000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    15000,
+    10000,
+    16
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.0029061939999905917,
+     "setup_s": 0.0015387249999889718,
+     "solve_s": 0.03311903200000188,
+     "route": "within_base",
+     "iters": [
+      24,
+      24
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.518798542754341e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.0007847659999811185,
+     "solve_s": 0.02997249399999191,
+     "route": "within_base",
+     "iters": [
+      24,
+      24
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.420179663125119e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 0.0008253320000335407,
+     "solve_s": 0.02927686900000026,
+     "route": "within_base",
+     "iters": [
+      25,
+      24
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.571559069009649e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 72.45703125
+  },
+  {
+   "case": "reweight",
+   "method": "native_plain",
+   "rows": 120000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    15000,
+    10000,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.007759520000035991,
+     "setup_s": 3.989999868281302e-7,
+     "solve_s": 0.05278808799999979,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      30,
+      30
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.7975426117014744e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.0051592899999945985,
+     "solve_s": 0.04763994899997215,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      30,
+      30
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.9285901434349826e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 0.003963608000049135,
+     "solve_s": 0.047651622000046245,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      30,
+      30
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.421052965634889e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 71.390625
+  },
+  {
+   "case": "reweight",
+   "method": "native_auto",
+   "rows": 120000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    15000,
+    10000,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.011868129000049521,
+     "setup_s": 3.34000048951566e-7,
+     "solve_s": 0.054246888000022864,
+     "route": "within",
+     "n_cells": 119997,
+     "iters": [
+      30,
+      30
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.7975426117014744e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.00518943899999158,
+     "solve_s": 0.048989976000029856,
+     "route": "within",
+     "n_cells": 119997,
+     "iters": [
+      30,
+      30
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.9285901434349826e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 0.00400899499999241,
+     "solve_s": 0.0475738850000198,
+     "route": "within",
+     "n_cells": 119997,
+     "iters": [
+      30,
+      30
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.421052965634889e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 72.6171875
+  },
+  {
+   "case": "reweight",
+   "method": "within",
+   "rows": 120000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    15000,
+    10000,
+    16
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.0021532779999802187,
+     "setup_s": 0.0016362529999582875,
+     "solve_s": 0.12800508300000502,
+     "route": "within_base",
+     "iters": [
+      24,
+      24,
+      23,
+      24,
+      24,
+      24,
+      24,
+      24
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.8845977593755415e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.0008928409999953146,
+     "solve_s": 0.12288272599994343,
+     "route": "within_base",
+     "iters": [
+      24,
+      24,
+      24,
+      24,
+      24,
+      24,
+      24,
+      24
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.5326105613561626e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 0.0008401100000128281,
+     "solve_s": 0.12166721300002337,
+     "route": "within_base",
+     "iters": [
+      25,
+      24,
+      24,
+      24,
+      24,
+      24,
+      24,
+      24
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.7867526579647506e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 103.140625
+  },
+  {
+   "case": "reweight",
+   "method": "native_plain",
+   "rows": 120000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    15000,
+    10000,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.007531290000031277,
+     "setup_s": 4.810000291399774e-7,
+     "solve_s": 0.21230323899999348,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      30,
+      30,
+      29,
+      30,
+      30,
+      30,
+      30,
+      30
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.1420211961547583e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.005344430999969063,
+     "solve_s": 0.1946764879999705,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      30,
+      30,
+      29,
+      30,
+      30,
+      30,
+      30,
+      30
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.452608074372089e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 0.004198087000020223,
+     "solve_s": 0.19344850900000665,
+     "route": "within",
+     "n_cells": 120000,
+     "iters": [
+      30,
+      30,
+      30,
+      30,
+      30,
+      30,
+      30,
+      30
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.421052965634889e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 87.21875
+  },
+  {
+   "case": "reweight",
+   "method": "native_auto",
+   "rows": 120000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    15000,
+    10000,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.011597493000010672,
+     "setup_s": 6.289999987529882e-7,
+     "solve_s": 0.20964305000001104,
+     "route": "within",
+     "n_cells": 119997,
+     "iters": [
+      30,
+      30,
+      29,
+      30,
+      30,
+      30,
+      30,
+      30
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.1420211961547583e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.005327945000033196,
+     "solve_s": 0.19669843799999853,
+     "route": "within",
+     "n_cells": 119997,
+     "iters": [
+      30,
+      30,
+      29,
+      30,
+      30,
+      30,
+      30,
+      30
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.452608074372089e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 0.0041778269999781514,
+     "solve_s": 0.19277035799996156,
+     "route": "within",
+     "n_cells": 119997,
+     "iters": [
+      30,
+      30,
+      30,
+      30,
+      30,
+      30,
+      30,
+      30
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.421052965634889e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 88.6328125
+  },
+  {
+   "case": "reweight",
+   "method": "within",
+   "rows": 1000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    125000,
+    83333,
+    16
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.02952114800001482,
+     "setup_s": 0.01738482300004307,
+     "solve_s": 0.3245758150000029,
+     "route": "within_base",
+     "iters": [
+      24,
+      23
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.720614355622574e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.008523011000022507,
+     "solve_s": 0.29818718699999636,
+     "route": "within_base",
+     "iters": [
+      24,
+      24
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.0757670262967515e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 0.00877409700001408,
+     "solve_s": 0.29901869700000816,
+     "route": "within_base",
+     "iters": [
+      25,
+      24
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.7113934178146897e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 276.1953125
+  },
+  {
+   "case": "reweight",
+   "method": "native_plain",
+   "rows": 1000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    125000,
+    83333,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.07900495500001625,
+     "setup_s": 6.000000212225132e-7,
+     "solve_s": 0.48607513700000027,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      29,
+      29
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.118187384173863e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.04595867599999792,
+     "solve_s": 0.444442003000006,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      30,
+      29
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.410993780780209e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 0.04057905800004846,
+     "solve_s": 0.4566431410000291,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      30,
+      29
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.446262203368005e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 251.35546875
+  },
+  {
+   "case": "reweight",
+   "method": "native_auto",
+   "rows": 1000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    125000,
+    83333,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.1483266829999934,
+     "setup_s": 7.919999802652455e-7,
+     "solve_s": 0.46834808500000236,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      29,
+      29
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.118187384173863e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.04605924699995967,
+     "solve_s": 0.43779761299998654,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      30,
+      29
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.410993780780209e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 0.04086390399999118,
+     "solve_s": 0.44127810999998474,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      30,
+      29
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.446262203368005e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 274.3046875
+  },
+  {
+   "case": "reweight",
+   "method": "within",
+   "rows": 1000000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    125000,
+    83333,
+    16
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.02406527699997696,
+     "setup_s": 0.0174970190000181,
+     "solve_s": 1.2916270300000292,
+     "route": "within_base",
+     "iters": [
+      24,
+      23,
+      23,
+      24,
+      24,
+      23,
+      23,
+      23
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.9624061051981863e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.00835357099998646,
+     "solve_s": 1.2499805819999779,
+     "route": "within_base",
+     "iters": [
+      24,
+      24,
+      24,
+      24,
+      24,
+      24,
+      24,
+      24
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 2.0757670262967515e-10,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 0.008685889000048519,
+     "solve_s": 1.2364672669999663,
+     "route": "within_base",
+     "iters": [
+      25,
+      24,
+      24,
+      24,
+      24,
+      24,
+      24,
+      23
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.0156209948122457e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 529.28515625
+  },
+  {
+   "case": "reweight",
+   "method": "native_plain",
+   "rows": 1000000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    125000,
+    83333,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.07233670699997674,
+     "setup_s": 6.669999947916949e-7,
+     "solve_s": 1.8163385189999985,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      29,
+      29,
+      29,
+      29,
+      29,
+      29,
+      29,
+      29
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.118187384173863e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.04689139200002046,
+     "solve_s": 1.7669017779999763,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      30,
+      29,
+      29,
+      29,
+      29,
+      29,
+      29,
+      29
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.2355915295679163e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 0.04246336800002837,
+     "solve_s": 1.7812736850000306,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      30,
+      29,
+      29,
+      30,
+      30,
+      29,
+      30,
+      29
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.446262203368005e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 403.94140625
+  },
+  {
+   "case": "reweight",
+   "method": "native_auto",
+   "rows": 1000000,
+   "rhs": 8,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 3,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    125000,
+    83333,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.1395062060000214,
+     "setup_s": 6.930000040483719e-7,
+     "solve_s": 1.8405525820000435,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      29,
+      29,
+      29,
+      29,
+      29,
+      29,
+      29,
+      29
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.118187384173863e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.0454841480000141,
+     "solve_s": 1.793745197000021,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      30,
+      29,
+      29,
+      29,
+      29,
+      29,
+      29,
+      29
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.235589029685448e-12,
+     "valid": true
+    },
+    {
+     "step": 2,
+     "source_setup_s": 0,
+     "setup_s": 0.040448318000017025,
+     "solve_s": 1.7572714890000043,
+     "route": "within",
+     "n_cells": 1000000,
+     "iters": [
+      30,
+      29,
+      29,
+      30,
+      30,
+      29,
+      30,
+      29
+     ],
+     "converged": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+     ],
+     "error": 3.446262203368005e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 411.61328125
+  },
+  {
+   "case": "one_big",
+   "method": "within",
+   "rows": 5000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 2,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    1250000,
+    48,
+    16
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.1729136760000074,
+     "setup_s": 0.08802926399999933,
+     "solve_s": 1.068868253000005,
+     "route": "within_base",
+     "iters": [
+      9,
+      8
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.5217190842849328e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.000001056000030530413,
+     "solve_s": 1.0465185049999945,
+     "route": "within_base",
+     "iters": [
+      9,
+      8
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.5217190842849328e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 1074.90625
+  },
+  {
+   "case": "one_big",
+   "method": "native_plain",
+   "rows": 5000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 2,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    1250000,
+    48,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.4625343809999549,
+     "setup_s": 0.0000016849999724399822,
+     "solve_s": 1.7353191020000054,
+     "route": "within",
+     "n_cells": 5000000,
+     "iters": [
+      11,
+      10
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.488160140895178e-13,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.0000011220000146749953,
+     "solve_s": 1.7218999119999694,
+     "route": "within",
+     "n_cells": 5000000,
+     "iters": [
+      11,
+      10
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.488160140895178e-13,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 942.6875
+  },
+  {
+   "case": "one_big",
+   "method": "native_auto",
+   "rows": 5000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 2,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    1250000,
+    48,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.8777589770000418,
+     "setup_s": 0.0000016179999988708005,
+     "solve_s": 1.7406639759999507,
+     "route": "within",
+     "n_cells": 4990268,
+     "iters": [
+      11,
+      10
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.487924690269841e-13,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.0000011559999961718859,
+     "solve_s": 1.7228320510000117,
+     "route": "within",
+     "n_cells": 4990268,
+     "iters": [
+      11,
+      10
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.488160140895178e-13,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 971.1015625
+  },
+  {
+   "case": "two_big",
+   "method": "within",
+   "rows": 5000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 2,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    625000,
+    416666,
+    16
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.1704602909999835,
+     "setup_s": 0.09169227699999283,
+     "solve_s": 2.959181526000009,
+     "route": "within_base",
+     "iters": [
+      21,
+      20
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.267034309016395e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.0000013850000186721445,
+     "solve_s": 2.949506982999992,
+     "route": "within_base",
+     "iters": [
+      21,
+      20
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.267034309016395e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 1068.171875
+  },
+  {
+   "case": "two_big",
+   "method": "native_plain",
+   "rows": 5000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 2,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    625000,
+    416666,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.45891620300000113,
+     "setup_s": 0.0000015399999711007695,
+     "solve_s": 4.419963786999972,
+     "route": "within",
+     "n_cells": 5000000,
+     "iters": [
+      26,
+      25
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.054653175505596e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 8.690000186106772e-7,
+     "solve_s": 4.409930592000023,
+     "route": "within",
+     "n_cells": 5000000,
+     "iters": [
+      26,
+      25
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.082719781894043e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 911.47265625
+  },
+  {
+   "case": "two_big",
+   "method": "native_auto",
+   "rows": 5000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 2,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    625000,
+    416666,
+    16
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.9827190069999574,
+     "setup_s": 0.0000014839999948890181,
+     "solve_s": 4.438184843999977,
+     "route": "within",
+     "n_cells": 4999997,
+     "iters": [
+      26,
+      25
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.0820166211008177e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.0000010080000265588751,
+     "solve_s": 4.410968656000023,
+     "route": "within",
+     "n_cells": 4999997,
+     "iters": [
+      26,
+      25
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.0890103281242454e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 949.59765625
+  },
+  {
+   "case": "three_big",
+   "method": "within",
+   "rows": 5000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 2,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    500000,
+    416666,
+    312500
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.17136812400002555,
+     "setup_s": 0.09967630199997757,
+     "solve_s": 4.582183928999996,
+     "route": "within_base",
+     "iters": [
+      25,
+      25
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.6631896547120092e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.000001319000034527562,
+     "solve_s": 4.659733549999999,
+     "route": "within_base",
+     "iters": [
+      25,
+      25
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.6631896547120092e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 1055.984375
+  },
+  {
+   "case": "three_big",
+   "method": "native_plain",
+   "rows": 5000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 2,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    500000,
+    416666,
+    312500
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.4682349459999955,
+     "setup_s": 0.000001580999992256693,
+     "solve_s": 6.801483586000018,
+     "route": "within",
+     "n_cells": 5000000,
+     "iters": [
+      30,
+      31
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.2552785956536167e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.0000011679999829539156,
+     "solve_s": 6.787020289999987,
+     "route": "within",
+     "n_cells": 5000000,
+     "iters": [
+      31,
+      30
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.564121368580444e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 926.93359375
+  },
+  {
+   "case": "three_big",
+   "method": "native_auto",
+   "rows": 5000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 2,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    500000,
+    416666,
+    312500
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 1.2038904910000383,
+     "setup_s": 0.0000016270000173790322,
+     "solve_s": 6.890950015000044,
+     "route": "within",
+     "n_cells": 5000000,
+     "iters": [
+      30,
+      31
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.383501305784734e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.0000011590000212891027,
+     "solve_s": 7.030162158999985,
+     "route": "within",
+     "n_cells": 5000000,
+     "iters": [
+      31,
+      31
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.5623175467662197e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 964.7109375
+  },
+  {
+   "case": "weak_links",
+   "method": "within",
+   "rows": 5000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 2,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    416640,
+    312480
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.1355400090000103,
+     "setup_s": 0.07825591499999973,
+     "solve_s": 16.087888547000034,
+     "route": "within_base",
+     "iters": [
+      29,
+      29
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.274530721409242e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.000002147999964563496,
+     "solve_s": 6.207806357999971,
+     "route": "within_base",
+     "iters": [
+      23,
+      23
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 5.646162732966054e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 2385.72265625
+  },
+  {
+   "case": "weak_links",
+   "method": "native_plain",
+   "rows": 5000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 2,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    416640,
+    312480
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.37256490400000075,
+     "setup_s": 0.0000013819999935549276,
+     "solve_s": 25.798757560000013,
+     "route": "within",
+     "n_cells": 5000000,
+     "iters": [
+      36,
+      32
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.180828493684986e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.0000015530000041508174,
+     "solve_s": 16.458938095000008,
+     "route": "within",
+     "n_cells": 5000000,
+     "iters": [
+      31,
+      32
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 7.65056933405561e-13,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 2326.6640625
+  },
+  {
+   "case": "weak_links",
+   "method": "native_auto",
+   "rows": 5000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 2,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    416640,
+    312480
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.856726014000003,
+     "setup_s": 0.000001552000014726218,
+     "solve_s": 25.446725830000048,
+     "route": "within",
+     "n_cells": 4997316,
+     "iters": [
+      36,
+      32
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 1.1808285754099273e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 9.920000252350292e-7,
+     "solve_s": 16.40894706299997,
+     "route": "within",
+     "n_cells": 4997316,
+     "iters": [
+      31,
+      32
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 7.650289215960995e-13,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 2399.34765625
+  },
+  {
+   "case": "repeated_cells",
+   "method": "within",
+   "rows": 5000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 2,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    208333,
+    104166,
+    32
+   ],
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.155662599999971,
+     "setup_s": 0.09029175399996348,
+     "solve_s": 4.308660419000034,
+     "route": "within_base",
+     "iters": [
+      37,
+      36
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.4458009819318213e-10,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.0000011070000027757487,
+     "solve_s": 4.303003022999974,
+     "route": "within_base",
+     "iters": [
+      37,
+      36
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 2.4458009819318213e-10,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 927.31640625
+  },
+  {
+   "case": "repeated_cells",
+   "method": "native_plain",
+   "rows": 5000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 2,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    208333,
+    104166,
+    32
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.4269242259999828,
+     "setup_s": 0.0000016449999975520768,
+     "solve_s": 6.000002407000011,
+     "route": "within",
+     "n_cells": 5000000,
+     "iters": [
+      45,
+      44
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.0887682683734337e-12,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 9.550000186209218e-7,
+     "solve_s": 5.983342916000083,
+     "route": "within",
+     "n_cells": 5000000,
+     "iters": [
+      45,
+      44
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 3.0887677993149607e-12,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 845.3671875
+  },
+  {
+   "case": "repeated_cells",
+   "method": "native_auto",
+   "rows": 5000000,
+   "rhs": 2,
+   "threads": 2,
+   "tol": 1e-10,
+   "reps": 2,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "python": "3.12.15",
+   "dimensions": [
+    208333,
+    104166,
+    32
+   ],
+   "upstream_rev": "fc44282cea6124f5f18bb142908605a656d35a7c",
+   "rounds": [
+    {
+     "step": 0,
+     "source_setup_s": 0.7521831530000327,
+     "setup_s": 0.000001572000087435299,
+     "solve_s": 1.261500020000085,
+     "route": "compressed_within",
+     "n_cells": 625000,
+     "iters": [
+      47,
+      46
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 9.963661237325625e-13,
+     "valid": true
+    },
+    {
+     "step": 1,
+     "source_setup_s": 0,
+     "setup_s": 0.0000010200000133409048,
+     "solve_s": 1.265550511000015,
+     "route": "compressed_within",
+     "n_cells": 625000,
+     "iters": [
+      47,
+      46
+     ],
+     "converged": [
+      true,
+      true
+     ],
+     "error": 9.963657290230156e-13,
+     "valid": true
+    }
+   ],
+   "valid": true,
+   "peak_rss_mb": 667.3671875
+  }
+ ],
+ "exit_status": [
+  "EXIT_STATUS one_big 120000 2 within 0",
+  "EXIT_STATUS one_big 120000 2 native_plain 0",
+  "EXIT_STATUS one_big 120000 2 native_auto 0",
+  "EXIT_STATUS one_big 120000 8 within 0",
+  "EXIT_STATUS one_big 120000 8 native_plain 0",
+  "EXIT_STATUS one_big 120000 8 native_auto 0",
+  "EXIT_STATUS one_big 1000000 2 within 0",
+  "EXIT_STATUS one_big 1000000 2 native_plain 0",
+  "EXIT_STATUS one_big 1000000 2 native_auto 0",
+  "EXIT_STATUS one_big 1000000 8 within 0",
+  "EXIT_STATUS one_big 1000000 8 native_plain 0",
+  "EXIT_STATUS one_big 1000000 8 native_auto 0",
+  "EXIT_STATUS two_big 120000 2 within 0",
+  "EXIT_STATUS two_big 120000 2 native_plain 0",
+  "EXIT_STATUS two_big 120000 2 native_auto 0",
+  "EXIT_STATUS two_big 120000 8 within 0",
+  "EXIT_STATUS two_big 120000 8 native_plain 0",
+  "EXIT_STATUS two_big 120000 8 native_auto 0",
+  "EXIT_STATUS two_big 1000000 2 within 0",
+  "EXIT_STATUS two_big 1000000 2 native_plain 0",
+  "EXIT_STATUS two_big 1000000 2 native_auto 0",
+  "EXIT_STATUS two_big 1000000 8 within 0",
+  "EXIT_STATUS two_big 1000000 8 native_plain 0",
+  "EXIT_STATUS two_big 1000000 8 native_auto 0",
+  "EXIT_STATUS three_big 120000 2 within 0",
+  "EXIT_STATUS three_big 120000 2 native_plain 0",
+  "EXIT_STATUS three_big 120000 2 native_auto 0",
+  "EXIT_STATUS three_big 120000 8 within 0",
+  "EXIT_STATUS three_big 120000 8 native_plain 0",
+  "EXIT_STATUS three_big 120000 8 native_auto 0",
+  "EXIT_STATUS three_big 1000000 2 within 0",
+  "EXIT_STATUS three_big 1000000 2 native_plain 0",
+  "EXIT_STATUS three_big 1000000 2 native_auto 0",
+  "EXIT_STATUS three_big 1000000 8 within 0",
+  "EXIT_STATUS three_big 1000000 8 native_plain 0",
+  "EXIT_STATUS three_big 1000000 8 native_auto 0",
+  "EXIT_STATUS weak_links 120000 2 within 0",
+  "EXIT_STATUS weak_links 120000 2 native_plain 0",
+  "EXIT_STATUS weak_links 120000 2 native_auto 0",
+  "EXIT_STATUS weak_links 120000 8 within 0",
+  "EXIT_STATUS weak_links 120000 8 native_plain 0",
+  "EXIT_STATUS weak_links 120000 8 native_auto 0",
+  "EXIT_STATUS weak_links 1000000 2 within 0",
+  "EXIT_STATUS weak_links 1000000 2 native_plain 0",
+  "EXIT_STATUS weak_links 1000000 2 native_auto 0",
+  "EXIT_STATUS weak_links 1000000 8 within 0",
+  "EXIT_STATUS weak_links 1000000 8 native_plain 0",
+  "EXIT_STATUS weak_links 1000000 8 native_auto 0",
+  "EXIT_STATUS hub 120000 2 within 0",
+  "EXIT_STATUS hub 120000 2 native_plain 0",
+  "EXIT_STATUS hub 120000 2 native_auto 0",
+  "EXIT_STATUS hub 120000 8 within 0",
+  "EXIT_STATUS hub 120000 8 native_plain 0",
+  "EXIT_STATUS hub 120000 8 native_auto 0",
+  "EXIT_STATUS hub 1000000 2 within 0",
+  "EXIT_STATUS hub 1000000 2 native_plain 0",
+  "EXIT_STATUS hub 1000000 2 native_auto 0",
+  "EXIT_STATUS hub 1000000 8 within 0",
+  "EXIT_STATUS hub 1000000 8 native_plain 0",
+  "EXIT_STATUS hub 1000000 8 native_auto 0",
+  "EXIT_STATUS repeated_cells 120000 2 within 0",
+  "EXIT_STATUS repeated_cells 120000 2 native_plain 0",
+  "EXIT_STATUS repeated_cells 120000 2 native_auto 0",
+  "EXIT_STATUS repeated_cells 120000 8 within 0",
+  "EXIT_STATUS repeated_cells 120000 8 native_plain 0",
+  "EXIT_STATUS repeated_cells 120000 8 native_auto 0",
+  "EXIT_STATUS repeated_cells 1000000 2 within 0",
+  "EXIT_STATUS repeated_cells 1000000 2 native_plain 0",
+  "EXIT_STATUS repeated_cells 1000000 2 native_auto 0",
+  "EXIT_STATUS repeated_cells 1000000 8 within 0",
+  "EXIT_STATUS repeated_cells 1000000 8 native_plain 0",
+  "EXIT_STATUS repeated_cells 1000000 8 native_auto 0",
+  "EXIT_STATUS reweight 120000 2 within 0",
+  "EXIT_STATUS reweight 120000 2 native_plain 0",
+  "EXIT_STATUS reweight 120000 2 native_auto 0",
+  "EXIT_STATUS reweight 120000 8 within 0",
+  "EXIT_STATUS reweight 120000 8 native_plain 0",
+  "EXIT_STATUS reweight 120000 8 native_auto 0",
+  "EXIT_STATUS reweight 1000000 2 within 0",
+  "EXIT_STATUS reweight 1000000 2 native_plain 0",
+  "EXIT_STATUS reweight 1000000 2 native_auto 0",
+  "EXIT_STATUS reweight 1000000 8 within 0",
+  "EXIT_STATUS reweight 1000000 8 native_plain 0",
+  "EXIT_STATUS reweight 1000000 8 native_auto 0",
+  "EXIT_STATUS one_big 5000000 2 within 0",
+  "EXIT_STATUS one_big 5000000 2 native_plain 0",
+  "EXIT_STATUS one_big 5000000 2 native_auto 0",
+  "EXIT_STATUS two_big 5000000 2 within 0",
+  "EXIT_STATUS two_big 5000000 2 native_plain 0",
+  "EXIT_STATUS two_big 5000000 2 native_auto 0",
+  "EXIT_STATUS three_big 5000000 2 within 0",
+  "EXIT_STATUS three_big 5000000 2 native_plain 0",
+  "EXIT_STATUS three_big 5000000 2 native_auto 0",
+  "EXIT_STATUS weak_links 5000000 2 within 0",
+  "EXIT_STATUS weak_links 5000000 2 native_plain 0",
+  "EXIT_STATUS weak_links 5000000 2 native_auto 0",
+  "EXIT_STATUS repeated_cells 5000000 2 within 0",
+  "EXIT_STATUS repeated_cells 5000000 2 native_plain 0",
+  "EXIT_STATUS repeated_cells 5000000 2 native_auto 0"
+ ]
+}
