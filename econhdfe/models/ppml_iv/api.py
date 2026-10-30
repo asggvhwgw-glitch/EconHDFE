@@ -88,6 +88,10 @@ def ivppmlhdfe(
     )
 
 
+def _misspecification_robust(inference_config):
+    return inference_config is not None and inference_config.ivppml_misspecification_robust
+
+
 @managed_execution
 def _ivppmlhdfe_arrays(
     y, *, exog, endog, instruments, absorb, offset, exposure, weights, weight_type, vce,
@@ -108,6 +112,7 @@ def _ivppmlhdfe_arrays(
     result = fit_arrays(
         yv, C, E, I, plan, offset=off, true_w=w, weight_kind=wkind, vce=vce, clusters=cluster,
         exog_names=cn, endog_names=en, instrument_names=zn, config=config,
+        misspecification_robust=_misspecification_robust(inference_config),
         warm_start=warm_start, execution_config=execution_config, execution_context=context,
     )
     return _finish_result(result, inference_config, execution_config, t0)
@@ -138,7 +143,9 @@ class IVPPMLHDFE(_ReusableFEModel):
             t0 = perf_counter() if self.execution_config.profile != "off" else None
 
             result = None
-            if self.plan.groups and any(is_heterogeneous_spec_candidate(v) for v in (ccols, ecols, zcols)):
+            robust = _misspecification_robust(self.inference_config)
+            # The estimating-equation sandwich is implemented on the dense path.
+            if not robust and self.plan.groups and any(is_heterogeneous_spec_candidate(v) for v in (ccols, ecols, zcols)):
                 result = fit_structured_dataframe(
                     self.data, y=y, exog=ccols, endog=ecols, instruments=zcols, plan=self.plan,
                     offset=offset, exposure=exposure, weights=weights, weight_type=weight_type,
@@ -167,6 +174,7 @@ class IVPPMLHDFE(_ReusableFEModel):
                 result = fit_arrays(
                     yv, C, E, I, self.plan, offset=off, true_w=w, weight_kind=wkind, vce=vce, clusters=cls,
                     exog_names=cn, endog_names=en, instrument_names=zn, config=self.config,
+                    misspecification_robust=robust,
                     warm_start=warm_start, execution_config=self.execution_config, execution_context=self.context,
                 )
             return _finish_result(result, self.inference_config, self.execution_config, t0)

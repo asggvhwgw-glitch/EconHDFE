@@ -1,7 +1,7 @@
 # Weighted singleton policies
 
-Status: 0.9.2 candidate (developed under the untagged number 0.10.0), based on
-main `33e8efe` (0.9.1).
+Introduced in the 0.9.2 candidate (developed under the untagged number 0.10.0),
+based on main `33e8efe` (0.9.1). Updated for the 0.9.4 IV separation correction.
 This is a sample-policy change, not a new FE solver or a Stata certification.
 The default is `stata_compat`; `unified` is explicit opt-in.
 
@@ -40,12 +40,13 @@ weight magnitude. `pw` sums are not sample counts.
 | Initial all-zero FE levels | Combined with singleton removal/reporting | Separate `separated` reason |
 | `drop_singletons=False` and initial FE-zero clearing | Coupled: initial FE clearing disabled | Independent: FE-zero clearing still enabled when `fe` requested |
 | Ordinary PPML simplex/ReLU | Existing methods | Existing methods; validated numerically, not a new formal certificate |
-| IV-PPML default separation | `fe`, `simplex`, `relu` | `fe` only |
-| Threshold-only `mu` deletion | Existing estimator-specific behavior | Rejected |
+| IV-PPML default separation | `fe` only | `fe` only |
+| Explicit IV-PPML simplex/ReLU/mu | Legacy opt-in with warning | Rejected |
+| Ordinary PPML threshold-only `mu` deletion | Existing estimator-specific behavior | Rejected |
 
 For IV-PPML, `separation=None` (the default) means "the policy default" and is
 stored as given; `IVPPMLConfig.separation_methods` resolves it where it is used
-(`('fe','simplex','relu')` for compatibility, `('fe',)` for unified). A default
+(`('fe',)` in both modes from 0.9.4). A default
 config therefore follows `dataclasses.replace(cfg, singleton_mode=...)` in both
 directions. An explicit tuple is kept and validated against the policy.
 Code queries `config.sample_policy` (`econhdfe.config.SamplePolicy`) rather than
@@ -92,8 +93,9 @@ search over arbitrary FE-only recession directions.
 
 For IV-PPML, ordinary PPML separation on `[D,X]` is not an existence test for
 `Q'W(y-mu)=0`. The regression counterexample `x=(0,0,1,1)`, `y=(1,3,0,0)`,
-`z=(0,4,3,5)` has a finite IV root at intercept=slope=0 although ordinary PPML
-has a diverging slope. Unified IV-PPML accordingly rejects explicit
+`z=(0,2,1,3)` has a unique finite IV root at intercept=slope=0 although ordinary
+PPML has a diverging slope. Both modes now default to FE-only checks;
+compatibility mode warns on an explicit legacy request. Unified IV-PPML rejects explicit
 `simplex`, `relu`, and `mu`; it does not promise finite IV roots in all remaining
 samples. Nonconvergence and rank failures still surface normally.
 
@@ -133,10 +135,9 @@ Frequency-robust meat is `sum(f_i psi_i psi_i')`, not
 `sum(f_i^2 psi_i psi_i')`; clustered scores are aggregated as
 `sum_{i in c} f_i psi_i` before their outer product. Plain PPML now forwards
 both frequency effective N and the `1/sqrt(f_i)` robust-score adjustment to the
-existing covariance layer. The IV-PPML finite-sample convention is unchanged
-(N/(N-1) for robust; subset G/(G-1) for clustering). Unified mode does not
-silently replace these estimator-specific VCE conventions with one universal
-formula. Dense/structured, pooled/reusable, and compressed/expanded paths are
+existing covariance layer. From 0.9.4 IV-PPML and default PPML share
+one finite-sample convention (N/(N-1) for robust; one G_min/(G_min-1) on the
+combined meat for clustering), and unified mode keeps it. Dense/structured, pooled/reusable, and compressed/expanded paths are
 covered by tests, including an independent dense moment-root/sandwich oracle.
 
 ## Validation and unsupported input

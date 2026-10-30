@@ -15,7 +15,7 @@ from scipy.special import gammaln
 
 from ...collinearity import resolve_collinearity
 from ...compute.block_design import BlockDesign, align_dense_to_blocks, hstack_block_designs, same_row_partition
-from ...compute.vcov import block_cluster_subset_meats_xe, regressor_scale
+from ...compute.vcov import block_cluster_meat_xe, regressor_scale
 from ...compute.weights import frequency_score_scale, normalize_weight_type
 from ...compute.clusters import normalize_vce_clusters
 from ...compute.stable_linalg import equilibrated_gram_inverse
@@ -36,6 +36,7 @@ from ..ppml.execution import resolve_execution
 from ..ppml.heterogeneous import detect_separation_block
 from ..ppml.separation import initial_sample_selection, sample_policy_diagnostics
 from .config import IVPPMLConfig
+from .irls import fit_in_normalized_outcome_units, final_working_system, in_user_units
 from .results import IVPPMLResult
 from .standardize import IVPPMLStandardization
 
@@ -53,6 +54,7 @@ class BlockIVIRLSState:
     separated: np.ndarray
     residual: np.ndarray
     irls_w: np.ndarray
+    outcome_scale: float = 1.0
 
 
 def _slice_roles(design: BlockDesign, kc: int, ke: int):
@@ -110,6 +112,13 @@ def _fit_iv_irls_block(
     y, C: BlockDesign, E: BlockDesign, I: BlockDesign, plan: FEPlan,
     true_w, offset, config: IVPPMLConfig, *, projector, initial_eta=None, detect_mu=False,
 ):
+    return fit_in_normalized_outcome_units(
+        _iterate_block, y, true_w, initial_eta, C, E, I, plan, offset, config,
+        projector=projector, detect_mu=detect_mu,
+    )
+
+
+def _iterate_block(y, C, E, I, plan, offset, config, *, true_w, projector, initial_eta, detect_mu):
     y = np.asarray(y, dtype=np.float64)
     w0 = np.asarray(true_w, dtype=np.float64)
     offset = np.asarray(offset, dtype=np.float64)
@@ -161,7 +170,10 @@ def _fit_iv_irls_block(
                 f"IV-PPML IRLS produced non-finite mu at iteration {it}",
                 code="numerical.non_finite_mu", details={"iteration": int(it)},
             )
-        if it > 10 and (np.max(np.abs(X.matvec(beta)), initial=0.0) > 1e6 or np.max(np.abs(eta), initial=0.0) > 30):
+        # Only an exploding slope index signals divergence. A wide but finite
+        # eta range is a valid fit (PPML has no such bound); zero-outcome
+        # observations heading to mu=0 are the separation checks' job.
+        if it > 10 and np.max(np.abs(X.matvec(beta)), initial=0.0) > 1e6:
             raise DivergenceError(f"IV-PPML IRLS diverged at iteration {it}", details={"iteration": int(it)})
 
         working_state(y, mu, eta, offset, w0, irls_w, z)
@@ -269,10 +281,10 @@ def _ivppml_vcov_block(
     if kind0 != "cluster":
         raise ValueError("structured IV-PPML supports robust or cluster VCE")
     clusters = normalize_vce_clusters(clusters, nobs=len(residual))
-    V = np.zeros_like(bread)
-    for sign, Sz, g, _ in block_cluster_subset_meats_xe(Z, score, clusters):
-        meat = gamma.T @ Sz @ gamma
-        V += sign * (g / (g - 1.0)) * (bread @ meat @ bread)
+    # Same convention as the dense path: G_min/(G_min-1) on the combined meat.
+    Sz, g = block_cluster_meat_xe(Z, score, clusters)
+    meat = (g / (g - 1.0)) * (gamma.T @ Sz @ gamma)
+    V = bread @ meat @ bread
     return (V + V.T) / 2.0
 
 
@@ -361,22 +373,20 @@ def fit_block_arrays(
         sample_idx = np.flatnonzero(sample)
         separation[sample_idx[state.separated]] = True
 
-    irls_w = np.maximum(w1 * state.mu, 1e-20)
-    z = state.eta - off1 - 1.0
-    pos = y1 > 0
-    z[pos] += y1[pos] / state.mu[pos]
+    # Final projection supplies inference at the accepted state, in solver units.
+    irls_w, z, weighted_residual = final_working_system(state, y1, w1, off1)
     projected = projector.residualize_response_design(z, combined, irls_w, tol=config.target_inner_tol)
     Cdm, Edm, Idm = _slice_roles(projected.design, Cs.ncols, Es.ncols)
     Xdm = hstack_block_designs(Cdm, Edm)
     Zdm = hstack_block_designs(Cdm, Idm)
     solved = weighted_2sls_block(projected.response, Xdm, Zdm, weights=irls_w)
-    beta = scaling.unscale_coef(solved.beta)
+    beta = scaling.unscale_coef(state.beta)
 
     cls = poisson_clusters(clusters, sample, vce)
     dof = p1.dof_info(clusters=cls, method=config.dof_method)
     effective_n = float(np.sum(w1)) if weight_kind == "fweight" else float(len(y1))
     Vstd = _ivppml_vcov_block(
-        Xdm, Zdm, solved.first_stage, solved.residuals, irls_w, kind=vce, clusters=cls,
+        Xdm, Zdm, solved.first_stage, weighted_residual / irls_w, irls_w, kind=vce, clusters=cls,
         effective_n=effective_n, base_weights=w1, weight_kind=weight_kind, bread=solved.bread,
     )
     Xraw = hstack_block_designs(C1, E1)
@@ -386,27 +396,28 @@ def fit_block_arrays(
             Xraw, frequency_weights=w1 if config.sample_policy.psd_frequency_scale(weight_kind) else None),
     )
 
+    mu, eta, deviance = in_user_units(state)
     mean_x = Xraw.t_matvec(irls_w) / float(np.sum(irls_w))
-    b_cons = float(np.average(state.eta - off1, weights=irls_w) - mean_x @ beta)
+    b_cons = float(np.average(eta - off1, weights=irls_w) - mean_x @ beta)
     names = tuple(exog_names) + tuple(endog_names) + ("_cons",)
     coef = np.r_[beta, b_cons]
     Vfull = np.zeros((len(coef), len(coef)), dtype=np.float64)
     Vfull[:-1, :-1] = V
     sefull = np.r_[se, 0.0]
 
-    ll = float(np.sum(w1 * (y1 * state.eta - state.mu - gammaln(y1 + 1.0))))
-    residual_struct = y1 - state.mu
+    ll = float(np.sum(w1 * (y1 * eta - mu - gammaln(y1 + 1.0))))
+    residual_struct = y1 - mu
     Qraw = hstack_block_designs(C1, I1)
     moments = Qraw.t_matvec(w1 * residual_struct) / len(y1)
     full_mu = np.full(n, np.nan); full_eta = np.full(n, np.nan)
-    full_mu[sample] = state.mu; full_eta[sample] = state.eta
+    full_mu[sample] = mu; full_eta[sample] = eta
     sep_by_method = dict(sep.by_method)
     if num_sep_mu:
         sep_by_method["mu"] = num_sep_mu
 
     n_singletons = int(np.sum(initial.singletons)) + (int(np.sum(sep.singletons)) if config.sample_policy.disjoint_reasons else 0)
     return IVPPMLResult(
-        coef, Vfull, sefull, names, True, state.iterations, state.deviance, ll,
+        coef, Vfull, sefull, names, True, state.iterations, deviance, ll,
         int(round(effective_n)), int(np.sum(separation)), sample, separation,
         full_mu, full_eta, int(dof.df_absorbed), tuple(exog_names), tuple(endog_names),
         tuple(instrument_names), moments,

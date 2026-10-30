@@ -9,7 +9,7 @@ from ...compute.context import ExecutionContext
 from scipy.special import gammaln
 from ...compute.linalg import independent_columns
 from ...hdfe.plan import FEPlan
-from ...iv.moments import additive_moments
+from ...iv.moments import additive_moments, overid_test
 from ...iv.solve import weighted_2sls
 from ..ppml.separation import detect_separation, initial_sample_selection, sample_policy_diagnostics
 from ..ppml.execution import resolve_execution, get_projector
@@ -17,10 +17,11 @@ from ..poisson import (
     initial_active_rows, separation_survivors, poisson_clusters, poisson_inference, poisson_df_resid,
 )
 from .config import IVPPMLConfig
-from .irls import fit_iv_irls
+from .irls import fit_iv_irls, final_working_system, in_user_units
 from .results import IVPPMLResult
 from .standardize import IVPPMLStandardization
-from .vce import ivppml_vcov, normalize_ivppml_vce
+from .vce import ivppml_vcov, ivppml_ee_vcov, normalize_ivppml_vce
+from ...compute.weights import frequency_score_scale
 from ...reporting import cluster_counts as _cluster_counts, fe_names_from_metadata
 
 
@@ -79,7 +80,7 @@ def _prune_iv_columns(C, E, I, names_c, names_e, names_i, plan, weights, config,
 def fit_arrays(
     y, exog, endog, instruments, plan: FEPlan, *, offset, true_w, weight_kind="none", vce,
     clusters, exog_names, endog_names, instrument_names, config: IVPPMLConfig,
-    warm_start=None, execution_config: ExecutionConfig | None = None,
+    misspecification_robust=False, warm_start=None, execution_config: ExecutionConfig | None = None,
     execution_context: ExecutionContext | None = None,
 ):
     y = np.asarray(y, dtype=np.float64)
@@ -181,11 +182,8 @@ def fit_arrays(
         sample_idx = np.flatnonzero(sample)
         separation[sample_idx[state.separated]] = True
 
-    # Final exact weighted HDFE + 2SLS solve for inference.
-    irls_w = np.maximum(w1 * state.mu, 1e-20)
-    z = state.eta - off1 - 1.0
-    pos = y1 > 0
-    z[pos] += y1[pos] / state.mu[pos]
+    # Final projection supplies inference at the accepted state, in solver units.
+    irls_w, z, weighted_residual = final_working_system(state, y1, w1, off1)
     block = np.empty((len(y1), 1 + Xs.shape[1] + Is.shape[1]), dtype=np.float64)
     block[:, 0] = z
     block[:, 1:1 + Xs.shape[1]] = Xs
@@ -201,15 +199,30 @@ def fit_arrays(
     else:
         Z_dm = block[:, 1 + Xs.shape[1]:]
     solved = weighted_2sls(z_dm, X_dm, Z_dm, weights=irls_w)
-    beta = scaling.unscale_coef(solved.beta)
+    # An extra 2SLS step must not overwrite beta while eta/mu stay at the
+    # preceding iterate. The jointly accepted IRLS state is the estimate.
+    beta = scaling.unscale_coef(state.beta)
 
     cls = poisson_clusters(clusters, sample, vce)
     dof = p1.dof_info(clusters=cls, method=config.dof_method)
     effective_n = float(np.sum(w1)) if weight_kind == "fweight" else float(len(y1))
-    Vstd = ivppml_vcov(
-        solved.projected_X, X_dm, solved.residuals, irls_w,
-        kind=vce, clusters=cls, effective_n=effective_n,
-        base_weights=w1, weight_kind=weight_kind, bread=solved.bread,
+    vce_kw = dict(kind=vce, clusters=cls, effective_n=effective_n, base_weights=w1, weight_kind=weight_kind)
+    overidentified = Z_dm.shape[1] > X_dm.shape[1]
+    if misspecification_robust and overidentified:
+        Vstd = ivppml_ee_vcov(
+            solved.projected_X, X_dm, Z_dm, irls_w, weighted_residual, projector,
+            tol=config.target_inner_tol, **vce_kw,
+        )
+    else:
+        Vstd = ivppml_vcov(
+            solved.projected_X, X_dm, weighted_residual / irls_w,
+            irls_w, bread=solved.bread, **vce_kw,
+        )
+    # Hansen J on the additive moments Z_dm' w0 (y - mu), as for linear IV.
+    overid = overid_test(
+        weighted_residual, Z_dm, X=irls_w[:, None] * X_dm, kind=normalize_ivppml_vce(vce),
+        clusters=cls, effective_n=effective_n,
+        score_scale=frequency_score_scale(weight_kind, w1, normalize_ivppml_vce(vce)),
     )
     Xraw = np.column_stack([C1, E1])
     V, se = poisson_inference(
@@ -218,22 +231,23 @@ def fit_arrays(
             Xraw, frequency_weights=w1 if config.sample_policy.psd_frequency_scale(weight_kind) else None),
     )
 
+    mu, eta, deviance = in_user_units(state)
     # Upstream posts a normalized constant with zero reported variance.
-    b_cons = float(np.average(state.eta - off1, weights=irls_w) - np.average(Xraw, axis=0, weights=irls_w) @ beta)
+    b_cons = float(np.average(eta - off1, weights=irls_w) - np.average(Xraw, axis=0, weights=irls_w) @ beta)
     names = tuple(exog_names) + tuple(endog_names) + ("_cons",)
     coef = np.r_[beta, b_cons]
     Vfull = np.zeros((len(coef), len(coef)), dtype=np.float64)
     Vfull[:-1, :-1] = V
     sefull = np.r_[se, 0.0]
 
-    ll = float(np.sum(w1 * (y1 * state.eta - state.mu - gammaln(y1 + 1.0))))
-    residual_struct = y1 - state.mu
+    ll = float(np.sum(w1 * (y1 * eta - mu - gammaln(y1 + 1.0))))
+    residual_struct = y1 - mu
     Qraw = np.column_stack([C1, I1])
     moments = additive_moments(residual_struct, Qraw, weights=w1, normalize=True)
     full_mu = np.full(n, np.nan)
     full_eta = np.full(n, np.nan)
-    full_mu[sample] = state.mu
-    full_eta[sample] = state.eta
+    full_mu[sample] = mu
+    full_eta[sample] = eta
 
     sep_by_method = dict(sep.by_method)
     if num_sep_mu:
@@ -241,7 +255,7 @@ def fit_arrays(
 
     n_singletons = int(np.sum(initial.singletons)) + (int(np.sum(sep.singletons)) if config.sample_policy.disjoint_reasons else 0)
     return IVPPMLResult(
-        coef, Vfull, sefull, names, True, state.iterations, state.deviance, ll,
+        coef, Vfull, sefull, names, True, state.iterations, deviance, ll,
         int(round(effective_n)), int(np.sum(separation)), sample, separation,
         full_mu, full_eta, int(dof.df_absorbed), tuple(exog_names), tuple(endog_names),
         tuple(instrument_names), moments,
@@ -270,6 +284,8 @@ def fit_arrays(
             "first_stage": scaling.unscale_first_stage(solved.first_stage, kc),
             "first_stage_units": "original",
             "vce_requested": vce,
+            "overidentification": overid,
+            "misspecification_robust": bool(misspecification_robust and overidentified),
             "rank": solved.rank,
             "warm_started": initial_eta is not None,
         },

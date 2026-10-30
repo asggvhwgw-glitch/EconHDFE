@@ -44,7 +44,7 @@ def _cfg(**kw):
 
 
 def test_block_cluster_vce_keeps_cross_component_cluster_covariance():
-    from econhdfe.models.ppml.heterogeneous import final_wls_block, ppml_vcov_block
+    from econhdfe.models.ppml.heterogeneous import final_projection_block, ppml_vcov_block
     from econhdfe.models.ppml.vce import ppml_vcov
     y, X, g1, g2, w, off = _block_dgp(seed=9011, nblock=4, n_per=600, p=2)
     n = len(y)
@@ -56,7 +56,7 @@ def test_block_cluster_vce_keeps_cross_component_cluster_covariance():
     BX, _ = compile_block_design(X, structure=structure)
     cfg = _cfg()
     state = fit_irls_block(y, BX, plan, w, off, cfg, structure=structure)
-    _, _, Xt_block, wf = final_wls_block(y, BX, plan, w, off, state, cfg, structure=structure)
+    Xt_block = final_projection_block(BX, plan, w, state, cfg)
     Xt_dense = Xt_block.materialize()
     V_dense = ppml_vcov(
         Xt_dense, y, state.mu, w, kind="cluster", clusters=[cluster],

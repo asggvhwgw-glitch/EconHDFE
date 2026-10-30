@@ -176,6 +176,11 @@ def ppmlhdfe(
     ``config.singleton_mode`` selects ``"stata_compat"`` (default) or the
     frequency-invariant ``"unified"`` sample policy.
 
+    ``inference_config.ppml_small_sample`` chooses the covariance multiplier:
+    ``"asymptotic"`` (default) uses ppmlhdfe's N/(N-1) robust and G/(G-1)
+    clustered factors; ``"residual"`` retains the pre-0.9.4 residual-DoF
+    factors. This choice does not change the sample or point estimates.
+
     ``vce`` defaults to ``"robust"`` (Stata ppmlhdfe's default), unlike
     OLS/IV whose ``None`` default is reghdfe's unadjusted VCE.  A non-default
     ``vce`` and a different ``inference_config.vce`` raise
@@ -216,6 +221,7 @@ def _ppmlhdfe_arrays(
     result = fit_arrays(
         y, X, plan, offset=off, true_w=w, weight_kind=weight_kind, vce=vce,
         clusters=cluster, names=names, config=config, warm_start=warm_start,
+        small_sample=(InferenceConfig() if inference_config is None else inference_config).ppml_small_sample,
         execution_config=execution_config, execution_context=context,
     )
     return _finish_result(result, inference_config, execution_config, t0)
@@ -247,6 +253,7 @@ class PPMLHDFE(_ReusableFEModel):
                     offset=offset, exposure=exposure, weights=weights, weight_type=weight_type,
                     vce=vce,
                     clusters=cluster, config=self.config,
+                    small_sample=self.inference_config.ppml_small_sample,
                     execution_config=self.execution_config,
                     warm_start=warm_start,
                 )
@@ -269,6 +276,7 @@ class PPMLHDFE(_ReusableFEModel):
             result = fit_arrays(
                 yv, Xv, self.plan, offset=off, true_w=w, weight_kind=weight_kind, vce=vce,
                 clusters=cluster_arrays, names=names, config=self.config, warm_start=warm_start,
+                small_sample=self.inference_config.ppml_small_sample,
                 execution_config=self.execution_config, execution_context=self.context,
             )
             return _finish_result(result, self.inference_config, self.execution_config, t0)

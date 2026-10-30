@@ -62,7 +62,7 @@ def test_ols_multiway_repair_matches_reghdfe():
         np.testing.assert_allclose(r.stderr, np.sqrt(np.diag(ref)), rtol=1e-6)
 
 
-def test_finalize_without_rescaling_is_the_cgm_clip_and_constant_branch_follows_reghdfe():
+def test_finalize_is_the_cgm_clip_with_a_valid_constant_completion():
     rng = np.random.default_rng(5)
     for _ in range(25):
         A = rng.normal(size=(4, 4))
@@ -75,11 +75,12 @@ def test_finalize_without_rescaling_is_the_cgm_clip_and_constant_branch_follows_
         s = rng.uniform(0.1, 10.0, 4)
         got = finalize_cluster_vcov(V, "cluster", clusters, lambda: s, constant_index=3)
         W = V * np.outer(s[:3].tolist() + [1.0], s[:3].tolist() + [1.0])
-        expected = _fix_psd(W)
-        if np.linalg.eigvalsh(W)[0] < 0:
-            expected[:3, :3] = _fix_psd(W[:3, :3])
-        np.testing.assert_allclose(got * np.outer(np.r_[s[:3], 1.0], np.r_[s[:3], 1.0]), expected,
-                                   rtol=1e-12, atol=1e-12 * np.abs(expected).max())
+        reported = got * np.outer(np.r_[s[:3], 1.0], np.r_[s[:3], 1.0])
+        # Independent slope clipping is retained, but its insertion must no
+        # longer undo the full covariance's positive-semidefinite property.
+        np.testing.assert_allclose(reported[:3, :3], _fix_psd(W[:3, :3]),
+                                   rtol=1e-12, atol=1e-12 * np.abs(W).max())
+        assert np.linalg.eigvalsh(reported)[0] >= -1e-12 * np.abs(reported).max()
 
 
 def _ols(df, mode="stata_compat", **kw):
@@ -114,6 +115,9 @@ def test_multiway_repair_is_invariant_to_units_and_frequency_storage(fit, column
     df = _data(11)
     base = fit(df)
     assert _repaired(base, df[columns])
+    full_scale = np.r_[regressor_scale(df[columns]), np.ones(len(base.vcov) - k)]
+    full_covariance = np.asarray(base.vcov) * np.outer(full_scale, full_scale)
+    assert np.linalg.eigvalsh(full_covariance)[0] >= -1e-12 * np.abs(full_covariance).max()
     scaled_df = df.assign(x2=1000.0 * df.x2)
     unit = np.array([1000.0 if c == "x2" else 1.0 for c in columns])
     np.testing.assert_allclose(np.asarray(fit(scaled_df).vcov)[:k, :k] * np.outer(unit, unit),

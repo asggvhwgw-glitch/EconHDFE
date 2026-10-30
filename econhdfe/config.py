@@ -8,9 +8,11 @@ from .errors import SpecificationError
 class SamplePolicy:
     """Semantics of a ``singleton_mode`` value, queried instead of comparing names.
 
-    ``stata_compat`` reproduces the upstream reghdfe/ppmlhdfe/ivppmlhdfe
-    sample rules; ``unified`` counts frequency multiplicity at every stage
-    and keeps singleton and FE-zero removals as separate reasons.
+    ``stata_compat`` follows the upstream singleton/FE-zero counting
+    conventions; ``unified`` counts frequency multiplicity at every stage
+    and keeps singleton and FE-zero removals as separate reasons. IV-PPML's
+    default FE-only separation is a correctness exception in both modes;
+    this label is not a promise to reproduce all upstream sample rules.
     """
     mode: str = "stata_compat"
 
@@ -53,11 +55,6 @@ class SamplePolicy:
         """Initial FE-zero clearing; compatibility couples it to singleton dropping."""
         return "fe" in methods and (self.unified or drop_singletons)
 
-    @property
-    def iv_default_separation(self) -> tuple[str, ...]:
-        """IV-PPML separation when unset: PPML regressor separation is not an IV existence test."""
-        return ("fe",) if self.unified else ("fe", "simplex", "relu")
-
 
 @dataclass(slots=True, frozen=True)
 class HDFEConfig:
@@ -93,6 +90,11 @@ class HDFEConfig:
             raise SpecificationError("dof_method must be exact/pairwise/firstpair/none")
 
 
+# Ordinary PPML finite-sample convention when none is configured; internal
+# callers default to this name, so the default is stated once.
+PPML_SMALL_SAMPLE_DEFAULT = "asymptotic"
+
+
 @dataclass(slots=True, frozen=True)
 class InferenceConfig:
     """Inference/reporting controls shared across estimator families.
@@ -107,11 +109,25 @@ class InferenceConfig:
 
     For ``olshdfe``/``ivhdfe`` and the linear sessions, ``vce`` pairs with the
     ``vce`` argument under :func:`resolve_override`.
+
+    ``ivppml_misspecification_robust`` makes overidentified IV-PPML use the
+    estimating-equation sandwich, which stays valid when the overidentifying
+    moments do not hold; the default keeps the ``ivppmlhdfe`` sandwich. Both
+    agree asymptotically under correct specification, and at a solved root
+    in exactly identified models. Regular identification and suitable
+    dependence/asymptotic assumptions remain necessary.
+
+    ``ppml_small_sample`` selects ordinary PPML's finite-sample covariance
+    convention, independently of sample selection. ``"asymptotic"`` uses
+    ppmlhdfe's N/(N-1) robust and G/(G-1) cluster factors; ``"residual"``
+    retains the residual-degrees-of-freedom factors used before 0.9.4.
     """
     vce: str | None = None
     confidence_level: float = 0.95
     diagnostics: str = "off"  # off | publication | full
     iv_advanced_statistics: bool = True
+    ivppml_misspecification_robust: bool = False
+    ppml_small_sample: str = PPML_SMALL_SAMPLE_DEFAULT
 
     def validate(self) -> None:
         if not 0 < self.confidence_level < 1:
@@ -120,6 +136,10 @@ class InferenceConfig:
             raise SpecificationError("diagnostics must be off/publication/full")
         if not isinstance(self.iv_advanced_statistics, bool):
             raise SpecificationError("iv_advanced_statistics must be a boolean")
+        if not isinstance(self.ivppml_misspecification_robust, bool):
+            raise SpecificationError("ivppml_misspecification_robust must be a boolean")
+        if not isinstance(self.ppml_small_sample, str) or self.ppml_small_sample not in {"asymptotic", "residual"}:
+            raise SpecificationError("ppml_small_sample must be asymptotic/residual")
 
 
 @dataclass(slots=True, frozen=True)

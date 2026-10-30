@@ -6,11 +6,13 @@ from ...errors import ShapeError, ConvergenceError, DivergenceError, NumericalEr
 from ...hdfe.plan import FEPlan
 from ...iv.solve import weighted_2sls
 from ..poisson import exp_clip_into, working_state, poisson_deviance
+from ..ppml.standardize import outcome_scale
 from .config import IVPPMLConfig
 
 
 @dataclass(slots=True)
 class IVIRLSState:
+    """Accepted IRLS state, entirely in the solver's units of ``y / outcome_scale``."""
     beta: np.ndarray
     mu: np.ndarray
     eta: np.ndarray
@@ -26,23 +28,57 @@ class IVIRLSState:
     residual: np.ndarray
     projected_X: np.ndarray
     irls_w: np.ndarray
+    outcome_scale: float = 1.0
 
 
-def fit_iv_irls(
-    y,
-    exog,
-    endog,
-    excluded,
-    plan: FEPlan,
-    true_w,
-    offset,
-    config: IVPPMLConfig,
-    *,
-    projector=None,
-    initial_eta=None,
-    detect_mu=False,
-) -> IVIRLSState:
+def fit_in_normalized_outcome_units(iterate, y, true_w, initial_eta, *args, **kwargs):
+    """Run IV-PPML on ``y / outcome_scale``; the returned state stays in those units.
+
+    The iteration's safeguards are absolute (see ``outcome_scale``); without
+    this, rescaling ``y`` changes convergence and can fail or stop early.
+    Closeouts take the final system from ``final_working_system`` and report
+    through ``in_user_units``; neither modifies the state.
+    """
+    y = np.asarray(y, dtype=np.float64)
+    scale = outcome_scale(y, true_w)
+    if initial_eta is not None:
+        initial_eta = np.asarray(initial_eta, dtype=np.float64) - math.log(scale)
+    state = iterate(y / scale, *args, true_w=true_w, initial_eta=initial_eta, **kwargs)
+    state.outcome_scale = scale
+    return state
+
+
+def final_working_system(state, y, true_w, offset):
+    """``(weights, working_response, w0 (y - mu))`` at the accepted state, solver units.
+
+    Final projection, scores, covariance, EE and J all use this system:
+    flooring the IRLS weights in user units would change their relative
+    values merely because the outcome is quoted in smaller units.
+    """
+    y = np.asarray(y, dtype=np.float64) / state.outcome_scale
+    weights = np.maximum(true_w * state.mu, 1e-20)
+    z = state.eta - offset - 1.0
+    pos = y > 0
+    z[pos] += y[pos] / state.mu[pos]
+    return weights, z, true_w * (y - state.mu)
+
+
+def in_user_units(state):
+    """``(mu, eta, deviance)`` in the user's outcome units, for reporting only."""
+    return (state.mu * state.outcome_scale, state.eta + math.log(state.outcome_scale),
+            state.deviance * state.outcome_scale)
+
+
+def fit_iv_irls(y, exog, endog, excluded, plan: FEPlan, true_w, offset, config: IVPPMLConfig,
+                *, projector=None, initial_eta=None, detect_mu=False) -> IVIRLSState:
     """IRLS-IV core for the additive moment E[q(y-mu)] = 0."""
+    return fit_in_normalized_outcome_units(
+        _iterate, y, true_w, initial_eta, exog, endog, excluded, plan, offset, config,
+        projector=projector, detect_mu=detect_mu,
+    )
+
+
+def _iterate(y, exog, endog, excluded, plan, offset, config, *, true_w, projector, initial_eta, detect_mu):
     y = np.asarray(y, dtype=np.float64)
     C = np.asarray(exog, dtype=np.float64)
     E = np.asarray(endog, dtype=np.float64)
@@ -97,9 +133,12 @@ def fit_iv_irls(
             raise DivergenceError(
                 f"IV-PPML IRLS produced non-finite mu at iteration {it}",
                 code="numerical.non_finite_mu", details={"iteration": int(it)},
-                suggestion="Try separation=('fe','simplex','relu','mu'), standardize=True, or a simpler FE specification.",
+                suggestion="Inspect the instrument specification and fixed effects, or use standardize=True.",
             )
-        if it > 10 and (np.max(np.abs(X @ beta), initial=0.0) > 1e6 or np.max(np.abs(eta), initial=0.0) > 30):
+        # Only an exploding slope index signals divergence. A wide but finite
+        # eta range is a valid fit (PPML has no such bound); zero-outcome
+        # observations heading to mu=0 are the separation checks' job.
+        if it > 10 and np.max(np.abs(X @ beta), initial=0.0) > 1e6:
             raise DivergenceError(f"IV-PPML IRLS diverged at iteration {it}", details={"iteration": int(it)})
 
         working_state(y, mu, eta, offset, w0, irls_w, z)

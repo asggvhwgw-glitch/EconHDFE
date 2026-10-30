@@ -10,6 +10,7 @@ from ...compute.weights import robust_score_scale
 from ...compute.wls import weighted_arrays
 from ...compute.block_design import BlockDesign, hstack_block_designs
 from ...iv.design import IVDesign
+from ...iv.moments import overid_test
 from ...iv.solve import weighted_2sls
 from ...compute.stable_linalg import equilibrated_lstsq
 from ...errors import UnderidentifiedError, NumericalError
@@ -18,7 +19,7 @@ from .solve import _solve_2sls_roles, _solve_2sls_stable_roles
 from .stable_inference import stable_2sls_inference
 from .stages import estimation_ready, first_stage_ready, diagnostics_ready
 from .diagnostics import (
-    _IVDiagnosticWorkspace, _first_stage_suite, cragg_donald_stat, overid_test,
+    _IVDiagnosticWorkspace, _first_stage_suite, cragg_donald_stat,
     kleibergen_paap_stats,
 )
 

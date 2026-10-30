@@ -10,7 +10,7 @@ from scipy.stats import chi2 as chi2_dist
 from .config import PPMLConfig
 from ...hdfe.plan import FEPlan
 from .irls import fit_irls
-from ...compute.linalg import independent_columns, weighted_lstsq
+from ...compute.linalg import independent_columns
 from .results import PPMLResult
 from .separation import detect_separation, initial_sample_selection, sample_policy_diagnostics
 from .standardize import Standardization
@@ -18,16 +18,32 @@ from ...compute.vcov import normalize_vce
 from ..poisson import (
     initial_active_rows, separation_survivors, poisson_clusters, poisson_inference, poisson_df_resid,
 )
-from .vce import ppml_vcov, MODEL_VCE_KINDS
+from .vce import ppml_vcov, ppml_covariance_diagnostics, MODEL_VCE_KINDS
 from .execution import resolve_execution, get_projector
 from ...reporting import cluster_counts as _cluster_counts, fe_names_from_metadata
+from ...config import PPML_SMALL_SAMPLE_DEFAULT
 
 
-def _filter_columns(X, names, plan: FEPlan, weights, tol, *, engine="replica", projector=None):
+def _filter_columns(X, names, plan: FEPlan, weights, tol, *, engine="replica", projector=None,
+                    preserve_intercept=False):
     """Remove raw and post-absorption collinearity; return original-column indices."""
     X = np.asarray(X, dtype=np.float64)
     names = np.asarray(names, dtype=object)
-    keep, _ = independent_columns(X, tol=1e-12)
+    if preserve_intercept:
+        # The no-FE frontend appends a known intercept as the final column.
+        # Keep that direction when an explicit user constant or a complete
+        # set of categorical dummies spans it. Otherwise y-unit restoration
+        # would have no uniquely designated coefficient to shift by log(scale).
+        # Subtracting one row first makes an explicit constant exactly zero;
+        # centering then gives the usual projection off the intercept.
+        centered = X[:, :-1].copy()
+        if len(X):
+            centered -= centered[0].copy()
+            centered -= np.mean(centered, axis=0)
+        keep, _ = independent_columns(centered, tol=1e-12)
+        keep = np.r_[keep, X.shape[1]-1]
+    else:
+        keep, _ = independent_columns(X, tol=1e-12)
     X, names = X[:, keep], names[keep]
     original = keep
     if plan.groups and X.shape[1]:
@@ -41,8 +57,8 @@ def _filter_columns(X, names, plan: FEPlan, weights, tol, *, engine="replica", p
     return X, tuple(names), original
 
 
-def _ppml_wald(coef, vcov, names):
-    idx = [i for i, name in enumerate(names) if str(name) != "_cons"]
+def _ppml_wald(coef, vcov, names, *, constant_index=None):
+    idx = [i for i in range(len(names)) if i != constant_index]
     q = len(idx)
     if q == 0:
         return float("nan"), float("nan"), 0
@@ -70,6 +86,7 @@ def fit_arrays(
     clusters,
     names,
     config: PPMLConfig,
+    small_sample=PPML_SMALL_SAMPLE_DEFAULT,
     warm_start=None,
     execution_config: ExecutionConfig | None = None,
     execution_context: ExecutionContext | None = None,
@@ -82,7 +99,8 @@ def fit_arrays(
     n = len(y)
     execution, exec_context = resolve_execution(execution_config, execution_context)
 
-    if not plan.groups:
+    has_intercept = not plan.groups
+    if has_intercept:
         X = np.column_stack([X, np.ones(n)])
         names = tuple(names) + ("_cons",)
 
@@ -98,9 +116,9 @@ def fit_arrays(
         y0, X0, w0, off0, p0 = y, X, true_w, off, plan
 
     standardizer = (
-        Standardization.fit(y0, X0)
+        Standardization.fit(y0, X0, weights=w0)
         if config.standardize
-        else Standardization(np.ones(X0.shape[1]), 1.0)
+        else Standardization.outcome_only(y0, w0, X0.shape[1])
     )
     y0s, X0s = standardizer.transform(y0, X0)
 
@@ -113,6 +131,7 @@ def fit_arrays(
     X0s, names, keep = _filter_columns(
         X0s, names, p0, w0, config.target_inner_tol,
         engine=config.engine, projector=pre_projector,
+        preserve_intercept=has_intercept,
     )
     standardizer = standardizer.select_columns(keep)
 
@@ -143,6 +162,7 @@ def fit_arrays(
         Xstd, names, keep = _filter_columns(
             Xstd, names, ps_requested, ws, config.target_inner_tol,
             engine=config.engine, projector=pre_projector,
+            preserve_intercept=has_intercept,
         )
         standardizer = standardizer.select_columns(keep)
 
@@ -194,6 +214,7 @@ def fit_arrays(
         Xstd, names, keep = _filter_columns(
             Xstd, names, ps_requested, ws, config.target_inner_tol,
             engine=config.engine,
+            preserve_intercept=has_intercept,
         )
         standardizer = standardizer.select_columns(keep)
         ps_solver, canonicalization = ps_requested.for_engine(config.engine)
@@ -214,27 +235,17 @@ def fit_arrays(
             )
         sep0.by_method["mu"] = int(np.sum(mu_sep))
 
-    # Final high-accuracy weighted solve. Reuse the IRLS block as workspace and
-    # the same compiled FE projector whenever the sample did not change.
+    # Report the accepted IRLS state: beta, eta and mu are one point. Another
+    # weighted solve here would move beta alone by a Newton step. Inference
+    # needs only X projected at the final weights, with the same projector.
     wfinal = ws * state.mu
-    z = state.eta - offs - 1.0
-    pos = ystd > 0
-    z[pos] += ystd[pos] / state.mu[pos]
-    block = state.transformed
-    if block is None or block.shape != (len(ystd), Xstd.shape[1] + 1):
-        block = np.empty((len(ystd), Xstd.shape[1] + 1), dtype=np.float64)
-    block[:, 0] = z
-    if Xstd.shape[1]:
-        block[:, 1:] = Xstd
-    if projector is not None:
-        block, _ = projector.residualize(
-            block, wfinal, tol=config.target_inner_tol, return_info=True, copy=False
-        )
-    zt, Xt = block[:, 0], block[:, 1:]
-    beta_std, _ = weighted_lstsq(Xt, zt, wfinal, fast=False)
-    beta = standardizer.unscale_coef(beta_std)
-    if names and names[-1] == "_cons":
-        beta[-1] += math.log(standardizer.y_scale)
+    Xt = np.array(Xstd, dtype=np.float64)
+    if projector is not None and Xt.shape[1]:
+        Xt, _ = projector.residualize(Xt, wfinal, tol=config.target_inner_tol, return_info=True, copy=False)
+    beta = standardizer.unscale_coef(state.beta)
+    constant_index = len(beta)-1 if has_intercept else None
+    if constant_index is not None:
+        beta[constant_index] += math.log(standardizer.y_scale)
 
     cls_s = poisson_clusters(clusters, sample, vce)
     dof = ps_requested.dof_info(clusters=cls_s, method=config.dof_method)
@@ -243,6 +254,7 @@ def fit_arrays(
         Xt, ystd, state.mu, ws,
         kind=vce, clusters=cls_s, df_absorbed=df_a,
         nested_adj=int(dof.nested > 0), weight_kind=weight_kind,
+        small_sample=small_sample,
     )
     V = standardizer.unscale_vcov(Vstd)
     if normalize_vce(vce, "model") in MODEL_VCE_KINDS:
@@ -253,7 +265,7 @@ def fit_arrays(
         V, kind=vce, clusters=cls_s,
         scale=lambda: standardizer.original_scale(
             Xstd, ws if config.sample_policy.psd_frequency_scale(weight_kind) else None),
-        constant_index=len(names) - 1 if names and names[-1] == "_cons" else None,
+        constant_index=constant_index,
     )
 
     # The IRLS state is no longer needed in standardized units, so rescale in
@@ -271,7 +283,7 @@ def fit_arrays(
         if np.isfinite(mu0) and mu0 > 0 else float("nan")
     )
     pseudo_r2 = (1.0 - ll / ll0) if np.isfinite(ll0) and ll0 != 0 else float("nan")
-    wald_chi2, wald_p, df_m = _ppml_wald(beta, V, names)
+    wald_chi2, wald_p, df_m = _ppml_wald(beta, V, names, constant_index=constant_index)
     if bool(np.all(sample)):
         full_mu, full_eta = mu_orig, eta_orig
     else:
@@ -292,6 +304,9 @@ def fit_arrays(
         diagnostics={
             "engine": config.engine,
             "sample_policy": sample_policy_diagnostics(config, sample, true_w, weight_kind),
+            "finite_sample_correction": ppml_covariance_diagnostics(
+                kind=vce, small_sample=small_sample, effective_n=effective_n,
+                k_total=len(beta) + df_a, nested_adj=dof.nested, clusters=cls_s),
             "separation_by_method": sep0.by_method,
             "separation_seconds": sep0.timings,
             "separation_iterations": sep0.iterations,
@@ -306,6 +321,7 @@ def fit_arrays(
             "absorb_iterations": state.absorb_iterations,
             "epsilon": state.epsilon,
             "standardized": config.standardize,
+            "constant_index": constant_index,
             "canonicalization": canonicalization,
             "dof_nested": int(dof.nested),
             "warm_started": initial_eta is not None,

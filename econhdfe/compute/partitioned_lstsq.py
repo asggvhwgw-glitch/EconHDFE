@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from contextlib import nullcontext
 import numpy as np
 
 from .block_design import BlockDesign
 from ..planner import plan_memory
+from ..planner.scheduler import current_allocation, reserve_memory
 
 
 @dataclass(frozen=True, slots=True)
@@ -212,8 +214,13 @@ def _compress_weighted_block(values, y, weights, *, chunk_rows: int) -> np.ndarr
 
 
 
-def _merge_augmented_qr(current: np.ndarray | None, incoming: np.ndarray) -> np.ndarray | None:
-    """Streaming TSQR merge for a small augmented least-squares factor."""
+def merge_qr_factor(current: np.ndarray | None, incoming: np.ndarray) -> np.ndarray | None:
+    """Streaming TSQR: R of ``vstack(rows behind current, incoming)``.
+
+    ``current`` is the R factor of the rows merged so far (None before the
+    first block). Orthogonal compression preserves every least-squares
+    problem posed on the stacked columns without forming a Gram matrix.
+    """
     A = np.asarray(incoming, dtype=np.float64)
     if A.ndim != 2:
         raise ValueError("incoming QR block must be two-dimensional")
@@ -225,6 +232,26 @@ def _merge_augmented_qr(current: np.ndarray | None, incoming: np.ndarray) -> np.
     if current.shape[1] != Rc.shape[1]:
         raise ValueError("streamed QR factors have incompatible widths")
     return np.asarray(np.linalg.qr(np.vstack((current, Rc)), mode="r"), dtype=np.float64)
+
+
+def qr_row_workspace(nobs, width, max_rows, *, label="augmented_qr_solve"):
+    """``(chunk_rows, context)`` for streaming ``merge_qr_factor`` solves.
+
+    The context reserves the compact factors, SVD/bread work and three
+    observation vectors, and ``chunk_rows`` sizes the row scratch to the
+    active allocation. The bound is O(width**2 + N), not width-independent.
+    Resource policy stays in the compute layer; callers supply only the
+    matrix geometry and hold the context for the whole solve.
+    """
+    chunk = max(1, min(32768, 2_000_000 // width, max_rows))
+    fixed = 8 * (12 * width * width + 3 * nobs + 4 * width)
+    per_row = 8 * 4 * width
+    allocation = current_allocation()
+    if allocation is None:
+        return chunk, nullcontext()
+    available = allocation.unreserved_memory_bytes()
+    chunk = max(1, min(chunk, (available - fixed) // per_row))
+    return chunk, reserve_memory(fixed + chunk * per_row, label=label)
 
 
 def _disjoint_weighted_lstsq(
@@ -409,7 +436,7 @@ def _block_angular_weighted_lstsq(
                 if collect_border:
                     border_chunks.append(aug)
                 else:
-                    border_R = _merge_augmented_qr(border_R, aug)
+                    border_R = merge_qr_factor(border_R, aug)
                 border_input_rows += int(tr.shape[0])
 
     if design.nobs and not np.all(seen):

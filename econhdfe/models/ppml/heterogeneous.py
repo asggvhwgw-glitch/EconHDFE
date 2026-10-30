@@ -35,9 +35,10 @@ from .separation import SeparationResult, detect_separation, initial_sample_sele
 from .standardize import Standardization
 from .results import PPMLResult
 from .execution import resolve_execution
-from .vce import MODEL_VCE_KINDS
+from .vce import MODEL_VCE_KINDS, ppml_covariance_dof, ppml_covariance_diagnostics
 from ...reporting import cluster_counts as _cluster_counts, fe_names_from_metadata
 from scipy.special import gammaln
+from ...config import PPML_SMALL_SAMPLE_DEFAULT
 
 
 def _component_layout(design: BlockDesign, plan: FEPlan):
@@ -345,34 +346,27 @@ def fit_irls_block(
     )
 
 
-def final_wls_block(
-    y, X: BlockDesign, plan: FEPlan, true_w, offset, state: IRLSState, config: PPMLConfig,
-    *, structure, projector: BlockWeightedFEProjector | None = None,
+def final_projection_block(
+    X: BlockDesign, plan: FEPlan, true_w, state: IRLSState, config: PPMLConfig,
+    *, projector: BlockWeightedFEProjector | None = None,
 ):
-    """Final high-accuracy PPML WLS in block-native representation."""
-    y = np.asarray(y, dtype=np.float64)
-    tw = np.asarray(true_w, dtype=np.float64)
-    off = np.asarray(offset, dtype=np.float64)
+    """X projected at the accepted state's weights, for inference only.
+
+    The reported coefficients are the accepted IRLS state's; another weighted
+    solve would move beta alone by a Newton step (see the dense estimator).
+    """
     if projector is None:
-        projector = BlockWeightedFEProjector.from_design(
-            X, plan, engine=config.engine, method="map"
-        )
-    wfinal = tw * state.mu
-    z = state.eta - off - 1.0
-    pos = y > 0
-    z = np.asarray(z, dtype=np.float64).copy()
-    z[pos] += y[pos] / state.mu[pos]
-    projected = projector.residualize_response_design(z, X, wfinal, tol=config.target_inner_tol)
-    resid = np.empty(X.nobs, dtype=np.float64)
-    beta = _block_weighted_solve(
-        projected.response, projected.design, wfinal, fast=False, resid_out=resid
+        projector = BlockWeightedFEProjector.from_design(X, plan, engine=config.engine, method="map")
+    wfinal = np.asarray(true_w, dtype=np.float64) * state.mu
+    projected = projector.residualize_response_design(
+        np.zeros(X.nobs), X, wfinal, tol=config.target_inner_tol,
     )
-    return beta, projected.response, projected.design, wfinal
+    return projected.design
 
 
 def ppml_vcov_block(
     X_tilde: BlockDesign, y, mu, true_w, *, kind="robust", clusters=None,
-    df_absorbed=0, nested_adj=0, weight_kind="none",
+    df_absorbed=0, nested_adj=0, weight_kind="none", small_sample=PPML_SMALL_SAMPLE_DEFAULT,
 ):
     """PPML model/robust/cluster VCE on an exact BlockDesign."""
     y = np.asarray(y, dtype=np.float64)
@@ -387,9 +381,10 @@ def ppml_vcov_block(
     effective_n = float(np.sum(tw)) if weight_kind == "fweight" else float(len(y))
     if kind0 == "cluster":
         clusters = normalize_vce_clusters(clusters, nobs=len(y))
+    k_total, nested = ppml_covariance_dof(small_sample, X_tilde.ncols + int(df_absorbed), nested_adj)
     return sandwich_vcov_block_xe(
         X_tilde, score_scalar, bread, kind=kind0, clusters=clusters,
-        k_total=X_tilde.ncols + int(df_absorbed), nested_adj=int(bool(nested_adj)),
+        k_total=k_total, nested_adj=nested,
         effective_n=effective_n, score_scale=score_scale,
     )
 
@@ -418,6 +413,7 @@ def fit_block_arrays(
     clusters,
     names,
     config: PPMLConfig,
+    small_sample=PPML_SMALL_SAMPLE_DEFAULT,
     warm_start=None,
     execution_config=None,
 ) -> PPMLResult:
@@ -451,7 +447,7 @@ def fit_block_arrays(
     else:
         y0, B0, w0, off0, p0 = y, X, true_w, off, plan
 
-    standardizer = Standardization.fit_block(y0, B0) if config.standardize else Standardization(np.ones(B0.ncols), 1.0)
+    standardizer = Standardization.fit_block(y0, B0, weights=w0) if config.standardize else Standardization.outcome_only(y0, w0, B0.ncols)
     y0s, B0s = standardizer.transform_block(y0, B0)
     pre_projector = _resource_block_projector(B0s, p0, config, execution)
     B0s, names, keep = filter_columns_block(
@@ -541,11 +537,8 @@ def fit_block_arrays(
             )
         sep0.by_method["mu"] = int(np.sum(mu_sep))
 
-    beta_std, _, Xt, _ = final_wls_block(
-        ystd, Bstd, ps_solver, ws, offs, state, config,
-        structure=None, projector=projector,
-    )
-    beta = standardizer.unscale_coef(beta_std)
+    Xt = final_projection_block(Bstd, ps_solver, ws, state, config, projector=projector)
+    beta = standardizer.unscale_coef(state.beta)
 
     cls_s = poisson_clusters(clusters, sample, vce)
     dof = ps_requested.dof_info(clusters=cls_s, method=config.dof_method)
@@ -553,6 +546,7 @@ def fit_block_arrays(
     Vstd = ppml_vcov_block(
         Xt, ystd, state.mu, ws, kind=vce, clusters=cls_s,
         df_absorbed=df_a, nested_adj=int(dof.nested > 0), weight_kind=weight_kind,
+        small_sample=small_sample,
     )
     V = standardizer.unscale_vcov(Vstd)
     if normalize_vce(vce, "model") in MODEL_VCE_KINDS:
@@ -598,6 +592,9 @@ def fit_block_arrays(
         diagnostics={
             "engine": config.engine,
             "sample_policy": sample_policy_diagnostics(config, sample, true_w, weight_kind),
+            "finite_sample_correction": ppml_covariance_diagnostics(
+                kind=vce, small_sample=small_sample, effective_n=effective_n,
+                k_total=len(beta) + df_a, nested_adj=dof.nested, clusters=cls_s),
             "separation_by_method": sep0.by_method,
             "separation_seconds": sep0.timings,
             "separation_iterations": sep0.iterations,
@@ -640,6 +637,7 @@ def fit_structured_dataframe(
     vce="robust",
     clusters=None,
     config: PPMLConfig | None = None,
+    small_sample=PPML_SMALL_SAMPLE_DEFAULT,
     execution_config=None,
     structural_collinearity: bool = True,
     omit=None,
@@ -702,6 +700,7 @@ def fit_structured_dataframe(
         result = fit_block_arrays(
             yv, design.values, plan, offset=off, true_w=w, weight_kind=weight_kind, vce=vce,
             clusters=cls, names=design.names, config=cfg,
+            small_sample=small_sample,
             execution_config=execution_config, warm_start=warm_start,
         )
     else:
@@ -710,6 +709,7 @@ def fit_structured_dataframe(
         result = fit_arrays(
             yv, values, plan, offset=off, true_w=w, weight_kind=weight_kind, vce=vce,
             clusters=cls, names=design.names, config=cfg,
+            small_sample=small_sample,
             execution_config=execution_config, warm_start=warm_start,
         )
         if shared_separation:

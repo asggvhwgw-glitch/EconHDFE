@@ -73,16 +73,27 @@ The Library CRV3 prototype is not public in v0.4.6. It performs full delete-clus
 The signed Cameron-Gelbach-Miller multiway sandwich can be indefinite. OLS,
 linear IV/GMM, the linear sessions, PPML and IV-PPML (dense and block paths)
 form it without repair and then call `compute.vcov.finalize_cluster_vcov`,
-which follows reghdfe 6.12.5 / ppmlhdfe 2.3.0: negative eigenvalues are clipped
+which uses the reghdfe regressor-standardization coordinates: negative eigenvalues are clipped
 in the standardized coordinates of the original regressors, i.e. after scaling
 `V` by `s s'`, where `s` is the unweighted sample standard deviation (N-1) of
 each regressor on the estimation sample before FE demeaning, floored at 1e-3.
-A reported constant has scale 1; when present, the full matrix is clipped and
-its slope block is replaced by the separately clipped slope block
-(`reghdfe_fix_psd`). Collinear omitted columns do not participate, and the
+A reported constant has scale 1. From 0.9.4, let `F` be the full spectral clip
+and `A` the independently clipped slope block. Project `F[slope,constant]`
+onto the numerical range of `A` to obtain `b`, then set the constant variance
+to `max(F[constant,constant], b' A^+ b)`, with an upward rounding guard.
+The block matrix `[[A,b],[b',c]]` satisfies the PSD Schur-complement conditions.
+This preserves separately repaired slope inference and gives a PSD full
+matrix, including singular slope blocks. The previous upstream-style block
+replacement could leave the full covariance indefinite. The completion is a
+declared convention, not a nearest-matrix optimization or full-matrix Stata
+parity claim. A zero estimated variance can still make a joint Wald test
+singular; post-estimation guards remain active.
+
+Collinear omitted columns do not participate, and the
 zero-variance `_cons` posted by IV-PPML is appended afterwards. The repair is
-thus independent of user units and of every internal solver scaling or
-conditioning basis. Before 0.9.2 the clip used reported (or internal) units,
+independent of internal solver scaling or conditioning bases when the supplied
+coordinate scales agree. The retained stdev floor at 1e-3 means invariance to
+arbitrary regressor rescaling across that floor is not claimed. Before 0.9.2 the clip used reported (or internal) units,
 which can differ from reghdfe by orders of magnitude when regressor scales
 differ; see the 0.9.2 changelog. Under `singleton_mode="stata_compat"` the
 scale is reghdfe's unweighted stdev of the stored rows, so a compact
@@ -95,11 +106,17 @@ pweights/aweights are never used for the scale
 ivreg2/ivreghdfe do not repair by default (only with `psd0`/`psda`); econhdfe
 keeps the repair for linear IV/GMM with the reghdfe coordinates. The
 first-stage robust F diagnostics keep their repair in the max-abs-equilibrated
-coordinates they already use. PPML still has an unrelated, registered
-small-sample constant difference from ppmlhdfe.
+coordinates they already use. Current ppmlhdfe uses reghdfe5, whose full-matrix
+clipping policy differs from reghdfe v6's separate slope-block adjustment;
+these upstream versions must not be treated as interchangeable.
 
 The Poisson regression reference uses explicit weighted FE dummy projection and
 independently aggregated cluster scores. It covers a genuinely indefinite
 CGM covariance, frequency-weight expansion, standardization on/off, and
-dense/block PPML and IV-PPML paths. IV-PPML keeps its per-subset G/(G-1)
-correction; PPML keeps its existing N, absorbed-DF and nesting correction.
+dense/block PPML and IV-PPML paths. From 0.9.4, both Poisson families default
+to `N/(N-1)` robust and one `G_min/(G_min-1)` factor on the combined CGM
+cluster meat; for ordinary PPML this matches the ppmlhdfe asymptotic
+convention.
+`InferenceConfig(ppml_small_sample="residual")` explicitly retains the earlier
+N, absorbed-DF and nesting correction. Changing either finite-sample factor
+or PSD completion does not resolve few-cluster or growing-FE asymptotic bias.

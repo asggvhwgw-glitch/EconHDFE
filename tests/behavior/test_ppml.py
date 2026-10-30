@@ -62,3 +62,15 @@ def test_ppml_warm_start_preserves_solution_and_does_not_add_iterations():
     assert np.allclose(cold.params, warm.params, atol=2e-8, rtol=2e-8)
     assert warm.iterations <= cold.iterations
     assert warm.diagnostics["warm_started"]
+
+
+def test_unstandardized_ppml_is_invariant_to_outcome_units():
+    # Without regressor standardization IRLS still iterates on y / mean(y);
+    # the absolute deviance floor otherwise stopped tiny-unit fits early.
+    rng = np.random.default_rng(5)
+    g = rng.integers(0, 25, 800)
+    x = rng.normal(size=(800, 2))
+    y = rng.poisson(np.exp(.3 + x @ [.5, -.3] + rng.normal(0, .4, 25)[g])).astype(float)
+    base = ppmlhdfe(y=y, x=x, absorb=[g], config=PPMLConfig(standardize=False))
+    tiny = ppmlhdfe(y=y * np.exp(-30), x=x, absorb=[g], config=PPMLConfig(standardize=False))
+    np.testing.assert_allclose(tiny.params, base.params, rtol=1e-9, atol=1e-12)
