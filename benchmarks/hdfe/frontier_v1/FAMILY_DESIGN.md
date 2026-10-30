@@ -305,3 +305,27 @@ is asserted in that case.
 The unique-tuple comparison, cycle bound, oracle construction, and RHS energy
 controls are documented explicitly here. No external implementation is used
 as an unexplained projection oracle.
+
+
+## Additional large-scale cross-topology stress design (planned)
+
+A separate research workflow compares four additional graph structures at roughly
+5.2M and 10.4M rows, with one RHS, unit weights, broadband targets, and the same
+independent forward-error gate. This section specifies the design only; it is
+not a report of measured results.
+
+| Family | Size parameters | Approximate N | Spectral scope |
+|---|---:|---:|---|
+| `kernel_grid` | side 572 / 806 | 5.235M / 10.394M | Analytic `kappa_FE <= 12m < N`; periodic 2D grid coupling |
+| `rigidity_grid_unique` | side 572 / 806 | 5.235M / 10.394M | Unique tuples; analytic `kappa_FE <= 24m = 1.5N` bound |
+| `kernel_cycle` | modules 432,000 / 864,000 | 5.184M / 10.368M | Analytic `kappa_FE = Theta(m^2)`; deliberately harder conditioning, outside the `kappa_FE <= N` regime |
+| `easy_crossed` | modules 262,144 / 524,288 | about 5.24M / 10.49M | Three-cycle connected random control; no certified spectral-gap or runtime claim |
+
+The three native backends (`within`, `native_auto`, `fereg`) are run in fresh
+workers, cold then same-solver reuse, with native diagnostics enabled. Each
+worker retains its generated N/G/U, analytic condition bound when available,
+forward error, stationarity, full-call time, whole-worker peak RSS, preconditioner
+route and actual operator-application counts. One trial per configuration is
+an exploratory topology screen, not a timing benchmark with statistical
+precision. Failures, timeouts and rejected routes are retained rather than
+silently dropped.
