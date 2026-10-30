@@ -1,0 +1,84 @@
+name: FE frontier alternate structures (research)
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/fe-frontier-structures.yml'
+      - 'benchmarks/hdfe/frontier_v1/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: fe-frontier-structures-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: false
+jobs:
+  alternate-structures:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      NUMBA_NUM_THREADS: '2'
+      RAYON_NUM_THREADS: '2'
+      CARGO_BUILD_JOBS: '2'
+      MALLOC_ARENA_MAX: '2'
+      ECONHDFE_REQUIRE_NATIVE_DIAGNOSTICS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.99.1'
+      - name: Install pinned research environment
+        run: python -m pip install numpy==2.3.5 scipy==1.17.0 pytest==9.2.0 maturin==1.15.0
+      - name: Rebuild exact diagnostics-enabled native kernels
+        run: |
+          python benchmarks/hdfe/frontier_v1/native_cost/prepare.py --work-dir /tmp/native-cost-build --archives /tmp/native-cost-archives --build
+          python -m pip install --no-deps /tmp/native-cost-build/wheelhouse/*.whl
+      - name: Record machine and run four distinct FE topologies
+        shell: bash
+        run: |
+          mkdir -p structure-results
+          (uname -a; lscpu | head -25; free -h; cat /sys/fs/cgroup/memory.max || true; df -h .; python -VV; git rev-parse HEAD) >structure-results/machine.txt 2>&1
+          set +e
+          python benchmarks/hdfe/frontier_v1/native_cost/study.py --families kernel_grid --sizes 572 806 --rhs 1 --backends within native_auto fereg --diagnostics on --calls cold warm --replicates 1 --threads 2 --tol 1e-10 --forward-tol 2e-8 --max-iter 2000 --timeout 300 --output structure-results/kernel_grid.json >structure-results/kernel_grid.log 2>&1
+          echo "$?" >structure-results/kernel_grid.exit
+          python benchmarks/hdfe/frontier_v1/native_cost/study.py --families rigidity_grid_unique --sizes 572 806 --rhs 1 --backends within native_auto fereg --diagnostics on --calls cold warm --replicates 1 --threads 2 --tol 1e-10 --forward-tol 2e-8 --max-iter 2000 --timeout 300 --output structure-results/rigidity_grid_unique.json >structure-results/rigidity_grid_unique.log 2>&1
+          echo "$?" >structure-results/rigidity_grid_unique.exit
+          python benchmarks/hdfe/frontier_v1/native_cost/study.py --families kernel_cycle --sizes 432000 864000 --rhs 1 --backends within native_auto fereg --diagnostics on --calls cold warm --replicates 1 --threads 2 --tol 1e-10 --forward-tol 2e-8 --max-iter 2000 --timeout 300 --output structure-results/kernel_cycle.json >structure-results/kernel_cycle.log 2>&1
+          echo "$?" >structure-results/kernel_cycle.exit
+          python benchmarks/hdfe/frontier_v1/native_cost/study.py --families easy_crossed --sizes 262144 524288 --rhs 1 --backends within native_auto fereg --diagnostics on --calls cold warm --replicates 1 --threads 2 --tol 1e-10 --forward-tol 2e-8 --max-iter 2000 --timeout 300 --output structure-results/easy_crossed.json >structure-results/easy_crossed.log 2>&1
+          echo "$?" >structure-results/easy_crossed.exit
+          exit 0
+      - name: Summarize each family without dropping failures
+        if: always()
+        shell: bash
+        run: |
+          git rev-parse HEAD >structure-results/source_sha.txt
+          cp /tmp/native-cost-build/prepared.json structure-results/ || true
+          cp /tmp/native-cost-build/build.json structure-results/ || true
+          python - <<'PY'
+          import json, pathlib
+          root=pathlib.Path('structure-results'); result={}
+          for family in ['kernel_grid','rigidity_grid_unique','kernel_cycle','easy_crossed']:
+            p=root/(family+'.json')
+            if not p.exists():
+              result[family]={'status':'missing_aggregate','exit_code':(root/(family+'.exit')).read_text().strip() if (root/(family+'.exit')).exists() else 'unknown'}
+              continue
+            try:
+              obj=json.loads(p.read_text())
+              result[family]={'summary':obj.get('summary'),'cases':[{'size':c.get('request',{}).get('size'),'backend':c.get('request',{}).get('backend'),'status':c.get('status'),'N':c.get('case',{}).get('n'),'G':c.get('case',{}).get('metadata',{}).get('G'),'U':c.get('case',{}).get('metadata',{}).get('U'),'kappa_bound':c.get('case',{}).get('metadata',{}).get('condition_number',{}).get('analytic_upper_bound'),'rss_bytes':c.get('worker_peak_rss_bytes'),'calls':[{'mode':x.get('mode'),'status':x.get('status'),'total_s':x.get('total_s'),'forward_error':x.get('accuracy',{}).get('max_forward_relative_error')} for x in c.get('calls',[])]} for c in obj.get('cases',[])]}
+            except Exception as e:
+              result[family]={'error':str(e)}
+          (root/'summary.json').write_text(json.dumps(result,indent=2,ensure_ascii=False))
+          print(json.dumps(result,indent=2,ensure_ascii=False))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fe-frontier-alternate-structures
+          path: structure-results/
+          retention-days: 30
+          if-no-files-found: warn
