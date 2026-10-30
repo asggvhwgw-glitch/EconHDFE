@@ -5,3 +5,5 @@ docs/release/evidence/** -text
 *.pdf binary
 *.zip binary
 *.png binary
+# Unified-diff blank context lines contain a required single space.
+benchmarks/hdfe/frontier_v1/native_cost/patches/*.patch whitespace=-blank-at-eol

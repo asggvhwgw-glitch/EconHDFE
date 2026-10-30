@@ -1,0 +1,38 @@
+name: Experimental FE complexity frontier benchmark
+on:
+  pull_request:
+    paths:
+      - 'benchmarks/hdfe/frontier_v1/**'
+      - '.github/workflows/fe-frontier-benchmark.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-oracles:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install numpy==2.3.5 scipy==1.17.0 pytest==9.2.0
+      - name: Algebraic fixtures, independent validation and runner contracts
+        run: python -m pytest benchmarks/hdfe/frontier_v1/tests -q
+      - name: Explicit SciPy-only CI smoke (native wheel validation is separate)
+        run: >-
+          python benchmarks/hdfe/frontier_v1/run.py
+          --families rigidity_grid kernel_grid rigidity_grid_unique
+          --sizes 8 --rhs-kind broadband --backends scipy_lsmr
+          --output /tmp/fe-frontier-ci.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fe-frontier-oracles-${{ github.run_id }}
+          path: |
+            /tmp/fe-frontier-ci.json
+            /tmp/fe-frontier-ci_workers_*

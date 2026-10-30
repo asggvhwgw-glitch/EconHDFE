@@ -1,0 +1,107 @@
+name: FE frontier 10-million-row stress (research)
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/fe-frontier-10m.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: fe-frontier-10m-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: false
+jobs:
+  ten-million-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      NUMBA_NUM_THREADS: '2'
+      RAYON_NUM_THREADS: '2'
+      CARGO_BUILD_JOBS: '2'
+      MALLOC_ARENA_MAX: '2'
+      ECONHDFE_REQUIRE_NATIVE_DIAGNOSTICS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.99.1'
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ${{ runner.temp }}/native-cost-archives
+          key: fe-native-cost-v1-${{ runner.os }}-${{ hashFiles('benchmarks/hdfe/frontier_v1/native_cost/locks/*') }}
+      - name: Install pinned research environment
+        run: python -m pip install numpy==2.3.5 scipy==1.17.0 pytest==9.2.0 maturin==1.15.0
+      - name: Rebuild exact diagnostics-enabled native kernels
+        run: |
+          python benchmarks/hdfe/frontier_v1/native_cost/prepare.py \
+            --work-dir "$RUNNER_TEMP/native-cost-build" \
+            --archives "$RUNNER_TEMP/native-cost-archives" --build
+          python -m pip install --no-deps "$RUNNER_TEMP"/native-cost-build/wheelhouse/*.whl
+      - name: Capture system limit and run baseline 5.24m
+        shell: bash
+        run: |
+          mkdir -p stress-results
+          (uname -a; lscpu | head -25; free -h; cat /sys/fs/cgroup/memory.max || true; df -h .; python -VV; git rev-parse HEAD) >stress-results/machine.txt 2>&1
+          set +e
+          timeout -k 30s 1300s python benchmarks/hdfe/frontier_v1/native_cost/study.py \
+            --families rigidity_grid --sizes 512 --rhs 1 \
+            --backends within native_auto fereg --diagnostics on \
+            --calls cold warm --replicates 1 --threads 2 \
+            --tol 1e-10 --forward-tol 2e-8 --max-iter 2000 --timeout 400 \
+            --output stress-results/rigidity_5m.json >stress-results/rigidity_5m.log 2>&1
+          code=$?
+          echo "$code" >stress-results/rigidity_5m.exit
+          cat stress-results/rigidity_5m.log
+          exit 0
+      - name: Run 10.368m observations, 3.11m FE categories
+        shell: bash
+        run: |
+          set +e
+          timeout -k 30s 1800s python benchmarks/hdfe/frontier_v1/native_cost/study.py \
+            --families rigidity_grid --sizes 720 --rhs 1 \
+            --backends within native_auto fereg --diagnostics on \
+            --calls cold warm --replicates 1 --threads 2 \
+            --tol 1e-10 --forward-tol 2e-8 --max-iter 2000 --timeout 520 \
+            --output stress-results/rigidity_10m.json >stress-results/rigidity_10m.log 2>&1
+          code=$?
+          echo "$code" >stress-results/rigidity_10m.exit
+          cat stress-results/rigidity_10m.log
+          exit 0
+      - name: Build provenance and formal summary
+        if: always()
+        shell: bash
+        run: |
+          git rev-parse HEAD >stress-results/source_sha.txt
+          cp "$RUNNER_TEMP/native-cost-build/prepared.json" stress-results/ || true
+          cp "$RUNNER_TEMP/native-cost-build/build.json" stress-results/ || true
+          python - <<'PY'
+          import json, pathlib
+          root=pathlib.Path('stress-results')
+          data={}
+          for tag in ['5m','10m']:
+            path=root/('rigidity_'+tag+'.json')
+            if not path.exists():
+              data[tag]={'status':'missing_aggregate','exit_code':(root/('rigidity_'+tag+'.exit')).read_text().strip() if (root/('rigidity_'+tag+'.exit')).exists() else 'unknown'}
+              continue
+            try:
+              obj=json.loads(path.read_text())
+              data[tag]={'summary':obj.get('summary'), 'cases':[{'backend':r.get('request',{}).get('backend'), 'status':r.get('status'), 'N':r.get('case',{}).get('n'), 'rss_bytes':r.get('worker_peak_rss_bytes'), 'calls':[{'mode':c.get('mode'),'status':c.get('status'),'total_s':c.get('total_s'),'forward_error':c.get('accuracy',{}).get('max_forward_relative_error')} for c in r.get('calls',[])]} for r in obj.get('cases',[])]}
+            except Exception as e:
+              data[tag]={'error':str(e)}
+          (root/'summary.json').write_text(json.dumps(data,indent=2,ensure_ascii=False))
+          print(json.dumps(data,indent=2,ensure_ascii=False))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fe-frontier-10m-${{ github.run_id }}
+          path: stress-results/
+          retention-days: 30
+          if-no-files-found: warn

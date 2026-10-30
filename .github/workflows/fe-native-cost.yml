@@ -1,0 +1,75 @@
+name: Experimental native FE cost diagnostics
+on:
+  pull_request:
+    paths:
+      - 'benchmarks/hdfe/frontier_v1/**'
+      - '.github/workflows/fe-native-cost.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: fe-native-cost-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+jobs:
+  pinned-native-diagnostics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      NUMBA_NUM_THREADS: '2'
+      RAYON_NUM_THREADS: '2'
+      CARGO_BUILD_JOBS: '2'
+      ECONHDFE_REQUIRE_NATIVE_DIAGNOSTICS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.99.1'
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ${{ runner.temp }}/native-cost-archives
+          key: fe-native-cost-v1-${{ runner.os }}-${{ hashFiles('benchmarks/hdfe/frontier_v1/native_cost/locks/*') }}
+      - name: Install recorded Python tools
+        run: python -m pip install numpy==2.3.5 scipy==1.17.0 pytest==9.2.0 maturin==1.15.0
+      - name: Verify archives, apply research patches and build locked wheels
+        run: |
+          python benchmarks/hdfe/frontier_v1/native_cost/prepare.py \
+            --work-dir "$RUNNER_TEMP/native-cost-build" \
+            --archives "$RUNNER_TEMP/native-cost-archives" --build
+          python -m pip install --no-deps "$RUNNER_TEMP"/native-cost-build/wheelhouse/*.whl
+      - name: Independent numerical and diagnostic contracts
+        run: |
+          mkdir -p native-cost-results
+          python -m pytest benchmarks/hdfe/frontier_v1/tests -q \
+            --junitxml=native-cost-results/python-tests.xml
+          CARGO_TARGET_DIR="$RUNNER_TEMP/native-cost-build/target" cargo test --release --locked \
+            --manifest-path "$RUNNER_TEMP/native-cost-build/fereg/Cargo.toml" \
+            -p fereg-core --test solver diagnostics_ -- --nocapture
+      - name: Cold and reused factor smoke across the routing threshold
+        run: |
+          python benchmarks/hdfe/frontier_v1/native_cost/study.py \
+            --families rigidity_grid --sizes 32 64 --backends within native_auto fereg \
+            --diagnostics on --calls cold warm --threads 2 --replicates 1 \
+            --output native-cost-results/smoke.json
+      - name: Preserve build identities
+        if: always()
+        run: |
+          mkdir -p native-cost-results
+          python -m pip freeze > native-cost-results/python-environment.txt
+          git rev-parse HEAD > native-cost-results/repository-head.txt
+          cp "$RUNNER_TEMP/native-cost-build/prepared.json" native-cost-results/ || true
+          cp "$RUNNER_TEMP/native-cost-build/build.json" native-cost-results/ || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fe-native-cost-${{ github.run_id }}
+          path: |
+            native-cost-results/
+            ${{ runner.temp }}/native-cost-build/wheelhouse/

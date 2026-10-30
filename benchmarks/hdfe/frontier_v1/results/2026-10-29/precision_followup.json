@@ -1,0 +1,929 @@
+{
+  "schema_version": 1,
+  "prototype_version": "0.1.0",
+  "run_id": "30c8f96f1810",
+  "created_at_utc": "2026-10-29T07:44:40.196452+00:00",
+  "environment": {
+    "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+    "platform": "Linux-6.18.55-x86_64-with-glibc2.39",
+    "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+    "logical_cpus_visible": 9,
+    "cgroup_limits": {
+      "memory.max": "8589934592",
+      "cpu.max": "800000 100000"
+    },
+    "versions": {
+      "numpy": "2.3.5",
+      "scipy": "1.17.0",
+      "pytest": "9.2.0",
+      "within-py": "0.4.0",
+      "econhdfe-within": "0.1.0a2",
+      "econhdfe-dual-prototype": "0.1.0a1"
+    },
+    "repository_base_commit": "b9127b174c10b065deee1fc68ad0a64ffb928e85",
+    "benchmark_source_sha256": {
+      "__init__.py": "f1a7ceb55dd4af3f46e896a83da5c83f5cf3c5bbb92afa2d706e17fa2fec9bbe",
+      "backends.py": "7ddcc080b37a42bda73c458758900612cc9703a64b05e9816a131c77a04b3510",
+      "families.py": "9eeec9997075c44ceb2de94fa97c8b16215e17777339d5201f78303769945689",
+      "run.py": "b5dbbdadc57153054ad18763cb147ed135161d4c3e33112b952a61828c61141c",
+      "validation.py": "4b24f933169153d6fcefd64dc538d1eb5720c380a0a4bad58b726e39b85dc1f6",
+      "tests/conftest.py": "217df2aad9c92041fcfee1ebc7ee12ea1da3bc8081a076a61b86e201a05279d0",
+      "tests/test_backends.py": "ac751b76bb24a202c9900a00afd7ad8d3220a0166ada2a58b956738abf19e1f6",
+      "tests/test_families.py": "254793c7e38ca29ffd18257194015ee88bb7423467cc02bcd5e9e2bd7523d0ff",
+      "tests/test_runner.py": "d0a5ca227a2c9d95f04db0d0633f08babd5dcfb85b2859fa0abc7b5b9e8ee7f5",
+      "tests/test_validation.py": "2d0d8d8d3cc435a008a61a1615cf7b04c3ec2d452251f57c7d3fd78b761a7270"
+    },
+    "clock": "time.perf_counter"
+  },
+  "timing_contract": {
+    "solver_total": "adapter setup/layout + projection + output recovery; lazy factors may occur in solve_s",
+    "excluded": "DGP, independent fixture verification, spectrum diagnostic and output forward verification",
+    "process_wall": "includes interpreter/imports, all phases and process exit",
+    "timeout": "complete child process deadline; retained as failure, never a successful solve time",
+    "matvec_counts": "only actually observed counts; native opaque counters remain null",
+    "execution_order": "sequential children; backend order alternates with workload index"
+  },
+  "records": [
+    {
+      "request": {
+        "family": "rigidity_grid",
+        "size": 128,
+        "backend": "scipy_lsmr",
+        "rhs": 2,
+        "rhs_kind": "broadband",
+        "seed": 20261029,
+        "repeat": 1,
+        "weight_ratio": 1.0,
+        "threads": 2,
+        "tol": 1e-12,
+        "forward_tol": 2e-08,
+        "max_iter": 2000,
+        "spectrum_max_categories": 512,
+        "timing_trial": 0
+      },
+      "status": "passed",
+      "generation_s": 0.2536532199992507,
+      "case": {
+        "name": "rigidity_grid-s128-p2-broadband-r1-w1",
+        "n": 327680,
+        "k": 3,
+        "rhs": 2,
+        "group_levels": [
+          32768,
+          32768,
+          32768
+        ],
+        "metadata": {
+          "family": "rigidity_grid",
+          "size": 128,
+          "size_kind": "periodic_grid_side",
+          "seed": 20261029,
+          "rhs_count": 2,
+          "N": 327680,
+          "G": 98304,
+          "U": 262144,
+          "categories_per_dimension": [
+            32768,
+            32768,
+            32768
+          ],
+          "expected_rank": 98302,
+          "normal_rank": true,
+          "base_N": 327680,
+          "repeat": 1,
+          "weight_ratio": 1.0,
+          "weighted": false,
+          "row_order": "complete base copies; each base: cubes, u, v, u_plus_v connectors",
+          "dimension_growth": "G proportional to N when repeat is fixed",
+          "repeat_scope": "duplicates only; increasing repeat does not increase G or rank",
+          "rhs": {
+            "kind": "broadband",
+            "spatial_frequencies": [
+              [
+                1,
+                0
+              ],
+              [
+                0,
+                1
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                0
+              ],
+              [
+                0,
+                2
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                0
+              ],
+              [
+                0,
+                3
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                0
+              ],
+              [
+                0,
+                4
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                8,
+                0
+              ],
+              [
+                0,
+                8
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                16,
+                0
+              ],
+              [
+                0,
+                16
+              ],
+              [
+                16,
+                16
+              ],
+              [
+                32,
+                0
+              ],
+              [
+                0,
+                32
+              ],
+              [
+                32,
+                32
+              ],
+              [
+                64,
+                0
+              ],
+              [
+                0,
+                64
+              ],
+              [
+                64,
+                64
+              ]
+            ],
+            "spatial_mode_count": 24,
+            "full_nonzero_fourier_support": true,
+            "broadband_frequency_count": 16383,
+            "finite_mode_warning": null,
+            "slow_component_fraction_of_fit_energy": 0.5,
+            "fit_fraction_of_target_energy": 0.5,
+            "truth_fraction_of_target_energy": 0.5,
+            "slow_mode_scope": "local-kernel multi-frequency fields; not supplied exact global eigenvectors"
+          },
+          "oracle": {
+            "kind": "constructed_fe_plus_weighted_cube_contrast",
+            "certification": "algebraic",
+            "coefficients_available": true,
+            "orthogonality_mechanism": "local_cube_walsh_interactions_divided_by_weights",
+            "finite_precision_note": "rounded numpy arrays; validate numerical cancellation independently"
+          },
+          "condition_number": {
+            "definition": "positive_spectrum_frequency_normalized_gram",
+            "analytic_upper_bound": 196608.0,
+            "base_analytic_upper_bound": 196608,
+            "weighted_comparison_factor": 1.0,
+            "uniform_repeat_changes_unweighted_spectrum": false,
+            "weighted_repeat_note": "independent weights on row copies may change the numeric spectrum",
+            "status": "analytic_family_bound",
+            "weight_scope": "arbitrary positive row weights within the stated global ratio"
+          },
+          "modules": 16384,
+          "grid_side": 128,
+          "core_rows": 131072,
+          "connector_rows_by_kind": {
+            "u": 65536,
+            "v": 65536,
+            "u_plus_v": 65536
+          },
+          "base_unique_tuples": 262144,
+          "kappa_bound_source": "Rigidity Patches, Section 6.3",
+          "spectrum_order": "Theta(modules) for unit weights"
+        }
+      },
+      "oracle": {
+        "finite": true,
+        "tolerance": 1e-10,
+        "structural_rank_proof": false,
+        "weight_normalization_scale": 1.0,
+        "algebraic_metadata": {
+          "kind": "constructed_fe_plus_weighted_cube_contrast",
+          "certification": "algebraic",
+          "coefficients_available": true,
+          "orthogonality_mechanism": "local_cube_walsh_interactions_divided_by_weights",
+          "finite_precision_note": "rounded numpy arrays; validate numerical cancellation independently"
+        },
+        "dense_budget": {
+          "allowed": false,
+          "reason": "categories 98304 exceed max_categories=512; rows 327680 exceed max_rows=8192; dense entries 32212254720 exceed max_dense_entries=4000000",
+          "n": 327680,
+          "categories": 98304,
+          "levels": [
+            32768,
+            32768,
+            32768
+          ],
+          "estimated_dense_entries": 32212254720,
+          "budget": {
+            "max_categories": 512,
+            "max_rows": 8192,
+            "max_dense_entries": 4000000
+          }
+        },
+        "warnings": [
+          "Dense feasibility and numerical-rank checks skipped: categories 98304 exceed max_categories=512; rows 327680 exceed max_rows=8192; dense entries 32212254720 exceed max_dense_entries=4000000"
+        ],
+        "oracle_forward_error_bound": 1.2456211649542025e-14,
+        "oracle_forward_tolerance": 1e-09,
+        "oracle_forward_bound_pass": true,
+        "oracle_forward_bound_available": true,
+        "depends_on_declared_analytic_spectral_bound": true,
+        "computed_in_float64_not_interval_certified": true,
+        "oracle_basis": "declared analytic spectral bound plus independently evaluated float64 witnesses",
+        "orthogonality": {
+          "pass": true,
+          "method": "independent original-row weighted group sums",
+          "per_rhs": [
+            2.7783871359162287e-17,
+            2.805874606640209e-17
+          ],
+          "maximum": 2.805874606640209e-17,
+          "by_dimension": [
+            [
+              2.7783871359162287e-17,
+              2.8032012444151585e-17
+            ],
+            [
+              2.731819366685263e-17,
+              2.777513028962369e-17
+            ],
+            [
+              2.7475119186213958e-17,
+              2.805874606640209e-17
+            ]
+          ]
+        },
+        "feasibility": {
+          "pass": true,
+          "status": "checked",
+          "witnesses": [
+            {
+              "method": "independently evaluated supplied FE coefficients",
+              "status": "checked",
+              "pass": true,
+              "per_rhs_relative_error": [
+                1.4823160919486707e-17,
+                1.2807470831474848e-17
+              ],
+              "maximum": 1.4823160919486707e-17
+            }
+          ],
+          "metadata_alone_is_not_a_certificate": true
+        },
+        "oracle_forward_bound_details": {
+          "kappa_upper": 196608.0,
+          "truth_stationarity_max": 2.805874606640209e-17,
+          "feasibility_relative_error_max": 1.4823160919486707e-17,
+          "formula": "sqrt(kappa_upper) * max_truth_fe_stationarity + max_feasibility_relative_error",
+          "lambda_max_normalized_gram": 3,
+          "source": "case.metadata.condition_number.analytic_upper_bound",
+          "numerical_spectrum_estimates_used": false
+        },
+        "aggregate_pass": true,
+        "oracle_valid": true
+      },
+      "oracle_verification_s": 0.09241666500020074,
+      "spectrum": {
+        "allowed": false,
+        "reason": "categories 98304 exceed max_categories=512; rows 327680 exceed max_rows=8192; dense entries 32212254720 exceed max_dense_entries=4000000",
+        "n": 327680,
+        "categories": 98304,
+        "levels": [
+          32768,
+          32768,
+          32768
+        ],
+        "estimated_dense_entries": 32212254720,
+        "budget": {
+          "max_categories": 512,
+          "max_rows": 8192,
+          "max_dense_entries": 4000000
+        },
+        "numerical_estimate_only": true,
+        "structural_rank_proof": false,
+        "matrix": "diag(D'WD)^(-1/2) D'WD diag(D'WD)^(-1/2)",
+        "method": "float64 SVD of weighted, column-normalized incidence matrix",
+        "weight_normalization_scale": 1.0,
+        "status": "skipped_budget",
+        "warnings": [
+          "No dense matrix was allocated; spectrum and numerical rank are unavailable."
+        ]
+      },
+      "spectrum_diagnostic_s": 0.06350315799863893,
+      "solver": {
+        "backend": "scipy_lsmr",
+        "provenance": {
+          "distribution": "scipy",
+          "distribution_version": "1.17.0",
+          "numpy_version": "2.3.5",
+          "kernel": "scipy.sparse.linalg.lsmr",
+          "operator": "matrix_free_weighted_categorical",
+          "preconditioner": "right_diagonal_column_norm",
+          "precision": "float64",
+          "normal_equations_formed": false,
+          "rank_gauge_removed": false
+        },
+        "nobs": 327680,
+        "n_factors": 3,
+        "levels": [
+          32768,
+          32768,
+          32768
+        ],
+        "n_rhs": 2,
+        "threads_requested": 2,
+        "tolerance_requested": 1e-12,
+        "max_iter_requested": 2000,
+        "input_weight_normalization": "divide_by_max_positive_weight",
+        "actual_matvec_counts": {
+          "matvec": 1273,
+          "rmatvec": 1275,
+          "total": 2548
+        },
+        "actual_preconditioner_apply_counts": null,
+        "count_kind": "instrumented_matrix_free_operator_calls",
+        "reported_iterations": [
+          636,
+          637
+        ],
+        "timing_scope": "setup=validation_layout_constructor; solve=full_call_and_output_copy; deferred_setup_in_solve; excludes_import_provenance_and_external_oracles",
+        "flags": [
+          true,
+          true
+        ],
+        "converged": true,
+        "solver_details": [
+          {
+            "istop": 2,
+            "iterations": 636,
+            "normr": 572.4334022399529,
+            "normar": 1.73737170957601e-08,
+            "condition_estimate": 3.5574188036085443,
+            "matvec": 636,
+            "rmatvec": 637
+          },
+          {
+            "istop": 2,
+            "iterations": 637,
+            "normr": 572.433402239956,
+            "normar": 1.7520727317212235e-08,
+            "condition_estimate": 3.831371254941401,
+            "matvec": 637,
+            "rmatvec": 638
+          }
+        ],
+        "reconstructed_fitted_vectors": 2,
+        "operator_incidence_visits": 2504785920,
+        "iteration_budget_scope": "per_rhs_lsmr",
+        "conlim": 0.0,
+        "solver_reported_setup_s": null,
+        "threads_effective": 1,
+        "thread_note": "NumPy categorical bincount baseline; requested native threads do not parallelize this operator",
+        "setup_s": 0.009808247999899322,
+        "solve_s": 6.937914021000324,
+        "total_s": 6.947722269000224,
+        "output_finite": true
+      },
+      "accuracy": {
+        "finite": true,
+        "forward_pass": true,
+        "stationarity_pass": true,
+        "aggregate_pass": true,
+        "per_rhs": [
+          {
+            "rhs": 0,
+            "finite": true,
+            "forward_relative_error": 2.2637010929216487e-10,
+            "normalized_fe_stationarity": 1.3257004454900335e-11,
+            "normalized_fe_stationarity_by_dimension": [
+              1.2984497540337805e-11,
+              1.3257004454900335e-11,
+              1.0781209584462626e-11
+            ],
+            "forward_pass": true,
+            "stationarity_pass": true,
+            "pass": true
+          },
+          {
+            "rhs": 1,
+            "finite": true,
+            "forward_relative_error": 2.4723968978571843e-10,
+            "normalized_fe_stationarity": 1.3313386565259355e-11,
+            "normalized_fe_stationarity_by_dimension": [
+              1.3313386565259355e-11,
+              1.2961077950428783e-11,
+              1.1098377587619384e-11
+            ],
+            "forward_pass": true,
+            "stationarity_pass": true,
+            "pass": true
+          }
+        ],
+        "max_forward_relative_error": 2.4723968978571843e-10,
+        "max_normalized_fe_stationarity": 1.3313386565259355e-11,
+        "forward_tolerance": 2e-08,
+        "stationarity_tolerance": 2e-08,
+        "norm": "||returned-truth||_W / ||y||_W",
+        "stationarity_definition": "max_k ||P_k returned||_W / ||y||_W",
+        "reference": "case.truth; oracle validation is reported separately by verify_case",
+        "weight_normalization_scale": 1.0,
+        "nonfinite_diagnostics": "null means unavailable or infinite; it never passes"
+      },
+      "verification_s": 0.1080303009985073,
+      "worker_wall_s": 7.835112297998421,
+      "worker_peak_rss_bytes": 111517696,
+      "memory_scope": "whole isolated worker: imports, fixture, oracle, solver, verification; not solver-only",
+      "process_exit_code": 0,
+      "process_wall_s": 7.99388012199779,
+      "worker_log": "precision_followup_workers_30c8f96f1810/000_rigidity_grid_128_scipy_lsmr.log"
+    },
+    {
+      "request": {
+        "family": "rigidity_grid",
+        "size": 256,
+        "backend": "scipy_lsmr",
+        "rhs": 2,
+        "rhs_kind": "broadband",
+        "seed": 20261029,
+        "repeat": 1,
+        "weight_ratio": 1.0,
+        "threads": 2,
+        "tol": 1e-12,
+        "forward_tol": 2e-08,
+        "max_iter": 2000,
+        "spectrum_max_categories": 512,
+        "timing_trial": 0
+      },
+      "status": "passed",
+      "generation_s": 1.1037510900023335,
+      "case": {
+        "name": "rigidity_grid-s256-p2-broadband-r1-w1",
+        "n": 1310720,
+        "k": 3,
+        "rhs": 2,
+        "group_levels": [
+          131072,
+          131072,
+          131072
+        ],
+        "metadata": {
+          "family": "rigidity_grid",
+          "size": 256,
+          "size_kind": "periodic_grid_side",
+          "seed": 20261029,
+          "rhs_count": 2,
+          "N": 1310720,
+          "G": 393216,
+          "U": 1048576,
+          "categories_per_dimension": [
+            131072,
+            131072,
+            131072
+          ],
+          "expected_rank": 393214,
+          "normal_rank": true,
+          "base_N": 1310720,
+          "repeat": 1,
+          "weight_ratio": 1.0,
+          "weighted": false,
+          "row_order": "complete base copies; each base: cubes, u, v, u_plus_v connectors",
+          "dimension_growth": "G proportional to N when repeat is fixed",
+          "repeat_scope": "duplicates only; increasing repeat does not increase G or rank",
+          "rhs": {
+            "kind": "broadband",
+            "spatial_frequencies": [
+              [
+                1,
+                0
+              ],
+              [
+                0,
+                1
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                0
+              ],
+              [
+                0,
+                2
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                0
+              ],
+              [
+                0,
+                3
+              ],
+              [
+                4,
+                0
+              ],
+              [
+                0,
+                4
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                8,
+                0
+              ],
+              [
+                0,
+                8
+              ],
+              [
+                8,
+                8
+              ],
+              [
+                16,
+                0
+              ],
+              [
+                0,
+                16
+              ],
+              [
+                32,
+                0
+              ],
+              [
+                0,
+                32
+              ],
+              [
+                32,
+                32
+              ],
+              [
+                64,
+                0
+              ],
+              [
+                0,
+                64
+              ],
+              [
+                64,
+                64
+              ],
+              [
+                128,
+                0
+              ],
+              [
+                128,
+                128
+              ]
+            ],
+            "spatial_mode_count": 24,
+            "full_nonzero_fourier_support": true,
+            "broadband_frequency_count": 65535,
+            "finite_mode_warning": null,
+            "slow_component_fraction_of_fit_energy": 0.5,
+            "fit_fraction_of_target_energy": 0.5,
+            "truth_fraction_of_target_energy": 0.5,
+            "slow_mode_scope": "local-kernel multi-frequency fields; not supplied exact global eigenvectors"
+          },
+          "oracle": {
+            "kind": "constructed_fe_plus_weighted_cube_contrast",
+            "certification": "algebraic",
+            "coefficients_available": true,
+            "orthogonality_mechanism": "local_cube_walsh_interactions_divided_by_weights",
+            "finite_precision_note": "rounded numpy arrays; validate numerical cancellation independently"
+          },
+          "condition_number": {
+            "definition": "positive_spectrum_frequency_normalized_gram",
+            "analytic_upper_bound": 786432.0,
+            "base_analytic_upper_bound": 786432,
+            "weighted_comparison_factor": 1.0,
+            "uniform_repeat_changes_unweighted_spectrum": false,
+            "weighted_repeat_note": "independent weights on row copies may change the numeric spectrum",
+            "status": "analytic_family_bound",
+            "weight_scope": "arbitrary positive row weights within the stated global ratio"
+          },
+          "modules": 65536,
+          "grid_side": 256,
+          "core_rows": 524288,
+          "connector_rows_by_kind": {
+            "u": 262144,
+            "v": 262144,
+            "u_plus_v": 262144
+          },
+          "base_unique_tuples": 1048576,
+          "kappa_bound_source": "Rigidity Patches, Section 6.3",
+          "spectrum_order": "Theta(modules) for unit weights"
+        }
+      },
+      "oracle": {
+        "finite": true,
+        "tolerance": 1e-10,
+        "structural_rank_proof": false,
+        "weight_normalization_scale": 1.0,
+        "algebraic_metadata": {
+          "kind": "constructed_fe_plus_weighted_cube_contrast",
+          "certification": "algebraic",
+          "coefficients_available": true,
+          "orthogonality_mechanism": "local_cube_walsh_interactions_divided_by_weights",
+          "finite_precision_note": "rounded numpy arrays; validate numerical cancellation independently"
+        },
+        "dense_budget": {
+          "allowed": false,
+          "reason": "categories 393216 exceed max_categories=512; rows 1310720 exceed max_rows=8192; dense entries 515396075520 exceed max_dense_entries=4000000",
+          "n": 1310720,
+          "categories": 393216,
+          "levels": [
+            131072,
+            131072,
+            131072
+          ],
+          "estimated_dense_entries": 515396075520,
+          "budget": {
+            "max_categories": 512,
+            "max_rows": 8192,
+            "max_dense_entries": 4000000
+          }
+        },
+        "warnings": [
+          "Dense feasibility and numerical-rank checks skipped: categories 393216 exceed max_categories=512; rows 1310720 exceed max_rows=8192; dense entries 515396075520 exceed max_dense_entries=4000000"
+        ],
+        "oracle_forward_error_bound": 2.484729747517022e-14,
+        "oracle_forward_tolerance": 1e-09,
+        "oracle_forward_bound_pass": true,
+        "oracle_forward_bound_available": true,
+        "depends_on_declared_analytic_spectral_bound": true,
+        "computed_in_float64_not_interval_certified": true,
+        "oracle_basis": "declared analytic spectral bound plus independently evaluated float64 witnesses",
+        "orthogonality": {
+          "pass": true,
+          "method": "independent original-row weighted group sums",
+          "per_rhs": [
+            2.7877138239855184e-17,
+            2.8007053210152794e-17
+          ],
+          "maximum": 2.8007053210152794e-17,
+          "by_dimension": [
+            [
+              2.7877138239855184e-17,
+              2.8007053210152794e-17
+            ],
+            [
+              2.758369662745328e-17,
+              2.7512692166262772e-17
+            ],
+            [
+              2.766044889283842e-17,
+              2.7728899452197993e-17
+            ]
+          ]
+        },
+        "feasibility": {
+          "pass": true,
+          "status": "checked",
+          "witnesses": [
+            {
+              "method": "independently evaluated supplied FE coefficients",
+              "status": "checked",
+              "pass": true,
+              "per_rhs_relative_error": [
+                1.0362240472155738e-17,
+                1.035052930029239e-17
+              ],
+              "maximum": 1.0362240472155738e-17
+            }
+          ],
+          "metadata_alone_is_not_a_certificate": true
+        },
+        "oracle_forward_bound_details": {
+          "kappa_upper": 786432.0,
+          "truth_stationarity_max": 2.8007053210152794e-17,
+          "feasibility_relative_error_max": 1.0362240472155738e-17,
+          "formula": "sqrt(kappa_upper) * max_truth_fe_stationarity + max_feasibility_relative_error",
+          "lambda_max_normalized_gram": 3,
+          "source": "case.metadata.condition_number.analytic_upper_bound",
+          "numerical_spectrum_estimates_used": false
+        },
+        "aggregate_pass": true,
+        "oracle_valid": true
+      },
+      "oracle_verification_s": 0.44842257400159724,
+      "spectrum": {
+        "allowed": false,
+        "reason": "categories 393216 exceed max_categories=512; rows 1310720 exceed max_rows=8192; dense entries 515396075520 exceed max_dense_entries=4000000",
+        "n": 1310720,
+        "categories": 393216,
+        "levels": [
+          131072,
+          131072,
+          131072
+        ],
+        "estimated_dense_entries": 515396075520,
+        "budget": {
+          "max_categories": 512,
+          "max_rows": 8192,
+          "max_dense_entries": 4000000
+        },
+        "numerical_estimate_only": true,
+        "structural_rank_proof": false,
+        "matrix": "diag(D'WD)^(-1/2) D'WD diag(D'WD)^(-1/2)",
+        "method": "float64 SVD of weighted, column-normalized incidence matrix",
+        "weight_normalization_scale": 1.0,
+        "status": "skipped_budget",
+        "warnings": [
+          "No dense matrix was allocated; spectrum and numerical rank are unavailable."
+        ]
+      },
+      "spectrum_diagnostic_s": 0.3259691310013295,
+      "solver": {
+        "backend": "scipy_lsmr",
+        "provenance": {
+          "distribution": "scipy",
+          "distribution_version": "1.17.0",
+          "numpy_version": "2.3.5",
+          "kernel": "scipy.sparse.linalg.lsmr",
+          "operator": "matrix_free_weighted_categorical",
+          "preconditioner": "right_diagonal_column_norm",
+          "precision": "float64",
+          "normal_equations_formed": false,
+          "rank_gauge_removed": false
+        },
+        "nobs": 1310720,
+        "n_factors": 3,
+        "levels": [
+          131072,
+          131072,
+          131072
+        ],
+        "n_rhs": 2,
+        "threads_requested": 2,
+        "tolerance_requested": 1e-12,
+        "max_iter_requested": 2000,
+        "input_weight_normalization": "divide_by_max_positive_weight",
+        "actual_matvec_counts": {
+          "matvec": 2455,
+          "rmatvec": 2457,
+          "total": 4912
+        },
+        "actual_preconditioner_apply_counts": null,
+        "count_kind": "instrumented_matrix_free_operator_calls",
+        "reported_iterations": [
+          1226,
+          1229
+        ],
+        "timing_scope": "setup=validation_layout_constructor; solve=full_call_and_output_copy; deferred_setup_in_solve; excludes_import_provenance_and_external_oracles",
+        "flags": [
+          true,
+          true
+        ],
+        "converged": true,
+        "solver_details": [
+          {
+            "istop": 2,
+            "iterations": 1226,
+            "normr": 1144.8668044799172,
+            "normar": 4.7531263598331896e-08,
+            "condition_estimate": 5.499403647153641,
+            "matvec": 1226,
+            "rmatvec": 1227
+          },
+          {
+            "istop": 2,
+            "iterations": 1229,
+            "normr": 1144.866804479906,
+            "normar": 4.810640844441497e-08,
+            "condition_estimate": 6.171324232556242,
+            "matvec": 1229,
+            "rmatvec": 1230
+          }
+        ],
+        "reconstructed_fitted_vectors": 2,
+        "operator_incidence_visits": 19314769920,
+        "iteration_budget_scope": "per_rhs_lsmr",
+        "conlim": 0.0,
+        "solver_reported_setup_s": null,
+        "threads_effective": 1,
+        "thread_note": "NumPy categorical bincount baseline; requested native threads do not parallelize this operator",
+        "setup_s": 0.03582952299984754,
+        "solve_s": 54.54857150600219,
+        "total_s": 54.58440102900204,
+        "output_finite": true
+      },
+      "accuracy": {
+        "finite": true,
+        "forward_pass": true,
+        "stationarity_pass": true,
+        "aggregate_pass": true,
+        "per_rhs": [
+          {
+            "rhs": 0,
+            "finite": true,
+            "forward_relative_error": 9.214810566980475e-10,
+            "normalized_fe_stationarity": 1.9673052253262107e-11,
+            "normalized_fe_stationarity_by_dimension": [
+              1.9673052253262107e-11,
+              1.5903841893351038e-11,
+              1.4895160223762165e-11
+            ],
+            "forward_pass": true,
+            "stationarity_pass": true,
+            "pass": true
+          },
+          {
+            "rhs": 1,
+            "finite": true,
+            "forward_relative_error": 8.264982070830886e-10,
+            "normalized_fe_stationarity": 1.831751998097064e-11,
+            "normalized_fe_stationarity_by_dimension": [
+              1.6135291469985578e-11,
+              1.831751998097064e-11,
+              1.6939023402283316e-11
+            ],
+            "forward_pass": true,
+            "stationarity_pass": true,
+            "pass": true
+          }
+        ],
+        "max_forward_relative_error": 9.214810566980475e-10,
+        "max_normalized_fe_stationarity": 1.9673052253262107e-11,
+        "forward_tolerance": 2e-08,
+        "stationarity_tolerance": 2e-08,
+        "norm": "||returned-truth||_W / ||y||_W",
+        "stationarity_definition": "max_k ||P_k returned||_W / ||y||_W",
+        "reference": "case.truth; oracle validation is reported separately by verify_case",
+        "weight_normalization_scale": 1.0,
+        "nonfinite_diagnostics": "null means unavailable or infinite; it never passes"
+      },
+      "verification_s": 0.4133817869987979,
+      "worker_wall_s": 57.280664098998386,
+      "worker_peak_rss_bytes": 288866304,
+      "memory_scope": "whole isolated worker: imports, fixture, oracle, solver, verification; not solver-only",
+      "process_exit_code": 0,
+      "process_wall_s": 57.41376306199891,
+      "worker_log": "precision_followup_workers_30c8f96f1810/001_rigidity_grid_256_scipy_lsmr.log"
+    }
+  ],
+  "summary": {
+    "records": 2,
+    "by_status": {
+      "passed": 2
+    },
+    "max_returned_forward_relative_error": 9.214810566980475e-10
+  }
+}
