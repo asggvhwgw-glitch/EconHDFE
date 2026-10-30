@@ -7,16 +7,24 @@
   `ppml_small_sample="residual"` explicitly for the earlier residual-DF
   convention. The selected convention and factor are reported in diagnostics.
   This changes standard errors, not the requested sample or moment equation.
+- IV-PPML clustered VCE uses the same single `G_min/(G_min-1)` factor on the
+  combined CGM meat as PPML and the linear estimators, replacing per-subset
+  `G/(G-1)` factors. One-way clustering is unchanged; multiway standard errors
+  change, materially with few clusters (e.g. x0.67-0.95 with 7 x 5 clusters).
 - IV-PPML defaults to FE-zero separation in both singleton modes. An explicit
-  legacy simplex/ReLU/mu request warns in `stata_compat`; `unified` continues
-  to reject it. Ordinary PPML separation defaults remain unchanged.
+  legacy simplex/ReLU/mu request warns once when the `IVPPMLConfig` is created
+  in `stata_compat` (not on every `validate()`); `unified` continues to reject
+  it. Ordinary PPML separation defaults remain unchanged.
+  `SamplePolicy.iv_default_separation` is removed.
 - Numerically unidentified IV working equations now raise
   `UnderidentifiedError` instead of possibly reporting success with zero
   slope SE. Passing this check is not a weak-instrument inference guarantee.
 - PPML normalizes the outcome internally in both standardization modes.
-  IV-PPML carries normalization through final inference and reports one
-  jointly accepted coefficient/mean state. Previously incorrect small-unit
-  results will change; model-based Poisson covariance still obeys its own
+  IV-PPML carries normalization through final inference. Both PPML and
+  IV-PPML report the accepted IRLS state's coefficients together with its
+  `eta`/`mu`; the former extra coefficient-only solve is removed (changes at
+  the convergence tolerance). Previously incorrect small-unit results will
+  change; model-based Poisson covariance still obeys its own
   inverse-outcome-unit scaling.
 - Without absorbed FEs, PPML preserves its generated constant if supplied
   regressors already span an intercept. A redundant user constant or category
@@ -27,8 +35,14 @@
   completion after slope repair. Constant variances and cross-covariances can
   change; separately repaired slope inference is preserved. Existing stored
   linear results are invalidated through `linear-session-result-7`.
-- The new `InferenceConfig` field is appended; earlier positional field order
-  is unchanged. The 0.9.3 snapshot is retained and 0.9.4 has its own snapshot.
+- IV-PPML diagnostics add `overidentification` (`stat`, `df`, `pvalue`;
+  Hansen J on the additive moments). `overid_test` moved from
+  `econhdfe.models.linear_iv.diagnostics` to `econhdfe.iv.moments`.
+- New opt-in `InferenceConfig(ivppml_misspecification_robust=True)`: the
+  estimating-equation sandwich for overidentified IV-PPML. Defaults unchanged.
+- The new `InferenceConfig` fields (`ivppml_misspecification_robust`,
+  `ppml_small_sample`) are appended; earlier positional field order is
+  unchanged. The 0.9.3 snapshot is retained and 0.9.4 has its own snapshot.
 
 See [analytical examples and inference boundaries](../development/statistical-audit-closeout.md).
 No licensed-Stata execution, universal many-FE bias correction, weak-IV-robust
