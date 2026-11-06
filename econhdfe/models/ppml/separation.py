@@ -1,8 +1,10 @@
 from __future__ import annotations
 from dataclasses import dataclass
+from dataclasses import field
 from time import perf_counter
+import warnings
 import numpy as np
-from ...errors import InputError, SpecificationError
+from ...errors import ConvergenceError, InputError, SpecificationError
 from ...config import ExecutionConfig
 from .config import PPMLConfig
 from ...hdfe.plan import FEPlan, fe_separated
@@ -21,6 +23,15 @@ class SeparationResult:
     # Rows that became singletons after simplex/ReLU trimming and were then
     # pruned, as upstream's ``trim_separated_obs`` -> ``HDFE.reload()`` does.
     singletons: np.ndarray | None = None
+    # "certified" when a method returned a complete certificate. An
+    # uncertified ReLU dropped only rows its restricted re-check verified.
+    status: dict[str, str] = field(default_factory=dict)
+    relu_candidates: int = 0
+    relu_verified: int = 0
+
+
+class SeparationWarning(UserWarning):
+    """Separation detection ended without a complete certificate."""
 
 
 # Upstream order: ppmlhdfe runs FE separation with the singleton stage, then
@@ -118,6 +129,8 @@ def detect_separation(
     timings: dict[str, float] = {}
     iterations: dict[str, int] = {}
     solvers: dict[str, str] = {}
+    status: dict[str, str] = {}
+    relu_candidates = relu_verified = 0
 
     policy = config.sample_policy
     methods = config.separation_methods
@@ -180,12 +193,16 @@ def detect_separation(
             )
             info = relu_separation(
                 ya, Xa, solver_plan, tol=config.relu_tol, zero_tol=config.relu_zero_tol,
-                hdfe_tol=config.target_inner_tol, max_iter=config.relu_max_iter,
+                max_iter=config.relu_max_iter, stall_rounds=config.relu_stall_rounds,
                 engine=engine, projector=projector,
             )
             local = info.separated
             nit = int(info.iterations)
             solver = f"{engine}:{relu_method}"
+            if not info.converged:
+                _uncertified_relu(info, config)
+                status[method] = info.status
+                relu_candidates, relu_verified = info.candidates, info.verified
         else:
             raise SpecificationError(f"unknown separation method: {method}", code="specification.separation")
 
@@ -217,4 +234,40 @@ def detect_separation(
         timings[method] = perf_counter() - t0
         iterations[method] = nit
         solvers[method] = solver
-    return SeparationResult(full_sep, counts, timings, iterations, solvers, full_single)
+        status.setdefault(method, "certified")
+    return SeparationResult(
+        full_sep, counts, timings, iterations, solvers, full_single,
+        status, relu_candidates, relu_verified,
+    )
+
+
+def separation_status(result: SeparationResult) -> dict:
+    """Diagnostics entry: per-method status and the ReLU re-check counts."""
+    out = {"methods": dict(result.status), "certified": all(v == "certified" for v in result.status.values())}
+    if result.status.get("relu", "certified") != "certified":
+        out["relu_candidates"] = result.relu_candidates
+        out["relu_verified"] = result.relu_verified
+    return out
+
+
+def _uncertified_relu(info, config: PPMLConfig) -> None:
+    """Fail or warn: an uncertified ReLU may leave separated rows in the sample.
+
+    Separated rows have no finite MLE contribution, so IRLS can still report
+    convergence while their linear index diverges. Unified mode promises a
+    certificate, hence it fails like ``relu_strict``.
+    """
+    message = (
+        f"ReLU separation detection ended without a certificate ({info.status} after "
+        f"{info.iterations} iterations); {info.verified} of {info.candidates} candidate "
+        "rows were verified as separated and dropped. Other separated observations may "
+        "remain, so estimates can be unreliable; inspect diagnostics['separation_status']."
+    )
+    if config.relu_strict or config.sample_policy.unified:
+        raise ConvergenceError(
+            message, code="convergence.separation_relu", stage="separation",
+            details={"status": info.status, "iterations": int(info.iterations),
+                     "candidates": int(info.candidates), "verified": int(info.verified)},
+            suggestion="Raise relu_max_iter, check the design for separation, or set relu_strict=False to continue with a warning.",
+        )
+    warnings.warn(message, SeparationWarning, stacklevel=5)

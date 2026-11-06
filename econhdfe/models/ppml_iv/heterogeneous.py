@@ -34,6 +34,7 @@ from ..poisson import (
 )
 from ..ppml.execution import resolve_execution
 from ..ppml.heterogeneous import detect_separation_block
+from ..ppml.separation import separation_status
 from ..ppml.separation import initial_sample_selection, sample_policy_diagnostics
 from .config import IVPPMLConfig
 from .irls import fit_in_normalized_outcome_units, final_working_system, in_user_units
@@ -428,6 +429,7 @@ def fit_block_arrays(
             "separation_seconds": sep.timings,
             "separation_iterations": sep.iterations,
             "separation_solvers": sep.solvers,
+            "separation_status": separation_status(sep),
             "projection_resources": projector.resource_info,
             "num_sep_mu": num_sep_mu,
             "n_rows": int(np.sum(sample)),

@@ -97,7 +97,7 @@ flowchart TB
   n_ppml_iv -->|"4 imports"| n_iv
   n_ppml_iv -->|"4 imports"| n_model_shared
   n_ppml_iv -->|"3 imports"| n_planner
-  n_ppml_iv -->|"9 imports"| n_ppml
+  n_ppml_iv -->|"10 imports"| n_ppml
   n_ppml_iv -->|"1 imports"| n_resampling
   n_resampling -->|"2 imports"| n_contracts
   n_resampling -->|"1 imports"| n_planner
@@ -294,7 +294,7 @@ Files/modules: 17. econhdfe/compute/__init__.py, econhdfe/compute/backend.py, ec
 | IV-PPML model | Generic IV primitives | 4 | `econhdfe.models.ppml_iv.estimator → econhdfe.iv.moments`<br>`econhdfe.models.ppml_iv.estimator → econhdfe.iv.solve`<br>`econhdfe.models.ppml_iv.heterogeneous → econhdfe.iv.solve`<br>`econhdfe.models.ppml_iv.irls → econhdfe.iv.solve` |
 | IV-PPML model | Shared model primitives | 4 | `econhdfe.models.ppml_iv.api → econhdfe.models.poisson`<br>`econhdfe.models.ppml_iv.estimator → econhdfe.models.poisson`<br>`econhdfe.models.ppml_iv.heterogeneous → econhdfe.models.poisson`<br>`econhdfe.models.ppml_iv.irls → econhdfe.models.poisson` |
 | IV-PPML model | Execution planner | 3 | `econhdfe.models.ppml_iv.api → econhdfe.planner.scheduler`<br>`econhdfe.models.ppml_iv.estimator → econhdfe.planner.scheduler`<br>`econhdfe.models.ppml_iv.heterogeneous → econhdfe.planner.scheduler` |
-| IV-PPML model | PPML model | 9 | `econhdfe.models.ppml_iv.api → econhdfe.models.ppml.api`<br>`econhdfe.models.ppml_iv.config → econhdfe.models.ppml.config`<br>`econhdfe.models.ppml_iv.estimator → econhdfe.models.ppml.separation`<br>`econhdfe.models.ppml_iv.estimator → econhdfe.models.ppml.execution`<br>`econhdfe.models.ppml_iv.heterogeneous → econhdfe.models.ppml.execution` |
+| IV-PPML model | PPML model | 10 | `econhdfe.models.ppml_iv.api → econhdfe.models.ppml.api`<br>`econhdfe.models.ppml_iv.config → econhdfe.models.ppml.config`<br>`econhdfe.models.ppml_iv.estimator → econhdfe.models.ppml.separation`<br>`econhdfe.models.ppml_iv.estimator → econhdfe.models.ppml.execution`<br>`econhdfe.models.ppml_iv.heterogeneous → econhdfe.models.ppml.execution` |
 | IV-PPML model | Resampling engine | 1 | `econhdfe.models.ppml_iv.bootstrap → econhdfe.resampling` |
 | Resampling engine | Shared contracts | 2 | `econhdfe.resampling.engine → econhdfe.errors`<br>`econhdfe.resampling.sampling → econhdfe.errors` |
 | Resampling engine | Execution planner | 1 | `econhdfe.resampling.engine → econhdfe.planner.scheduler` |

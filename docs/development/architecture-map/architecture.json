@@ -1143,7 +1143,7 @@
     {
       "source": "ppml_iv",
       "target": "ppml",
-      "count": 9,
+      "count": 10,
       "examples": [
         "econhdfe.models.ppml_iv.api → econhdfe.models.ppml.api",
         "econhdfe.models.ppml_iv.config → econhdfe.models.ppml.config",
@@ -5064,6 +5064,14 @@
       "source_path": "econhdfe/models/ppml_iv/heterogeneous.py",
       "source_group": "ppml_iv",
       "target_module": "econhdfe.models.ppml.heterogeneous",
+      "target_group": "ppml",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ppml_iv.heterogeneous",
+      "source_path": "econhdfe/models/ppml_iv/heterogeneous.py",
+      "source_group": "ppml_iv",
+      "target_module": "econhdfe.models.ppml.separation",
       "target_group": "ppml",
       "reexport_surface": false
     },

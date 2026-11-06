@@ -1,10 +1,34 @@
 {
   "approved": [
     {
+      "id": "10f7649ba1ff1068",
+      "kind": "changed",
+      "path": "signatures.PPMLConfig",
+      "reason": "Append relu_stall_rounds and relu_strict to PPMLConfig after all existing fields; earlier positional fields keep their order and defaults keep certified ReLU results unchanged."
+    },
+    {
+      "id": "1b2816a3af536e96",
+      "kind": "changed",
+      "path": "signatures.IVPPMLConfig",
+      "reason": "IVPPMLConfig inherits the two appended PPMLConfig ReLU fields; its own max_step_halving and step_halving_memory move two positions later, keyword use is unchanged."
+    },
+    {
       "id": "2a288eb5dbf7de0b",
       "kind": "changed",
       "path": "signatures.InferenceConfig",
       "reason": "Append ppml_small_sample to InferenceConfig without changing earlier positional fields; default asymptotic fixes upstream compatibility and residual supports migration."
+    },
+    {
+      "id": "3f190d84f7499a14",
+      "kind": "changed",
+      "path": "exported_dataclass_schemas.PPMLConfig",
+      "reason": "Expose ReLU stall exit and strict non-certification as additive PPMLConfig fields; uncertified ReLU now warns and reports diagnostics['separation_status'] instead of silently reporting no separation."
+    },
+    {
+      "id": "5bf168b59167af3a",
+      "kind": "changed",
+      "path": "exported_dataclass_schemas.IVPPMLConfig",
+      "reason": "IVPPMLConfig schema inherits relu_stall_rounds and relu_strict from PPMLConfig for the shared separation stack."
     },
     {
       "id": "716cd3dc14bbef3e",
