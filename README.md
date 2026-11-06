@@ -31,7 +31,7 @@ rank-pruning or new licensed Stata certification is claimed.
 
 `econhdfe` is a Python package for OLS-HDFE, linear IV-HDFE, PPML-HDFE, and IV-PPML-HDFE. It is designed for empirical work with large datasets, high-cardinality fixed effects, clustered inference, rich interactions, and many closely related specifications.
 
-The project is currently **alpha research software**. This source tree is version **0.9.4**. Source integration and package publication are separate; check the installed version and the [release status](docs/development/test-status.md). Repository-local validation is extensive, but licensed-Stata and complete upstream external certification remain separate validation boundaries.
+The project is currently **alpha research software**. This source tree is version **0.9.5**. Source integration and package publication are separate; check the installed version and the [release status](docs/development/test-status.md). Repository-local validation is extensive, but licensed-Stata and complete upstream external certification remain separate validation boundaries.
 
 ## Earlier source milestone: 0.8.4
 

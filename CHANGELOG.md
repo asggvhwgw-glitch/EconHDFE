@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.9.5 — unreleased candidate
+
+Patch on 0.9.4. Appends `PPMLConfig.relu_stall_rounds` and
+`PPMLConfig.relu_strict` (inherited by `IVPPMLConfig`); defaults keep certified
+ReLU results unchanged.
 
 ### ReLU separation certificates
 

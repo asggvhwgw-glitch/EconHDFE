@@ -1,81 +1,81 @@
 {
   "schema_version": 1,
-  "release_version": "0.9.4",
-  "previous_version": "0.9.3",
+  "release_version": "0.9.5",
+  "previous_version": "0.9.4",
   "checks": {
     "frontend_api": {
       "status": "changed",
-      "evidence": "InferenceConfig appends ppml_small_sample=asymptotic/residual; arrays, DataFrame, reusable and structured PPML routes forward it. Existing ivppml_misspecification_robust remains supported.",
+      "evidence": "PPMLConfig appends relu_stall_rounds (int>=0, default 20) and relu_strict (bool, default False), validated in validate(); IVPPMLConfig inherits both. Keyword use unchanged; IVPPMLConfig own max_step_halving/step_halving_memory move two positions later. Unused hdfe_tol argument removed from internal relu_separation.",
       "description": "Public call signatures, exports, aliases, CLI/front-end validation and compatibility."
     },
     "backend_compute": {
       "status": "changed",
-      "evidence": "Outcome-normalized Poisson inference, protected PPML intercept direction, joint IV state, observed-space rank checks, bounded TSQR block2SLS, Schur-completed full multiway covariance. Generic QR admission stays in compute; IV does not import planner.",
+      "evidence": "Uncertified ReLU re-runs the same loop on rows still positive in the last iterate with other rows fixed at z=0; only rows certified by the restricted problem are dropped. Stall exit after relu_stall_rounds rounds without support change. No solver default, cache or resource-control change.",
       "description": "Solver/compute/cache/backend contracts, numerical defaults and resource controls."
     },
     "errors": {
-      "status": "reviewed",
-      "evidence": "Reuse UnderidentifiedError for missing weighted IV directions and existing numerical/inference errors; explicit unsafe legacy IV separation warns; no new public error family.",
+      "status": "changed",
+      "evidence": "Uncertified ReLU emits existing SeparationWarning, or raises existing ConvergenceError with new code convergence.separation_relu (stage separation, details status/iterations/candidates/verified) under relu_strict=True or unified mode. No new exception class.",
       "description": "Structured exception classes, codes, stages, suggestions and public error boundaries."
     },
     "public_contract": {
       "status": "changed",
-      "evidence": "Three reviewed InferenceConfig schema/signature changes against immutable 0.9.3. Additive ppml_small_sample field documents upstream default and explicit migration to residual convention; new0.9.4 snapshot retained.",
+      "evidence": "Four reviewed PPMLConfig/IVPPMLConfig signature and dataclass-schema changes against immutable 0.9.4 snapshot, all additive appended fields. New 0.9.5 snapshot written by scripts/compatibility.py snapshot; 0.9.4 snapshot retained.",
       "description": "Public exports/signatures, result/config schemas and stable structured-error compatibility."
     },
     "skill": {
       "status": "changed",
-      "evidence": "Configuration and empirical-research references cover default factors, safe IV separation, outcome normalization, covariance completion and assumptions for EE/growing-FE inference. Existing router and metadata remain appropriate.",
+      "evidence": "skills/econhdfe/references/configuration.md documents uncertified ReLU handling, diagnostics separation_status, relu_strict and relu_stall_rounds. Router and metadata unchanged.",
       "description": "Agent skill commands, examples, decision rules and newly exposed controls."
     },
     "linked_modules": {
-      "status": "changed",
-      "evidence": "Shared IV solve is used by nonlinear and linear paths; PPML outcome_scale is reused by IV; all model families share covariance completion. Imports verified by regenerated architecture map.",
+      "status": "reviewed",
+      "evidence": "separation_status is shared by PPML and IV-PPML dense and heterogeneous estimators; heterogeneous components merge per-method status conservatively. Architecture map regenerated.",
       "description": "Cross-module imports, shared schemas, adapters, compatibility shims and downstream consumers."
     },
     "results_reporting": {
       "status": "changed",
-      "evidence": "PPML diagnostics expose finite_sample_correction; IV coefficients, eta, mu, VCE/EE/J refer to one accepted state. Complete multiway covariance is PSD within numerical tolerance.",
+      "evidence": "PPML and IV-PPML results add diagnostics separation_status (certified flag, per-method status, ReLU candidate/verified counts). Existing diagnostics unchanged.",
       "description": "Result fields, publication output, diagnostics metadata and serialization-facing schemas."
     },
     "config_defaults": {
       "status": "changed",
-      "evidence": "PPML asymptotic finite-sample convention is default with residual opt-in. IV separation None resolves to FE-only in both modes. SamplePolicy label refers to counting and is not full Stata parity.",
+      "evidence": "Defaults relu_stall_rounds=20 and relu_strict=False keep certified ReLU results unchanged; previously uncertified runs now drop verified separated rows and warn instead of silently reporting no separation.",
       "description": "Config objects, defaults, deprecations, aliases and backwards-compatible behavior."
     },
     "cache_state": {
-      "status": "changed",
-      "evidence": "Persistent linear result ABI bumped to linear-session-result-7 so old covariance/identification results are recomputed. FE projection cache identity unchanged; normalization is per fit.",
+      "status": "reviewed",
+      "evidence": "Separation results are not persisted by sessions or persistent result storage; no cache ABI or fingerprint change needed.",
       "description": "Reusable state/cache invalidation, fingerprints, lifecycle semantics and stale-state hazards."
     },
     "tests_validation": {
       "status": "changed",
-      "evidence": "Final integrated source suite: 588 passed,1 optional-native skip,27.54s;76 new audit cases. Original analytical/unit/EE scripts rerun on final code. Evidence and exact code fingerprint: docs/release/evidence/0.9.4/statistical-audit.json and full-suite.txt. All resource guards retained.",
+      "evidence": "tests/numerics/test_separation_corpus.py adds row-order-invariant verification and warn/status/strict tests. Local full suite (research env, Python 3.12) 592 passed, 1 optional skip after the version bump; CI matrix reruns on push.",
       "description": "Regression tests, install smoke tests, golden/parity coverage and failure-path tests."
     },
     "performance": {
       "status": "reviewed",
-      "evidence": "No target-scale speedup claim. Dense relevance reuses firststage projection; block2SLS uses admitted bounded-row QR with O((L+K)^2+N) workspaces and can cost more than Gram solving. Full resource-policy tests passed; PSD completion reuses slope decomposition.",
+      "evidence": "Re-check runs only for uncertified ReLU and on the restricted candidate rows; stall exit can shorten non-converging loops. No speedup claim; certified runs follow the previous path.",
       "description": "Representative benchmark/resource regressions for code paths materially changed by the release."
     },
     "docs_migration": {
       "status": "changed",
-      "evidence": "0.9.4 changelog, English/Chinese README, migration, audit closeout, singleton policies, covariance conventions and current validation status updated. Prior overly broad inference/parity claims qualified.",
+      "evidence": "0.9.5 changelog entry, migration guide section, README/README.zh-CN version line and regenerated architecture map.",
       "description": "README/architecture/changelog/migration/versioning documentation and user-visible examples."
     },
     "packaging_dependencies": {
       "status": "reviewed",
-      "evidence": "No new dependency or build-system requirement; version bumped with scripts/version.py; current public snapshot and existing source packaging retained.",
+      "evidence": "No new dependency or build requirement; version bumped with scripts/version.py bump 0.9.5.",
       "description": "Python/dependency matrix, optional extras, wheel/source contents and build metadata."
     },
     "external_validation": {
       "status": "reviewed",
-      "evidence": "No licensed Stata execution or new Monte Carlo coverage experiment. Evidence consists of pinned upstream source analysis, analytical examples, independent numerical oracles and tests on this candidate.",
+      "evidence": "No licensed Stata execution. Evidence is the stalled-design corpus with exact LP reference recorded in the changelog and repository tests.",
       "description": "Licensed/reference-environment parity gates and explicitly deferred external certification."
     },
     "release_artifacts": {
       "status": "not_applicable",
-      "evidence": "This is a source PR candidate. No package publication, tag or release creation is requested; CI build/install evidence is tracked separately from maintenance review.",
+      "evidence": "Source PR candidate; no package publication, tag or release requested. CI build and install evidence is tracked separately.",
       "description": "Version consistency, source/wheel parity, hashes, clean install and reproducible bundle contents."
     }
   }

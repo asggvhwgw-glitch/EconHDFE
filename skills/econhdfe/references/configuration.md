@@ -201,6 +201,8 @@ Use `projection_resources["requested_threads"]` and `projection_resources["actua
 
 For ordinary PPML, `PPMLConfig(engine="optimized")` routes simplex separation through the optimized FE plan and ReLU through an optimized MAP/HDFE projector. `engine="replica"` retains the replica-oriented paths. Do not disable ordinary PPML's `simplex` or `relu` solely because a previous dataset/run found zero additional separated observations. IV-PPML has different estimating equations and defaults to FE-zero checks; applying ordinary PPML regressor separation to IV can remove observations despite a unique finite IV root.
 
+From 0.9.5, a ReLU run that ends without a certificate is not treated as "no separation": rows still positive in its last iterate are re-checked and only certified rows are dropped. Check `diagnostics["separation_status"]`; an uncertified run warns with `SeparationWarning`. Use `PPMLConfig(relu_strict=True)` when an uncertified separation check must stop the fit (unified mode always does). `relu_stall_rounds` (default 20, `0` disables) ends a loop whose support stopped changing.
+
 `PPMLConfig(engine="within")` / `IVPPMLConfig(engine="within")` opt into the optional native weighted within absorber (install `native/within-accel` first) for rank checks, IRLS and final inference; separation stays on the replica solvers (`config.separation_engine`). A failed or nonfinite inner certificate raises `HDFEConvergenceError` instead of producing an estimate, and a missing extension raises rather than falling back. Check `diagnostics["projection_resources"]["backend"]` and its `within` entry to confirm the route; no speedup is guaranteed.
 
 

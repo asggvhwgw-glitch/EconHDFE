@@ -13,12 +13,6 @@
       "reason": "IVPPMLConfig inherits the two appended PPMLConfig ReLU fields; its own max_step_halving and step_halving_memory move two positions later, keyword use is unchanged."
     },
     {
-      "id": "2a288eb5dbf7de0b",
-      "kind": "changed",
-      "path": "signatures.InferenceConfig",
-      "reason": "Append ppml_small_sample to InferenceConfig without changing earlier positional fields; default asymptotic fixes upstream compatibility and residual supports migration."
-    },
-    {
       "id": "3f190d84f7499a14",
       "kind": "changed",
       "path": "exported_dataclass_schemas.PPMLConfig",
@@ -29,21 +23,9 @@
       "kind": "changed",
       "path": "exported_dataclass_schemas.IVPPMLConfig",
       "reason": "IVPPMLConfig schema inherits relu_stall_rounds and relu_strict from PPMLConfig for the shared separation stack."
-    },
-    {
-      "id": "716cd3dc14bbef3e",
-      "kind": "changed",
-      "path": "exported_dataclass_schemas.InferenceConfig",
-      "reason": "Expose the deliberate PPML finite-sample convention as an additive InferenceConfig field; retain prior residual-DF behavior by explicit request and record the selected factor in diagnostics."
-    },
-    {
-      "id": "a4d09d51f24e89a9",
-      "kind": "changed",
-      "path": "config_schemas.InferenceConfig",
-      "reason": "Add ppml_small_sample with default asymptotic to match upstream PPML finite-sample factors; explicit residual preserves the previous convention. This is independent of sample policy and documented in statistical-audit-closeout.md."
     }
   ],
-  "baseline_version": "0.9.3",
-  "release_version": "0.9.4",
+  "baseline_version": "0.9.4",
+  "release_version": "0.9.5",
   "schema_version": 1
 }

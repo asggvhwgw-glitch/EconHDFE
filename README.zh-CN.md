@@ -27,7 +27,7 @@ IV-PPML 默认只检查全零 FE，不误用普通 PPML 的解释变量分离判
 
 `econhdfe` 是一个用于 OLS-HDFE、线性 IV-HDFE、PPML-HDFE 和 IV-PPML-HDFE 的 Python 包，面向大规模数据、高基数固定效应、聚类推断、复杂交互项以及大量相近规格的实证工作流。
 
-项目目前仍属于 **alpha 阶段研究软件**。本源码版本为 **0.9.4**。源码合并与公开发布分开登记，安装后应核对版本，参见[发布状态](docs/development/test-status.md)。仓库内已经进行了较广泛的验证，但 licensed Stata 对照和完整 upstream external certification 仍属于独立的外部验证边界。
+项目目前仍属于 **alpha 阶段研究软件**。本源码版本为 **0.9.5**。源码合并与公开发布分开登记，安装后应核对版本，参见[发布状态](docs/development/test-status.md)。仓库内已经进行了较广泛的验证，但 licensed Stata 对照和完整 upstream external certification 仍属于独立的外部验证边界。
 
 ## 先前源码里程碑：0.8.4
 

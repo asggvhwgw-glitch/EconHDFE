@@ -1,5 +1,22 @@
 # Migration guide
 
+## 0.9.4 → 0.9.5 ReLU separation certificates
+
+- A ReLU separation run that does not converge is no longer reported as "no
+  separation". Rows still positive in its last iterate are re-checked with the
+  same loop on the restricted problem; only certified rows are dropped, so a
+  previously uncertified design can now lose observations.
+- An uncertified run emits `SeparationWarning`. Set
+  `PPMLConfig(relu_strict=True)` (or use unified sample mode) to raise
+  `ConvergenceError` with code `convergence.separation_relu` instead. Check
+  `diagnostics["separation_status"]` on PPML and IV-PPML results.
+- `PPMLConfig.relu_stall_rounds` (default 20, `0` disables) stops a loop whose
+  support no longer changes. Both fields are appended after all existing
+  fields; `IVPPMLConfig`'s own `max_step_halving` and `step_halving_memory`
+  move two positions later, so pass them by keyword.
+- `relu_separation` no longer accepts the unused `hdfe_tol` argument.
+- The 0.9.4 public-contract snapshot is retained; 0.9.5 has its own snapshot.
+
 ## 0.9.2 / first 0.9.3 candidate → 0.9.4 statistical audit fixes
 
 - Ordinary PPML defaults to `InferenceConfig(ppml_small_sample="asymptotic")`:
