@@ -32,6 +32,11 @@ class PPMLConfig:
     dof_method: str = "pairwise"
     singleton_mode: str = "stata_compat"
     drop_singletons: bool = True
+    # Appended so earlier positional fields keep their order.
+    # Stop after this many rounds without any change in the ReLU support;
+    # 0 disables the check. An uncertified run warns, or fails if strict.
+    relu_stall_rounds: int = 20
+    relu_strict: bool = False
 
     @property
     def sample_policy(self) -> SamplePolicy:
@@ -53,6 +58,10 @@ class PPMLConfig:
             raise SpecificationError("separation must be a tuple or list of method names")
         if not isinstance(self.drop_singletons, bool):
             raise SpecificationError("drop_singletons must be boolean")
+        if not isinstance(self.relu_strict, bool):
+            raise SpecificationError("relu_strict must be boolean")
+        if isinstance(self.relu_stall_rounds, bool) or not isinstance(self.relu_stall_rounds, Integral) or self.relu_stall_rounds < 0:
+            raise SpecificationError("relu_stall_rounds must be a non-negative integer", code="specification.iteration_count")
         if self.sample_policy.unified and "mu" in self.separation:
             raise SpecificationError(
                 "unified mode requires a separation certificate; mu thresholding is not supported",

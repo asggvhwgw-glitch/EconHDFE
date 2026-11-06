@@ -12,7 +12,7 @@ from ...hdfe.plan import FEPlan
 from .irls import fit_irls
 from ...compute.linalg import independent_columns
 from .results import PPMLResult
-from .separation import detect_separation, initial_sample_selection, sample_policy_diagnostics
+from .separation import detect_separation, separation_status, initial_sample_selection, sample_policy_diagnostics
 from .standardize import Standardization
 from ...compute.vcov import normalize_vce
 from ..poisson import (
@@ -311,6 +311,7 @@ def fit_arrays(
             "separation_seconds": sep0.timings,
             "separation_iterations": sep0.iterations,
             "separation_solvers": sep0.solvers,
+            "separation_status": separation_status(sep0),
             "projection_resources": None if projector is None else projector.resource_info,
             "execution": {
                 "threads": execution.threads,

@@ -11,7 +11,7 @@ from ...compute.linalg import independent_columns
 from ...hdfe.plan import FEPlan
 from ...iv.moments import additive_moments, overid_test
 from ...iv.solve import weighted_2sls
-from ..ppml.separation import detect_separation, initial_sample_selection, sample_policy_diagnostics
+from ..ppml.separation import detect_separation, separation_status, initial_sample_selection, sample_policy_diagnostics
 from ..ppml.execution import resolve_execution, get_projector
 from ..poisson import (
     initial_active_rows, separation_survivors, poisson_clusters, poisson_inference, poisson_df_resid,
@@ -266,6 +266,7 @@ def fit_arrays(
             "separation_seconds": sep.timings,
             "separation_iterations": sep.iterations,
             "separation_solvers": sep.solvers,
+            "separation_status": separation_status(sep),
             "projection_resources": None if projector is None else projector.resource_info,
             "execution": {
                 "threads": execution.threads,

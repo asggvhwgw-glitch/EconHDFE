@@ -31,7 +31,7 @@ from ..poisson import (
 )
 from .config import PPMLConfig
 from .irls import IRLSState, _predict_eps
-from .separation import SeparationResult, detect_separation, initial_sample_selection, sample_policy_diagnostics
+from .separation import SeparationResult, detect_separation, separation_status, initial_sample_selection, sample_policy_diagnostics
 from .standardize import Standardization
 from .results import PPMLResult
 from .execution import resolve_execution
@@ -94,6 +94,8 @@ def detect_separation_block(
     timings = {m: 0.0 for m in config.separation_methods}
     iterations = {m: 0 for m in config.separation_methods}
     solver_sets = {m: set() for m in config.separation_methods}
+    status: dict[str, str] = {}
+    relu_candidates = relu_verified = 0
 
     # Timing is accumulated by method across components.  Local detect_separation
     # already records stage-specific timings; the outer wall timer is retained
@@ -111,13 +113,22 @@ def detect_separation_block(
             timings[method] += float(local.timings.get(method, 0.0))
             iterations[method] = max(iterations[method], int(local.iterations.get(method, 0)))
             solver_sets[method].add(str(local.solvers.get(method, "unknown")))
+        for method, value in local.status.items():
+            # Any uncertified component makes the method uncertified.
+            if status.get(method, "certified") == "certified":
+                status[method] = value
+        relu_candidates += local.relu_candidates
+        relu_verified += local.relu_verified
     _ = perf_counter() - wall0
 
     solvers = {}
     for method in config.separation_methods:
         values = sorted(solver_sets[method])
         solvers[method] = values[0] if len(values) == 1 else "component[" + ",".join(values) + "]"
-    return SeparationResult(separated, counts, timings, iterations, solvers, singletons)
+    return SeparationResult(
+        separated, counts, timings, iterations, solvers, singletons,
+        status, relu_candidates, relu_verified,
+    )
 
 
 
@@ -599,6 +610,7 @@ def fit_block_arrays(
             "separation_seconds": sep0.timings,
             "separation_iterations": sep0.iterations,
             "separation_solvers": sep0.solvers,
+            "separation_status": separation_status(sep0),
             "projection_resources": None if projector is None else projector.resource_info,
             "execution": {
                 "threads": execution.threads,

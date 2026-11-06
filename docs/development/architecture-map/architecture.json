@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "econhdfe",
-  "version": "0.9.4",
+  "version": "0.9.5",
   "evidence": {
     "topology": "Python AST import analysis; package __init__ re-export imports excluded from aggregated dependency counts.",
     "execution_flows": "Explicit semantic overlays reviewed against estimator orchestration modules; not presented as import edges."
@@ -1143,7 +1143,7 @@
     {
       "source": "ppml_iv",
       "target": "ppml",
-      "count": 9,
+      "count": 10,
       "examples": [
         "econhdfe.models.ppml_iv.api → econhdfe.models.ppml.api",
         "econhdfe.models.ppml_iv.config → econhdfe.models.ppml.config",
@@ -5079,6 +5079,14 @@
       "source_module": "econhdfe.models.ppml_iv.heterogeneous",
       "source_path": "econhdfe/models/ppml_iv/heterogeneous.py",
       "source_group": "ppml_iv",
+      "target_module": "econhdfe.models.ppml.separation",
+      "target_group": "ppml",
+      "reexport_surface": false
+    },
+    {
+      "source_module": "econhdfe.models.ppml_iv.heterogeneous",
+      "source_path": "econhdfe/models/ppml_iv/heterogeneous.py",
+      "source_group": "ppml_iv",
       "target_module": "econhdfe.models.ppml_iv.config",
       "target_group": "ppml_iv",
       "reexport_surface": false
@@ -6509,7 +6517,7 @@
     },
     {
       "name": "compatibility",
-      "files": 37,
+      "files": 38,
       "python_files": 0,
       "markdown_files": 0
     }

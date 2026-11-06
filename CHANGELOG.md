@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.9.5 — unreleased candidate
+
+Patch on 0.9.4. Appends `PPMLConfig.relu_stall_rounds` and
+`PPMLConfig.relu_strict` (inherited by `IVPPMLConfig`); defaults keep certified
+ReLU results unchanged.
+
+### ReLU separation certificates
+
+- **Correctness.** A ReLU run that hit `relu_max_iter` returned an empty
+  separation set, and `detect_separation` ignored its `converged` flag, so
+  "no certificate" was reported as "no separation". Separated rows then stayed
+  in the sample and IRLS could report convergence with diverging indices.
+  An uncertified run now re-checks the rows still positive in its last
+  iterate with the same loop, holding every other row at `z = 0`; a
+  certificate of that restricted problem certifies the original one, and only
+  those verified rows are dropped. On 27 stalled designs with an exact LP
+  reference this recovers 149 of 166 separated rows with no false positives
+  (the old path recovered none).
+- An uncertified ReLU emits `SeparationWarning`, or raises
+  `ConvergenceError` (`convergence.separation_relu`) with
+  `PPMLConfig(relu_strict=True)` or in unified sample mode. Every PPML and
+  IV-PPML result reports `diagnostics["separation_status"]`.
+- `PPMLConfig.relu_stall_rounds` (default 20, 0 disables) stops the loop when
+  neither its candidate support nor its violating rows change; such runs are
+  uncertified and take the re-check above.
+- Remove the unused `hdfe_tol` argument of `relu_separation`.
+
 ## 0.9.4 — unreleased candidate
 
 Patch on 0.9.2. Adds `InferenceConfig.ivppml_misspecification_robust` and
