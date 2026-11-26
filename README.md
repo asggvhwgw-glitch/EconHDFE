@@ -1,5 +1,9 @@
 # econhdfe
 
+<!-- yarkr:badges:start -->
+[![Indexed on Yarkr](https://api.yarkr.com/functions/v1/api/api/v1/badges/repos/asggvhwgw-glitch/EconHDFE/version.svg)](https://yarkr.com/arks/asggvhwgw-glitch/econhdfe)
+<!-- yarkr:badges:end -->
+
 ## Statistical correctness audit (0.9.4 candidate)
 
 This candidate rejects numerically unidentified IV systems, defaults IV-PPML
@@ -204,6 +208,38 @@ A researcher using a coding agent can start with the following prompt:
 > Once setup is complete, ask me for the empirical specification or research task I want to run.
 
 The agent is an interface to the software, not part of the estimator. Samples, coefficients, fixed effects, convergence rules, inference, and numerical tolerances remain controlled by the same tested public API used by human callers.
+
+<!-- yarkr:install:start -->
+## Install with Yarkr
+
+This repo is indexed on [Yarkr](https://yarkr.com/arks/asggvhwgw-glitch/econhdfe) as the ark [asggvhwgw-glitch/econhdfe](https://yarkr.com/arks/asggvhwgw-glitch/econhdfe), so its skills install into Claude Code, Codex, Cursor and other agent harnesses with one command.
+
+### CLI
+
+Install the whole ark, which Yarkr keeps equal to this repo:
+
+```bash
+npx yarkr-cli sync asggvhwgw-glitch/econhdfe
+```
+
+Or add individual skills:
+
+```bash
+npx yarkr-cli add skill:asggvhwgw-glitch/econhdfe/econhdfe
+```
+
+No Node.js? `curl -fsSL https://yarkr.com/install.sh | sh` (macOS, Linux) or `irm https://yarkr.com/install.ps1 | iex` (Windows PowerShell) installs `yarkr` as a standalone binary; then type `yarkr` in place of `npx yarkr-cli`.
+
+### MCP
+
+Connect your agent to the ark over MCP:
+
+```bash
+npx yarkr-cli mcp add asggvhwgw-glitch/econhdfe
+```
+
+Or point any MCP client at `https://api.yarkr.com/functions/v1/api/mcp/o/asggvhwgw-glitch/econhdfe`.
+<!-- yarkr:install:end -->
 
 ## Optional Python covariance companion
 
